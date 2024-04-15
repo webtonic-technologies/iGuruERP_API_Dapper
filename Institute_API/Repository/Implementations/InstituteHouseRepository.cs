@@ -18,7 +18,7 @@ namespace Institute_API.Repository.Implementations
             _connection = connection;
             _hostingEnvironment = hostingEnvironment;
         }
-        public async Task<ServiceResponse<string>> AddUpdateInstituteHouse(InstituteHouseDTO request)
+        public async Task<ServiceResponse<int>> AddUpdateInstituteHouse(InstituteHouseDTO request)
         {
             try
             {
@@ -43,14 +43,16 @@ namespace Institute_API.Repository.Implementations
                         {
                             var newHouse = new InstituteHouse
                             {
-                                FileName = await HandleImageUpload(data.FileName ??= null),
+                                FileName = string.Empty,
                                 HouseColor = data.HouseColor,
                                 HouseName = data.HouseName,
+                                Institute_id = request.Institute_id
                             };
                             houses.Add(newHouse);
                         }
                         string insertQuery = @"INSERT INTO [dbo].[tbl_InstituteHouse] (Institute_id, HouseName, HouseColor, FileName)
-                       VALUES (@InstituteId, @HouseName, @HouseColor, @FileName);";
+                       VALUES (@Institute_id, @HouseName, @HouseColor, @FileName);
+                        SELECT SCOPE_IDENTITY();";
                         // Execute the query with multiple parameterized sets of values
                         addedRecords = await _connection.ExecuteAsync(insertQuery, houses);
                     }
@@ -62,41 +64,43 @@ namespace Institute_API.Repository.Implementations
                     {
                         var newHouse = new InstituteHouse
                         {
-                            FileName = await HandleImageUpload(data.FileName ??= null),
+                            FileName = string.Empty,
                             HouseColor = data.HouseColor,
                             HouseName = data.HouseName,
+                            Institute_id = request.Institute_id
                         };
                         houses.Add(newHouse);
                     }
                     string insertQuery = @"INSERT INTO [dbo].[tbl_InstituteHouse] (Institute_id, HouseName, HouseColor, FileName)
-                       VALUES (@InstituteId, @HouseName, @HouseColor, @FileName);";
+                       VALUES (@Institute_id, @HouseName, @HouseColor, @FileName);
+                         SELECT SCOPE_IDENTITY();";
                     // Execute the query with multiple parameterized sets of values
-                    addedRecords = await _connection.ExecuteAsync(insertQuery, request);
+                    addedRecords = await _connection.ExecuteAsync(insertQuery, houses);
                 }
                 if (addedRecords > 0)
                 {
-                    return new ServiceResponse<string>(true, "operation successful", "Records added successfully", 500);
+                    return new ServiceResponse<int>(true, "operation successful", addedRecords, 200);
                 }
                 else
                 {
-                    return new ServiceResponse<string>(false, "operation failed", string.Empty, 500);
+                    return new ServiceResponse<int>(false, "operation failed", 0, 500);
                 }
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
+                return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
 
-        public async Task<ServiceResponse<InstituteHouseDTO>> GetInstituteHouseById(int Id)
+        public async Task<ServiceResponse<InstituteHouseDTO>> GetInstituteHouseList(int Id)
         {
             try
             {
                 var response = new InstituteHouseDTO();
                 string sql = @"SELECT Institute_house_id, Institute_id, HouseName, HouseColor
                        FROM [dbo].[tbl_InstituteHouse]
-                       WHERE Institute_house_id = @Id";
-                var instituteHouse = await _connection.QueryFirstOrDefaultAsync<List<InstituteHouses>>(sql, new { Id });
+                       WHERE Institute_id = @Id";
+                var instituteHouse = await _connection.QueryAsync<InstituteHouses>(sql, new { Id });
                 if (instituteHouse != null)
                 {
                     response.Institute_id = Id;
@@ -113,15 +117,37 @@ namespace Institute_API.Repository.Implementations
                 return new ServiceResponse<InstituteHouseDTO>(false, ex.Message, new InstituteHouseDTO(), 500);
             }
         }
-
+        public async Task<ServiceResponse<string>> AddUpdateHouseFile(HoueseFile request)
+        {
+            try
+            {
+                string sql = @"UPDATE [dbo].[tbl_InstituteHouse]
+                       SET FileName = @FileName
+                       WHERE Institute_house_id = @Institute_house_id";
+                string FileName = request.FileName != null ? await HandleImageUpload(request.FileName) : string.Empty;
+                int rowsAffected = await _connection.ExecuteAsync(sql, new { FileName,request.Institute_house_id });
+                if (rowsAffected > 0)
+                {
+                    return new ServiceResponse<string>(true, "Operation successsful", "File added successfully", 200);
+                }
+                else
+                {
+                    return new ServiceResponse<string>(false, "Operation failed", string.Empty, 500);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
+            }
+        }
         public async Task<ServiceResponse<byte[]>> GetInstituteHouseLogoById(int Id)
         {
 
             try
             {
                 var data = await _connection.QueryFirstOrDefaultAsync<InstituteHouse>(
-                   "SELECT FileName FROM tbl_InstituteHouse WHERE Institute_id = @Institute_id",
-                   new { Institute_id = Id }) ?? throw new Exception("Data not found");
+                   "SELECT FileName FROM tbl_InstituteHouse WHERE Institute_house_id = @Institute_house_id",
+                   new { Institute_house_id = Id }) ?? throw new Exception("Data not found");
                 var filePath = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "Institution", data.FileName);
 
                 if (!File.Exists(filePath))

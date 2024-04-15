@@ -13,6 +13,31 @@ namespace Institute_API.Services.Implementations
         {
             _instituteDetailsRepository = instituteDetailsRepository;
         }
+
+        public async Task<ServiceResponse<string>> AddUpdateDigitalSignatory(InstDigSignDTO request)
+        {
+            try
+            {
+                return await _instituteDetailsRepository.AddUpdateDigitalSignatory(request);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<string>> AddUpdateDigitalStamp(InstDigiStampDTO request)
+        {
+            try
+            {
+                return await _instituteDetailsRepository.AddUpdateDigitalStamp(request);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
+            }
+        }
+
         public async Task<ServiceResponse<int>> AddUpdateInstititeDetails(InstituteDetailsDTO request)
         {
             try
@@ -22,6 +47,30 @@ namespace Institute_API.Services.Implementations
             catch (Exception ex)
             {
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<string>> AddUpdateInstituteLogo(InstLogoDTO request)
+        {
+            try
+            {
+                return await _instituteDetailsRepository.AddUpdateInstituteLogo(request);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<string>> AddUpdatePrincipalSignatory(InstPriSignDTO request)
+        {
+            try
+            {
+                return await _instituteDetailsRepository.AddUpdatePrincipalSignatory(request);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
             }
         }
 

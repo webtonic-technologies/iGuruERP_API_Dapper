@@ -15,11 +15,12 @@ namespace Institute_API.Services.Implementations
         {
             _instituteHouseRepository = instituteHouseRepository;
         }
-        public async Task<ServiceResponse<string>> AddUpdateInstituteHouse(InstituteHouseDTO request)
+
+        public async Task<ServiceResponse<string>> AddUpdateHouseFile(HoueseFile request)
         {
             try
             {
-                return await _instituteHouseRepository.AddUpdateInstituteHouse(request);
+                return await _instituteHouseRepository.AddUpdateHouseFile(request);
             }
             catch (Exception ex)
             {
@@ -27,11 +28,23 @@ namespace Institute_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<InstituteHouseDTO>> GetInstituteHouseById(int Id)
+        public async Task<ServiceResponse<int>> AddUpdateInstituteHouse(InstituteHouseDTO request)
         {
             try
             {
-                return await _instituteHouseRepository.GetInstituteHouseById(Id);
+                return await _instituteHouseRepository.AddUpdateInstituteHouse(request);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(false, ex.Message, 0, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<InstituteHouseDTO>> GetInstituteHouseList(int Id)
+        {
+            try
+            {
+                return await _instituteHouseRepository.GetInstituteHouseList(Id);
             }
             catch (Exception ex)
             {

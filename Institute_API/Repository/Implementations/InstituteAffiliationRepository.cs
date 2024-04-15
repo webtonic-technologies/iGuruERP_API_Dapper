@@ -23,9 +23,9 @@ namespace Institute_API.Repository.Implementations
             {
                 if (request.Affiliation_info_id == 0)
                 {
-                    string sql = @"INSERT INTO tbl_InstituteAffiliation (Institute_id, AffiliationBoardLogo, 
+                    string sql = @"INSERT INTO [tbl_AffiliationInfo] (Institute_id, AffiliationBoardLogo, 
                        AffiliationBoardName, AffiliationNumber, AffiliationCertificateNumber, InstituteCode)
-                       VALUES (@InstituteId, @AffiliationBoardLogo, @AffiliationBoardName, 
+                       VALUES (@Institute_id, @AffiliationBoardLogo, @AffiliationBoardName, 
                        @AffiliationNumber, @AffiliationCertificateNumber, @InstituteCode);
                        SELECT SCOPE_IDENTITY();"; // Retrieve the inserted id
 
@@ -59,8 +59,8 @@ namespace Institute_API.Repository.Implementations
                 }
                 else
                 {
-                    string sql = @"UPDATE tbl_InstituteAffiliation
-                      SET Institute_id = @InstituteId,
+                    string sql = @"UPDATE [tbl_AffiliationInfo]
+                      SET Institute_id = @Institute_id,
                           AffiliationBoardLogo = @AffiliationBoardLogo,
                           AffiliationBoardName = @AffiliationBoardName,
                           AffiliationNumber = @AffiliationNumber,
@@ -72,7 +72,7 @@ namespace Institute_API.Repository.Implementations
                     int affectedRows = await _connection.ExecuteAsync(sql, new
                     {
                         InstituteId = request.Institute_id,
-                        request.AffiliationBoardLogo,
+                        AffiliationBoardLogo = string.Empty,
                         request.AffiliationBoardName,
                         request.AffiliationNumber,
                         request.AffiliationCertificateNumber,
@@ -119,7 +119,7 @@ namespace Institute_API.Repository.Implementations
                     await request.AffiliationBoardLogo.CopyToAsync(fileStream);
                 }
 
-                string sql = @"UPDATE tbl_InstituteAffiliation
+                string sql = @"UPDATE [tbl_AffiliationInfo]
                       SET AffiliationBoardLogo = @AffiliationBoardLogo
                       WHERE Affiliation_info_id = @AffiliationInfoId";
 
@@ -152,7 +152,7 @@ namespace Institute_API.Repository.Implementations
                 string sql = @"SELECT Affiliation_info_id, Institute_id, 
                               AffiliationBoardName, AffiliationNumber, 
                               AffiliationCertificateNumber, InstituteCode
-                       FROM [dbo].[tbl_InstituteAffiliation]
+                       FROM [dbo].[tbl_AffiliationInfo]
                        WHERE Affiliation_info_id = @Id";
 
                 // Execute the query and retrieve the result
@@ -227,7 +227,7 @@ namespace Institute_API.Repository.Implementations
                 if (rowsAffected > 0)
                 {
                     string insertQuery = @"INSERT INTO tbl_Accreditation (Affiliation_id, Accreditation_Number)
-                       VALUES (@AffiliationId, @AccreditationNumber);";
+                       VALUES (@Affiliation_id, @Accreditation_Number);";
 
                     // Execute the query with multiple parameterized sets of values
                     addedRecords = await _connection.ExecuteAsync(insertQuery, request);
@@ -236,7 +236,7 @@ namespace Institute_API.Repository.Implementations
             else
             {
                 string insertQuery = @"INSERT INTO tbl_Accreditation (Affiliation_id, Accreditation_Number)
-                       VALUES (@AffiliationId, @AccreditationNumber);";
+                       VALUES (@Affiliation_id, @Accreditation_Number);";
                 // Execute the query with multiple parameterized sets of values
                 addedRecords = await _connection.ExecuteAsync(insertQuery, request);
             }

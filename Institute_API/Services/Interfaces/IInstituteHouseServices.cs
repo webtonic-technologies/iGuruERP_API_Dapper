@@ -5,8 +5,9 @@ namespace Institute_API.Services.Interfaces
 {
     public interface IInstituteHouseServices
     {
-        Task<ServiceResponse<string>> AddUpdateInstituteHouse(InstituteHouseDTO request);
-        Task<ServiceResponse<InstituteHouseDTO>> GetInstituteHouseById(int Id);
+        Task<ServiceResponse<int>> AddUpdateInstituteHouse(InstituteHouseDTO request);
+        Task<ServiceResponse<InstituteHouseDTO>> GetInstituteHouseList(int Id);
         Task<ServiceResponse<byte[]>> GetInstituteHouseLogoById(int Id);
+        Task<ServiceResponse<string>> AddUpdateHouseFile(HoueseFile request);
     }
 }

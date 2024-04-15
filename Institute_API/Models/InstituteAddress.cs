@@ -14,6 +14,7 @@
         public string Landmark { get; set; } = string.Empty;
         public string Mobile_number { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
+        public int? AddressType_id { get; set; }
         public DateTime? en_date { get; set; }
     }
 }

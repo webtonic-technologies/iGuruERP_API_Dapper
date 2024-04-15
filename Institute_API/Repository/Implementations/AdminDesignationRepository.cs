@@ -21,7 +21,7 @@ namespace Institute_API.Repository.Implementations
                 if (request.Designation_id == 0)
                 {
                     string sql = @"INSERT INTO [dbo].[tbl_Designation] (Institute_id, DesignationName, Department_id)
-                       VALUES (@InstituteId, @DesignationName, @DepartmentId);
+                       VALUES (@Institute_id, @DesignationName, @Department_id);
                        SELECT SCOPE_IDENTITY();"; // Retrieve the inserted id
 
                     // Execute the query and retrieve the inserted id
@@ -55,10 +55,10 @@ namespace Institute_API.Repository.Implementations
                 else
                 {
                     string sql = @"UPDATE [dbo].[tbl_Designation]
-                       SET Institute_id = @InstituteId,
+                       SET Institute_id = @Institute_id,
                            DesignationName = @DesignationName,
-                           Department_id = @DepartmentId
-                       WHERE Designation_id = @DesignationId";
+                           Department_id = @Department_id
+                       WHERE Designation_id = @Designation_id";
 
                     // Execute the query and retrieve the number of affected rows
                     int affectedRows = await _connection.ExecuteAsync(sql, request);
@@ -133,7 +133,7 @@ namespace Institute_API.Repository.Implementations
             {
                 string sql = @"SELECT *
                        FROM [dbo].[tbl_Designation]
-                       WHERE Institute_id = @InstituteId";
+                       WHERE Institute_id = @Institute_id";
 
                 // Execute the query and retrieve the departments
                 var designations = await _connection.QueryAsync<AdminDesignation>(sql, new { Institute_id });

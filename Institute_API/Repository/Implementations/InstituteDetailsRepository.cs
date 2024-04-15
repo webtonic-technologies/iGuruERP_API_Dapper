@@ -4,6 +4,8 @@ using Institute_API.DTOs.ServiceResponse;
 using Institute_API.Models;
 using Institute_API.Repository.Interfaces;
 using System.Data;
+using System.Net;
+using System.Xml.Serialization;
 
 namespace Institute_API.Repository.Implementations
 {
@@ -27,12 +29,12 @@ namespace Institute_API.Repository.Implementations
                     {
                         Institute_name = request.Institute_name,
                         Institute_Alias = request.Institute_Alias,
-                        Institute_DigitalSignatory = request.Institute_DigitalSignatory != null ? await HandleImageUpload(request.Institute_DigitalSignatory) : string.Empty,
-                        Institute_DigitalStamp = request.Institute_DigitalStamp != null ? await HandleImageUpload(request.Institute_DigitalStamp) : string.Empty,
-                        Institute_Logo = request.Institute_Logo != null ? await HandleImageUpload(request.Institute_Logo) : string.Empty,
-                        Institute_PrincipalSignatory = request.Institute_PrincipalSignatory != null ? await HandleImageUpload(request.Institute_PrincipalSignatory) : string.Empty
+                        Institute_Logo = string.Empty,
+                        Institute_DigitalSignatory = string.Empty,
+                        Institute_PrincipalSignatory = string.Empty,
+                        Institute_DigitalStamp = string.Empty,
                     };
-                    string query = @"INSERT INTO tbl_InstituteDetails (Institute_name, Institute_Alias, Institute_Logo, Institute_DigitalStamp, Institute_DigitalSignatory, Institute_PrincipalSignatory, en_date)
+                    string query = @"INSERT INTO [tbl_InstituteDetails] (Institute_name, Institute_Alias, Institute_Logo, Institute_DigitalStamp, Institute_DigitalSignatory, Institute_PrincipalSignatory, en_date)
                              VALUES (@Institute_name, @Institute_Alias, @Institute_Logo, @Institute_DigitalStamp, @Institute_DigitalSignatory, @Institute_PrincipalSignatory, @en_date)
                              SELECT SCOPE_IDENTITY()";
 
@@ -75,10 +77,10 @@ namespace Institute_API.Repository.Implementations
                         Institute_id = request.Institute_id,
                         Institute_name = request.Institute_name,
                         Institute_Alias = request.Institute_Alias,
-                        Institute_DigitalSignatory = request.Institute_DigitalSignatory != null ? await HandleImageUpload(request.Institute_DigitalSignatory) : string.Empty,
-                        Institute_DigitalStamp = request.Institute_DigitalStamp != null ? await HandleImageUpload(request.Institute_DigitalStamp) : string.Empty,
-                        Institute_Logo = request.Institute_Logo != null ? await HandleImageUpload(request.Institute_Logo) : string.Empty,
-                        Institute_PrincipalSignatory = request.Institute_PrincipalSignatory != null ? await HandleImageUpload(request.Institute_PrincipalSignatory) : string.Empty
+                        Institute_DigitalSignatory = string.Empty,
+                        Institute_DigitalStamp = string.Empty,
+                        Institute_Logo = string.Empty,
+                        Institute_PrincipalSignatory = string.Empty
                     };
                     int rowsAffected = await _connection.ExecuteAsync(updateQuery, newInstitution);
                     if (rowsAffected > 0)
@@ -237,7 +239,100 @@ namespace Institute_API.Repository.Implementations
                 return new ServiceResponse<byte[]>(false, ex.Message, [], 500);
             }
         }
+        public async Task<ServiceResponse<string>> AddUpdateInstituteLogo(InstLogoDTO request)
+        {
+            try
+            {
+                string sql = @"UPDATE [dbo].[tbl_InstituteDetails]
+                       SET Institute_Logo = @LogoFileName
+                       WHERE Institute_id = @InstituteId";
+                string logoFileName = request.InstLogo != null ? await HandleImageUpload(request.InstLogo) : string.Empty;
+                // Execute the update query
 
+                int rowsAffected = await _connection.ExecuteAsync(sql, new { LogoFileName = logoFileName, InstituteId = request.Institute_id });
+                if (rowsAffected > 0)
+                {
+                    return new ServiceResponse<string>(true, "Operation successsful", "Logo added successfully", 200);
+                }
+                else
+                {
+                    return new ServiceResponse<string>(false, "Operation failed", string.Empty, 500);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
+            }
+        }
+        public async Task<ServiceResponse<string>> AddUpdatePrincipalSignatory(InstPriSignDTO request)
+        {
+            try
+            {
+                string sql = @"UPDATE [dbo].[tbl_InstituteDetails]
+                       SET Institute_PrincipalSignatory = @Institute_PrincipalSignatory
+                       WHERE Institute_id = @InstituteId";
+                string Institute_PrincipalSignatory = request.InstPrinSign != null ? await HandleImageUpload(request.InstPrinSign) : string.Empty;
+                int rowsAffected = await _connection.ExecuteAsync(sql, new { Institute_PrincipalSignatory, InstituteId = request.Institute_id });
+                if (rowsAffected > 0)
+                {
+                    return new ServiceResponse<string>(true, "Operation successsful", "Signatory added successfully", 200);
+                }
+                else
+                {
+                    return new ServiceResponse<string>(false, "Operation failed", string.Empty, 500);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
+            }
+        }
+        public async Task<ServiceResponse<string>> AddUpdateDigitalSignatory(InstDigSignDTO request)
+        {
+            try
+            {
+                string sql = @"UPDATE [dbo].[tbl_InstituteDetails]
+                       SET Institute_DigitalSignatory = @Institute_DigitalSignatory
+                       WHERE Institute_id = @InstituteId";
+                string Institute_DigitalSignatory = request.InstDigSign != null ? await HandleImageUpload(request.InstDigSign) : string.Empty;
+                int rowsAffected = await _connection.ExecuteAsync(sql, new { Institute_DigitalSignatory, InstituteId = request.Institute_id });
+                if (rowsAffected > 0)
+                {
+                    return new ServiceResponse<string>(true, "Operation successsful", "Signatory added successfully", 200);
+                }
+                else
+                {
+                    return new ServiceResponse<string>(false, "Operation failed", string.Empty, 500);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
+            }
+        }
+        public async Task<ServiceResponse<string>> AddUpdateDigitalStamp(InstDigiStampDTO request)
+        {
+            try
+            {
+                string sql = @"UPDATE [dbo].[tbl_InstituteDetails]
+                       SET Institute_DigitalStamp = @Institute_DigitalStamp
+                       WHERE Institute_id = @InstituteId";
+                string Institute_DigitalStamp = request.InstDigStamp != null ? await HandleImageUpload(request.InstDigStamp) : string.Empty;
+                int rowsAffected = await _connection.ExecuteAsync(sql, new { Institute_DigitalStamp, InstituteId = request.Institute_id });
+                if (rowsAffected > 0)
+                {
+                    return new ServiceResponse<string>(true, "Operation successsful", "Stamp added successfully", 200);
+                }
+                else
+                {
+                    return new ServiceResponse<string>(false, "Operation failed", string.Empty, 500);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
+            }
+        }
         //public async Task<ServiceResponse<byte[]>> GetInstituteFileById(int Id, string fileType)
         //{
         //    try
@@ -288,8 +383,8 @@ namespace Institute_API.Repository.Implementations
                 if (rowsAffected > 0)
                 {
                     string insertQuery = @"
-                INSERT INTO tbl_InstituteAddress (Institute_id, country_id, state_id, city_id, house, pincode, district_id, Locality, Landmark, Mobile_number, Email, en_date)
-                VALUES (@Institute_id, @country_id, @state_id, @city_id, @house, @pincode, @district_id, @Locality, @Landmark, @Mobile_number, @Email, @en_date)";
+                INSERT INTO tbl_InstituteAddress (Institute_id, country_id, state_id, city_id, house, pincode, district_id, Locality, Landmark, Mobile_number, Email, en_date, AddressType_id)
+                VALUES (@Institute_id, @country_id, @state_id, @city_id, @house, @pincode, @district_id, @Locality, @Landmark, @Mobile_number, @Email, @en_date, @AddressType_id)";
 
                     // Execute the query with multiple parameterized sets of values
                     addedRecords = await _connection.ExecuteAsync(insertQuery, request);
@@ -298,8 +393,8 @@ namespace Institute_API.Repository.Implementations
             else
             {
                 string insertQuery = @"
-                INSERT INTO tbl_InstituteAddress (Institute_id, country_id, state_id, city_id, house, pincode, district_id, Locality, Landmark, Mobile_number, Email, en_date)
-                VALUES (@Institute_id, @country_id, @state_id, @city_id, @house, @pincode, @district_id, @Locality, @Landmark, @Mobile_number, @Email, @en_date)";
+                INSERT INTO tbl_InstituteAddress (Institute_id, country_id, state_id, city_id, house, pincode, district_id, Locality, Landmark, Mobile_number, Email, en_date, AddressType_id)
+                VALUES (@Institute_id, @country_id, @state_id, @city_id, @house, @pincode, @district_id, @Locality, @Landmark, @Mobile_number, @Email, @en_date, @AddressType_id)";
 
                 // Execute the query with multiple parameterized sets of values
                 addedRecords = await _connection.ExecuteAsync(insertQuery, request);
@@ -362,7 +457,7 @@ namespace Institute_API.Repository.Implementations
                 if (rowsAffected > 0)
                 {
                     string insertQuery = @"
-                INSERT INTO InstituteSMMapping (Institute_id, SM_Id, URL)
+                INSERT INTO tbl_InstitueSMMapping (Institute_id, SM_Id, URL)
                 VALUES (@Institute_id, @SM_Id, @URL)";
                     // Execute the query with multiple parameterized sets of values
                     addedRecords = await _connection.ExecuteAsync(insertQuery, request);
@@ -371,7 +466,7 @@ namespace Institute_API.Repository.Implementations
             else
             {
                 string insertQuery = @"
-                INSERT INTO InstituteSMMapping (Institute_id, SM_Id, URL)
+                INSERT INTO tbl_InstitueSMMapping (Institute_id, SM_Id, URL)
                 VALUES (@Institute_id, @SM_Id, @URL)";
                 // Execute the query with multiple parameterized sets of values
                 addedRecords = await _connection.ExecuteAsync(insertQuery, request);

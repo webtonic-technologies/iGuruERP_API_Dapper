@@ -21,7 +21,7 @@ namespace Institute_API.Repository.Implementations
                 if (request.Department_id == 0)
                 {
                     string sql = @"INSERT INTO [dbo].[tbl_Department] (Institute_id, DepartmentName)
-                       VALUES (@InstituteId, @DepartmentName);
+                       VALUES (@Institute_id, @DepartmentName);
                        SELECT SCOPE_IDENTITY();";
 
                     int insertedId = await _connection.ExecuteScalarAsync<int>(sql, request);
@@ -38,7 +38,7 @@ namespace Institute_API.Repository.Implementations
                 else
                 {
                     string sql = @"UPDATE [dbo].[tbl_Department]
-                       SET Institute_id = @InstituteId,
+                       SET Institute_id = @Institute_id,
                            DepartmentName = @DepartmentName
                        WHERE Department_id = @DepartmentId";
 
@@ -95,7 +95,7 @@ namespace Institute_API.Repository.Implementations
             {
                 string sql = @"SELECT *
                        FROM [dbo].[tbl_Department]
-                       WHERE Department_id = @DepartmentId";
+                       WHERE Department_id = @Department_id";
 
                 // Execute the query and retrieve the department
                 var department = await _connection.QueryFirstOrDefaultAsync<AdminDepartment>(sql, new { Department_id });
@@ -120,7 +120,7 @@ namespace Institute_API.Repository.Implementations
             {
                 string sql = @"SELECT *
                        FROM [dbo].[tbl_Department]
-                       WHERE Institute_id = @InstituteId";
+                       WHERE Institute_id = @Institute_id";
 
                 // Execute the query and retrieve the departments
                 var departments = await _connection.QueryAsync<AdminDepartment>(sql, new { Institute_id });
