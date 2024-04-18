@@ -15,6 +15,12 @@ builder.Services.AddTransient<IDbConnection>(c => new SqlConnection(connectionSt
 
 builder.Services.AddScoped<IStudentAttendanceStatusService, StudentAttendanceStatusService>();
 builder.Services.AddScoped<IStudentAttendanceStatusRepository, StudentAttendanceStatusRepository>();
+builder.Services.AddScoped<IStudentAttendanceMasterService, StudentAttendanceMasterService>();
+builder.Services.AddScoped<IStudentAttendanceMasterRepository, StudentAttendanceMasterRepository>();
+builder.Services.AddScoped<IEmployeeAttendanceStatusMasterService, EmployeeAttendanceStatusMasterService>();
+builder.Services.AddScoped<IEmployeeAttendanceStatusMasterRepository, EmployeeAttendanceStatusMasterRepository>();
+
+
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -32,6 +38,8 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
+
+app.UseExceptionMiddleware(); 
 
 app.MapControllers();
 
