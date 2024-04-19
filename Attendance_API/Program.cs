@@ -19,6 +19,8 @@ builder.Services.AddScoped<IStudentAttendanceMasterService, StudentAttendanceMas
 builder.Services.AddScoped<IStudentAttendanceMasterRepository, StudentAttendanceMasterRepository>();
 builder.Services.AddScoped<IEmployeeAttendanceStatusMasterService, EmployeeAttendanceStatusMasterService>();
 builder.Services.AddScoped<IEmployeeAttendanceStatusMasterRepository, EmployeeAttendanceStatusMasterRepository>();
+builder.Services.AddScoped<IEmployeeAttendanceService, EmployeeAttendanceService>();
+builder.Services.AddScoped<IEmployeeAttendanceRepository, EmployeeAttendanceRepository>();
 
 
 builder.Services.AddControllers();
