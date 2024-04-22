@@ -481,7 +481,6 @@ namespace Student_API.Repository.Implementations
         {
             try
             {
-
                 // Assume that Parent_Type_id = 1 means father
                 string sql = @"
                     SELECT tbl_StudentMaster.student_id , tbl_StudentMaster.First_Name , tbl_StudentMaster.Last_Name , class_name , section_name , Admission_Number , Roll_Number ,Date_of_Joining,tbl_StudentMaster.Date_of_Birth,Religion_Type , Gender_Type ,CONCAT(tbl_StudentParentsInfo.First_Name, ' ', tbl_StudentParentsInfo.Last_Name) AS Father_Name FROM [dbo].[tbl_StudentMaster]
