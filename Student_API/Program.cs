@@ -1,9 +1,21 @@
+using Student_API.Repository.Implementations;
+using Student_API.Repository.Interfaces;
+using Student_API.Services.Implementations;
+using Student_API.Services.Interfaces;
+using System.Data;
+using System.Data.SqlClient;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+string connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
+
+
+builder.Services.AddTransient<IDbConnection>(c => new SqlConnection(connectionString));
+builder.Services.AddTransient<IStudentInformationServices, StudentInformationServices>();
+builder.Services.AddTransient<IStudentInformationRepository, StudentInformationRepository>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
