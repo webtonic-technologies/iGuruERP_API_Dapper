@@ -8,21 +8,37 @@ namespace Student_API.Services.Implementations
     public class StudentInformationServices : IStudentInformationServices
     {
         private readonly IStudentInformationRepository _studentInformationRepository;
-        public StudentInformationServices(IStudentInformationRepository studentInformationRepository)
+        private readonly IWebHostEnvironment _hostingEnvironment;
+        public StudentInformationServices(IStudentInformationRepository studentInformationRepository , IWebHostEnvironment webHostEnvironment)
         {
             _studentInformationRepository = studentInformationRepository;
+            _hostingEnvironment = webHostEnvironment;
         }
 
         public async Task<ServiceResponse<int>> AddUpdateStudentInformation(StudentMasterDTO request)
         {
-            var data = await _studentInformationRepository.AddUpdateStudentInformation(request);
-            return data;
+            try
+            {
+                var data = await _studentInformationRepository.AddUpdateStudentInformation(request);
+                return data;
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(false, ex.Message, 0, 500);
+            }
         }
 
-        public async Task<ServiceResponse<StudentMasterDTO>> GetStudentDetailsById(int studentId)
+        public async Task<ServiceResponse<StudentInformationDTO>> GetStudentDetailsById(int studentId)
         {
-            var data = await _studentInformationRepository.GetStudentDetailsById(studentId);
-            return data;
+            try
+            {
+                var data = await _studentInformationRepository.GetStudentDetailsById(studentId);
+                return data;
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<StudentInformationDTO>(false, ex.Message, null, 500);
+            }
         }
         public async Task<ServiceResponse<List<StudentDetailsDTO>>> GetAllStudentDetails()
         {
@@ -38,8 +54,115 @@ namespace Student_API.Services.Implementations
         }
         public async Task<ServiceResponse<int>> ChangeStudentStatus(StudentStatusDTO statusDTO)
         {
-            var data = await _studentInformationRepository.ChangeStudentStatus(statusDTO);
-            return data;
+            try
+            {
+                var data = await _studentInformationRepository.ChangeStudentStatus(statusDTO);
+                return data;
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(false, ex.Message, 0, 500);
+            }
+        }
+        public async Task<ServiceResponse<int>> AddUpdateStudentOtherInfo(StudentOtherInfoDTO request)
+        {
+            try
+            {
+                var data = await _studentInformationRepository.AddUpdateStudentOtherInfo(request);
+                return data;
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(false, ex.Message, 0, 500);
+            }
+        }
+        public async Task<ServiceResponse<int>> AddUpdateStudentParentInfo(StudentParentInfoDTO request)
+        {
+            try
+            {
+                var data = await _studentInformationRepository.AddUpdateStudentParentInfo(request);
+                return data;
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(false, ex.Message, 0, 500);
+            }
+        }
+        public async Task<ServiceResponse<int>> AddOrUpdateStudentSiblings(StudentSiblings sibling)
+        {
+            try
+            {
+                var data = await _studentInformationRepository.AddOrUpdateStudentSiblings(sibling);
+                return data;
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(false, ex.Message, 0, 500);
+            }
+        }
+        public async Task<ServiceResponse<int>> AddOrUpdateStudentPreviousSchool(StudentPreviousSchool previousSchool)
+        {
+            try
+            {
+                var data = await _studentInformationRepository.AddOrUpdateStudentPreviousSchool(previousSchool);
+                return data;
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(false, ex.Message, 0, 500);
+            }
+        }
+        public async Task<ServiceResponse<int>> AddOrUpdateStudentHealthInfo(StudentHealthInfo healthInfo)
+        {
+            try
+            {
+                var data = await _studentInformationRepository.AddOrUpdateStudentHealthInfo(healthInfo);
+                return data;
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(false, ex.Message, 0, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<int>> AddUpdateStudentDocuments(StudentDocumentsDTO request)
+        {
+            try
+            {
+                foreach (var item in request.studentDocumentListDTO)
+                {
+                    var uploads = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "StudentsDoc");
+                    if (!Directory.Exists(uploads))
+                    {
+                        Directory.CreateDirectory(uploads);
+                    }
+                    var fileName = Path.GetFileNameWithoutExtension(item.formFile.FileName) + "_" + Guid.NewGuid().ToString() + Path.GetExtension(item.formFile.FileName);
+                    var filePath = Path.Combine(uploads, fileName);
+                    using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
+                    {
+                        await item.formFile.CopyToAsync(fileStream);
+                    }
+
+                    if (item.Student_Documents_id > 0)
+                    {
+                        var oldFilePath = Path.Combine(uploads, item.File_Name);
+                        if (File.Exists(oldFilePath))
+                        {
+                            File.Delete(oldFilePath);
+                        }
+
+                    }
+                    item.File_Name = fileName;
+                    item.File_Path = filePath;  
+                   
+                    await _studentInformationRepository.AddUpdateStudentDocuments(item, request.Student_id);
+                }
+                return new ServiceResponse<int>(true, "Operation successful", 1, 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(false, ex.Message, 0, 500);
+            }
         }
     }
 }

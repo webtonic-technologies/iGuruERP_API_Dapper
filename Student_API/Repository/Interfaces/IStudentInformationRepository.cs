@@ -6,14 +6,15 @@ namespace Student_API.Repository.Interfaces
 {
     public interface IStudentInformationRepository
     {
-        Task<ServiceResponse<StudentMasterDTO>> GetStudentDetailsById(int studentId);
+        Task<ServiceResponse<StudentInformationDTO>> GetStudentDetailsById(int studentId);
         Task<ServiceResponse<int>> AddUpdateStudentInformation(StudentMasterDTO request);
-        Task<int> AddUpdateStudentOtherInfo(StudentOtherInfoDTO request, int student_id);
-        Task<int> AddUpdateStudentParentInfo(StudentParentInfoDTO request, int student_id);
-        Task<int> AddOrUpdateStudentSiblings(StudentSiblings sibling, int student_id);
-        Task<int> AddOrUpdateStudentPreviousSchool(StudentPreviousSchool previousSchool, int student_id);
-        Task<int> AddOrUpdateStudentHealthInfo(StudentHealthInfo healthInfo, int student_id);
+        Task<ServiceResponse<int>> AddUpdateStudentOtherInfo(StudentOtherInfoDTO request);
+        Task<ServiceResponse<int>> AddUpdateStudentParentInfo(StudentParentInfoDTO request);
+        Task<ServiceResponse<int>> AddOrUpdateStudentSiblings(StudentSiblings sibling);
+        Task<ServiceResponse<int>> AddOrUpdateStudentPreviousSchool(StudentPreviousSchool previousSchool);
+        Task<ServiceResponse<int>> AddOrUpdateStudentHealthInfo(StudentHealthInfo healthInfo);
         Task<ServiceResponse<List<StudentDetailsDTO>>> GetAllStudentDetails();
         Task<ServiceResponse<int>> ChangeStudentStatus(StudentStatusDTO statusDTO);
+        Task<ServiceResponse<int>> AddUpdateStudentDocuments(StudentDocumentListDTO request, int Student_id);
     }
 }

@@ -1,48 +1,25 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Student_API.DTOs;
+using Student_API.Repository.Interfaces;
 using Student_API.Services.Interfaces;
 
 namespace Student_API.Controllers
 {
     [Route("iGuru/[controller]")]
     [ApiController]
-    public class StudentInformationController : ControllerBase
+    public class StudentInfoDropdownController : ControllerBase
     {
-        private readonly IStudentInformationServices _studentInformationService;
-        public StudentInformationController(IStudentInformationServices studentInformationServices)
+        private readonly IStudentInfoDropdownService _studentInfoDropdownService ;
+       public StudentInfoDropdownController(IStudentInfoDropdownService studentInfoDropdownService)
         {
-            _studentInformationService = studentInformationServices;
+            _studentInfoDropdownService = studentInfoDropdownService;
         }
-
-        [HttpPost]
-        [Route("AddUpdateStudentInformation")]
-        public async Task<IActionResult> AddUpdateStudentInformation([FromBody] StudentMasterDTO studentMasterDTO)
-        {
-            try
-            {
-                var data = await _studentInformationService.AddUpdateStudentInformation(studentMasterDTO);
-                if (data != null)
-                {
-                    return Ok(data);
-                }
-                else
-                {
-                    return BadRequest("Bad Request");
-                }
-            }
-            catch (Exception e)
-            {
-                return this.BadRequest(e.Message);
-            }
-        }
-
         [HttpGet]
-        [Route("GetStudentDetailsById")]
-        public async Task<IActionResult> GetStudentDetailsById(int studentId)
+        [Route("GetAllGenders")]
+        public async Task<IActionResult> GetAllGenders()
         {
             try
             {
-                var data = await _studentInformationService.GetStudentDetailsById(studentId);
+                var data = await _studentInfoDropdownService.GetAllGenders();
                 if (data.Success)
                 {
                     return Ok(data);
@@ -58,12 +35,12 @@ namespace Student_API.Controllers
             }
         }
         [HttpGet]
-        [Route("GetAllStudentDetails")]
-        public async Task<IActionResult> GetAllStudentDetails()
+        [Route("GetAllSections")]
+        public async Task<IActionResult> GetAllSections()
         {
             try
             {
-                var data = await _studentInformationService.GetAllStudentDetails();
+                var data = await _studentInfoDropdownService.GetAllSections();
                 if (data.Success)
                 {
                     return Ok(data);
@@ -78,14 +55,13 @@ namespace Student_API.Controllers
                 return this.BadRequest(e.Message);
             }
         }
-
-        [HttpPost]
-        [Route("ChangeStudentStatus")]
-        public async Task<IActionResult> ChangeStudentStatus([FromBody] StudentStatusDTO statusDTO)
+        [HttpGet]
+        [Route("GetAllReligions")]
+        public async Task<IActionResult> GetAllReligions()
         {
             try
             {
-                var data = await _studentInformationService.ChangeStudentStatus(statusDTO);
+                var data = await _studentInfoDropdownService.GetAllReligions();
                 if (data.Success)
                 {
                     return Ok(data);
@@ -100,14 +76,13 @@ namespace Student_API.Controllers
                 return this.BadRequest(e.Message);
             }
         }
-
-        [HttpPost]
-        [Route("AddUpdateStudentOtherInfo")]
-        public async Task<IActionResult> AddUpdateStudentOtherInfo([FromBody] StudentOtherInfoDTO otherInfoDTO)
+        [HttpGet]
+        [Route("GetAllNationalities")]
+        public async Task<IActionResult> GetAllNationalities()
         {
             try
             {
-                var data = await _studentInformationService.AddUpdateStudentOtherInfo(otherInfoDTO);
+                var data = await _studentInfoDropdownService.GetAllNationalities();
                 if (data.Success)
                 {
                     return Ok(data);
@@ -122,14 +97,13 @@ namespace Student_API.Controllers
                 return this.BadRequest(e.Message);
             }
         }
-
-        [HttpPost]
-        [Route("AddUpdateStudentParentInfo")]
-        public async Task<IActionResult> AddUpdateStudentParentInfo([FromBody] StudentParentInfoDTO parentInfoDTO)
+        [HttpGet]
+        [Route("GetAllMotherTongues")]
+        public async Task<IActionResult> GetAllMotherTongues()
         {
             try
             {
-                var data = await _studentInformationService.AddUpdateStudentParentInfo(parentInfoDTO);
+                var data = await _studentInfoDropdownService.GetAllMotherTongues();
                 if (data.Success)
                 {
                     return Ok(data);
@@ -144,14 +118,13 @@ namespace Student_API.Controllers
                 return this.BadRequest(e.Message);
             }
         }
-
-        [HttpPost]
-        [Route("AddOrUpdateStudentSiblings")]
-        public async Task<IActionResult> AddOrUpdateStudentSiblings([FromBody] StudentSiblings siblingsDTO)
+        [HttpGet]
+        [Route("GetAllBloodGroups")]
+        public async Task<IActionResult> GetAllBloodGroups()
         {
             try
             {
-                var data = await _studentInformationService.AddOrUpdateStudentSiblings(siblingsDTO);
+                var data = await _studentInfoDropdownService.GetAllBloodGroups();
                 if (data.Success)
                 {
                     return Ok(data);
@@ -166,14 +139,13 @@ namespace Student_API.Controllers
                 return this.BadRequest(e.Message);
             }
         }
-
-        [HttpPost]
-        [Route("AddOrUpdateStudentPreviousSchool")]
-        public async Task<IActionResult> AddOrUpdateStudentPreviousSchool([FromBody] StudentPreviousSchool previousSchoolDTO)
+        [HttpGet]
+        [Route("GetAllStudentTypes")]
+        public async Task<IActionResult> GetAllStudentTypes()
         {
             try
             {
-                var data = await _studentInformationService.AddOrUpdateStudentPreviousSchool(previousSchoolDTO);
+                var data = await _studentInfoDropdownService.GetAllStudentTypes();
                 if (data.Success)
                 {
                     return Ok(data);
@@ -188,14 +160,13 @@ namespace Student_API.Controllers
                 return this.BadRequest(e.Message);
             }
         }
-
-        [HttpPost]
-        [Route("AddOrUpdateStudentHealthInfo")]
-        public async Task<IActionResult> AddOrUpdateStudentHealthInfo([FromBody] StudentHealthInfo healthInfoDTO)
+        [HttpGet]
+        [Route("GetAllStudentGroups")]
+        public async Task<IActionResult> GetAllStudentGroups()
         {
             try
             {
-                var data = await _studentInformationService.AddOrUpdateStudentHealthInfo(healthInfoDTO);
+                var data = await _studentInfoDropdownService.GetAllStudentGroups();
                 if (data.Success)
                 {
                     return Ok(data);
@@ -210,14 +181,34 @@ namespace Student_API.Controllers
                 return this.BadRequest(e.Message);
             }
         }
-
-        [HttpPost]
-        [Route("AddUpdateStudentDocuments")]
-        public async Task<IActionResult> AddUpdateStudentDocuments([FromForm] StudentDocumentsDTO documentsDTO)
+        [HttpGet]
+        [Route("GetAllOccupations")]
+        public async Task<IActionResult> GetAllOccupations()
         {
             try
             {
-                var data = await _studentInformationService.AddUpdateStudentDocuments(documentsDTO);
+                var data = await _studentInfoDropdownService.GetAllOccupations();
+                if (data.Success)
+                {
+                    return Ok(data);
+                }
+                else
+                {
+                    return BadRequest("Bad Request");
+                }
+            }
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
+        }
+        [HttpGet]
+        [Route("GetAllParentTypes")]
+        public async Task<IActionResult> GetAllParentTypes()
+        {
+            try
+            {
+                var data = await _studentInfoDropdownService.GetAllParentTypes();
                 if (data.Success)
                 {
                     return Ok(data);

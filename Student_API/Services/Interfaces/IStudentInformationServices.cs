@@ -6,8 +6,14 @@ namespace Student_API.Services.Interfaces
     public interface IStudentInformationServices
     {
         Task<ServiceResponse<int>> AddUpdateStudentInformation(StudentMasterDTO request);
-        Task<ServiceResponse<StudentMasterDTO>> GetStudentDetailsById(int studentId);
+        Task<ServiceResponse<StudentInformationDTO>> GetStudentDetailsById(int studentId);
         Task<ServiceResponse<List<StudentDetailsDTO>>> GetAllStudentDetails();
         Task<ServiceResponse<int>> ChangeStudentStatus(StudentStatusDTO statusDTO);
+        Task<ServiceResponse<int>> AddUpdateStudentOtherInfo(StudentOtherInfoDTO request);
+        Task<ServiceResponse<int>> AddUpdateStudentParentInfo(StudentParentInfoDTO request);
+        Task<ServiceResponse<int>> AddOrUpdateStudentSiblings(StudentSiblings sibling);
+        Task<ServiceResponse<int>> AddOrUpdateStudentPreviousSchool(StudentPreviousSchool previousSchool);
+        Task<ServiceResponse<int>> AddOrUpdateStudentHealthInfo(StudentHealthInfo healthInfo);
+        Task<ServiceResponse<int>> AddUpdateStudentDocuments(StudentDocumentsDTO request);
     }
 }

@@ -16,6 +16,8 @@ string connectionString = builder.Configuration.GetConnectionString("DefaultConn
 builder.Services.AddTransient<IDbConnection>(c => new SqlConnection(connectionString));
 builder.Services.AddTransient<IStudentInformationServices, StudentInformationServices>();
 builder.Services.AddTransient<IStudentInformationRepository, StudentInformationRepository>();
+builder.Services.AddTransient<IStudentInfoDropdownRepository, StudentInfoDropdownRepository>();
+builder.Services.AddTransient<IStudentInfoDropdownService, StudentInfoDropdownService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
