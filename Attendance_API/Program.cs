@@ -21,6 +21,8 @@ builder.Services.AddScoped<IEmployeeAttendanceStatusMasterService, EmployeeAtten
 builder.Services.AddScoped<IEmployeeAttendanceStatusMasterRepository, EmployeeAttendanceStatusMasterRepository>();
 builder.Services.AddScoped<IEmployeeAttendanceService, EmployeeAttendanceService>();
 builder.Services.AddScoped<IEmployeeAttendanceRepository, EmployeeAttendanceRepository>();
+builder.Services.AddScoped<IGeoFencingService, GeoFencingService>();
+builder.Services.AddScoped<IGeoFencingRepository, GeoFencingRepository>();
 
 
 builder.Services.AddControllers();
