@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using Attendance_API.DTOs.ServiceResponse;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Net;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Attendance_API.Services.Implementations
@@ -29,11 +31,7 @@ namespace Attendance_API.Services.Implementations
                 _logger.LogError($"Something went wrong: {ex}");
                 context.Response.ContentType = "application/json";
                 context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                await context.Response.WriteAsync(new
-                {
-                    StatusCode = context.Response.StatusCode,
-                    Message = "Internal Server Error."
-                }.ToString());
+                await context.Response.WriteAsync(JsonSerializer.Serialize( new ServiceResponse<object>(false, "Internal Server Error.", null, context.Response.StatusCode)).ToString()); ;
             }
         }
     }
