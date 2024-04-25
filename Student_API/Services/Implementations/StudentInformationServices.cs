@@ -129,33 +129,35 @@ namespace Student_API.Services.Implementations
         {
             try
             {
-                foreach (var item in request.studentDocumentListDTO)
+                foreach (var item in request.formFiles)
                 {
-                    var uploads = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "StudentsDoc");
+					StudentDocumentListDTO listDTO = new StudentDocumentListDTO();  
+					var uploads = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "StudentsDoc");
                     if (!Directory.Exists(uploads))
                     {
                         Directory.CreateDirectory(uploads);
                     }
-                    var fileName = Path.GetFileNameWithoutExtension(item.formFile.FileName) + "_" + Guid.NewGuid().ToString() + Path.GetExtension(item.formFile.FileName);
+                    var fileName = Path.GetFileNameWithoutExtension(item.FileName) + "_" + Guid.NewGuid().ToString() + Path.GetExtension(item.FileName);
                     var filePath = Path.Combine(uploads, fileName);
                     using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
                     {
-                        await item.formFile.CopyToAsync(fileStream);
+                        await item.CopyToAsync(fileStream);
                     }
 
-                    if (item.Student_Documents_id > 0)
-                    {
-                        var oldFilePath = Path.Combine(uploads, item.File_Name);
-                        if (File.Exists(oldFilePath))
-                        {
-                            File.Delete(oldFilePath);
-                        }
+					//if (item.Student_Documents_id > 0)
+					//{
+					//    var oldFilePath = Path.Combine(uploads, item.File_Name);
+					//    if (File.Exists(oldFilePath))
+					//    {
+					//        File.Delete(oldFilePath);
+					//    }
 
-                    }
-                    item.File_Name = fileName;
-                    item.File_Path = filePath;  
+					//}
+					listDTO.File_Name = fileName;
+					listDTO.File_Path = filePath;
+					listDTO.Document_Name = item.FileName;
                    
-                    await _studentInformationRepository.AddUpdateStudentDocuments(item, request.Student_id);
+                    await _studentInformationRepository.AddUpdateStudentDocuments(listDTO, request.Student_id);
                 }
                 return new ServiceResponse<int>(true, "Operation successful", 1, 200);
             }

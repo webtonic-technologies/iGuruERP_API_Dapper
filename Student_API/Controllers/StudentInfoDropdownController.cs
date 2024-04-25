@@ -20,15 +20,8 @@ namespace Student_API.Controllers
             try
             {
                 var data = await _studentInfoDropdownService.GetAllGenders();
-                if (data.Success)
-                {
-                    return Ok(data);
-                }
-                else
-                {
-                    return BadRequest("Bad Request");
-                }
-            }
+				return Ok(data);
+			}
             catch (Exception e)
             {
                 return this.BadRequest(e.Message);
@@ -41,15 +34,8 @@ namespace Student_API.Controllers
             try
             {
                 var data = await _studentInfoDropdownService.GetAllSections();
-                if (data.Success)
-                {
-                    return Ok(data);
-                }
-                else
-                {
-                    return BadRequest("Bad Request");
-                }
-            }
+				return Ok(data);
+			}
             catch (Exception e)
             {
                 return this.BadRequest(e.Message);
@@ -62,15 +48,8 @@ namespace Student_API.Controllers
             try
             {
                 var data = await _studentInfoDropdownService.GetAllReligions();
-                if (data.Success)
-                {
-                    return Ok(data);
-                }
-                else
-                {
-                    return BadRequest("Bad Request");
-                }
-            }
+				return Ok(data);
+			}
             catch (Exception e)
             {
                 return this.BadRequest(e.Message);
@@ -83,15 +62,8 @@ namespace Student_API.Controllers
             try
             {
                 var data = await _studentInfoDropdownService.GetAllNationalities();
-                if (data.Success)
-                {
-                    return Ok(data);
-                }
-                else
-                {
-                    return BadRequest("Bad Request");
-                }
-            }
+				return Ok(data);
+			}
             catch (Exception e)
             {
                 return this.BadRequest(e.Message);
@@ -104,15 +76,8 @@ namespace Student_API.Controllers
             try
             {
                 var data = await _studentInfoDropdownService.GetAllMotherTongues();
-                if (data.Success)
-                {
-                    return Ok(data);
-                }
-                else
-                {
-                    return BadRequest("Bad Request");
-                }
-            }
+				return Ok(data);
+			}
             catch (Exception e)
             {
                 return this.BadRequest(e.Message);
@@ -125,15 +90,8 @@ namespace Student_API.Controllers
             try
             {
                 var data = await _studentInfoDropdownService.GetAllBloodGroups();
-                if (data.Success)
-                {
-                    return Ok(data);
-                }
-                else
-                {
-                    return BadRequest("Bad Request");
-                }
-            }
+				return Ok(data);
+			}
             catch (Exception e)
             {
                 return this.BadRequest(e.Message);
@@ -146,15 +104,8 @@ namespace Student_API.Controllers
             try
             {
                 var data = await _studentInfoDropdownService.GetAllStudentTypes();
-                if (data.Success)
-                {
-                    return Ok(data);
-                }
-                else
-                {
-                    return BadRequest("Bad Request");
-                }
-            }
+				return Ok(data);
+			}
             catch (Exception e)
             {
                 return this.BadRequest(e.Message);
@@ -167,15 +118,8 @@ namespace Student_API.Controllers
             try
             {
                 var data = await _studentInfoDropdownService.GetAllStudentGroups();
-                if (data.Success)
-                {
-                    return Ok(data);
-                }
-                else
-                {
-                    return BadRequest("Bad Request");
-                }
-            }
+				return Ok(data);
+			}
             catch (Exception e)
             {
                 return this.BadRequest(e.Message);
@@ -188,15 +132,8 @@ namespace Student_API.Controllers
             try
             {
                 var data = await _studentInfoDropdownService.GetAllOccupations();
-                if (data.Success)
-                {
-                    return Ok(data);
-                }
-                else
-                {
-                    return BadRequest("Bad Request");
-                }
-            }
+				return Ok(data);
+			}
             catch (Exception e)
             {
                 return this.BadRequest(e.Message);
@@ -209,15 +146,8 @@ namespace Student_API.Controllers
             try
             {
                 var data = await _studentInfoDropdownService.GetAllParentTypes();
-                if (data.Success)
-                {
-                    return Ok(data);
-                }
-                else
-                {
-                    return BadRequest("Bad Request");
-                }
-            }
+				return Ok(data);
+			}
             catch (Exception e)
             {
                 return this.BadRequest(e.Message);

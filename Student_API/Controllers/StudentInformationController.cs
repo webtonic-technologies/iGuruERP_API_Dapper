@@ -64,15 +64,8 @@ namespace Student_API.Controllers
             try
             {
                 var data = await _studentInformationService.GetAllStudentDetails();
-                if (data.Success)
-                {
-                    return Ok(data);
-                }
-                else
-                {
-                    return BadRequest("Bad Request");
-                }
-            }
+				return Ok(data);
+			}
             catch (Exception e)
             {
                 return this.BadRequest(e.Message);
