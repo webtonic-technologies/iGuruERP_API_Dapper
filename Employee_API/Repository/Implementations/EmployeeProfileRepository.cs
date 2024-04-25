@@ -4,11 +4,6 @@ using Employee_API.DTOs.ServiceResponse;
 using Employee_API.Models;
 using Employee_API.Repository.Interfaces;
 using System.Data;
-using System.Net;
-using System.Reflection.Metadata;
-using System.Runtime.Intrinsics.X86;
-using System.Xml.Linq;
-using System.Xml.Serialization;
 
 namespace Employee_API.Repository.Implementations
 {
@@ -21,7 +16,7 @@ namespace Employee_API.Repository.Implementations
             _connection = connection;
             _hostingEnvironment = hostingEnvironment;
         }
-        public async Task<ServiceResponse<string>> AddUpdateEmployeeProfile(EmployeeProfileDTO request)
+        public async Task<ServiceResponse<int>> AddUpdateEmployeeProfile(EmployeeProfileDTO request)
         {
             try
             {
@@ -32,9 +27,9 @@ namespace Employee_API.Repository.Implementations
                          Date_of_Joining, Nationality_id, Religion_id, Date_of_Birth, EmailID, Employee_code_id, marrital_status_id, 
                          Blood_Group_id, aadhar_no, pan_no, EPF_no, ESIC_no, Institute_id) 
                        VALUES 
-                        (@FirstName, @MiddleName, @LastName, @GenderId, @DepartmentId, @DesignationId, @MobileNumber, 
-                         @DateOfJoining, @NationalityId, @ReligionId, @DateOfBirth, @EmailID, @EmployeeCodeId, @MarritalStatusId, 
-                         @BloodGroupId, @AadharNo, @PanNo, @EPFNo, @ESICNo, @InstituteId);
+                        (@First_Name, @Middle_Name, @Last_Name, @Gender_id, @Department_id, @Designation_id, @mobile_number, 
+                         @Date_of_Joining, @Nationality_id, @Religion_id, @Date_of_Birth, @EmailID, @Employee_code_id, @marrital_status_id, 
+                         @Blood_Group_id, @aadhar_no, @pan_no, @EPF_no, @ESIC_no, @Institute_id);
                        SELECT SCOPE_IDENTITY();"; // Retrieve the inserted Employee_id
 
                     // Execute the query and retrieve the inserted Employee_id
@@ -63,49 +58,37 @@ namespace Employee_API.Repository.Implementations
                     });
                     if (employeeId > 0)
                     {
-                        int bank = await AddUpdateEmployeeBankDetails(request.EmployeeBankDetails, employeeId);
-                        int doc = await AddUpdateEmployeeDecuments(request.EmployeeDocuments, employeeId);
-                        int fam = await AddUpdateEmployeeFamily(request.Family, employeeId);
-                        int qua = await AddUpdateEmployeeQualification(request.EmployeeQualifications, employeeId);
-                        int exp = await AddUpdateEmployeeWorkExp(request.EmployeeWorkExperiences, employeeId);
-                        if (bank > 0 || doc > 0 || fam > 0 || qua > 0 || exp > 0)
-                        {
-                            return new ServiceResponse<string>(true, "operation successful", "Record added successfully", 200);
-                        }
-                        else
-                        {
-                            return new ServiceResponse<string>(false, "Some error occured", string.Empty, 500);
-                        }
+                        return new ServiceResponse<int>(true, "operation successful", employeeId, 200);
                     }
                     else
                     {
-                        return new ServiceResponse<string>(false, "Some error occured", string.Empty, 500);
+                        return new ServiceResponse<int>(false, "Some error occured", 0, 500);
                     }
                 }
                 else
                 {
                     string sql = @"UPDATE [dbo].[tbl_EmployeeProfileMaster] SET 
-                        First_Name = @FirstName, 
-                        Middle_Name = @MiddleName, 
-                        Last_Name = @LastName, 
-                        Gender_id = @GenderId, 
-                        Department_id = @DepartmentId, 
-                        Designation_id = @DesignationId, 
-                        mobile_number = @MobileNumber, 
-                        Date_of_Joining = @DateOfJoining, 
-                        Nationality_id = @NationalityId, 
-                        Religion_id = @ReligionId, 
-                        Date_of_Birth = @DateOfBirth, 
+                        First_Name = @First_Name, 
+                        Middle_Name = @Middle_Name, 
+                        Last_Name = @Last_Name, 
+                        Gender_id = @Gender_id, 
+                        Department_id = @Department_id, 
+                        Designation_id = @Designation_id, 
+                        mobile_number = @mobile_number, 
+                        Date_of_Joining = @Date_of_Joining, 
+                        Nationality_id = @Nationality_id, 
+                        Religion_id = @Religion_id, 
+                        Date_of_Birth = @Date_of_Birth, 
                         EmailID = @EmailID, 
-                        Employee_code_id = @EmployeeCodeId, 
-                        marrital_status_id = @MarritalStatusId, 
-                        Blood_Group_id = @BloodGroupId, 
-                        aadhar_no = @AadharNo, 
-                        pan_no = @PanNo, 
-                        EPF_no = @EPFNo, 
-                        ESIC_no = @ESICNo, 
-                        Institute_id = @InstituteId
-                      WHERE Employee_id = @EmployeeId";
+                        Employee_code_id = @Employee_code_id, 
+                        marrital_status_id = @marrital_status_id, 
+                        Blood_Group_id = @Blood_Group_id, 
+                        aadhar_no = @aadhar_no, 
+                        pan_no = @pan_no, 
+                        EPF_no = @EPF_no, 
+                        ESIC_no = @ESIC_no, 
+                        Institute_id = @Institute_id
+                      WHERE Employee_id = @Employee_id";
 
                     // Execute the query
                     int rowsAffected = await _connection.ExecuteAsync(sql, new
@@ -134,23 +117,167 @@ namespace Employee_API.Repository.Implementations
                     });
                     if (rowsAffected > 0)
                     {
-                        int bank = await AddUpdateEmployeeBankDetails(request.EmployeeBankDetails, request.Employee_id);
-                        int doc = await AddUpdateEmployeeDecuments(request.EmployeeDocuments, request.Employee_id);
-                        int fam = await AddUpdateEmployeeFamily(request.Family, request.Employee_id);
-                        int qua = await AddUpdateEmployeeQualification(request.EmployeeQualifications, request.Employee_id);
-                        int exp = await AddUpdateEmployeeWorkExp(request.EmployeeWorkExperiences, request.Employee_id);
-                        if (bank > 0 || doc > 0 || fam > 0 || qua > 0 || exp > 0)
+                        return new ServiceResponse<int>(true, "operation successful", request.Employee_id, 200);
+                    }
+                    else
+                    {
+                        return new ServiceResponse<int>(false, "Some error occured", 0, 500);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(false, ex.Message, 0, 500);
+            }
+        }
+        public async Task<ServiceResponse<int>> AddUpdateEmployeeFamily(EmployeeFamily request)
+        {
+            try
+            {
+                int rowsAffected;
+                if (request.Employee_family_id == 0)
+                {
+                    string sql = @"INSERT INTO [dbo].[tbl_EmployeeFamilyMaster] 
+                        (Employee_id, Father_Name, Fathers_Occupation, Mother_Name, Mothers_Occupation, 
+                         Spouse_Name, Spouses_Occupation, Guardian_Name, Guardians_Occupation, 
+                         Primary_Emergency_Contact_no, Secondary_Emergency_Contact_no) 
+                       VALUES 
+                        (@Employee_id, @Father_Name, @Fathers_Occupation, @Mother_Name, @Mothers_Occupation, 
+                         @Spouse_Name, @Spouses_Occupation, @Guardian_Name, @Guardians_Occupation, 
+                         @Primary_Emergency_Contact_no, @Secondary_Emergency_Contact_no);
+                       SELECT SCOPE_IDENTITY();";
+                    // Execute the query and retrieve the inserted Employee_family_id
+                    rowsAffected = await _connection.ExecuteAsync(sql, new
+                    {
+                        request.Employee_id,
+                        request.Father_Name,
+                        request.Fathers_Occupation,
+                        request.Mother_Name,
+                        request.Mothers_Occupation,
+                        request.Spouse_Name,
+                        request.Spouses_Occupation,
+                        request.Guardian_Name,
+                        request.Guardians_Occupation,
+                        request.Primary_Emergency_Contact_no,
+                        request.Secondary_Emergency_Contact_no
+                    });
+                }
+                else
+                {
+                    string sql = @"UPDATE [dbo].[tbl_EmployeeFamilyMaster] SET 
+                        Father_Name = @Father_Name, Fathers_Occupation = @Fathers_Occupation, 
+                        Mother_Name = @Mother_Name, Mothers_Occupation = @Mothers_Occupation, 
+                        Spouse_Name = @Spouse_Name, Spouses_Occupation = @Spouses_Occupation, 
+                        Guardian_Name = @Guardian_Name, Guardians_Occupation = @Guardians_Occupation, 
+                        Primary_Emergency_Contact_no = @Primary_Emergency_Contact_no, 
+                        Secondary_Emergency_Contact_no = @Secondary_Emergency_Contact_no 
+                      WHERE Employee_family_id = @Employee_family_id";
+
+                    // Execute the query
+                    rowsAffected = await _connection.ExecuteAsync(sql, new
+                    {
+                        request.Father_Name,
+                        request.Fathers_Occupation,
+                        request.Mother_Name,
+                        request.Mothers_Occupation,
+                        request.Spouse_Name,
+                        request.Spouses_Occupation,
+                        request.Guardian_Name,
+                        request.Guardians_Occupation,
+                        request.Primary_Emergency_Contact_no,
+                        request.Secondary_Emergency_Contact_no,
+                        request.Employee_family_id
+                    });
+                }
+                if (rowsAffected > 0)
+                {
+                    return new ServiceResponse<int>(true, "Record added successfully", rowsAffected, 200);
+                }
+                else
+                {
+                    return new ServiceResponse<int>(false, "Some error occured", 0, 500);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(false, ex.Message, 0, 500);
+            }
+        }
+        public async Task<ServiceResponse<string>> AddUpdateEmployeeDecuments(EmployeeDocumentDTO request, int employee_id)
+        {
+            try
+            {
+                int addedRecords = 0;
+                string query = "SELECT COUNT(*) FROM tbl_DocumentsMaster WHERE employee_id = @employee_id";
+                int count = await _connection.ExecuteScalarAsync<int>(query, new { employee_id });
+                if (count > 0)
+                {
+                    string deleteQuery = "DELETE FROM tbl_DocumentsMaster WHERE employee_id = @employee_id";
+                    int rowsAffected = await _connection.ExecuteAsync(deleteQuery, new { employee_id });
+                    if (rowsAffected > 0)
+                    {
+                        string insertQuery = @"INSERT INTO [dbo].[tbl_DocumentsMaster] 
+                        (employee_id, Document_Name, file_name, file_path) 
+                       VALUES 
+                        (@employee_id, @Document_Name, @file_name, @file_path);";
+                        var data = new EmployeeDocument
                         {
-                            return new ServiceResponse<string>(true, "operation successful", "Record updated successfully", 200);
+                            file_path = await HandleImageUpload(request.file_path),
+                            employee_id = employee_id,
+                            Document_Name = request.Document_Name,
+                            file_name = request.file_name,
+                        };
+                        // Execute the query with multiple parameterized sets of values
+                        addedRecords = await _connection.ExecuteAsync(insertQuery, data);
+                        if (addedRecords > 0)
+                        {
+                            return new ServiceResponse<string>(true, "operation successful", "Documents added successfully", 200);
                         }
                         else
                         {
-                            return new ServiceResponse<string>(false, "Some error occured", string.Empty, 500);
+                            return new ServiceResponse<string>(false, "operation successful", string.Empty, 500);
                         }
                     }
                     else
                     {
                         return new ServiceResponse<string>(false, "Some error occured", string.Empty, 500);
+                    }
+                }
+                else
+                {
+                    string insertQuery = @"INSERT INTO [dbo].[tbl_DocumentsMaster] 
+                        (employee_id, Document_Name, file_name, file_path) 
+                       VALUES 
+                        (@employee_id, @Document_Name, @file_name, @file_path);";
+                    //var records = new List<EmployeeDocument>();
+                    //foreach (var item in request)
+                    //{
+                    //    var data = new EmployeeDocument
+                    //    {
+                    //        Document_id = item.Document_id,
+                    //        Document_Name = item.Document_Name,
+                    //        employee_id = employee_id,
+                    //        file_name = item.file_name,
+                    //        file_path = await HandleImageUpload(item.file_path)
+                    //    };
+                    //    records.Add(data);
+                    //}
+                    var data = new EmployeeDocument
+                    {
+                        file_path = await HandleImageUpload(request.file_path),
+                        employee_id = employee_id,
+                        Document_Name = request.Document_Name,
+                        file_name = request.file_name,
+                    };
+                    // Execute the query with multiple parameterized sets of values
+                    addedRecords = await _connection.ExecuteAsync(insertQuery, data);
+                    if (addedRecords > 0)
+                    {
+                        return new ServiceResponse<string>(true, "operation successful", "Documents added successfully", 200);
+                    }
+                    else
+                    {
+                        return new ServiceResponse<string>(false, "operation successful", string.Empty, 500);
                     }
                 }
             }
@@ -159,7 +286,191 @@ namespace Employee_API.Repository.Implementations
                 return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
             }
         }
+        public async Task<ServiceResponse<int>> AddUpdateEmployeeQualification(List<EmployeeQualification>? request, int employeeId)
+        {
+            try
+            {
+                int addedRecords = 0;
+                if (request != null)
+                {
+                    foreach (var data in request)
+                    {
+                        data.employee_id = employeeId;
+                    }
+                }
+                string query = "SELECT COUNT(*) FROM tbl_QualificationInfoMaster WHERE employee_id = @employee_id";
+                int count = await _connection.ExecuteScalarAsync<int>(query, new { employee_id = employeeId });
+                if (count > 0)
+                {
+                    string deleteQuery = "DELETE FROM tbl_QualificationInfoMaster WHERE employee_id = @employee_id";
+                    int rowsAffected = await _connection.ExecuteAsync(deleteQuery, new { employee_id = employeeId });
+                    if (rowsAffected > 0)
+                    {
 
+                        string insertQuery = @"INSERT INTO [dbo].[tbl_QualificationInfoMaster] 
+                        (employee_id, Educational_Qualification, Year_of_Completion) 
+                       VALUES 
+                        (@employee_id, @Educational_Qualification, @Year_of_Completion);";
+
+                        // Execute the query with multiple parameterized sets of values
+                        addedRecords = await _connection.ExecuteAsync(insertQuery, request);
+                    }
+                    if (addedRecords > 0)
+                    {
+                        return new ServiceResponse<int>(true, "Records added successfully", addedRecords, 200);
+                    }
+                    else
+                    {
+                        return new ServiceResponse<int>(false, "some error occured", 0, 500);
+                    }
+                }
+                else
+                {
+                    string insertQuery = @"INSERT INTO [dbo].[tbl_QualificationInfoMaster] 
+                        (employee_id, Educational_Qualification, Year_of_Completion) 
+                       VALUES 
+                        (@employee_id, @Educational_Qualification, @Year_of_Completion);";
+
+                    // Execute the query with multiple parameterized sets of values
+                    addedRecords = await _connection.ExecuteAsync(insertQuery, request);
+                    if (addedRecords > 0)
+                    {
+                        return new ServiceResponse<int>(true, "Records added successfully", addedRecords, 200);
+                    }
+                    else
+                    {
+                        return new ServiceResponse<int>(false, "some error occured", 0, 500);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(false, ex.Message, 0, 500);
+            }
+        }
+        public async Task<ServiceResponse<int>> AddUpdateEmployeeWorkExp(List<EmployeeWorkExperience>? request, int employeeId)
+        {
+            try
+            {
+                int addedRecords = 0;
+                if (request != null)
+                {
+                    foreach (var data in request)
+                    {
+                        data.Employee_id = employeeId;
+                    }
+                }
+                string query = "SELECT COUNT(*) FROM tbl_WorkExperienceMaster WHERE employee_id = @employee_id";
+                int count = await _connection.ExecuteScalarAsync<int>(query, new { employee_id = employeeId });
+                if (count > 0)
+                {
+                    string deleteQuery = "DELETE FROM tbl_WorkExperienceMaster WHERE employee_id = @employee_id";
+                    int rowsAffected = await _connection.ExecuteAsync(deleteQuery, new { employee_id = employeeId });
+                    if (rowsAffected > 0)
+                    {
+
+                        string insertQuery = @"INSERT INTO [dbo].[tbl_WorkExperienceMaster] 
+                        (Year, Month, Previous_Organisation, Previous_Designation, Employee_id) 
+                       VALUES 
+                        (@Year, @Month, @Previous_Organisation, @Previous_Designation, @Employee_id);";
+
+                        // Execute the query with multiple parameterized sets of values
+                        addedRecords = await _connection.ExecuteAsync(insertQuery, request);
+                    }
+                    if (addedRecords > 0)
+                    {
+                        return new ServiceResponse<int>(true, "Records added successfully", addedRecords, 200);
+                    }
+                    else
+                    {
+                        return new ServiceResponse<int>(false, "some error occured", 0, 500);
+                    }
+                }
+                else
+                {
+                    string insertQuery = @"INSERT INTO [dbo].[tbl_WorkExperienceMaster] 
+                        (Year, Month, Previous_Organisation, Previous_Designation, Employee_id) 
+                       VALUES 
+                        (@Year, @Month, @Previous_Organisation, @Previous_Designation, @Employee_id);";
+
+                    // Execute the query with multiple parameterized sets of values
+                    addedRecords = await _connection.ExecuteAsync(insertQuery, request);
+                    if (addedRecords > 0)
+                    {
+                        return new ServiceResponse<int>(true, "Records added successfully", addedRecords, 200);
+                    }
+                    else
+                    {
+                        return new ServiceResponse<int>(false, "some error occured", 0, 500);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(false, ex.Message, 0, 500);
+            }
+        }
+        public async Task<ServiceResponse<int>> AddUpdateEmployeeBankDetails(List<EmployeeBankDetails>? request, int employeeId)
+        {
+            try
+            {
+                int addedRecords = 0;
+                if (request != null)
+                {
+                    foreach (var data in request)
+                    {
+                        data.employee_id = employeeId;
+                    }
+                }
+                string query = "SELECT COUNT(*) FROM tbl_BankDetailsmaster WHERE employee_id = @employee_id";
+                int count = await _connection.ExecuteScalarAsync<int>(query, new { employee_id = employeeId });
+                if (count > 0)
+                {
+                    string deleteQuery = "DELETE FROM tbl_BankDetailsmaster WHERE employee_id = @employee_id";
+                    int rowsAffected = await _connection.ExecuteAsync(deleteQuery, new { employee_id = employeeId });
+                    if (rowsAffected > 0)
+                    {
+
+                        string insertQuery = @"INSERT INTO [dbo].[tbl_BankDetailsmaster] 
+                        (employee_id, bank_name, account_name, account_number, IFSC_code, Bank_address) 
+                       VALUES 
+                        (@employee_id, @bank_name, @account_name, @account_number, @IFSC_code, @Bank_address);";
+                        // Execute the query with multiple parameterized sets of values
+                        addedRecords = await _connection.ExecuteAsync(insertQuery, request);
+                    }
+                    if (addedRecords > 0)
+                    {
+                        return new ServiceResponse<int>(true, "Records added successfully", addedRecords, 200);
+                    }
+                    else
+                    {
+                        return new ServiceResponse<int>(false, "some error occured", 0, 500);
+                    }
+                }
+                else
+                {
+                    string insertQuery = @"INSERT INTO [dbo].[tbl_BankDetailsmaster] 
+                        (employee_id, bank_name, account_name, account_number, IFSC_code, Bank_address) 
+                       VALUES 
+                        (@employee_id, @bank_name, @account_name, @account_number, @IFSC_code, @Bank_address);"; // Retrieve the inserted bank_id
+
+                    // Execute the query with multiple parameterized sets of values
+                    addedRecords = await _connection.ExecuteAsync(insertQuery, request);
+                    if (addedRecords > 0)
+                    {
+                        return new ServiceResponse<int>(true, "Records added successfully", addedRecords, 200);
+                    }
+                    else
+                    {
+                        return new ServiceResponse<int>(false, "some error occured", 0, 500);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(false, ex.Message, 0, 500);
+            }
+        }
         public async Task<ServiceResponse<EmployeeProfileResponseDTO>> GetEmployeeProfileById(int employeeId)
         {
             try
@@ -174,7 +485,7 @@ namespace Employee_API.Repository.Implementations
 
                 // Execute the query and retrieve the employee profile
                 var employee = await _connection.QueryFirstOrDefaultAsync<EmployeeProfile>(sql, new { EmployeeId = employeeId });
-                if(employee != null)
+                if (employee != null)
                 {
                     response.aadhar_no = employee.aadhar_no;
                     response.pan_no = employee.pan_no;
@@ -207,7 +518,7 @@ namespace Employee_API.Repository.Implementations
 
                     // Execute the query and retrieve the employee family details
                     var employeeFamily = await _connection.QueryFirstOrDefaultAsync<EmployeeFamily>(famsql, new { EmployeeId = employeeId });
-                    if(employeeFamily != null)
+                    if (employeeFamily != null)
                     {
                         response.Family = employeeFamily;
                     }
@@ -217,7 +528,7 @@ namespace Employee_API.Repository.Implementations
 
                     // Execute the query and retrieve the list of bank details
                     var bankDetails = await _connection.QueryAsync<EmployeeBankDetails>(banksql, new { EmployeeId = employeeId });
-                    if(bankDetails != null)
+                    if (bankDetails != null)
                     {
                         response.EmployeeBankDetails = bankDetails.AsList();
                     }
@@ -251,7 +562,7 @@ namespace Employee_API.Repository.Implementations
                     {
                         response.EmployeeWorkExperiences = workExperiences.AsList();
                     }
-                    return new ServiceResponse<EmployeeProfileResponseDTO>(false, "Records found", response , 200);
+                    return new ServiceResponse<EmployeeProfileResponseDTO>(true, "Records found", response, 200);
                 }
                 else
                 {
@@ -263,7 +574,45 @@ namespace Employee_API.Repository.Implementations
                 return new ServiceResponse<EmployeeProfileResponseDTO>(false, ex.Message, new EmployeeProfileResponseDTO(), 500);
             }
         }
-        public async Task<ServiceResponse<List<EmployeeProfile>>> GetEmployeeProfileList(int InstituteId)
+        public async Task<ServiceResponse<EmployeeFamily>> GetEmployeeFamilyDetailsById(int employeeId)
+        {
+            try
+            {
+                string query = @"
+                SELECT 
+                    [Employee_family_id],
+                    [Employee_id],
+                    [Father_Name],
+                    [Fathers_Occupation],
+                    [Mother_Name],
+                    [Mothers_Occupation],
+                    [Spouse_Name],
+                    [Spouses_Occupation],
+                    [Guardian_Name],
+                    [Guardians_Occupation],
+                    [Primary_Emergency_Contact_no],
+                    [Secondary_Emergency_Contact_no]
+                FROM 
+                    [iGuruERP].[dbo].[tbl_EmployeeFamilyMaster]
+                WHERE 
+                    [Employee_id] = @EmployeeId";
+
+                var data = await _connection.QueryFirstOrDefaultAsync<EmployeeFamily>(query, new { EmployeeId = employeeId });
+                if (data != null)
+                {
+                    return new ServiceResponse<EmployeeFamily>(true, "Records found", data, 200);
+                }
+                else
+                {
+                    return new ServiceResponse<EmployeeFamily>(false, "No records found", new EmployeeFamily(), 500);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<EmployeeFamily>(false, ex.Message, new EmployeeFamily(), 500);
+            }
+        }
+        public async Task<ServiceResponse<List<EmployeeProfile>>> GetEmployeeProfileList(GetAllEmployeeListRequest request)
         {
             try
             {
@@ -272,10 +621,12 @@ namespace Employee_API.Repository.Implementations
                             Date_of_Birth, EmailID, Employee_code_id, marrital_status_id, Blood_Group_id, 
                             aadhar_no, pan_no, EPF_no, ESIC_no, Institute_id
                        FROM [dbo].[tbl_EmployeeProfileMaster]
-                       WHERE Institute_id = @InstituteId";
+                       WHERE Institute_id = @InstituteId
+                       AND (@DepartmentId IS 0 OR [Department_id] = @DepartmentId)
+                       AND (@DesignationId IS 0 OR [Designation_id] = @DesignationId)";
 
                 // Execute the query and retrieve the list of employees
-                var employees = await _connection.QueryAsync<EmployeeProfile>(sql, new { InstituteId });
+                var employees = await _connection.QueryAsync<EmployeeProfile>(sql, new { request });
                 if (employees != null)
                 {
                     return new ServiceResponse<List<EmployeeProfile>>(true, "operation successful", employees.AsList(), 200);
@@ -290,250 +641,125 @@ namespace Employee_API.Repository.Implementations
                 return new ServiceResponse<List<EmployeeProfile>>(false, ex.Message, [], 500);
             }
         }
-        private async Task<int> AddUpdateEmployeeBankDetails(List<EmployeeBankDetails>? request, int employeeId)
+        public async Task<ServiceResponse<List<byte[]>>> GetEmployeeDocuments(int employee_id)
         {
-            int addedRecords = 0;
-            if (request != null)
+            try
             {
-                foreach (var data in request)
+                var response = new List<byte[]>();
+                var data = await _connection.QueryAsync<EmployeeDocument>(
+                   "SELECT * FROM tbl_DocumentsMaster WHERE employee_id = @employee_id",
+                   new { employee_id }) ?? throw new Exception("Data not found");
+                string filePath = string.Empty;
+
+                foreach (var item in data)
                 {
-                    data.employee_id = employeeId;
+                    filePath = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "Employee", item.file_path);
+                    if (!File.Exists(filePath))
+                        throw new Exception("File not found");
+                    var fileBytes = await File.ReadAllBytesAsync(filePath);
+                    response.Add(fileBytes);
                 }
+                return new ServiceResponse<List<byte[]>>(true, "Record Found", response, 200);
             }
-            string query = "SELECT COUNT(*) FROM tbl_BankDetailsmaster WHERE employee_id = @employee_id";
-            int count = await _connection.ExecuteScalarAsync<int>(query, new { employee_id = employeeId });
-            if (count > 0)
+            catch (Exception ex)
             {
-                string deleteQuery = "DELETE FROM tbl_BankDetailsmaster WHERE employee_id = @employee_id";
-                int rowsAffected = await _connection.ExecuteAsync(deleteQuery, new { employee_id = employeeId });
-                if (rowsAffected > 0)
-                {
-
-                    string insertQuery = @"INSERT INTO [dbo].[tbl_BankDetailsmaster] 
-                        (employee_id, bank_name, account_name, account_number, IFSC_code, Bank_address) 
-                       VALUES 
-                        (@EmployeeId, @BankName, @AccountName, @AccountNumber, @IFSCCode, @BankAddress);"; // Retrieve the inserted bank_id
-
-                    // Execute the query with multiple parameterized sets of values
-                    addedRecords = await _connection.ExecuteAsync(insertQuery, request);
-                }
+                return new ServiceResponse<List<byte[]>>(false, ex.Message, [], 500);
             }
-            else
-            {
-                string insertQuery = @"INSERT INTO [dbo].[tbl_BankDetailsmaster] 
-                        (employee_id, bank_name, account_name, account_number, IFSC_code, Bank_address) 
-                       VALUES 
-                        (@EmployeeId, @BankName, @AccountName, @AccountNumber, @IFSCCode, @BankAddress);"; // Retrieve the inserted bank_id
-
-                // Execute the query with multiple parameterized sets of values
-                addedRecords = await _connection.ExecuteAsync(insertQuery, request);
-            }
-            return addedRecords;
         }
-        private async Task<int> AddUpdateEmployeeDecuments(List<EmployeeDocumentDTO>? request, int employeeId)
+        public async Task<ServiceResponse<List<EmployeeQualification>>> GetEmployeeQualificationById(int employeeId)
         {
-            int addedRecords = 0;
-            if (request != null)
+            try
             {
-                foreach (var data in request)
-                {
-                    data.employee_id = employeeId;
-                }
-            }
-            string query = "SELECT COUNT(*) FROM tbl_DocumentsMaster WHERE employee_id = @employee_id";
-            int count = await _connection.ExecuteScalarAsync<int>(query, new { employee_id = employeeId });
-            if (count > 0)
-            {
-                string deleteQuery = "DELETE FROM tbl_DocumentsMaster WHERE employee_id = @employee_id";
-                int rowsAffected = await _connection.ExecuteAsync(deleteQuery, new { employee_id = employeeId });
-                if (rowsAffected > 0)
-                {
-                    string insertQuery = @"INSERT INTO [dbo].[tbl_DocumentsMaster] 
-                        (employee_id, Document_Name, file_name, file_path) 
-                       VALUES 
-                        (@EmployeeId, @DocumentName, @FileName, @FilePath);";
-                    var records = new List<EmployeeDocument>();
-                    foreach (var item in request)
-                    {
-                        var data = new EmployeeDocument
-                        {
-                            Document_id = item.Document_id,
-                            Document_Name = item.Document_Name,
-                            employee_id = employeeId,
-                            file_name = item.file_name,
-                            file_path = await HandleImageUpload(item.file_path)
-                        };
-                        records.Add(data);
-                    }
+                string query = @"
+                SELECT 
+                    [Qualification_Info_id],
+                    [employee_id],
+                    [Educational_Qualification],
+                    [Year_of_Completion]
+                FROM 
+                    [iGuruERP].[dbo].[tbl_QualificationInfoMaster]
+                WHERE 
+                    [employee_id] = @EmployeeId";
 
-                    // Execute the query with multiple parameterized sets of values
-                    addedRecords = await _connection.ExecuteAsync(insertQuery, records);
-                }
-            }
-            else
-            {
-                string insertQuery = @"INSERT INTO [dbo].[tbl_DocumentsMaster] 
-                        (employee_id, Document_Name, file_name, file_path) 
-                       VALUES 
-                        (@EmployeeId, @DocumentName, @FileName, @FilePath);";
-                var records = new List<EmployeeDocument>();
-                foreach (var item in request)
+                var data = await _connection.QueryAsync<EmployeeQualification>(query, new { EmployeeId = employeeId });
+                if (data != null)
                 {
-                    var data = new EmployeeDocument
-                    {
-                        Document_id = item.Document_id,
-                        Document_Name = item.Document_Name,
-                        employee_id = employeeId,
-                        file_name = item.file_name,
-                        file_path = await HandleImageUpload(item.file_path)
-                    };
-                    records.Add(data);
+                    return new ServiceResponse<List<EmployeeQualification>>(true, "Records found", data.AsList(), 200);
                 }
-
-                // Execute the query with multiple parameterized sets of values
-                addedRecords = await _connection.ExecuteAsync(insertQuery, records);
+                else
+                {
+                    return new ServiceResponse<List<EmployeeQualification>>(false, "no Records found", [], 500);
+                }
             }
-            return addedRecords;
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<EmployeeQualification>>(false, ex.Message, [], 500);
+            }
         }
-        private async Task<int> AddUpdateEmployeeFamily(EmployeeFamily? request, int employeeId)
+        public async Task<ServiceResponse<List<EmployeeWorkExperience>>> GetEmployeeWorkExperienceById(int employeeId)
         {
-            int rowsAffected;
-            if (request.Employee_family_id == 0)
+            try
             {
-                string sql = @"INSERT INTO [dbo].[tbl_EmployeeFamilyMaster] 
-                        (Employee_id, Father_Name, Fathers_Occupation, Mother_Name, Mothers_Occupation, 
-                         Spouse_Name, Spouses_Occupation, Guardian_Name, Guardians_Occupation, 
-                         Primary_Emergency_Contact_no, Secondary_Emergency_Contact_no) 
-                       VALUES 
-                        (@EmployeeId, @FatherName, @FathersOccupation, @MotherName, @MothersOccupation, 
-                         @SpouseName, @SpousesOccupation, @GuardianName, @GuardiansOccupation, 
-                         @PrimaryEmergencyContactNo, @SecondaryEmergencyContactNo);";
+                string query = @"
+                SELECT 
+                    [work_experience_id],
+                    [Year],
+                    [Month],
+                    [Previous_Organisation],
+                    [Previous_Designation],
+                    [Employee_id]
+                FROM 
+                    [iGuruERP].[dbo].[tbl_WorkExperienceMaster]
+                WHERE 
+                    [Employee_id] = @EmployeeId";
 
-                // Execute the query and retrieve the inserted Employee_family_id
-                rowsAffected = await _connection.ExecuteAsync(sql, new
+                var data = await _connection.QueryAsync<EmployeeWorkExperience>(query, new { EmployeeId = employeeId });
+                if (data != null)
                 {
-                    employeeId,
-                    request.Father_Name,
-                    request.Fathers_Occupation,
-                    request.Mother_Name,
-                    request.Mothers_Occupation,
-                    request.Spouse_Name,
-                    request.Spouses_Occupation,
-                    request.Guardian_Name,
-                    request.Guardians_Occupation,
-                    request.Primary_Emergency_Contact_no,
-                    request.Secondary_Emergency_Contact_no
-                });
+                    return new ServiceResponse<List<EmployeeWorkExperience>>(true, "Records found", data.AsList(), 200);
+                }
+                else
+                {
+                    return new ServiceResponse<List<EmployeeWorkExperience>>(false, "no Records found", [], 500);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                string sql = @"UPDATE [dbo].[tbl_EmployeeFamilyMaster] SET 
-                        Father_Name = @FatherName, Fathers_Occupation = @FathersOccupation, 
-                        Mother_Name = @MotherName, Mothers_Occupation = @MothersOccupation, 
-                        Spouse_Name = @SpouseName, Spouses_Occupation = @SpousesOccupation, 
-                        Guardian_Name = @GuardianName, Guardians_Occupation = @GuardiansOccupation, 
-                        Primary_Emergency_Contact_no = @PrimaryEmergencyContactNo, 
-                        Secondary_Emergency_Contact_no = @SecondaryEmergencyContactNo 
-                      WHERE Employee_family_id = @EmployeeFamilyId";
-
-                // Execute the query
-                rowsAffected = await _connection.ExecuteAsync(sql, new
-                {
-                    request.Father_Name,
-                    request.Fathers_Occupation,
-                    request.Mother_Name,
-                    request.Mothers_Occupation,
-                    request.Spouse_Name,
-                    request.Spouses_Occupation,
-                    request.Guardian_Name,
-                    request.Guardians_Occupation,
-                    request.Primary_Emergency_Contact_no,
-                    request.Secondary_Emergency_Contact_no,
-                    request.Employee_family_id
-                });
+                return new ServiceResponse<List<EmployeeWorkExperience>>(false, ex.Message, [], 500);
             }
-            return rowsAffected;
         }
-        private async Task<int> AddUpdateEmployeeQualification(List<EmployeeQualification>? request, int employeeId)
+        public async Task<ServiceResponse<List<EmployeeBankDetails>>> GetEmployeeBankDetailsById(int employeeId)
         {
-            int addedRecords = 0;
-            if (request != null)
+            try
             {
-                foreach (var data in request)
+                string query = @"
+                SELECT 
+                    [bank_id],
+                    [employee_id],
+                    [bank_name],
+                    [account_name],
+                    [account_number],
+                    [IFSC_code],
+                    [Bank_address]
+                FROM 
+                    [iGuruERP].[dbo].[tbl_BankDetailsmaster]
+                WHERE 
+                    [employee_id] = @EmployeeId";
+
+                var data = await _connection.QueryAsync<EmployeeBankDetails>(query, new { EmployeeId = employeeId });
+                if (data != null)
                 {
-                    data.employee_id = employeeId;
+                    return new ServiceResponse<List<EmployeeBankDetails>>(true, "Records found", data.AsList(), 200);
+                }
+                else
+                {
+                    return new ServiceResponse<List<EmployeeBankDetails>>(false, "no Records found", [], 500);
                 }
             }
-            string query = "SELECT COUNT(*) FROM tbl_QualificationInfoMaster WHERE employee_id = @employee_id";
-            int count = await _connection.ExecuteScalarAsync<int>(query, new { employee_id = employeeId });
-            if (count > 0)
+            catch (Exception ex)
             {
-                string deleteQuery = "DELETE FROM tbl_QualificationInfoMaster WHERE employee_id = @employee_id";
-                int rowsAffected = await _connection.ExecuteAsync(deleteQuery, new { employee_id = employeeId });
-                if (rowsAffected > 0)
-                {
-
-                    string insertQuery = @"INSERT INTO [dbo].[tbl_QualificationInfoMaster] 
-                        (employee_id, Educational_Qualification, Year_of_Completion) 
-                       VALUES 
-                        (@EmployeeId, @EducationalQualification, @YearOfCompletion);";
-
-                    // Execute the query with multiple parameterized sets of values
-                    addedRecords = await _connection.ExecuteAsync(insertQuery, request);
-                }
+                return new ServiceResponse<List<EmployeeBankDetails>>(false, ex.Message, [], 500);
             }
-            else
-            {
-                string insertQuery = @"INSERT INTO [dbo].[tbl_QualificationInfoMaster] 
-                        (employee_id, Educational_Qualification, Year_of_Completion) 
-                       VALUES 
-                        (@EmployeeId, @EducationalQualification, @YearOfCompletion);";
-
-                // Execute the query with multiple parameterized sets of values
-                addedRecords = await _connection.ExecuteAsync(insertQuery, request);
-            }
-            return addedRecords;
-        }
-        private async Task<int> AddUpdateEmployeeWorkExp(List<EmployeeWorkExperience>? request, int employeeId)
-        {
-
-            int addedRecords = 0;
-            if (request != null)
-            {
-                foreach (var data in request)
-                {
-                    data.Employee_id = employeeId;
-                }
-            }
-            string query = "SELECT COUNT(*) FROM tbl_WorkExperienceMaster WHERE employee_id = @employee_id";
-            int count = await _connection.ExecuteScalarAsync<int>(query, new { employee_id = employeeId });
-            if (count > 0)
-            {
-                string deleteQuery = "DELETE FROM tbl_WorkExperienceMaster WHERE employee_id = @employee_id";
-                int rowsAffected = await _connection.ExecuteAsync(deleteQuery, new { employee_id = employeeId });
-                if (rowsAffected > 0)
-                {
-
-                    string insertQuery = @"INSERT INTO [dbo].[tbl_WorkExperienceMaster] 
-                        (Year, Month, Previous_Organisation, Previous_Designation, Employee_id) 
-                       VALUES 
-                        (@Year, @Month, @PreviousOrganisation, @PreviousDesignation, @EmployeeId);";
-
-                    // Execute the query with multiple parameterized sets of values
-                    addedRecords = await _connection.ExecuteAsync(insertQuery, request);
-                }
-            }
-            else
-            {
-                string insertQuery = @"INSERT INTO [dbo].[tbl_WorkExperienceMaster] 
-                        (Year, Month, Previous_Organisation, Previous_Designation, Employee_id) 
-                       VALUES 
-                        (@Year, @Month, @PreviousOrganisation, @PreviousDesignation, @EmployeeId);";
-
-                // Execute the query with multiple parameterized sets of values
-                addedRecords = await _connection.ExecuteAsync(insertQuery, request);
-            }
-            return addedRecords;
         }
         private async Task<string> HandleImageUpload(IFormFile request)
         {

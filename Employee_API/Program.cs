@@ -11,8 +11,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 string connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
-builder.Services.AddTransient<IEmployeeProfileRepository, EmployeeProfileRepository>();
-builder.Services.AddTransient<IEmployeeProfileServices, EmployeeProfileServices>();
+builder.Services.AddScoped<IEmployeeProfileRepository, EmployeeProfileRepository>();
+builder.Services.AddScoped<IEmployeeProfileServices, EmployeeProfileServices>();
 builder.Services.AddTransient<IDbConnection>(c => new SqlConnection(connectionString));
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

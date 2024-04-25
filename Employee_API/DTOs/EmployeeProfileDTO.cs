@@ -25,11 +25,11 @@ namespace Employee_API.DTOs
         public string EPF_no { get; set; } = string.Empty;
         public string ESIC_no { get; set; } = string.Empty;
         public int Institute_id { get; set; }
-        public List<EmployeeDocumentDTO>? EmployeeDocuments { get; set; }
-        public List<EmployeeQualification>? EmployeeQualifications { get; set; }
-        public List<EmployeeWorkExperience>? EmployeeWorkExperiences { get; set; }
-        public List<EmployeeBankDetails>? EmployeeBankDetails { get; set;}
-        public EmployeeFamily? Family { get; set; }
+        // public List<EmployeeDocumentDTO>? EmployeeDocuments { get; set; }
+        // public List<EmployeeQualification>? EmployeeQualifications { get; set; }
+        // public List<EmployeeWorkExperience>? EmployeeWorkExperiences { get; set; }
+        // public List<EmployeeBankDetails>? EmployeeBankDetails { get; set; }
+        // public EmployeeFamily? Family { get; set; }
     }
     public class EmployeeDocumentDTO
     {
