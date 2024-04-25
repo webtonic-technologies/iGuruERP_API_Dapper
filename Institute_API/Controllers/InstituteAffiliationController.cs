@@ -15,7 +15,7 @@ namespace Institute_API.Controllers
             _instituteAffiliationServices = instituteAffiliationServices;
         }
 
-        [HttpPost]
+        [HttpPost("AddAffiliation")]
         public async Task<IActionResult> AddUpdateInstituteAffiliation([FromBody] AffiliationDTO request)
         {
             try
@@ -38,7 +38,7 @@ namespace Institute_API.Controllers
 
         }
 
-        [HttpGet("InstituteAffiliation/{id}")]
+        [HttpGet("GetInstituteAffiliationById/{id}")]
         public async Task<IActionResult> GetInstituteAffiliationById(int id)
         {
             try
@@ -52,7 +52,7 @@ namespace Institute_API.Controllers
             }
         }
 
-        [HttpGet("InstituteAffiliationLogo/{id}")]
+        [HttpGet("GetInstituteAffiliationLogoById/{id}")]
         public async Task<IActionResult> GetInstituteAffiliationLogoById(int id)
         {
             try
@@ -66,7 +66,7 @@ namespace Institute_API.Controllers
             }
         }
 
-        [HttpPost("AffiliationLogo")]
+        [HttpPost("AddAffiliationLogo")]
         public async Task<IActionResult> AddUpdateLogo([FromForm] AffiliationLogoDTO request)
         {
             try
