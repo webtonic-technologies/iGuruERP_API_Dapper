@@ -15,7 +15,7 @@ namespace Institute_API.Controllers
             _instituteHouseServices = instituteHouseServices;
         }
 
-        [HttpPost]
+        [HttpPost("AddInstituteHouse")]
         public async Task<IActionResult> AddUpdateInstituteHouse([FromBody] InstituteHouseDTO request)
         {
             try
@@ -38,7 +38,7 @@ namespace Institute_API.Controllers
 
         }
 
-        [HttpGet("InstituteHouse/{id}")]
+        [HttpGet("GetInstituteHouseById/{id}")]
         public async Task<IActionResult> GetInstituteHouseList(int id)
         {
             try
