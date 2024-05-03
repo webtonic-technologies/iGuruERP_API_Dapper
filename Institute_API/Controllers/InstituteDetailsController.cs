@@ -15,7 +15,7 @@ namespace Institute_API.Controllers
             _instituteDetailsServices = instituteDetailsServices;
         }
 
-        [HttpPost]
+        [HttpPost("AddInstituteDetails")]
         public async Task<IActionResult> AddUpdateInstituteDetails([FromBody] InstituteDetailsDTO request)
         {
             try
@@ -38,7 +38,7 @@ namespace Institute_API.Controllers
 
         }
 
-        [HttpGet("InstituteDetails/{id}")]
+        [HttpGet("GetInstituteDetailsById/{id}")]
         public async Task<IActionResult> GetInstituteDetailsById(int id)
         {
             try

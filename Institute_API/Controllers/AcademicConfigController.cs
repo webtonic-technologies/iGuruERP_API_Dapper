@@ -17,7 +17,7 @@ namespace Institute_API.Controllers
             _academicConfigServices = academicConfigServices;
         }
 
-        [HttpPost]
+        [HttpPost("AddCourseClass")]
         public async Task<IActionResult> AddUpdateAcademicConfig([FromBody] CourseClassDTO request)
         {
             try
@@ -40,7 +40,7 @@ namespace Institute_API.Controllers
 
         }
 
-        [HttpGet("AcademicConfig/{id}")]
+        [HttpGet("AcademicConfigCourseClass/{id}")]
         public async Task<IActionResult> GetAcademicConfigById(int id)
         {
             try
@@ -54,7 +54,7 @@ namespace Institute_API.Controllers
             }
         }
 
-        [HttpGet]
+        [HttpGet("GetAllCourseClassList")]
         public async Task<IActionResult> GetAcademicConfigList(int Instituteid)
         {
             try
@@ -68,7 +68,7 @@ namespace Institute_API.Controllers
             }
         }
 
-        [HttpDelete]
+        [HttpDelete("DeleteCourseClass")]
         public async Task<IActionResult> DeleteAcademicConfig(int id)
         {
             try
