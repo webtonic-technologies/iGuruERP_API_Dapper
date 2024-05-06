@@ -23,6 +23,8 @@ builder.Services.AddScoped<IEmployeeAttendanceService, EmployeeAttendanceService
 builder.Services.AddScoped<IEmployeeAttendanceRepository, EmployeeAttendanceRepository>();
 builder.Services.AddScoped<IGeoFencingService, GeoFencingService>();
 builder.Services.AddScoped<IGeoFencingRepository, GeoFencingRepository>();
+builder.Services.AddScoped<IShiftTimingRepository, ShiftTimingRepository>();
+builder.Services.AddScoped<IShiftTimingService, ShiftTimingService>();
 
 
 builder.Services.AddControllers();
