@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Attendance_API.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("iGuru/[controller]")]
     [ApiController]
     public class ShiftTimingController : ControllerBase
     {
