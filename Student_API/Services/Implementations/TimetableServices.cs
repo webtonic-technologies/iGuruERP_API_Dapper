@@ -105,5 +105,18 @@ namespace Student_API.Services.Implementations
             }
         }
 
+        public async Task<ServiceResponse<bool>> DeleteTimetableGroup(int timetableGroupId)
+        {
+            try
+            {
+                var data = await _timetableRepository.DeleteTimetableGroup(timetableGroupId);
+                return data;
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<bool>(false, ex.Message, false, 500);
+            }
+        }
+
     }
 }

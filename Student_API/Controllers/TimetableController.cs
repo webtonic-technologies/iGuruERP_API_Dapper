@@ -170,5 +170,27 @@ namespace Student_API.Controllers
                 return BadRequest(e.Message);
             }
         }
+
+        [HttpDelete]
+        [Route("DeleteTimetableGroup")]
+        public async Task<IActionResult> DeleteTimetableGroup(int timetableGroupId)
+        {
+            try
+            {
+                var data = await _timetableServices.DeleteTimetableGroup(timetableGroupId);
+                if (data.Success)
+                {
+                    return Ok(data);
+                }
+                else
+                {
+                    return BadRequest(data.Message);
+                }
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
     }
 }

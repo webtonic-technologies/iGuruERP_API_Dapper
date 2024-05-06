@@ -13,5 +13,6 @@ namespace Student_API.Services.Interfaces
         Task<ServiceResponse<List<TimeTableDaysPlanDTO>>> GetTimeTableDaysPlan();
         Task<ServiceResponse<List<Timetable>>> GetTimetablesByTimetableGroupId(int timetableGroupId);
         Task<ServiceResponse<int>> AddOrUpdateTimetable(Timetable timetable);
+        Task<ServiceResponse<bool>> DeleteTimetableGroup(int timetableGroupId);
     }
 }
