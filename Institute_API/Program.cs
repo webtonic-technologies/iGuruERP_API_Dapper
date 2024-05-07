@@ -25,6 +25,10 @@ builder.Services.AddTransient<IAdminDesignationRepository, AdminDesignationRepos
 builder.Services.AddTransient<IAdminDesignationServices, AdminDesignationServices>();
 builder.Services.AddTransient<IAcademicConfigRepository, AcademicConfigRepository>();
 builder.Services.AddTransient<IAcademicConfigServices, AcademicConfigServices>();
+builder.Services.AddTransient<IGalleryRepository, GalleryRepository>();
+builder.Services.AddTransient<IGalleryService, GalleryService>();
+builder.Services.AddTransient<IEventRepository, EventRepository>();
+builder.Services.AddTransient<IEventServices, EventServices>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
