@@ -40,14 +40,14 @@ namespace Institute_API.Repository.Implementations
                     string sql = @"UPDATE [dbo].[tbl_Department]
                        SET Institute_id = @Institute_id,
                            DepartmentName = @DepartmentName
-                       WHERE Department_id = @DepartmentId";
+                       WHERE Department_id = @Department_id";
 
                     // Execute the query and retrieve the number of affected rows
                     int affectedRows = await _connection.ExecuteAsync(sql, new
                     {
-                        InstituteId = request.Institute_id,
+                        request.Institute_id,
                         request.DepartmentName,
-                        DepartmentId = request.Department_id
+                        request.Department_id
                     });
                     if (affectedRows > 0)
                     {

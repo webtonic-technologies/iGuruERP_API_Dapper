@@ -32,7 +32,7 @@ namespace Institute_API.Repository.Implementations
                     InstituteAffiliation affiliation = new()
                     {
                         Institute_id = request.Institute_id,
-                        AffiliationBoardLogo = string.Empty,
+                        AffiliationBoardLogo = ImageUpload(request.AffiliationBoardLogo),
                         AffiliationBoardName = request.AffiliationBoardName,
                         AffiliationNumber = request.AffiliationNumber,
                         AffiliationCertificateNumber = request.AffiliationCertificateNumber,
@@ -45,7 +45,7 @@ namespace Institute_API.Repository.Implementations
                         int accred = await AddUpdateAccreditation(request.Accreditations ??= ([]), insertedId);
                         if (accred > 0)
                         {
-                            return new ServiceResponse<int>(true, "Affiliation added successfully", insertedId, 500);
+                            return new ServiceResponse<int>(true, "Affiliation added successfully", insertedId, 200);
                         }
                         else
                         {
@@ -72,7 +72,7 @@ namespace Institute_API.Repository.Implementations
                     int affectedRows = await _connection.ExecuteAsync(sql, new
                     {
                         InstituteId = request.Institute_id,
-                        AffiliationBoardLogo = string.Empty,
+                        AffiliationBoardLogo = ImageUpload(request.AffiliationBoardLogo),
                         request.AffiliationBoardName,
                         request.AffiliationNumber,
                         request.AffiliationCertificateNumber,
@@ -84,7 +84,7 @@ namespace Institute_API.Repository.Implementations
                         int accred = await AddUpdateAccreditation(request.Accreditations ??= ([]), request.Affiliation_info_id);
                         if (accred > 0)
                         {
-                            return new ServiceResponse<int>(true, "Affiliation added successfully", request.Affiliation_info_id, 500);
+                            return new ServiceResponse<int>(true, "Affiliation added successfully", request.Affiliation_info_id, 200);
                         }
                         else
                         {
@@ -102,48 +102,6 @@ namespace Institute_API.Repository.Implementations
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
-
-        public async Task<ServiceResponse<string>> AddUpdateLogo(AffiliationLogoDTO request)
-        {
-            try
-            {
-                var uploads = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "Institution");
-                if (!Directory.Exists(uploads))
-                {
-                    Directory.CreateDirectory(uploads);
-                }
-                var fileName = Path.GetFileNameWithoutExtension(request.AffiliationBoardLogo.FileName) + "_" + Guid.NewGuid().ToString() + Path.GetExtension(request.AffiliationBoardLogo.FileName);
-                var filePath = Path.Combine(uploads, fileName);
-                using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
-                {
-                    await request.AffiliationBoardLogo.CopyToAsync(fileStream);
-                }
-
-                string sql = @"UPDATE [tbl_AffiliationInfo]
-                      SET AffiliationBoardLogo = @AffiliationBoardLogo
-                      WHERE Affiliation_info_id = @AffiliationInfoId";
-
-                // Execute the query and retrieve the number of affected rows
-                int affectedRows = await _connection.ExecuteAsync(sql, new
-                {
-                    AffiliationBoardLogo = fileName, // Store file path in the database
-                    AffiliationInfoId = request.Affiliation_info_id
-                });
-                if (affectedRows > 0)
-                {
-                    return new ServiceResponse<string>(true, "Operation successful", "Affiliation added successfully", 500);
-                }
-                else
-                {
-                    return new ServiceResponse<string>(false, "Some error occured", string.Empty, 500);
-                }
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
-            }
-        }
-
         public async Task<ServiceResponse<AffiliationDTO>> GetAffiliationInfoById(int Id)
         {
             try
@@ -170,8 +128,9 @@ namespace Institute_API.Repository.Implementations
                     response.AffiliationCertificateNumber = affiliation.AffiliationCertificateNumber;
                     response.AffiliationBoardName = affiliation.AffiliationBoardName;
                     response.Accreditations = accreditations != null ? accreditations.AsList() : [];
+                    response.AffiliationBoardLogo = GetImage(affiliation.AffiliationBoardLogo);
 
-                    return new ServiceResponse<AffiliationDTO>(true, "Record found", response, 500);
+                    return new ServiceResponse<AffiliationDTO>(true, "Record found", response, 200);
                 }
                 else
                 {
@@ -183,30 +142,6 @@ namespace Institute_API.Repository.Implementations
                 return new ServiceResponse<AffiliationDTO>(false, ex.Message, new AffiliationDTO(), 500);
             }
           
-        }
-
-        public async Task<ServiceResponse<byte[]>> GetAffiliationLogoById(int Id)
-        {
-            try
-            {
-                var data = await _connection.QueryFirstOrDefaultAsync<InstituteAffiliation>(
-                   "SELECT AffiliationBoardLogo FROM tbl_AffiliationInfo WHERE " +
-                   "Affiliation_info_id = @Affiliation_info_id",
-                   new { Affiliation_info_id = Id }) ?? throw new Exception("record not found");
-                var filePath = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "Institution", data.AffiliationBoardLogo);
-
-                if (!File.Exists(filePath))
-                {
-                    throw new Exception("File not found");
-                }
-                var fileBytes = await File.ReadAllBytesAsync(filePath);
-
-                return new ServiceResponse<byte[]>(true, "Record Found", fileBytes, 200);
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<byte[]>(false, ex.Message, [], 500);
-            }
         }
         private async Task<int> AddUpdateAccreditation(List<Accreditation> request, int Affiliationid)
         {
@@ -241,6 +176,51 @@ namespace Institute_API.Repository.Implementations
                 addedRecords = await _connection.ExecuteAsync(insertQuery, request);
             }
             return addedRecords;
+        }
+        private string ImageUpload(string image)
+        {
+            byte[] imageData = Convert.FromBase64String(image);
+            string directoryPath = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "InstituteAffiliation");
+
+            if (!Directory.Exists(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
+            string fileExtension = IsJpeg(imageData) == true ? ".jpg" : IsPng(imageData) == true ? ".png" : IsGif(imageData) == true ? ".gif" : string.Empty;
+            string fileName = Guid.NewGuid().ToString() + fileExtension;
+            string filePath = Path.Combine(directoryPath, fileName);
+
+            // Write the byte array to the image file
+            File.WriteAllBytes(filePath, imageData);
+            return filePath;
+        }
+        private bool IsJpeg(byte[] bytes)
+        {
+            // JPEG magic number: 0xFF, 0xD8
+            return bytes.Length > 1 && bytes[0] == 0xFF && bytes[1] == 0xD8;
+        }
+        private bool IsPng(byte[] bytes)
+        {
+            // PNG magic number: 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A
+            return bytes.Length > 7 && bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47
+                && bytes[4] == 0x0D && bytes[5] == 0x0A && bytes[6] == 0x1A && bytes[7] == 0x0A;
+        }
+        private bool IsGif(byte[] bytes)
+        {
+            // GIF magic number: "GIF"
+            return bytes.Length > 2 && bytes[0] == 0x47 && bytes[1] == 0x49 && bytes[2] == 0x46;
+        }
+        private string GetImage(string Filename)
+        {
+            var filePath = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "InstituteAffiliation", Filename);
+
+            if (!File.Exists(filePath))
+            {
+                throw new Exception("File not found");
+            }
+            byte[] fileBytes = File.ReadAllBytes(filePath);
+            string base64String = Convert.ToBase64String(fileBytes);
+            return base64String;
         }
 
     }
