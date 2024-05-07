@@ -15,7 +15,7 @@ namespace Employee_API.Controllers
             _employeeProfileServices = employeeProfileServices;
         }
         [HttpPost("AddEmployee")]
-        public async Task<IActionResult> AddUpdateEmployeeProfile([FromBody] EmployeeProfileDTO request)
+        public async Task<IActionResult> AddUpdateEmployeeProfile([FromBody] EmployeeProfile request)
         {
             try
             {
@@ -49,7 +49,7 @@ namespace Employee_API.Controllers
                 return BadRequest(ex.Message);
             }
         }
-        [HttpGet("GetAllEmployeeList")]
+        [HttpPost("GetAllEmployeeList")]
         public async Task<IActionResult> GetEmployeeProfileList(GetAllEmployeeListRequest request)
         {
             try
@@ -63,11 +63,11 @@ namespace Employee_API.Controllers
             }
         }
         [HttpPost("EmployeeDoc")]
-        public async Task<IActionResult> AddUpdateEmployeeDocuments([FromForm]EmployeeDocumentDTO request, int employeeId)
+        public async Task<IActionResult> AddUpdateEmployeeDocuments([FromBody]List<EmployeeDocument> request, int employeeId)
         {
             try
             {
-                var data = await _employeeProfileServices.AddUpdateEmployeeDecuments(request, employeeId);
+                var data = await _employeeProfileServices.AddUpdateEmployeeDocuments(request, employeeId);
                 if (data != null)
                 {
                     return Ok(data);
@@ -89,13 +89,14 @@ namespace Employee_API.Controllers
             try
             {
                 var data = await _employeeProfileServices.GetEmployeeDocuments(id);
-                 var response = new List<object>();
-                foreach(var item in data.Data)
+                if (data != null)
                 {
-                    var file = File(item, "image/*");
-                    response.Add(file);
+                    return Ok(data);
                 }
-                return Ok(response);
+                else
+                {
+                    return BadRequest("Bad Request");
+                }
             }
             catch (Exception ex)
             {

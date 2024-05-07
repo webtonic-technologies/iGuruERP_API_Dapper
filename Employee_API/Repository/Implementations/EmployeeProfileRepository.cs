@@ -16,7 +16,7 @@ namespace Employee_API.Repository.Implementations
             _connection = connection;
             _hostingEnvironment = hostingEnvironment;
         }
-        public async Task<ServiceResponse<int>> AddUpdateEmployeeProfile(EmployeeProfileDTO request)
+        public async Task<ServiceResponse<int>> AddUpdateEmployeeProfile(EmployeeProfile request)
         {
             try
             {
@@ -25,11 +25,11 @@ namespace Employee_API.Repository.Implementations
                     string sql = @"INSERT INTO [dbo].[tbl_EmployeeProfileMaster] 
                         (First_Name, Middle_Name, Last_Name, Gender_id, Department_id, Designation_id, mobile_number, 
                          Date_of_Joining, Nationality_id, Religion_id, Date_of_Birth, EmailID, Employee_code_id, marrital_status_id, 
-                         Blood_Group_id, aadhar_no, pan_no, EPF_no, ESIC_no, Institute_id) 
+                         Blood_Group_id, aadhar_no, pan_no, EPF_no, ESIC_no, Institute_id, EmpPhoto, uan_no) 
                        VALUES 
                         (@First_Name, @Middle_Name, @Last_Name, @Gender_id, @Department_id, @Designation_id, @mobile_number, 
                          @Date_of_Joining, @Nationality_id, @Religion_id, @Date_of_Birth, @EmailID, @Employee_code_id, @marrital_status_id, 
-                         @Blood_Group_id, @aadhar_no, @pan_no, @EPF_no, @ESIC_no, @Institute_id);
+                         @Blood_Group_id, @aadhar_no, @pan_no, @EPF_no, @ESIC_no, @Institute_id, @EmpPhoto, @uan_no);
                        SELECT SCOPE_IDENTITY();"; // Retrieve the inserted Employee_id
 
                     // Execute the query and retrieve the inserted Employee_id
@@ -54,7 +54,9 @@ namespace Employee_API.Repository.Implementations
                         request.pan_no,
                         request.EPF_no,
                         request.ESIC_no,
-                        request.Institute_id
+                        request.Institute_id,
+                        request.uan_no,
+                        EmpPhoto = ImageUpload(request.EmpPhoto)
                     });
                     if (employeeId > 0)
                     {
@@ -87,7 +89,9 @@ namespace Employee_API.Repository.Implementations
                         pan_no = @pan_no, 
                         EPF_no = @EPF_no, 
                         ESIC_no = @ESIC_no, 
-                        Institute_id = @Institute_id
+                        Institute_id = @Institute_id,
+                        EmpPhoto = @EmpPhoto,
+                        uan_no = @uan_no
                       WHERE Employee_id = @Employee_id";
 
                     // Execute the query
@@ -113,7 +117,9 @@ namespace Employee_API.Repository.Implementations
                         request.pan_no,
                         request.EPF_no,
                         request.ESIC_no,
-                        request.Institute_id
+                        request.Institute_id,
+                        request.uan_no,
+                        EmpPhoto = ImageUpload(request.EmpPhoto)
                     });
                     if (rowsAffected > 0)
                     {
@@ -203,7 +209,7 @@ namespace Employee_API.Repository.Implementations
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
-        public async Task<ServiceResponse<string>> AddUpdateEmployeeDecuments(EmployeeDocumentDTO request, int employee_id)
+        public async Task<ServiceResponse<string>> AddUpdateEmployeeDocuments(List<EmployeeDocument> request, int employee_id)
         {
             try
             {
@@ -220,15 +226,11 @@ namespace Employee_API.Repository.Implementations
                         (employee_id, Document_Name, file_name, file_path) 
                        VALUES 
                         (@employee_id, @Document_Name, @file_name, @file_path);";
-                        var data = new EmployeeDocument
+                        foreach (EmployeeDocument document in request)
                         {
-                            file_path = await HandleImageUpload(request.file_path),
-                            employee_id = employee_id,
-                            Document_Name = request.Document_Name,
-                            file_name = request.file_name,
-                        };
-                        // Execute the query with multiple parameterized sets of values
-                        addedRecords = await _connection.ExecuteAsync(insertQuery, data);
+                            document.file_path = ImageUpload(document.file_path);
+                        }
+                        addedRecords = await _connection.ExecuteAsync(insertQuery, request);
                         if (addedRecords > 0)
                         {
                             return new ServiceResponse<string>(true, "operation successful", "Documents added successfully", 200);
@@ -249,28 +251,11 @@ namespace Employee_API.Repository.Implementations
                         (employee_id, Document_Name, file_name, file_path) 
                        VALUES 
                         (@employee_id, @Document_Name, @file_name, @file_path);";
-                    //var records = new List<EmployeeDocument>();
-                    //foreach (var item in request)
-                    //{
-                    //    var data = new EmployeeDocument
-                    //    {
-                    //        Document_id = item.Document_id,
-                    //        Document_Name = item.Document_Name,
-                    //        employee_id = employee_id,
-                    //        file_name = item.file_name,
-                    //        file_path = await HandleImageUpload(item.file_path)
-                    //    };
-                    //    records.Add(data);
-                    //}
-                    var data = new EmployeeDocument
+                    foreach (EmployeeDocument document in request)
                     {
-                        file_path = await HandleImageUpload(request.file_path),
-                        employee_id = employee_id,
-                        Document_Name = request.Document_Name,
-                        file_name = request.file_name,
-                    };
-                    // Execute the query with multiple parameterized sets of values
-                    addedRecords = await _connection.ExecuteAsync(insertQuery, data);
+                        document.file_path = ImageUpload(document.file_path);
+                    }
+                    addedRecords = await _connection.ExecuteAsync(insertQuery, request);
                     if (addedRecords > 0)
                     {
                         return new ServiceResponse<string>(true, "operation successful", "Documents added successfully", 200);
@@ -479,7 +464,7 @@ namespace Employee_API.Repository.Implementations
                 string sql = @"SELECT Employee_id, First_Name, Middle_Name, Last_Name, Gender_id, Department_id, 
                             Designation_id, mobile_number, Date_of_Joining, Nationality_id, Religion_id, 
                             Date_of_Birth, EmailID, Employee_code_id, marrital_status_id, Blood_Group_id, 
-                            aadhar_no, pan_no, EPF_no, ESIC_no, Institute_id
+                            aadhar_no, pan_no, EPF_no, ESIC_no, Institute_id, EmpPhoto, uan_no
                        FROM [dbo].[tbl_EmployeeProfileMaster]
                        WHERE Employee_id = @EmployeeId";
 
@@ -508,6 +493,8 @@ namespace Employee_API.Repository.Implementations
                     response.Middle_Name = employee.Middle_Name;
                     response.mobile_number = employee.mobile_number;
                     response.Nationality_id = employee.Nationality_id;
+                    response.EmpPhoto = GetImage(employee.EmpPhoto);
+                    response.uan_no = employee.uan_no;
 
                     string famsql = @"SELECT Employee_family_id, Employee_id, Father_Name, Fathers_Occupation,
                             Mother_Name, Mothers_Occupation, Spouse_Name, Spouses_Occupation,
@@ -641,11 +628,11 @@ namespace Employee_API.Repository.Implementations
                 return new ServiceResponse<List<EmployeeProfile>>(false, ex.Message, [], 500);
             }
         }
-        public async Task<ServiceResponse<List<byte[]>>> GetEmployeeDocuments(int employee_id)
+        public async Task<ServiceResponse<List<EmployeeDocument>>> GetEmployeeDocuments(int employee_id)
         {
             try
             {
-                var response = new List<byte[]>();
+                var response = new List<EmployeeDocument>();
                 var data = await _connection.QueryAsync<EmployeeDocument>(
                    "SELECT * FROM tbl_DocumentsMaster WHERE employee_id = @employee_id",
                    new { employee_id }) ?? throw new Exception("Data not found");
@@ -653,17 +640,13 @@ namespace Employee_API.Repository.Implementations
 
                 foreach (var item in data)
                 {
-                    filePath = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "Employee", item.file_path);
-                    if (!File.Exists(filePath))
-                        throw new Exception("File not found");
-                    var fileBytes = await File.ReadAllBytesAsync(filePath);
-                    response.Add(fileBytes);
+                    item.file_path = GetImage(item.file_path);
                 }
-                return new ServiceResponse<List<byte[]>>(true, "Record Found", response, 200);
+                return new ServiceResponse<List<EmployeeDocument>>(true, "Record Found", response, 200);
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<List<byte[]>>(false, ex.Message, [], 500);
+                return new ServiceResponse<List<EmployeeDocument>>(false, ex.Message, [], 500);
             }
         }
         public async Task<ServiceResponse<List<EmployeeQualification>>> GetEmployeeQualificationById(int employeeId)
@@ -761,27 +744,50 @@ namespace Employee_API.Repository.Implementations
                 return new ServiceResponse<List<EmployeeBankDetails>>(false, ex.Message, [], 500);
             }
         }
-        private async Task<string> HandleImageUpload(IFormFile request)
+        private string ImageUpload(string image)
         {
-            if (request != null)
+            byte[] imageData = Convert.FromBase64String(image);
+            string directoryPath = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "EmployeeProfile");
+
+            if (!Directory.Exists(directoryPath))
             {
-                var uploads = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "Employee");
-                if (!Directory.Exists(uploads))
-                {
-                    Directory.CreateDirectory(uploads);
-                }
-                var fileName = Path.GetFileNameWithoutExtension(request.FileName) + "_" + Guid.NewGuid().ToString() + Path.GetExtension(request.FileName);
-                var filePath = Path.Combine(uploads, fileName);
-                using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
-                {
-                    await request.CopyToAsync(fileStream);
-                }
-                return fileName;
+                Directory.CreateDirectory(directoryPath);
             }
-            else
+            string fileExtension = IsJpeg(imageData) == true ? ".jpg" : IsPng(imageData) == true ? ".png" : IsGif(imageData) == true ? ".gif" : string.Empty;
+            string fileName = Guid.NewGuid().ToString() + fileExtension;
+            string filePath = Path.Combine(directoryPath, fileName);
+
+            // Write the byte array to the image file
+            File.WriteAllBytes(filePath, imageData);
+            return filePath;
+        }
+        private bool IsJpeg(byte[] bytes)
+        {
+            // JPEG magic number: 0xFF, 0xD8
+            return bytes.Length > 1 && bytes[0] == 0xFF && bytes[1] == 0xD8;
+        }
+        private bool IsPng(byte[] bytes)
+        {
+            // PNG magic number: 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A
+            return bytes.Length > 7 && bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47
+                && bytes[4] == 0x0D && bytes[5] == 0x0A && bytes[6] == 0x1A && bytes[7] == 0x0A;
+        }
+        private bool IsGif(byte[] bytes)
+        {
+            // GIF magic number: "GIF"
+            return bytes.Length > 2 && bytes[0] == 0x47 && bytes[1] == 0x49 && bytes[2] == 0x46;
+        }
+        private string GetImage(string Filename)
+        {
+            var filePath = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "EmployeeProfile", Filename);
+
+            if (!File.Exists(filePath))
             {
-                return string.Empty;
+                throw new Exception("File not found");
             }
+            byte[] fileBytes = File.ReadAllBytes(filePath);
+            string base64String = Convert.ToBase64String(fileBytes);
+            return base64String;
         }
     }
 }
