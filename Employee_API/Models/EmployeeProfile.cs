@@ -10,10 +10,10 @@
         public int Department_id { get; set; }
         public int Designation_id { get; set; }
         public string mobile_number { get; set; } = string.Empty;
-        public string Date_of_Joining { get; set; } = string.Empty;
+        public DateTime? Date_of_Joining { get; set; }
         public int Nationality_id { get; set; }
         public int Religion_id { get; set; }
-        public string Date_of_Birth { get; set; } = string.Empty;
+        public DateTime? Date_of_Birth { get; set; }
         public string EmailID { get; set; } = string.Empty;
         public string Employee_code_id { get; set; } = string.Empty;
         public int marrital_status_id { get; set; }
@@ -22,6 +22,8 @@
         public string pan_no { get; set; } = string.Empty;
         public string EPF_no { get; set; } = string.Empty;
         public string ESIC_no { get; set; } = string.Empty;
-        public int Institute_id {  get; set; }
+        public int Institute_id { get; set; }
+        public string EmpPhoto { get; set; } = string.Empty;
+        public string uan_no { get; set; } = string.Empty;
     }
 }
