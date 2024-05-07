@@ -29,6 +29,8 @@ builder.Services.AddTransient<IGalleryRepository, GalleryRepository>();
 builder.Services.AddTransient<IGalleryService, GalleryService>();
 builder.Services.AddTransient<IEventRepository, EventRepository>();
 builder.Services.AddTransient<IEventServices, EventServices>();
+builder.Services.AddTransient<IHolidayService, HolidayService>();
+builder.Services.AddTransient<IHolidayRepository, HolidayRepository>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

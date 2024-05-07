@@ -65,7 +65,7 @@ namespace Institute_API.Repository.Implementations
                                 Employee_id = @Employee_id
                             WHERE EventEmployeeMapping_id = @EventEmployeeMapping_id";
                             }
-                            else
+                            else 
                             {
                                 employeeMappingQuery = @"
                             INSERT INTO [dbo].[tbl_EventEmployeeMapping] (Event_id, Employee_id)
