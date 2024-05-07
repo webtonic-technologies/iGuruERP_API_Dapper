@@ -29,7 +29,7 @@ namespace Institute_API.Repository.Implementations
 
                 if (galleryId > 0)
                 {
-                    return new ServiceResponse<int>(true, "Gallery image added successfully", 0, 200);
+                    return new ServiceResponse<int>(true, "Gallery image added successfully", galleryId, 200);
                 }
                 else
                 {
@@ -72,17 +72,18 @@ namespace Institute_API.Repository.Implementations
             try
             {
                 string query = @"
-        SELECT Event_id, FileName
+        SELECT Event_id, FileName , isApproved
         FROM [dbo].[tbl_Gallery]
         WHERE isApproved = 1";
 
-                var images = await _connection.QueryAsync<GalleryDTO>(query);
+                var images = await _connection.QueryAsync<Gallery>(query);
 
                 var result = images.GroupBy(x => x.EventId)
                                    .Select(g => new GalleryEventDTO
                                    {
-                                       EventId = g.Key,
-                                       FileNames = g.Select(x => x.FileName).ToList()
+                                       Event_id = g.Key,
+                                       FileNames = g.Select(x => x.FileName).ToList(),
+                                       IsApproved = g.All(x => x.IsApproved)
                                    })
                                    .ToList();
 
@@ -107,7 +108,7 @@ namespace Institute_API.Repository.Implementations
                 var result = images.GroupBy(x => x.EventId)
                                    .Select(g => new GalleryEventDTO
                                    {
-                                       EventId = g.Key,
+                                       Event_id = g.Key,
                                        FileNames = g.Select(x => x.FileName).ToList(),
                                        IsApproved = g.All(x => x.IsApproved)
                                    })

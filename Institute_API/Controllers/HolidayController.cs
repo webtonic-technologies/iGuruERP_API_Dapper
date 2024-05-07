@@ -15,7 +15,7 @@ namespace Institute_API.Controllers
             _holidayService = holidayService;
         }
 
-        [HttpPost]
+        [HttpPost("AddUpdateHoliday")]
         public async Task<IActionResult> AddUpdateHoliday([FromBody] HolidayDTO holidayDTO)
         {
             try

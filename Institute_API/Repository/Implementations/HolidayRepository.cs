@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Institute_API.DTOs;
 using Institute_API.DTOs.ServiceResponse;
+using Institute_API.Repository.Interfaces;
 using System.Data;
 using System.Data.Common;
 
@@ -68,6 +69,7 @@ namespace Institute_API.Repository.Implementations
                         }
                         else
                         {
+                            mapping.HolidayClassSessionMapping_id = 0;
                             mappingQuery = @"
                         INSERT INTO [dbo].[tbl_HolidayClassSessionMapping] (Holiday_id, Class_id, Section_id)
                         VALUES (@Holiday_id, @Class_id, @Section_id);
@@ -75,7 +77,7 @@ namespace Institute_API.Repository.Implementations
                         }
 
                         // Execute the mapping query
-                        affectedRows = await _connection.ExecuteAsync(mappingQuery, new { holidayId, mapping.Class_id, mapping.Section_id, mapping.HolidayClassSessionMapping_id }, transaction);
+                        affectedRows = await _connection.ExecuteAsync(mappingQuery, new { Holiday_id = holidayId, mapping.Class_id, mapping.Section_id, mapping.HolidayClassSessionMapping_id }, transaction);
                         if (affectedRows == 0)
                         {
                             throw new Exception("Failed to save class session mapping");
@@ -197,6 +199,7 @@ namespace Institute_API.Repository.Implementations
         {
             try
             {
+                _connection.Open();
                 using (var transaction = _connection.BeginTransaction())
                 {
                     string deleteMappingQuery = @"

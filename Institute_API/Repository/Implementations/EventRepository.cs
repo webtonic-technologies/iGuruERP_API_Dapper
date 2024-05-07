@@ -37,16 +37,14 @@ namespace Institute_API.Repository.Implementations
                             Location = @Location,
                             ScheduleTime = @ScheduleTime,
                             Time = @Time,
-                            AttachmentFile = @AttachmentFile,
-                            isApproved = @isApproved,
-                            approvedBy = @approvedBy
+                            AttachmentFile = @AttachmentFile
                         WHERE Event_id = @Event_id";
                         }
                         else
                         {
                             eventQuery = @"
-                        INSERT INTO [dbo].[tbl_CreateEvent] (EventName, StartDate, EndDate, Description, Location, ScheduleTime, Time, AttachmentFile, isApproved, approvedBy)
-                        VALUES (@EventName, @StartDate, @EndDate, @Description, @Location, @ScheduleTime, @Time, @AttachmentFile, @isApproved, @approvedBy);
+                        INSERT INTO [dbo].[tbl_CreateEvent] (EventName, StartDate, EndDate, Description, Location, ScheduleTime, Time, AttachmentFile)
+                        VALUES (@EventName, @StartDate, @EndDate, @Description, @Location, @ScheduleTime, @Time, @AttachmentFile);
                         SELECT SCOPE_IDENTITY();"
                             ; // Retrieve the inserted id
                         }
@@ -83,6 +81,7 @@ namespace Institute_API.Repository.Implementations
                         // Save or update EventClassSessionMappings
                         foreach (var mapping in eventDto.ClassSessionMappings)
                         {
+                            
                             string classSessionMappingQuery;
                             if (mapping.EventClassSessionMapping_id > 0)
                             {
@@ -95,6 +94,7 @@ namespace Institute_API.Repository.Implementations
                             }
                             else
                             {
+                                mapping.EventClassSessionMapping_id = 0;
                                 classSessionMappingQuery = @"
                             INSERT INTO [dbo].[tbl_EventClassSessionMapping] (Event_id, Class_id, Section_id)
                             VALUES (@Event_id, @Class_id, @Section_id)"
@@ -237,7 +237,7 @@ namespace Institute_API.Repository.Implementations
             {
                 string query = @"
             UPDATE tbl_CreateEvent
-            SET isActive = @IsActive , approvedBy = @UserId
+            SET isApproved = @IsActive , approvedBy = @UserId
             WHERE Event_id = @EventId";
 
                 int rowsAffected = await _connection.ExecuteAsync(query, new { IsActive = isActive, EventId = eventId, UserId = UserId });

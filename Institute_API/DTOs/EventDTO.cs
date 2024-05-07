@@ -11,8 +11,7 @@
         public string ScheduleTime { get; set; }
         public string Time { get; set; }
         public string AttachmentFile { get; set; }
-        public bool isApproved { get; set; }
-        public string approvedBy { get; set; }
+       
 
         public List<EventEmployeeMapping> EmployeeMappings { get; set; }
         public List<EventClassSessionMapping> ClassSessionMappings { get; set; }
