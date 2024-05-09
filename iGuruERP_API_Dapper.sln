@@ -3,11 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34622.214
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Institute_API", "Institute_API\Institute_API.csproj", "{883B77CD-97A9-4118-8668-8995391E058F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Institute_API", "Institute_API\Institute_API.csproj", "{883B77CD-97A9-4118-8668-8995391E058F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Student_API", "Student_API\Student_API.csproj", "{1AB39666-64A8-4792-BF1F-6C2E59F61E8A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Student_API", "Student_API\Student_API.csproj", "{1AB39666-64A8-4792-BF1F-6C2E59F61E8A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Employee_API", "Employee_API\Employee_API.csproj", "{69CAE27B-6BAF-41CC-B0D4-0C11F4392237}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Employee_API", "Employee_API\Employee_API.csproj", "{69CAE27B-6BAF-41CC-B0D4-0C11F4392237}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Attendance_API", "Attendance_API\Attendance_API.csproj", "{0FB2E622-316E-4B76-9DCA-DB8424BFA1F4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,6 +29,10 @@ Global
 		{69CAE27B-6BAF-41CC-B0D4-0C11F4392237}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{69CAE27B-6BAF-41CC-B0D4-0C11F4392237}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{69CAE27B-6BAF-41CC-B0D4-0C11F4392237}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0FB2E622-316E-4B76-9DCA-DB8424BFA1F4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0FB2E622-316E-4B76-9DCA-DB8424BFA1F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0FB2E622-316E-4B76-9DCA-DB8424BFA1F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0FB2E622-316E-4B76-9DCA-DB8424BFA1F4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
