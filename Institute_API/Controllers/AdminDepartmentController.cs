@@ -16,7 +16,7 @@ namespace Institute_API.Controllers
             _adminDepartmentServices = adminDepartmentServices;
         }
 
-        [HttpPost]
+        [HttpPost("AddAdminDepartment")]
         public async Task<IActionResult> AddUpdateAdminDepartment([FromBody] AdminDepartment request)
         {
             try
@@ -39,7 +39,7 @@ namespace Institute_API.Controllers
 
         }
 
-        [HttpGet("AdminDepartment/{id}")]
+        [HttpGet("GetAdminDepartmentById/{id}")]
         public async Task<IActionResult> GetAdminDepartmentById(int id)
         {
             try
@@ -53,7 +53,7 @@ namespace Institute_API.Controllers
             }
         }
 
-        [HttpGet]
+        [HttpGet("GetAllAdminDepartmentList")]
         public async Task<IActionResult> GetAdminDepartmentList(int Instituteid)
         {
             try
@@ -67,7 +67,7 @@ namespace Institute_API.Controllers
             }
         }
 
-        [HttpDelete]
+        [HttpDelete("DeleteAdminDepartment")]
         public async Task<IActionResult> DeleteAdminDepartment(int id)
         {
             try

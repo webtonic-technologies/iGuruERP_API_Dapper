@@ -15,7 +15,7 @@ namespace Institute_API.Controllers
             _instituteAffiliationServices = instituteAffiliationServices;
         }
 
-        [HttpPost]
+        [HttpPost("AddAffiliation")]
         public async Task<IActionResult> AddUpdateInstituteAffiliation([FromBody] AffiliationDTO request)
         {
             try
@@ -38,7 +38,7 @@ namespace Institute_API.Controllers
 
         }
 
-        [HttpGet("InstituteAffiliation/{id}")]
+        [HttpGet("GetInstituteAffiliationById/{id}")]
         public async Task<IActionResult> GetInstituteAffiliationById(int id)
         {
             try
@@ -49,42 +49,6 @@ namespace Institute_API.Controllers
             catch (Exception ex)
             {
                 return BadRequest(ex.Message);
-            }
-        }
-
-        [HttpGet("InstituteAffiliationLogo/{id}")]
-        public async Task<IActionResult> GetInstituteAffiliationLogoById(int id)
-        {
-            try
-            {
-                var data = await _instituteAffiliationServices.GetAffiliationLogoById(id);
-                return File(data.Data, "image/*");
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
-
-        [HttpPost("AffiliationLogo")]
-        public async Task<IActionResult> AddUpdateLogo([FromForm] AffiliationLogoDTO request)
-        {
-            try
-            {
-                var data = await _instituteAffiliationServices.AddUpdateLogo(request);
-                if (data != null)
-                {
-                    return Ok(data);
-                }
-                else
-                {
-                    return BadRequest("Bad Request");
-                }
-
-            }
-            catch (Exception e)
-            {
-                return this.BadRequest(e.Message);
             }
         }
     }
