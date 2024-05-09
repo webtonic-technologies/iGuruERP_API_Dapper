@@ -1,6 +1,31 @@
+using System.Data.SqlClient;
+using System.Data;
+using Attendance_API.Services.Implementations;
+using Attendance_API.Services.Interfaces;
+using Attendance_API.Repository.Implementations;
+using Attendance_API.Repository.Interfaces;
+
 var builder = WebApplication.CreateBuilder(args);
 
+
+string connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
+
+builder.Services.AddTransient<IDbConnection>(c => new SqlConnection(connectionString));
 // Add services to the container.
+
+builder.Services.AddScoped<IStudentAttendanceStatusService, StudentAttendanceStatusService>();
+builder.Services.AddScoped<IStudentAttendanceStatusRepository, StudentAttendanceStatusRepository>();
+builder.Services.AddScoped<IStudentAttendanceMasterService, StudentAttendanceMasterService>();
+builder.Services.AddScoped<IStudentAttendanceMasterRepository, StudentAttendanceMasterRepository>();
+builder.Services.AddScoped<IEmployeeAttendanceStatusMasterService, EmployeeAttendanceStatusMasterService>();
+builder.Services.AddScoped<IEmployeeAttendanceStatusMasterRepository, EmployeeAttendanceStatusMasterRepository>();
+builder.Services.AddScoped<IEmployeeAttendanceService, EmployeeAttendanceService>();
+builder.Services.AddScoped<IEmployeeAttendanceRepository, EmployeeAttendanceRepository>();
+builder.Services.AddScoped<IGeoFencingService, GeoFencingService>();
+builder.Services.AddScoped<IGeoFencingRepository, GeoFencingRepository>();
+builder.Services.AddScoped<IShiftTimingRepository, ShiftTimingRepository>();
+builder.Services.AddScoped<IShiftTimingService, ShiftTimingService>();
+
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -19,6 +44,8 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
+
+app.UseExceptionMiddleware(); 
 
 app.MapControllers();
 
