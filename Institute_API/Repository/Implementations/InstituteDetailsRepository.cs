@@ -4,8 +4,6 @@ using Institute_API.DTOs.ServiceResponse;
 using Institute_API.Models;
 using Institute_API.Repository.Interfaces;
 using System.Data;
-using System.Net;
-using System.Xml.Serialization;
 
 namespace Institute_API.Repository.Implementations
 {
@@ -29,10 +27,10 @@ namespace Institute_API.Repository.Implementations
                     {
                         Institute_name = request.Institute_name,
                         Institute_Alias = request.Institute_Alias,
-                        Institute_Logo = string.Empty,
-                        Institute_DigitalSignatory = string.Empty,
-                        Institute_PrincipalSignatory = string.Empty,
-                        Institute_DigitalStamp = string.Empty,
+                        Institute_Logo = ImageUpload(request.Institute_Logo),
+                        Institute_DigitalSignatory = ImageUpload(request.Institute_DigitalSignatory),
+                        Institute_PrincipalSignatory = ImageUpload(request.Institute_PrincipalSignatory),
+                        Institute_DigitalStamp = ImageUpload(request.Institute_DigitalStamp),
                     };
                     string query = @"INSERT INTO [tbl_InstituteDetails] (Institute_name, Institute_Alias, Institute_Logo, Institute_DigitalStamp, Institute_DigitalSignatory, Institute_PrincipalSignatory, en_date)
                              VALUES (@Institute_name, @Institute_Alias, @Institute_Logo, @Institute_DigitalStamp, @Institute_DigitalSignatory, @Institute_PrincipalSignatory, @en_date)
@@ -45,7 +43,9 @@ namespace Institute_API.Repository.Implementations
                         int schContact = request.SchoolContacts != null ? await AddUpdateSchoolContact(request.SchoolContacts, institutionId) : 0;
                         int smMapping = request.InstituteSMMappings != null ? await AddUpdateSMMapping(request.InstituteSMMappings, institutionId) : 0;
                         int desc = request.InstituteDescription != null ? await AddUpdateInstituteDescription(request.InstituteDescription, institutionId) : 0;
-                        if (address > 0 && schContact > 0 && smMapping > 0 && desc > 0)
+                        int academic = request.AcademicInfos != null ? await AddUpdateAcademicInfo(request.AcademicInfos, institutionId) : 0;
+                        int semester = request.SemesterInfo != null ? await AddUpdateSemesterInfo(request.SemesterInfo, institutionId) : 0;
+                        if (address > 0 && schContact > 0 && smMapping > 0 && desc > 0 && academic > 0 && semester > 0)
                         {
                             return new ServiceResponse<int>(true, "Operation successsful", institutionId, 200);
                         }
@@ -77,10 +77,10 @@ namespace Institute_API.Repository.Implementations
                         Institute_id = request.Institute_id,
                         Institute_name = request.Institute_name,
                         Institute_Alias = request.Institute_Alias,
-                        Institute_DigitalSignatory = string.Empty,
-                        Institute_DigitalStamp = string.Empty,
-                        Institute_Logo = string.Empty,
-                        Institute_PrincipalSignatory = string.Empty
+                        Institute_DigitalSignatory = ImageUpload(request.Institute_DigitalSignatory),
+                        Institute_DigitalStamp = ImageUpload(request.Institute_DigitalStamp),
+                        Institute_Logo = ImageUpload(request.Institute_Logo),
+                        Institute_PrincipalSignatory = ImageUpload(request.Institute_PrincipalSignatory)
                     };
                     int rowsAffected = await _connection.ExecuteAsync(updateQuery, newInstitution);
                     if (rowsAffected > 0)
@@ -89,6 +89,8 @@ namespace Institute_API.Repository.Implementations
                         int schContact = request.SchoolContacts != null ? await AddUpdateSchoolContact(request.SchoolContacts, request.Institute_id) : 0;
                         int smMapping = request.InstituteSMMappings != null ? await AddUpdateSMMapping(request.InstituteSMMappings, request.Institute_id) : 0;
                         int desc = request.InstituteDescription != null ? await AddUpdateInstituteDescription(request.InstituteDescription, request.Institute_id) : 0;
+                        int academic = request.AcademicInfos != null ? await AddUpdateAcademicInfo(request.AcademicInfos, request.Institute_id) : 0;
+                        int semester = request.SemesterInfo != null ? await AddUpdateSemesterInfo(request.SemesterInfo, request.Institute_id) : 0;
                         if (address > 0 && schContact > 0 && smMapping > 0 && desc > 0)
                         {
                             return new ServiceResponse<int>(true, "Operation successsful", request.Institute_id, 200);
@@ -126,6 +128,10 @@ namespace Institute_API.Repository.Implementations
                     response.Institute_name = institute.Institute_name;
                     response.Institute_Alias = institute.Institute_Alias;
                     response.en_date = institute.en_date;
+                    response.Institute_Logo = GetImage(institute.Institute_Logo);
+                    response.Institute_DigitalStamp = GetImage(institute.Institute_DigitalStamp);
+                    response.Institute_DigitalSignatory = GetImage(institute.Institute_DigitalSignatory);
+                    response.Institute_PrincipalSignatory = GetImage(institute.Institute_PrincipalSignatory);
 
                     var des = await _connection.QueryFirstOrDefaultAsync<InstituteDescription>(
                         "SELECT * FROM tbl_InstitueDescription WHERE Institute_id = @Institute_id"
@@ -159,211 +165,6 @@ namespace Institute_API.Repository.Implementations
                 return new ServiceResponse<InstituteDetailsDTO>(false, ex.Message, new InstituteDetailsDTO(), 500);
             }
         }
-        public async Task<ServiceResponse<byte[]>> GetInstituteLogoById(int Id)
-        {
-            try
-            {
-                var data = await _connection.QueryFirstOrDefaultAsync<InstituteDetails>(
-                   "SELECT Institute_Logo FROM tbl_InstituteDetails WHERE Institute_id = @Institute_id",
-                   new { Institute_id = Id }) ?? throw new Exception("Data not found");
-                var filePath = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "Institution", data.Institute_Logo);
-
-                if (!File.Exists(filePath))
-                    throw new Exception("File not found");
-                var fileBytes = await File.ReadAllBytesAsync(filePath);
-
-                return new ServiceResponse<byte[]>(true, "Record Found", fileBytes, 200);
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<byte[]>(false, ex.Message, [], 500);
-            }
-        }
-        public async Task<ServiceResponse<byte[]>> GetInstituteDigitalStampById(int Id)
-        {
-            try
-            {
-                var data = await _connection.QueryFirstOrDefaultAsync<InstituteDetails>(
-                   "SELECT Institute_DigitalStamp FROM tbl_InstituteDetails WHERE Institute_id = @Institute_id",
-                   new { Institute_id = Id }) ?? throw new Exception("Data not found");
-                var filePath = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "Institution", data.Institute_DigitalStamp);
-
-                if (!File.Exists(filePath))
-                    throw new Exception("File not found");
-                var fileBytes = await File.ReadAllBytesAsync(filePath);
-
-                return new ServiceResponse<byte[]>(true, "Record Found", fileBytes, 200);
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<byte[]>(false, ex.Message, [], 500);
-            }
-        }
-        public async Task<ServiceResponse<byte[]>> GetInstituteDigitalSignatoryById(int Id)
-        {
-            try
-            {
-                var data = await _connection.QueryFirstOrDefaultAsync<InstituteDetails>(
-                   "SELECT Institute_DigitalSignatory FROM tbl_InstituteDetails WHERE Institute_id = @Institute_id",
-                   new { Institute_id = Id }) ?? throw new Exception("Data not found");
-                var filePath = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "Institution", data.Institute_DigitalSignatory);
-
-                if (!File.Exists(filePath))
-                    throw new Exception("File not found");
-                var fileBytes = await File.ReadAllBytesAsync(filePath);
-
-                return new ServiceResponse<byte[]>(true, "Record Found", fileBytes, 200);
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<byte[]>(false, ex.Message, [], 500);
-            }
-        }
-        public async Task<ServiceResponse<byte[]>> GetInstitutePrincipalSignatoryById(int Id)
-        {
-            try
-            {
-                var data = await _connection.QueryFirstOrDefaultAsync<InstituteDetails>(
-                   "SELECT Institute_PrincipalSignatory FROM tbl_InstituteDetails WHERE Institute_id = @Institute_id",
-                   new { Institute_id = Id }) ?? throw new Exception("Data not found");
-                var filePath = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "Institution", data.Institute_PrincipalSignatory);
-
-                if (!File.Exists(filePath))
-                    throw new Exception("File not found");
-                var fileBytes = await File.ReadAllBytesAsync(filePath);
-
-                return new ServiceResponse<byte[]>(true, "Record Found", fileBytes, 200);
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<byte[]>(false, ex.Message, [], 500);
-            }
-        }
-        public async Task<ServiceResponse<string>> AddUpdateInstituteLogo(InstLogoDTO request)
-        {
-            try
-            {
-                string sql = @"UPDATE [dbo].[tbl_InstituteDetails]
-                       SET Institute_Logo = @LogoFileName
-                       WHERE Institute_id = @InstituteId";
-                string logoFileName = request.InstLogo != null ? await HandleImageUpload(request.InstLogo) : string.Empty;
-                // Execute the update query
-
-                int rowsAffected = await _connection.ExecuteAsync(sql, new { LogoFileName = logoFileName, InstituteId = request.Institute_id });
-                if (rowsAffected > 0)
-                {
-                    return new ServiceResponse<string>(true, "Operation successsful", "Logo added successfully", 200);
-                }
-                else
-                {
-                    return new ServiceResponse<string>(false, "Operation failed", string.Empty, 500);
-                }
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
-            }
-        }
-        public async Task<ServiceResponse<string>> AddUpdatePrincipalSignatory(InstPriSignDTO request)
-        {
-            try
-            {
-                string sql = @"UPDATE [dbo].[tbl_InstituteDetails]
-                       SET Institute_PrincipalSignatory = @Institute_PrincipalSignatory
-                       WHERE Institute_id = @InstituteId";
-                string Institute_PrincipalSignatory = request.InstPrinSign != null ? await HandleImageUpload(request.InstPrinSign) : string.Empty;
-                int rowsAffected = await _connection.ExecuteAsync(sql, new { Institute_PrincipalSignatory, InstituteId = request.Institute_id });
-                if (rowsAffected > 0)
-                {
-                    return new ServiceResponse<string>(true, "Operation successsful", "Signatory added successfully", 200);
-                }
-                else
-                {
-                    return new ServiceResponse<string>(false, "Operation failed", string.Empty, 500);
-                }
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
-            }
-        }
-        public async Task<ServiceResponse<string>> AddUpdateDigitalSignatory(InstDigSignDTO request)
-        {
-            try
-            {
-                string sql = @"UPDATE [dbo].[tbl_InstituteDetails]
-                       SET Institute_DigitalSignatory = @Institute_DigitalSignatory
-                       WHERE Institute_id = @InstituteId";
-                string Institute_DigitalSignatory = request.InstDigSign != null ? await HandleImageUpload(request.InstDigSign) : string.Empty;
-                int rowsAffected = await _connection.ExecuteAsync(sql, new { Institute_DigitalSignatory, InstituteId = request.Institute_id });
-                if (rowsAffected > 0)
-                {
-                    return new ServiceResponse<string>(true, "Operation successsful", "Signatory added successfully", 200);
-                }
-                else
-                {
-                    return new ServiceResponse<string>(false, "Operation failed", string.Empty, 500);
-                }
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
-            }
-        }
-        public async Task<ServiceResponse<string>> AddUpdateDigitalStamp(InstDigiStampDTO request)
-        {
-            try
-            {
-                string sql = @"UPDATE [dbo].[tbl_InstituteDetails]
-                       SET Institute_DigitalStamp = @Institute_DigitalStamp
-                       WHERE Institute_id = @InstituteId";
-                string Institute_DigitalStamp = request.InstDigStamp != null ? await HandleImageUpload(request.InstDigStamp) : string.Empty;
-                int rowsAffected = await _connection.ExecuteAsync(sql, new { Institute_DigitalStamp, InstituteId = request.Institute_id });
-                if (rowsAffected > 0)
-                {
-                    return new ServiceResponse<string>(true, "Operation successsful", "Stamp added successfully", 200);
-                }
-                else
-                {
-                    return new ServiceResponse<string>(false, "Operation failed", string.Empty, 500);
-                }
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
-            }
-        }
-        //public async Task<ServiceResponse<byte[]>> GetInstituteFileById(int Id, string fileType)
-        //{
-        //    try
-        //    {
-        //        string columnName = "";
-        //        columnName = fileType.ToLower() switch
-        //        {
-        //            "logo" => "Institute_Logo",
-        //            "digitalstamp" => "Institute_DigitalStamp",
-        //            "digitalsignatory" => "Institute_DigitalSignatory",
-        //            "principalsignatory" => "Institute_PrincipalSignatory",
-        //            _ => throw new ArgumentException("Invalid file type specified"),
-        //        };
-        //        var data = await _connection.QueryFirstOrDefaultAsync<InstituteDetails>(
-        //            $"SELECT {columnName} FROM tbl_InstituteDetails WHERE Institute_id = @Institute_id",
-        //            new { Institute_id = Id }) ?? throw new Exception("Data not found");
-
-        //        var filePath = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "Institution", data.GetType().GetProperty(columnName).GetValue(data).ToString());
-
-        //        if (!File.Exists(filePath))
-        //            throw new Exception("File not found");
-
-        //        var fileBytes = await File.ReadAllBytesAsync(filePath);
-
-        //        return new ServiceResponse<byte[]>(true, "Record Found", fileBytes, 200);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return new ServiceResponse<byte[]>(false, ex.Message, new byte[0], 500);
-        //    }
-        //}
         private async Task<int> AddUpdateInstituteAddress(List<InstituteAddress> request, int InstitutionId)
         {
             int addedRecords = 0;
@@ -499,27 +300,112 @@ namespace Institute_API.Repository.Implementations
             }
             return rowsAffected;
         }
-        private async Task<string> HandleImageUpload(IFormFile request)
+        private async Task<int> AddUpdateAcademicInfo(List<AcademicInfo> request, int InstitutionId)
         {
+            int addedRecords = 0;
             if (request != null)
             {
-                var uploads = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "Institution");
-                if (!Directory.Exists(uploads))
+                foreach (var data in request)
                 {
-                    Directory.CreateDirectory(uploads);
+                    data.Institute_id = InstitutionId;
                 }
-                var fileName = Path.GetFileNameWithoutExtension(request.FileName) + "_" + Guid.NewGuid().ToString() + Path.GetExtension(request.FileName);
-                var filePath = Path.Combine(uploads, fileName);
-                using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
+            }
+            string query = "SELECT COUNT(*) FROM [tbl_AcademicInfo] WHERE Institute_id = @InstituteId";
+            int count = await _connection.ExecuteScalarAsync<int>(query, new { InstituteId = InstitutionId });
+            if (count > 0)
+            {
+                string deleteQuery = "DELETE FROM [tbl_AcademicInfo] WHERE Institute_id = @InstituteId";
+                int rowsAffected = await _connection.ExecuteAsync(deleteQuery, new { InstituteId = InstitutionId });
+                if (rowsAffected > 0)
                 {
-                    await request.CopyToAsync(fileStream);
+                    string insertQuery = @"
+                INSERT INTO [tbl_AcademicInfo] (Institute_id, [AcademicYearStartMonth], [AcademicYearEndMonth])
+                VALUES (@Institute_id, @AcademicYearStartMonth, @AcademicYearEndMonth)";
+                    // Execute the query with multiple parameterized sets of values
+                    addedRecords = await _connection.ExecuteAsync(insertQuery, request);
                 }
-                return fileName;
             }
             else
             {
-                return string.Empty;
+                string insertQuery = @"
+                INSERT INTO [tbl_AcademicInfo] (Institute_id, [AcademicYearStartMonth], [AcademicYearEndMonth])
+                VALUES (@Institute_id, @AcademicYearStartMonth, @AcademicYearEndMonth)";
+                // Execute the query with multiple parameterized sets of values
+                addedRecords = await _connection.ExecuteAsync(insertQuery, request);
             }
+            return addedRecords;
+        }
+        private async Task<int> AddUpdateSemesterInfo(SemesterInfo request, int InstitutionId)
+        {
+            int rowsAffected = 0;
+            if (request.SemesterInfoId == 0)
+            {
+                request.Institute_id = InstitutionId;
+
+                var insertQuery = @"
+                INSERT INTO SemesterInfo (Institute_id, IsSemester, SemesterStartDate, SemesterEndDate)
+                VALUES (@Institute_id, @IsSemester, @SemesterStartDate, @SemesterEndDate);";
+                // Execute the query with parameterized values
+                rowsAffected = await _connection.ExecuteAsync(insertQuery, request);
+            }
+            else
+            {
+                var updateQuery = @"
+    UPDATE SemesterInfo
+    SET Institute_id = @Institute_id,
+        IsSemester = @IsSemester,
+        SemesterStartDate = @SemesterStartDate,
+        SemesterEndDate = @SemesterEndDate
+    WHERE SemesterInfoId = @SemesterInfoId;";
+
+                rowsAffected = await _connection.ExecuteAsync(updateQuery, request);
+            }
+            return rowsAffected;
+        }
+        private string ImageUpload(string image)
+        {
+            byte[] imageData = Convert.FromBase64String(image);
+            string directoryPath = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "InstituteDetails");
+
+            if (!Directory.Exists(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
+            string fileExtension = IsJpeg(imageData) == true ? ".jpg" : IsPng(imageData) == true ? ".png" : IsGif(imageData) == true ? ".gif" : string.Empty;
+            string fileName = Guid.NewGuid().ToString() + fileExtension;
+            string filePath = Path.Combine(directoryPath, fileName);
+
+            // Write the byte array to the image file
+            File.WriteAllBytes(filePath, imageData);
+            return filePath;
+        }
+        private bool IsJpeg(byte[] bytes)
+        {
+            // JPEG magic number: 0xFF, 0xD8
+            return bytes.Length > 1 && bytes[0] == 0xFF && bytes[1] == 0xD8;
+        }
+        private bool IsPng(byte[] bytes)
+        {
+            // PNG magic number: 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A
+            return bytes.Length > 7 && bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47
+                && bytes[4] == 0x0D && bytes[5] == 0x0A && bytes[6] == 0x1A && bytes[7] == 0x0A;
+        }
+        private bool IsGif(byte[] bytes)
+        {
+            // GIF magic number: "GIF"
+            return bytes.Length > 2 && bytes[0] == 0x47 && bytes[1] == 0x49 && bytes[2] == 0x46;
+        }
+        private string GetImage(string Filename)
+        {
+            var filePath = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "InstituteDetails", Filename);
+
+            if (!File.Exists(filePath))
+            {
+                throw new Exception("File not found");
+            }
+            byte[] fileBytes = File.ReadAllBytes(filePath);
+            string base64String = Convert.ToBase64String(fileBytes);
+            return base64String;
         }
     }
 }

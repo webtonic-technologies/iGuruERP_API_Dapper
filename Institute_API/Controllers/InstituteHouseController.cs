@@ -15,7 +15,7 @@ namespace Institute_API.Controllers
             _instituteHouseServices = instituteHouseServices;
         }
 
-        [HttpPost]
+        [HttpPost("AddInstituteHouse")]
         public async Task<IActionResult> AddUpdateInstituteHouse([FromBody] InstituteHouseDTO request)
         {
             try
@@ -38,7 +38,7 @@ namespace Institute_API.Controllers
 
         }
 
-        [HttpGet("InstituteHouse/{id}")]
+        [HttpGet("GetInstituteHouseById/{id}")]
         public async Task<IActionResult> GetInstituteHouseList(int id)
         {
             try
@@ -51,42 +51,5 @@ namespace Institute_API.Controllers
                 return BadRequest(ex.Message);
             }
         }
-
-        [HttpGet("InstituteHouseLogo/{id}")]
-        public async Task<IActionResult> GetInstituteHouseLogoById(int id)
-        {
-            try
-            {
-                var data = await _instituteHouseServices.GetInstituteHouseLogoById(id);
-                return File(data.Data, "image/*");
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
-        [HttpPost("HouseFile")]
-        public async Task<IActionResult> AddUpdateInstituteHouseFile([FromForm] HoueseFile request)
-        {
-            try
-            {
-                var data = await _instituteHouseServices.AddUpdateHouseFile(request);
-                if (data != null)
-                {
-                    return Ok(data);
-                }
-                else
-                {
-                    return BadRequest("Bad Request");
-                }
-
-            }
-            catch (Exception e)
-            {
-                return this.BadRequest(e.Message);
-            }
-
-        }
-
     }
 }

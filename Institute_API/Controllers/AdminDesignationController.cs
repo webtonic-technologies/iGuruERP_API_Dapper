@@ -16,7 +16,7 @@ namespace Institute_API.Controllers
             _adminDesignationServices = adminDesignationServices;
         }
 
-        [HttpPost]
+        [HttpPost("AddAdminDesignation")]
         public async Task<IActionResult> AddUpdateAdminDesignation([FromBody]AdminDesignation request)
         {
             try
@@ -39,7 +39,7 @@ namespace Institute_API.Controllers
 
         }
 
-        [HttpGet("AdminDesignation/{id}")]
+        [HttpGet("GetAdminDesignationById/{id}")]
         public async Task<IActionResult> GetAdminDesignationById(int id)
         {
             try
@@ -53,7 +53,7 @@ namespace Institute_API.Controllers
             }
         }
 
-        [HttpGet]
+        [HttpGet("GetAllAdminDesignationList")]
         public async Task<IActionResult> GetAdminDesignationList(int Instituteid)
         {
             try
@@ -67,7 +67,7 @@ namespace Institute_API.Controllers
             }
         }
 
-        [HttpDelete]
+        [HttpDelete("DeleteAdminDesignation")]
         public async Task<IActionResult> DeleteAdminDesignation(int id)
         {
             try
