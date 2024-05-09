@@ -18,6 +18,8 @@ builder.Services.AddTransient<IStudentInformationServices, StudentInformationSer
 builder.Services.AddTransient<IStudentInformationRepository, StudentInformationRepository>();
 builder.Services.AddTransient<IStudentInfoDropdownRepository, StudentInfoDropdownRepository>();
 builder.Services.AddTransient<IStudentInfoDropdownService, StudentInfoDropdownService>();
+builder.Services.AddTransient<ITimetableRepository, TimetableRepository>();
+builder.Services.AddTransient<ITimetableServices, TimetableServices>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
