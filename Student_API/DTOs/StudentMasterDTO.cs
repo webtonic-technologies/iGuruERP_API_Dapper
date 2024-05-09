@@ -75,7 +75,22 @@
         public string Email_id { get; set; }
         public decimal Annual_Income { get; set; }
         public string File_Name { get; set; }
+        public StudentParentOfficeInfo studentParentOfficeInfo { get; set; }    
     }
+
+    public class StudentParentOfficeInfo
+    {
+        public int Student_Parent_Office_Info_id { get; set; }
+        public int Student_id { get; set; }
+        public int Parents_Type_id { get; set; }
+        public string Office_Building_no { get; set; }
+        public string Street { get; set; }
+        public string Area { get; set; }
+        public string City { get; set; }
+        public string State { get; set; }
+        public string Pincode { get; set; }
+    }
+
 
     public class StudentSiblings
     {

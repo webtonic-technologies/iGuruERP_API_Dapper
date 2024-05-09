@@ -27,7 +27,8 @@ namespace Student_API.Repository.Implementations
                     SELECT * FROM [dbo].[tbl_StudentParentsInfo] WHERE student_id = @studentId;
                     SELECT * FROM [dbo].[tbl_StudentSiblings] WHERE student_id = @studentId;
                     SELECT * FROM [dbo].[tbl_StudentPreviousSchool] WHERE student_id = @studentId;
-                    SELECT * FROM [dbo].[tbl_StudentHealthInfo] WHERE student_id = @studentId;";
+                    SELECT * FROM [dbo].[tbl_StudentHealthInfo] WHERE student_id = @studentId;
+                    SELECT * FROM [dbo].[[tbl_StudentParentsOfficeInfo]] WHERE student_id = @studentId;";
 
                 using (var result = await _connection.QueryMultipleAsync(sql, new { studentId }))
                 {
@@ -37,6 +38,7 @@ namespace Student_API.Repository.Implementations
                     var StudentSiblings = await result.ReadFirstOrDefaultAsync<StudentSiblings>();
                     var StudentPreviousSchool = await result.ReadFirstOrDefaultAsync<StudentPreviousSchool>();
                     var StudentHealthInfo = await result.ReadFirstOrDefaultAsync<StudentHealthInfo>();
+                    var StudentParentOfficeInfo = await result.ReadAsync<StudentParentOfficeInfo>();
 
                     if (studentDetails != null)
                     {
@@ -45,6 +47,12 @@ namespace Student_API.Repository.Implementations
                         studentDetails.studentSiblings = StudentSiblings;
                         studentDetails.studentPreviousSchool = StudentPreviousSchool;
                         studentDetails.studentHealthInfo = StudentHealthInfo;
+                        foreach (var parentInfo in StudentParentInfo)
+                        {
+                            parentInfo.studentParentOfficeInfo = StudentParentOfficeInfo
+                                .Where(officeInfo => officeInfo.Parents_Type_id == parentInfo.Parent_Type_id && officeInfo.Student_id == studentId)
+                                .FirstOrDefault();
+                        }
                         return new ServiceResponse<StudentInformationDTO>(true, "Operation successful", studentDetails, 200);
                     }
                     else
@@ -230,27 +238,41 @@ namespace Student_API.Repository.Implementations
 
         public async Task<ServiceResponse<int>> AddUpdateStudentParentInfo(StudentParentInfoDTO request)
         {
-            try
+            _connection.Open(); 
+            using (var transaction = _connection.BeginTransaction())
             {
-                if (request.Student_Parent_Info_id == 0)
+                try
                 {
-                    var addSql = @"
-                        INSERT INTO [dbo].[tbl_StudentParentsInfo] ([Student_id],[Parent_Type_id],[First_Name],[Middle_Name],[Last_Name],[Contact_Number],[Bank_Account_no],[Bank_IFSC_Code],[Family_Ration_Card_Type],[Family_Ration_Card_no],[Mobile_Number],[Date_of_Birth],[Aadhar_no],[PAN_card_no],[Residential_Address],[Occupation_id],[Designation],[Name_of_the_Employer],[Office_no],[Email_id],[Annual_Income],[File_Name])
-                        VALUES (@Student_id,@Parent_Type_id,@First_Name,@Middle_Name,@Last_Name,@Contact_Number,@Bank_Account_no,@Bank_IFSC_Code,@Family_Ration_Card_Type,@Family_Ration_Card_no,@Mobile_Number,@Date_of_Birth,@Aadhar_no,@PAN_card_no,@Residential_Address,@Occupation_id,@Designation,@Name_of_the_Employer,@Office_no,@Email_id,@Annual_Income,@File_Name); 
-                        SELECT CAST(SCOPE_IDENTITY() as int);";
-                    int insertedId = await _connection.ExecuteScalarAsync<int>(addSql, request);
-                    if (insertedId > 0)
+                    if (request.Student_Parent_Info_id == 0)
                     {
-                        return new ServiceResponse<int>(true, "Operation successful", insertedId, 200);
+                        // Insert Student Parent Info
+                        var addSql = @"
+                    INSERT INTO [dbo].[tbl_StudentParentsInfo] ([Student_id],[Parent_Type_id],[First_Name],[Middle_Name],[Last_Name],[Contact_Number],[Bank_Account_no],[Bank_IFSC_Code],[Family_Ration_Card_Type],[Family_Ration_Card_no],[Mobile_Number],[Date_of_Birth],[Aadhar_no],[PAN_card_no],[Residential_Address],[Occupation_id],[Designation],[Name_of_the_Employer],[Office_no],[Email_id],[Annual_Income],[File_Name])
+                    VALUES (@Student_id,@Parent_Type_id,@First_Name,@Middle_Name,@Last_Name,@Contact_Number,@Bank_Account_no,@Bank_IFSC_Code,@Family_Ration_Card_Type,@Family_Ration_Card_no,@Mobile_Number,@Date_of_Birth,@Aadhar_no,@PAN_card_no,@Residential_Address,@Occupation_id,@Designation,@Name_of_the_Employer,@Office_no,@Email_id,@Annual_Income,@File_Name); 
+                    SELECT CAST(SCOPE_IDENTITY() as int);";
+                        int insertedId = await _connection.ExecuteScalarAsync<int>(addSql, request, transaction);
+
+                        // Insert Student Parent Office Info
+                        var addOfficeSql = @"
+                    INSERT INTO [dbo].[tbl_StudentParentsOfficeInfo] ([Student_id],[Parents_Type_id],[Office_Building_no],[Street],[Area],[City],[State],[Pincode])
+                    VALUES (@Student_id,@Parents_Type_id,@Office_Building_no,@Street,@Area,@City,@State,@Pincode);";
+                        await _connection.ExecuteAsync(addOfficeSql, request.studentParentOfficeInfo, transaction);
+
+                        transaction.Commit();
+
+                        if (insertedId > 0)
+                        {
+                            return new ServiceResponse<int>(true, "Operation successful", insertedId, 200);
+                        }
+                        else
+                        {
+                            return new ServiceResponse<int>(false, "Some error occurred", 0, 500);
+                        }
                     }
                     else
                     {
-                        return new ServiceResponse<int>(false, "Some error occured", 0, 500);
-                    }
-                }
-                else
-                {
-                    var updateSql = @"
+                        // Update Student Parent Info
+                        var updateSql = @"
                     UPDATE [dbo].[tbl_StudentParentsInfo] SET
                         [Student_id] = @Student_id,
                         [Parent_Type_id] = @Parent_Type_id,
@@ -275,23 +297,40 @@ namespace Student_API.Repository.Implementations
                         [Annual_Income] = @Annual_Income,
                         [File_Name] = @File_Name
                     WHERE [Student_Parent_Info_id] = @Student_Parent_Info_id;";
-                    int affectedRows = await _connection.ExecuteAsync(updateSql, request);
-                    if (affectedRows > 0)
-                    {
-                        return new ServiceResponse<int>(true, "Operation successful", request.Student_Parent_Info_id, 200);
-                    }
-                    else
-                    {
-                        return new ServiceResponse<int>(false, "Some error occured", 0, 500);
+                        int affectedRows = await _connection.ExecuteAsync(updateSql, request, transaction);
+
+                        // Update Student Parent Office Info
+                        var updateOfficeSql = @"
+                    UPDATE [dbo].[tbl_StudentParentsOfficeInfo] SET
+                        [Student_id] = @Student_id,
+                        [Parents_Type_id] = @Parents_Type_id,
+                        [Office_Building_no] = @Office_Building_no,
+                        [Street] = @Street,
+                        [Area] = @Area,
+                        [City] = @City,
+                        [State] = @State,
+                        [Pincode] = @Pincode
+                    WHERE [Student_Parent_Office_Info_id] = @Student_Parent_Office_Info_id;";
+                        int affectedRowsOffice = await _connection.ExecuteAsync(updateOfficeSql, request.studentParentOfficeInfo, transaction);
+
+                        transaction.Commit();
+
+                        if (affectedRows > 0 && affectedRowsOffice > 0)
+                        {
+                            return new ServiceResponse<int>(true, "Operation successful", request.Student_Parent_Info_id, 200);
+                        }
+                        else
+                        {
+                            return new ServiceResponse<int>(false, "Some error occurred", 0, 500);
+                        }
                     }
                 }
-
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    return new ServiceResponse<int>(false, ex.Message, 0, 500);
+                }
             }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<int>(false, ex.Message, 0, 500);
-            }
-
         }
 
         public async Task<ServiceResponse<int>> AddOrUpdateStudentSiblings(StudentSiblings sibling)
