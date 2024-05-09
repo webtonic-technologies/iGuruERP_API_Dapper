@@ -51,41 +51,5 @@ namespace Institute_API.Controllers
                 return BadRequest(ex.Message);
             }
         }
-
-        [HttpGet("GetInstituteAffiliationLogoById/{id}")]
-        public async Task<IActionResult> GetInstituteAffiliationLogoById(int id)
-        {
-            try
-            {
-                var data = await _instituteAffiliationServices.GetAffiliationLogoById(id);
-                return File(data.Data, "image/*");
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
-
-        [HttpPost("AddAffiliationLogo")]
-        public async Task<IActionResult> AddUpdateLogo([FromForm] AffiliationLogoDTO request)
-        {
-            try
-            {
-                var data = await _instituteAffiliationServices.AddUpdateLogo(request);
-                if (data != null)
-                {
-                    return Ok(data);
-                }
-                else
-                {
-                    return BadRequest("Bad Request");
-                }
-
-            }
-            catch (Exception e)
-            {
-                return this.BadRequest(e.Message);
-            }
-        }
     }
 }

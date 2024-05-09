@@ -29,7 +29,7 @@ namespace Institute_API.Repository.Implementations
                     if (insertedId > 0)
                     {
                         string insertQuery = @"INSERT INTO [dbo].[tbl_AdminConfiguration] (Institute_id, Department_id, Designation_id)
-                       VALUES (@InstituteId, @DepartmentId, @DesignationId);";
+                       VALUES (@Institute_id, @Department_id, @Designation_id);";
                         AdminConfiguration adminConfiguration = new()
                         {
                             Institute_id = request.Institute_id,
@@ -37,7 +37,7 @@ namespace Institute_API.Repository.Implementations
                             Designation_id = insertedId
                         };
                         // Execute the query and retrieve the inserted id
-                        int rowsAffected = await _connection.ExecuteScalarAsync<int>(insertQuery, adminConfiguration);
+                        int rowsAffected = await _connection.ExecuteAsync(insertQuery, adminConfiguration);
                         if (rowsAffected > 0)
                         {
                             return new ServiceResponse<string>(true, "Operation successful", "Designation Added successfully", 200);
@@ -64,7 +64,41 @@ namespace Institute_API.Repository.Implementations
                     int affectedRows = await _connection.ExecuteAsync(sql, request);
                     if (affectedRows > 0)
                     {
-                        return new ServiceResponse<string>(true, "operation successful", "Designation updated successfully", 500);
+                        var sqlSelectById = @"
+                        SELECT Admin_Configuration_id, Institute_id, Department_id, Designation_id
+                        FROM tbl_AdminConfiguration
+                        WHERE Designation_id = @Designation_id;";
+
+                        var parameters = new
+                        {
+                            request.Designation_id
+                        };
+
+                        var adminConfiguration = await _connection.QuerySingleOrDefaultAsync<AdminConfiguration>(sqlSelectById, parameters);
+
+                        var sqlUpdate = @"
+                        UPDATE tbl_AdminConfiguration
+                        SET Institute_id = @Institute_id,
+                            Department_id = @Department_id,
+                            Designation_id = @Designation_id
+                        WHERE Admin_Configuration_id = @Admin_Configuration_id;";
+                        AdminConfiguration adminConfiguration1 = new()
+                        {
+                            Institute_id = request.Institute_id,
+                            Department_id = request.Department_id,
+                            Designation_id = request.Department_id,
+                            Admin_Configuration_id = adminConfiguration != null ? adminConfiguration.Admin_Configuration_id : 0
+                        };
+                        // Execute the query and retrieve the inserted id
+                        int rowsAffected = await _connection.ExecuteAsync(sqlUpdate, adminConfiguration1);
+                        if (rowsAffected > 0)
+                        {
+                            return new ServiceResponse<string>(true, "operation successful", "Designation updated successfully", 200);
+                        }
+                        else
+                        {
+                            return new ServiceResponse<string>(false, "Some error occured", string.Empty, 500);
+                        }
                     }
                     else
                     {
