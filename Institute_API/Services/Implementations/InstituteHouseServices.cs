@@ -16,18 +16,6 @@ namespace Institute_API.Services.Implementations
             _instituteHouseRepository = instituteHouseRepository;
         }
 
-        public async Task<ServiceResponse<string>> AddUpdateHouseFile(HoueseFile request)
-        {
-            try
-            {
-                return await _instituteHouseRepository.AddUpdateHouseFile(request);
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
-            }
-        }
-
         public async Task<ServiceResponse<int>> AddUpdateInstituteHouse(InstituteHouseDTO request)
         {
             try
@@ -49,18 +37,6 @@ namespace Institute_API.Services.Implementations
             catch (Exception ex)
             {
                 return new ServiceResponse<InstituteHouseDTO>(false, ex.Message, new InstituteHouseDTO(), 500);
-            }
-        }
-
-        public async Task<ServiceResponse<byte[]>> GetInstituteHouseLogoById(int Id)
-        {
-            try
-            {
-                return await _instituteHouseRepository.GetInstituteHouseLogoById(Id);
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<byte[]>(false, ex.Message, [], 500);
             }
         }
     }

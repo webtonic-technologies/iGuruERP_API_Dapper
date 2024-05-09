@@ -25,18 +25,6 @@ namespace Institute_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<string>> AddUpdateLogo(AffiliationLogoDTO request)
-        {
-            try
-            {
-                return await _instituteAffiliationRepository.AddUpdateLogo(request);
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
-            }
-        }
-
         public async Task<ServiceResponse<AffiliationDTO>> GetAffiliationInfoById(int Id)
         {
             try
@@ -46,18 +34,6 @@ namespace Institute_API.Services.Implementations
             catch (Exception ex)
             {
                 return new ServiceResponse<AffiliationDTO>(false, ex.Message, new AffiliationDTO(), 500);
-            }
-        }
-
-        public async Task<ServiceResponse<byte[]>> GetAffiliationLogoById(int Id)
-        {
-            try
-            {
-                return await _instituteAffiliationRepository.GetAffiliationLogoById(Id);
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<byte[]>(false, ex.Message, [], 500);
             }
         }
     }
