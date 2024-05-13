@@ -27,8 +27,15 @@
         public string Aadhar_Number { get; set; }
         public string NEP { get; set; }
         public string QR_code { get; set; }
+        public bool IsPhysicallyChallenged {  get; set; }   
+        public bool IsSports {  get; set; }   
+        public bool IsAided {  get; set; }   
+        public bool IsNCC {  get; set; }   
+        public bool IsNSS {  get; set; }   
+        public bool IsScout {  get; set; }   
+        public string File_Name {  get; set; }   
+        public string Base64File { get; set; }    
 
-       
     }
 
     public class StudentOtherInfoDTO
@@ -75,7 +82,22 @@
         public string Email_id { get; set; }
         public decimal Annual_Income { get; set; }
         public string File_Name { get; set; }
+        public StudentParentOfficeInfo studentParentOfficeInfo { get; set; }    
     }
+
+    public class StudentParentOfficeInfo
+    {
+        public int Student_Parent_Office_Info_id { get; set; }
+        public int Student_id { get; set; }
+        public int Parents_Type_id { get; set; }
+        public string Office_Building_no { get; set; }
+        public string Street { get; set; }
+        public string Area { get; set; }
+        public string City { get; set; }
+        public string State { get; set; }
+        public string Pincode { get; set; }
+    }
+
 
     public class StudentSiblings
     {
@@ -115,8 +137,29 @@
         public float height { get; set; }
         public float weight { get; set; }
         public string Government_ID { get; set; }
-        public DateTime BCG { get; set; }
-        public DateTime MMR_Measles { get; set; }
-        public DateTime Polio { get; set; }
+        public string BCG { get; set; }
+        public string MMR_Measles { get; set; }
+        public string Polio { get; set; }
+        public string Hepatitis { get; set; }
+        public string Triple_Antigen { get; set; }
+        public string Others { get; set; }
+        public string General_Health { get; set; }
+        public string Head_Eye_ENT { get; set; }
+        public string Chest { get; set; }
+        public string CVS { get; set; }
+        public string Abdomen { get; set; }
+        public string Genitalia { get; set; }
+        public string Congenital_Disease { get; set; }
+        public string Physical_Deformity { get; set; }
+        public string History_Majorillness { get; set; }
+        public string History_Accident { get; set; }
+        public decimal? Vision { get; set; }
+        public string Hearing { get; set; }
+        public string Speech { get; set; }
+        public string Behavioral_Problem { get; set; }
+        public string Remarks_Weakness { get; set; }
+        public string Student_Name { get; set; }
+        public int Student_Age { get; set; }
+        public int Admission_Status { get; set; }
     }
 }

@@ -9,16 +9,30 @@ namespace Student_API.Services.Implementations
     {
         private readonly IStudentInformationRepository _studentInformationRepository;
         private readonly IWebHostEnvironment _hostingEnvironment;
-        public StudentInformationServices(IStudentInformationRepository studentInformationRepository , IWebHostEnvironment webHostEnvironment)
+        private readonly IImageService _imageService;
+        public StudentInformationServices(IImageService imageService, IStudentInformationRepository studentInformationRepository , IWebHostEnvironment webHostEnvironment)
         {
             _studentInformationRepository = studentInformationRepository;
             _hostingEnvironment = webHostEnvironment;
+            _imageService = imageService;
         }
 
         public async Task<ServiceResponse<int>> AddUpdateStudentInformation(StudentMasterDTO request)
         {
             try
             {
+               
+                if (request.Base64File != null && request.Base64File != "")
+                {
+                    var file = await _imageService.SaveImageAsync(request.Base64File, "StudentsInfoFile");
+                    if (request.student_id != 0)
+                    {
+                        _imageService.DeleteFile(request.File_Name);
+                    }
+                    request.File_Name = file.relativePath;
+                }
+               
+                
                 var data = await _studentInformationRepository.AddUpdateStudentInformation(request);
                 return data;
             }
@@ -33,6 +47,20 @@ namespace Student_API.Services.Implementations
             try
             {
                 var data = await _studentInformationRepository.GetStudentDetailsById(studentId);
+                if (data.Data != null && data.Data.File_Name != null && data.Data.File_Name != "")
+                {
+                    data.Data.Base64File = _imageService.GetImageAsBase64(data.Data.File_Name);
+                }
+                if (data.Data != null && data.Data.studentDocumentListDTOs != null)
+                {
+                    foreach (var document in data.Data.studentDocumentListDTOs)
+                    {
+                        if (!string.IsNullOrEmpty(document.File_Name) && File.Exists(document.File_Name))
+                        {
+                            document.Document = _imageService.GetImageAsBase64(document.File_Name);
+                        }
+                    }
+                }
                 return data;
             }
             catch (Exception ex)
@@ -129,34 +157,39 @@ namespace Student_API.Services.Implementations
         {
             try
             {
-                foreach (var item in request.formFiles)
+                foreach (var item in request.Base64Files)
                 {
-					StudentDocumentListDTO listDTO = new StudentDocumentListDTO();  
-					var uploads = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "StudentsDoc");
-                    if (!Directory.Exists(uploads))
-                    {
-                        Directory.CreateDirectory(uploads);
-                    }
-                    var fileName = Path.GetFileNameWithoutExtension(item.FileName) + "_" + Guid.NewGuid().ToString() + Path.GetExtension(item.FileName);
-                    var filePath = Path.Combine(uploads, fileName);
-                    using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
-                    {
-                        await item.CopyToAsync(fileStream);
-                    }
+					StudentDocumentListDTO listDTO = new StudentDocumentListDTO();
 
-					//if (item.Student_Documents_id > 0)
-					//{
-					//    var oldFilePath = Path.Combine(uploads, item.File_Name);
-					//    if (File.Exists(oldFilePath))
-					//    {
-					//        File.Delete(oldFilePath);
-					//    }
+                   var data = await _imageService.SaveImageAsync(item, "StudentsDoc");
+                    //var fileName = data.fileName;
+                    //var relativePath = data.relativePath;
+                    //var absolutePath = data.absolutePath;
+                    //var uploads = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "StudentsDoc");
+                    //if (!Directory.Exists(uploads))
+                    //{
+                    //    Directory.CreateDirectory(uploads);
+                    //}
+                    //var fileName = Path.GetFileNameWithoutExtension(item.FileName) + "_" + Guid.NewGuid().ToString() + Path.GetExtension(item.FileName);
+                    //var filePath = Path.Combine(uploads, fileName);
+                    //using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
+                    //{
+                    //    await item.CopyToAsync(fileStream);
+                    //}
 
-					//}
-					listDTO.File_Name = fileName;
-					listDTO.File_Path = filePath;
-					listDTO.Document_Name = item.FileName;
-                   
+                    //if (item.Student_Documents_id > 0)
+                    //{
+                    //    var oldFilePath = Path.Combine(uploads, item.File_Name);
+                    //    if (File.Exists(oldFilePath))
+                    //    {
+                    //        File.Delete(oldFilePath);
+                    //    }
+
+                    //}
+                    listDTO.File_Name = data.relativePath;
+                    listDTO.File_Path = data.absolutePath;
+                    listDTO.Document_Name = data.fileName;
+
                     await _studentInformationRepository.AddUpdateStudentDocuments(listDTO, request.Student_id);
                 }
                 return new ServiceResponse<int>(true, "Operation successful", 1, 200);

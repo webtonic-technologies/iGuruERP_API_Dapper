@@ -27,10 +27,19 @@
         public string Aadhar_Number { get; set; }
         public string NEP { get; set; }
         public string QR_code { get; set; }
+        public bool IsPhysicallyChallenged { get; set; }
+        public bool IsSports { get; set; }
+        public bool IsAided { get; set; }
+        public bool IsNCC { get; set; }
+        public bool IsNSS { get; set; }
+        public bool IsScout { get; set; }
+        public string File_Name { get; set; }
+        public string Base64File { get; set; }
         public StudentOtherInfoDTO studentOtherInfoDTO { get; set; }
         public List<StudentParentInfoDTO> studentParentInfos { get; set; }
         public StudentSiblings studentSiblings { get; set; }
         public StudentPreviousSchool studentPreviousSchool { get; set; }
         public StudentHealthInfo studentHealthInfo { get; set; }
+        public List<StudentDocumentListDTO> studentDocumentListDTOs{ get; set; }
     }
 }
