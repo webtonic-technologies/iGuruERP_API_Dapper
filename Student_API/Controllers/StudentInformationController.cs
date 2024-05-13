@@ -206,7 +206,7 @@ namespace Student_API.Controllers
 
         [HttpPost]
         [Route("AddUpdateStudentDocuments")]
-        public async Task<IActionResult> AddUpdateStudentDocuments([FromForm] StudentDocumentsDTO documentsDTO)
+        public async Task<IActionResult> AddUpdateStudentDocuments([FromBody] StudentDocumentsDTO documentsDTO)
         {
             try
             {
