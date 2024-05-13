@@ -27,11 +27,11 @@ namespace Employee_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<string>> AddUpdateEmployeeDecuments(EmployeeDocumentDTO request, int employeeId)
+        public async Task<ServiceResponse<string>> AddUpdateEmployeeDocuments(List<EmployeeDocument> request, int employeeId)
         {
             try
             {
-                return await _employeeProfileRepository.AddUpdateEmployeeDecuments(request, employeeId);
+                return await _employeeProfileRepository.AddUpdateEmployeeDocuments(request, employeeId);
             }
             catch (Exception ex)
             {
@@ -51,7 +51,7 @@ namespace Employee_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<int>> AddUpdateEmployeeProfile(EmployeeProfileDTO request)
+        public async Task<ServiceResponse<int>> AddUpdateEmployeeProfile(EmployeeProfile request)
         {
             try
             {
@@ -99,7 +99,7 @@ namespace Employee_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<byte[]>>> GetEmployeeDocuments(int employeeId)
+        public async Task<ServiceResponse<List<EmployeeDocument>>> GetEmployeeDocuments(int employeeId)
         {
             try
             {
@@ -107,7 +107,7 @@ namespace Employee_API.Services.Implementations
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<List<byte[]>>(false, ex.Message, [], 500);
+                return new ServiceResponse<List<EmployeeDocument>>(false, ex.Message, [], 500);
             }
         }
 
