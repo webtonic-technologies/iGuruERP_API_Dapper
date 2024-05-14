@@ -14,5 +14,6 @@ namespace Student_API.Repository.Interfaces
         Task<ServiceResponse<int>> AddOrUpdateTimetable(Timetable timetable);
         Task<ServiceResponse<List<Timetable>>> GetTimetablesByTimetableGroupId(int timetableGroupId);
         Task<ServiceResponse<bool>> DeleteTimetableGroup(int timetableGroupId);
+        Task<ServiceResponse<List<Timetable>>> GetTimetablesByCriteria(string academicYear, int classId, int sectionId);
     }
 }

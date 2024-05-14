@@ -344,8 +344,8 @@ namespace Student_API.Repository.Implementations
                 string addOrUpdateQuery = @"
             IF @Timetable_id = 0
             BEGIN
-                INSERT INTO [dbo].[tbl_Timetable] (TimetableGroup_id, PeriodBreak_id, Period_id, Subject_id, Employee_id, IsBreak, AcademicYear)
-                VALUES (@TimetableGroup_id, @PeriodBreak_id, @Period_id, @Subject_id, @Employee_id, @IsBreak, @AcademicYear);
+                INSERT INTO [dbo].[tbl_Timetable] (TimetableGroup_id, PeriodBreak_id, Period_id, Subject_id, Employee_id, IsBreak, AcademicYear, Class_id,Section_id)
+                VALUES (@TimetableGroup_id, @PeriodBreak_id, @Period_id, @Subject_id, @Employee_id, @IsBreak, @AcademicYear, @Class_id, @Section_id);
                 SELECT CAST(SCOPE_IDENTITY() as int);
             END
             ELSE
@@ -357,7 +357,9 @@ namespace Student_API.Repository.Implementations
                     Subject_id = @Subject_id,
                     Employee_id = @Employee_id,
                     IsBreak = @IsBreak,
-                    AcademicYear = @AcademicYear
+                    AcademicYear = @AcademicYear,
+                    Class_id = @Class_id,
+                    Section_id = @Section_id
                 WHERE Timetable_id = @Timetable_id;
                 SELECT @Timetable_id;
             END";
@@ -385,6 +387,31 @@ namespace Student_API.Repository.Implementations
                 return new ServiceResponse<List<Timetable>>(false, ex.Message, null, 500);
             }
         }
+
+        public async Task<ServiceResponse<List<Timetable>>> GetTimetablesByCriteria(string academicYear, int classId, int sectionId)
+        {
+            try
+            {
+                string query = @"
+            SELECT * 
+            FROM [dbo].[tbl_Timetable] 
+            WHERE AcademicYear = @AcademicYear 
+            AND Class_id = @ClassId 
+            AND Section_id = @SectionId";
+
+                var timetables = await _connection.QueryAsync<Timetable>(
+                    query,
+                    new { AcademicYear = academicYear, ClassId = classId, SectionId = sectionId }
+                );
+
+                return new ServiceResponse<List<Timetable>>(true, "Operation successful", timetables.ToList(), 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<Timetable>>(false, ex.Message, null, 500);
+            }
+        }
+
 
 
 

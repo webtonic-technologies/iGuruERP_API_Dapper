@@ -118,5 +118,17 @@ namespace Student_API.Services.Implementations
             }
         }
 
+        public async Task<ServiceResponse<List<Timetable>>> GetTimetablesByCriteria(TimetableParam timetableParam)
+        {
+            try
+            {
+                var data = await _timetableRepository.GetTimetablesByCriteria(timetableParam.AcademicYear, timetableParam.ClassId, timetableParam.SectionId);
+                return data;
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<Timetable>>(false, ex.Message, null, 500);
+            }
+        }
     }
 }

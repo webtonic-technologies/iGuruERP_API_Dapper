@@ -151,11 +151,11 @@ namespace Student_API.Controllers
 
         [HttpGet]
         [Route("GetTimeTableMakerList")]
-        public async Task<IActionResult> GetTimeTableMakerList(int timetableGroupId)
+        public async Task<IActionResult> GetTimeTableMakerList(TimetableParam timetableParam)
         {
             try
             {
-                var data = await _timetableServices.GetTimetablesByTimetableGroupId(timetableGroupId);
+                var data = await _timetableServices.GetTimetablesByCriteria(timetableParam);
                 if (data.Success)
                 {
                     return Ok(data);
