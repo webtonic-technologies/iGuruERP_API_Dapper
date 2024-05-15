@@ -8,14 +8,26 @@ namespace Institute_API.Services.Implementations
     public class EventServices : IEventServices
     {
         private readonly IEventRepository _eventRepository;
-        public EventServices(IEventRepository eventRepository)
+        private readonly IImageService _imageService;       
+        public EventServices(IEventRepository eventRepository, IImageService imageService)
         {
             _eventRepository = eventRepository;
+            _imageService = imageService;   
         }
         public async Task<ServiceResponse<int>> AddUpdateEvent(EventDTO eventDto)
         {
             try
             {
+                if (eventDto.Base64File != null && eventDto.Base64File != "")
+                {
+                    var file = await _imageService.SaveImageAsync(eventDto.Base64File, "Event");
+                    if (eventDto.Event_id != 0)
+                    {
+                        _imageService.DeleteFile(eventDto.AttachmentFile);
+                    }
+                    eventDto.AttachmentFile = file.relativePath;
+                }
+                //_imageService.SaveImageAsync();
                 return await _eventRepository.AddUpdateEvent(eventDto);
             }
             catch (Exception ex)

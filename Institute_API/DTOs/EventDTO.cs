@@ -10,8 +10,8 @@
         public string Location { get; set; }
         public string ScheduleTime { get; set; }
         public string Time { get; set; }
-        public string AttachmentFile { get; set; }
-       
+        public string? AttachmentFile { get; set; }
+        public string? Base64File { get; set; }
 
         public List<EventEmployeeMapping> EmployeeMappings { get; set; }
         public List<EventClassSessionMapping> ClassSessionMappings { get; set; }
