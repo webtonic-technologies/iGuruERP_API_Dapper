@@ -8,14 +8,26 @@ namespace Institute_API.Services.Implementations
     public class EventServices : IEventServices
     {
         private readonly IEventRepository _eventRepository;
-        public EventServices(IEventRepository eventRepository)
+        private readonly IImageService _imageService;       
+        public EventServices(IEventRepository eventRepository, IImageService imageService)
         {
             _eventRepository = eventRepository;
+            _imageService = imageService;   
         }
         public async Task<ServiceResponse<int>> AddUpdateEvent(EventDTO eventDto)
         {
             try
             {
+                if (eventDto.Base64File != null && eventDto.Base64File != "")
+                {
+                    var file = await _imageService.SaveImageAsync(eventDto.Base64File, "Event");
+                    if (eventDto.Event_id != 0)
+                    {
+                        _imageService.DeleteFile(eventDto.AttachmentFile);
+                    }
+                    eventDto.AttachmentFile = file.relativePath;
+                }
+                //_imageService.SaveImageAsync();
                 return await _eventRepository.AddUpdateEvent(eventDto);
             }
             catch (Exception ex)
@@ -50,7 +62,16 @@ namespace Institute_API.Services.Implementations
         {
             try
             {
-                return await _eventRepository.GetApprovedEvents();
+                var data = await _eventRepository.GetApprovedEvents();
+                foreach (var eventDto in data.Data) 
+                {
+                    if (eventDto != null && eventDto.AttachmentFile != null && eventDto.AttachmentFile != "")
+                    {
+                        eventDto.Base64File = _imageService.GetImageAsBase64(eventDto.AttachmentFile);
+                    }
+                }
+                
+                return data;
             }
             catch (Exception ex)
             {
@@ -61,7 +82,12 @@ namespace Institute_API.Services.Implementations
         {
             try
             {
-                return await _eventRepository.GetEventById(eventId);
+                var data = await _eventRepository.GetEventById(eventId);
+                if (data.Data != null && data.Data.AttachmentFile != null && data.Data.AttachmentFile != "")
+                {
+                    data.Data.Base64File = _imageService.GetImageAsBase64(data.Data.AttachmentFile);
+                }
+                return data;
             }
             catch (Exception ex)
             {
