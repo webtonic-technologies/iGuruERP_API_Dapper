@@ -99,7 +99,11 @@ namespace Institute_API.Services.Implementations
                     {
                         foreach(var item in galleryEvent.FileNames)
                         {
-                            galleryEvent.Base64Files.Add(_imageService.GetImageAsBase64(item));
+                            if(item != null && item != "")
+                            {
+                                galleryEvent.Base64Files.Add(_imageService.GetImageAsBase64(item));
+                            }
+                          
                             //for (int i = 0; i < galleryEvent.FileNames.Count; i++)
                             //{
                             //    galleryEvent.FileNames[i] = Path.Combine(Directory.GetCurrentDirectory(), "Assets", "Gallery", galleryEvent.FileNames[i]);
