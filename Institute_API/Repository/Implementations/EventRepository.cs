@@ -266,7 +266,8 @@ namespace Institute_API.Repository.Implementations
                    StartDate,
                    EndDate,
                    Description,
-                   Location
+                   Location,
+                   AttachmentFile
             FROM tbl_CreateEvent
             WHERE isApproved = 1";
 
