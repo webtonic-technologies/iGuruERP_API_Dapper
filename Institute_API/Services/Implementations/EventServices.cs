@@ -62,7 +62,16 @@ namespace Institute_API.Services.Implementations
         {
             try
             {
-                return await _eventRepository.GetApprovedEvents();
+                var data = await _eventRepository.GetApprovedEvents();
+                foreach (var eventDto in data.Data) 
+                {
+                    if (eventDto != null && eventDto.AttachmentFile != null && eventDto.AttachmentFile != "")
+                    {
+                        eventDto.Base64File = _imageService.GetImageAsBase64(eventDto.AttachmentFile);
+                    }
+                }
+                
+                return data;
             }
             catch (Exception ex)
             {
@@ -73,7 +82,12 @@ namespace Institute_API.Services.Implementations
         {
             try
             {
-                return await _eventRepository.GetEventById(eventId);
+                var data = await _eventRepository.GetEventById(eventId);
+                if (data.Data != null && data.Data.AttachmentFile != null && data.Data.AttachmentFile != "")
+                {
+                    data.Data.Base64File = _imageService.GetImageAsBase64(data.Data.AttachmentFile);
+                }
+                return data;
             }
             catch (Exception ex)
             {
