@@ -31,6 +31,7 @@ namespace Institute_API.Repository.Implementations
                         Institute_DigitalSignatory = ImageUpload(request.Institute_DigitalSignatory),
                         Institute_PrincipalSignatory = ImageUpload(request.Institute_PrincipalSignatory),
                         Institute_DigitalStamp = ImageUpload(request.Institute_DigitalStamp),
+                        en_date = request.en_date
                     };
                     string query = @"INSERT INTO [tbl_InstituteDetails] (Institute_name, Institute_Alias, Institute_Logo, Institute_DigitalStamp, Institute_DigitalSignatory, Institute_PrincipalSignatory, en_date)
                              VALUES (@Institute_name, @Institute_Alias, @Institute_Logo, @Institute_DigitalStamp, @Institute_DigitalSignatory, @Institute_PrincipalSignatory, @en_date)
@@ -80,7 +81,8 @@ namespace Institute_API.Repository.Implementations
                         Institute_DigitalSignatory = ImageUpload(request.Institute_DigitalSignatory),
                         Institute_DigitalStamp = ImageUpload(request.Institute_DigitalStamp),
                         Institute_Logo = ImageUpload(request.Institute_Logo),
-                        Institute_PrincipalSignatory = ImageUpload(request.Institute_PrincipalSignatory)
+                        Institute_PrincipalSignatory = ImageUpload(request.Institute_PrincipalSignatory),
+                        en_date = request.en_date
                     };
                     int rowsAffected = await _connection.ExecuteAsync(updateQuery, newInstitution);
                     if (rowsAffected > 0)
@@ -117,7 +119,7 @@ namespace Institute_API.Repository.Implementations
             {
                 var response = new InstituteDetailsDTO();
                 string query = @"
-                SELECT Institute_id, Institute_name, Institute_Alias, en_date
+                SELECT *
                 FROM tbl_InstituteDetails
                 WHERE Institute_id = @Institute_id";
                 var institute = await _connection.QueryFirstOrDefaultAsync<InstituteDetails>(query, new { Institute_id = Id });
@@ -136,7 +138,7 @@ namespace Institute_API.Repository.Implementations
                     var des = await _connection.QueryFirstOrDefaultAsync<InstituteDescription>(
                         "SELECT * FROM tbl_InstitueDescription WHERE Institute_id = @Institute_id"
                         , new { Institute_id = Id });
-                    response.InstituteDescription = des != null ? des : new InstituteDescription();
+                    response.InstituteDescription = des ?? new InstituteDescription();
 
                     var address = await _connection.QueryAsync<InstituteAddress>(
                          "SELECT * FROM tbl_InstituteAddress WHERE Institute_id = @Institute_id"
@@ -152,6 +154,16 @@ namespace Institute_API.Repository.Implementations
                      "SELECT * FROM tbl_SchoolContact WHERE Institute_id = @Institute_id"
                     , new { Institute_id = Id });
                     response.SchoolContacts = schCont != null ? schCont.AsList() : [];
+
+                    var academic = await _connection.QueryAsync<AcademicInfo>(
+                   "SELECT * FROM tbl_AcademicInfo WHERE Institute_id = @Institute_id"
+                  , new { Institute_id = Id });
+                    response.AcademicInfos = academic != null ? academic.AsList() : [];
+
+                    var sem = await _connection.QueryFirstOrDefaultAsync<SemesterInfo>(
+                 "SELECT * FROM tbl_SemesterInfo WHERE Institute_id = @Institute_id"
+                , new { Institute_id = Id });
+                    response.SemesterInfo = sem ?? new SemesterInfo();
 
                     return new ServiceResponse<InstituteDetailsDTO>(true, " records found", response, 200);
                 }
@@ -343,7 +355,7 @@ namespace Institute_API.Repository.Implementations
                 request.Institute_id = InstitutionId;
 
                 var insertQuery = @"
-                INSERT INTO SemesterInfo (Institute_id, IsSemester, SemesterStartDate, SemesterEndDate)
+                INSERT INTO tbl_SemesterInfo (Institute_id, IsSemester, SemesterStartDate, SemesterEndDate)
                 VALUES (@Institute_id, @IsSemester, @SemesterStartDate, @SemesterEndDate);";
                 // Execute the query with parameterized values
                 rowsAffected = await _connection.ExecuteAsync(insertQuery, request);
@@ -351,7 +363,7 @@ namespace Institute_API.Repository.Implementations
             else
             {
                 var updateQuery = @"
-    UPDATE SemesterInfo
+    UPDATE tbl_SemesterInfo
     SET Institute_id = @Institute_id,
         IsSemester = @IsSemester,
         SemesterStartDate = @SemesterStartDate,
@@ -364,6 +376,10 @@ namespace Institute_API.Repository.Implementations
         }
         private string ImageUpload(string image)
         {
+            if (string.IsNullOrEmpty(image) || image == "string")
+            {
+                return string.Empty;
+            }
             byte[] imageData = Convert.FromBase64String(image);
             string directoryPath = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "InstituteDetails");
 
@@ -401,7 +417,7 @@ namespace Institute_API.Repository.Implementations
 
             if (!File.Exists(filePath))
             {
-                throw new Exception("File not found");
+                return string.Empty;
             }
             byte[] fileBytes = File.ReadAllBytes(filePath);
             string base64String = Convert.ToBase64String(fileBytes);
