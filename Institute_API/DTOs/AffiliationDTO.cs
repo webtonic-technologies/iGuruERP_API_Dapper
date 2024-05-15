@@ -11,6 +11,7 @@ namespace Institute_API.DTOs
         public string AffiliationNumber { get; set; } = string.Empty;
         public string AffiliationCertificateNumber { get; set; } = string.Empty;
         public string InstituteCode { get; set; } = string.Empty;
+        public DateTime? en_date {  get; set; }
         public List<Accreditation>? Accreditations { get; set; }
     }
 }

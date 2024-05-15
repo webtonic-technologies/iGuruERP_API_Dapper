@@ -8,5 +8,6 @@ namespace Institute_API.Models
         public string HouseName { get; set; } = string.Empty;
         public string HouseColor { get; set; } = string.Empty;
         public string FileName { get; set; } = string.Empty;
+        public DateTime? en_date {  get; set; }
     }
 }

@@ -24,9 +24,9 @@ namespace Institute_API.Repository.Implementations
                 if (request.Affiliation_info_id == 0)
                 {
                     string sql = @"INSERT INTO [tbl_AffiliationInfo] (Institute_id, AffiliationBoardLogo, 
-                       AffiliationBoardName, AffiliationNumber, AffiliationCertificateNumber, InstituteCode)
+                       AffiliationBoardName, AffiliationNumber, AffiliationCertificateNumber, InstituteCode, en_date)
                        VALUES (@Institute_id, @AffiliationBoardLogo, @AffiliationBoardName, 
-                       @AffiliationNumber, @AffiliationCertificateNumber, @InstituteCode);
+                       @AffiliationNumber, @AffiliationCertificateNumber, @InstituteCode, @en_date);
                        SELECT SCOPE_IDENTITY();"; // Retrieve the inserted id
 
                     InstituteAffiliation affiliation = new()
@@ -36,7 +36,8 @@ namespace Institute_API.Repository.Implementations
                         AffiliationBoardName = request.AffiliationBoardName,
                         AffiliationNumber = request.AffiliationNumber,
                         AffiliationCertificateNumber = request.AffiliationCertificateNumber,
-                        InstituteCode = request.InstituteCode
+                        InstituteCode = request.InstituteCode,
+                        en_date = request.en_date
                     };
                     // Execute the query and retrieve the inserted id
                     int insertedId = await _connection.ExecuteScalarAsync<int>(sql, affiliation);
@@ -65,26 +66,28 @@ namespace Institute_API.Repository.Implementations
                           AffiliationBoardName = @AffiliationBoardName,
                           AffiliationNumber = @AffiliationNumber,
                           AffiliationCertificateNumber = @AffiliationCertificateNumber,
-                          InstituteCode = @InstituteCode
+                          InstituteCode = @InstituteCode,
+                          en_date = @en_date
                       WHERE Affiliation_info_id = @AffiliationInfoId";
 
                     // Execute the query and retrieve the number of affected rows
                     int affectedRows = await _connection.ExecuteAsync(sql, new
                     {
-                        InstituteId = request.Institute_id,
+                        request.Institute_id,
                         AffiliationBoardLogo = ImageUpload(request.AffiliationBoardLogo),
                         request.AffiliationBoardName,
                         request.AffiliationNumber,
                         request.AffiliationCertificateNumber,
                         request.InstituteCode,
-                        AffiliationInfoId = request.Affiliation_info_id
+                        AffiliationInfoId = request.Affiliation_info_id,
+                        request.en_date
                     });
                     if (affectedRows > 0 || request.Accreditations != null)
                     {
                         int accred = await AddUpdateAccreditation(request.Accreditations ??= ([]), request.Affiliation_info_id);
                         if (accred > 0)
                         {
-                            return new ServiceResponse<int>(true, "Affiliation added successfully", request.Affiliation_info_id, 200);
+                            return new ServiceResponse<int>(true, "Affiliation Updated successfully", request.Affiliation_info_id, 200);
                         }
                         else
                         {
@@ -107,9 +110,7 @@ namespace Institute_API.Repository.Implementations
             try
             {
                 var response = new AffiliationDTO();
-                string sql = @"SELECT Affiliation_info_id, Institute_id, 
-                              AffiliationBoardName, AffiliationNumber, 
-                              AffiliationCertificateNumber, InstituteCode
+                string sql = @"SELECT *
                        FROM [dbo].[tbl_AffiliationInfo]
                        WHERE Affiliation_info_id = @Id";
 
@@ -129,6 +130,9 @@ namespace Institute_API.Repository.Implementations
                     response.AffiliationBoardName = affiliation.AffiliationBoardName;
                     response.Accreditations = accreditations != null ? accreditations.AsList() : [];
                     response.AffiliationBoardLogo = GetImage(affiliation.AffiliationBoardLogo);
+                    response.en_date = affiliation.en_date;
+                    response.Institute_id = affiliation.Institute_id;
+                    response.InstituteCode = affiliation.InstituteCode;
 
                     return new ServiceResponse<AffiliationDTO>(true, "Record found", response, 200);
                 }
@@ -179,6 +183,10 @@ namespace Institute_API.Repository.Implementations
         }
         private string ImageUpload(string image)
         {
+            if (string.IsNullOrEmpty(image) || image == "string")
+            {
+                return string.Empty;
+            }
             byte[] imageData = Convert.FromBase64String(image);
             string directoryPath = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "InstituteAffiliation");
 
@@ -216,7 +224,7 @@ namespace Institute_API.Repository.Implementations
 
             if (!File.Exists(filePath))
             {
-                throw new Exception("File not found");
+                return string.Empty;
             }
             byte[] fileBytes = File.ReadAllBytes(filePath);
             string base64String = Convert.ToBase64String(fileBytes);
