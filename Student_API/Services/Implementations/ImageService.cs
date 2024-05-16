@@ -80,10 +80,10 @@ namespace Student_API.Services.Implementations
             {
                 File.Delete(filePath);
             }
-            else
-            {
-                throw new FileNotFoundException("File not found", filePath);
-            }
+            //else
+            //{
+            //    throw new FileNotFoundException("File not found", filePath);
+            //}
         }
 
 
