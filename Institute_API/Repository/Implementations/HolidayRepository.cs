@@ -113,8 +113,10 @@ namespace Institute_API.Repository.Implementations
                 }
 
                 string mappingQuery = @"
-            SELECT HolidayClassSessionMapping_id, Holiday_id, Class_id, Section_id
+            SELECT HolidayClassSessionMapping_id, Holiday_id, Class_id, Section_id,class_course,Section
             FROM [dbo].[tbl_HolidayClassSessionMapping]
+            INNER JOIN tbl_CourseClass ON tbl_CourseClass.CourseClass_id = Class_id
+            INNER JOIN tbl_CourseClassSection ON tbl_CourseClassSection.CourseClassSection_id = Section_id
             WHERE Holiday_id = @HolidayId;
         ";
 
@@ -144,8 +146,10 @@ namespace Institute_API.Repository.Implementations
                 foreach (var holiday in holidays)
                 {
                     string mappingQuery = @"
-                SELECT HolidayClassSessionMapping_id, Holiday_id, Class_id, Section_id
+                SELECT HolidayClassSessionMapping_id, Holiday_id, Class_id, Section_id,class_course,Section
                 FROM [dbo].[tbl_HolidayClassSessionMapping]
+            INNER JOIN tbl_CourseClass ON tbl_CourseClass.CourseClass_id = Class_id
+            INNER JOIN tbl_CourseClassSection ON tbl_CourseClassSection.CourseClassSection_id = Section_id
                 WHERE Holiday_id = @HolidayId;
             ";
 
@@ -177,8 +181,10 @@ namespace Institute_API.Repository.Implementations
                 foreach (var holiday in holidays)
                 {
                     string mappingQuery = @"
-                SELECT HolidayClassSessionMapping_id, Holiday_id, Class_id, Section_id
+                SELECT HolidayClassSessionMapping_id, Holiday_id, Class_id, Section_id,class_course,Section
                 FROM [dbo].[tbl_HolidayClassSessionMapping]
+                INNER JOIN tbl_CourseClass ON tbl_CourseClass.CourseClass_id = Class_id
+                INNER JOIN tbl_CourseClassSection ON tbl_CourseClassSection.CourseClassSection_id = Section_id
                 WHERE Holiday_id = @HolidayId;
             ";
 

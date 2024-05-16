@@ -10,5 +10,6 @@ namespace Institute_API.Repository.Interfaces
         Task<ServiceResponse<bool>> ToggleEventActiveStatus(int eventId, bool isActive, int UserId);
         Task<ServiceResponse<EventDTO>> GetEventById(int eventId);
         Task<ServiceResponse<List<EventDTO>>> GetApprovedEvents();
+        Task<ServiceResponse<string>> GetEventAttachmentFileById(int eventId);
     }
 }
