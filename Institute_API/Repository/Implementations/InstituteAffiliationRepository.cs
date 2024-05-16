@@ -112,7 +112,7 @@ namespace Institute_API.Repository.Implementations
                 var response = new AffiliationDTO();
                 string sql = @"SELECT *
                        FROM [dbo].[tbl_AffiliationInfo]
-                       WHERE Affiliation_info_id = @Id";
+                       WHERE [Institute_id] = @Id";
 
                 // Execute the query and retrieve the result
                 var affiliation = await _connection.QueryFirstOrDefaultAsync<InstituteAffiliation>(sql, new { Id });
