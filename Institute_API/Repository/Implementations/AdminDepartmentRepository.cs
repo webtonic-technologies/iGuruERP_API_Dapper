@@ -70,7 +70,7 @@ namespace Institute_API.Repository.Implementations
             try
             {
                 string sql = @"DELETE FROM [dbo].[tbl_Department]
-                       WHERE Department_id = @DepartmentId";
+                       WHERE Department_id = @Department_id";
 
                 // Execute the query and retrieve the number of affected rows
                 int affectedRows = await _connection.ExecuteAsync(sql, new { Department_id });

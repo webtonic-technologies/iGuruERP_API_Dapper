@@ -17,14 +17,82 @@ namespace Student_API.Repository.Implementations
             _connection = connection;
         }
 
+        public async Task<ServiceResponse<string>> GetStudentInfoImageById(int studentId)
+        {
+            var stringQuery = "";
+            try
+            {
+
+                stringQuery = @"SELECT File_Name FROM [dbo].[tbl_StudentMaster] WHERE student_id = @studentId;";
+
+                var holiday = await _connection.QueryFirstOrDefaultAsync<string>(stringQuery, new { studentId = studentId });
+
+                if (holiday == null)
+                {
+                    return new ServiceResponse<string>(false, "Student InfoImage not found", null, 404);
+                }
+                return new ServiceResponse<string>(true, "Operation successful", holiday, 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<string>(false, ex.Message, null, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<string>> GetStudentparentImageById(int Student_Parent_Info_id)
+        {
+            var stringQuery = "";
+            try
+            {
+
+                stringQuery = @"SELECT File_Name FROM [dbo].[tbl_StudentParentsInfo] WHERE Student_Parent_Info_id = @Student_Parent_Info_id;";
+
+                var holiday = await _connection.QueryFirstOrDefaultAsync<string>(stringQuery, new { Student_Parent_Info_id = Student_Parent_Info_id });
+
+                if (holiday == null)
+                {
+                    return new ServiceResponse<string>(false, "Student parent InfoImage not found", null, 404);
+                }
+                return new ServiceResponse<string>(true, "Operation successful", holiday, 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<string>(false, ex.Message, null, 500);
+            }
+        }
         public async Task<ServiceResponse<StudentInformationDTO>> GetStudentDetailsById(int studentId)
         {
             try
             {
                 string sql = @"
-                    SELECT * FROM [dbo].[tbl_StudentMaster] WHERE student_id = @studentId;
-                    SELECT * FROM [dbo].[tbl_StudentOtherInfo] WHERE student_id = @studentId;
-                    SELECT * FROM [dbo].[tbl_StudentParentsInfo] WHERE student_id = @studentId;
+                    SELECT [student_id], [First_Name], [Middle_Name], [Last_Name], tbl_StudentMaster.gender_id, [class_id], [section_id], [Admission_Number], [Roll_Number],
+                    [Date_of_Joining], [Academic_Year], [Nationality_id], tbl_Religion.Religion_id, [Date_of_Birth], [Mother_Tongue_id], [Caste_id], [First_Language],
+                    [Second_Language], [Third_Language], [Medium], [Blood_Group_id], [App_User_id], [Aadhar_Number], [NEP], [QR_code], [IsPhysicallyChallenged],
+                    [IsSports], [IsAided], [IsNCC], [IsNSS], [IsScout], [File_Name], [isActive] ,tbl_CourseClass.class_course , tbl_CourseClassSection.Section
+                    ,tbl_Gender.Gender_Type,Religion_Type , Gender_Type ,CONCAT(tbl_StudentParentsInfo.First_Name, ' ', tbl_StudentParentsInfo.Last_Name) AS Father_Name 
+                    FROM tbl_StudentMaster 
+                    INNER JOIN tbl_CourseClass ON tbl_StudentMaster.class_id = tbl_CourseClass.CourseClass_id
+                    INNER JOIN tbl_CourseClassSection on tbl_StudentMaster.section_id =  tbl_CourseClassSection.CourseClassSection_id
+                    INNER JOIN tbl_Gender ON tbl_StudentMaster.gender_id = tbl_Gender.Gender_id
+                    INNER JOIN tbl_Religion ON tbl_StudentMaster.Religion_id = tbl_Religion.Religion_id
+                    INNER JOIN tbl_StudentParentsInfo ON tbl_StudentMaster.student_id = tbl_StudentParentsInfo.Student_id AND tbl_StudentParentsInfo.Parent_Type_id = 1
+                    WHERE tbl_StudentMaster.student_id = @studentId;
+
+                    SELECT [Student_Other_Info_id], [student_id], [StudentType_id], [email_id], [Hall_Ticket_Number], [Exam_Board_id], [Identification_Mark_1],
+                    [Identification_Mark_2], [Admission_Date], tbl_StudentOtherInfo.Student_Group_id, [Register_Date], [Register_Number], [samagra_ID], [Place_of_Birth], [comments], 
+                    [language_known]  ,Student_Group_Type
+                    FROM [dbo].[tbl_StudentOtherInfo] 
+                    INNER JOIN tbl_StudentGroup ON tbl_StudentGroup.Student_Group_id = tbl_StudentOtherInfo.Student_Group_id
+                    WHERE student_id = @studentId;
+
+                    SELECT [Student_Parent_Info_id], [Student_id], [Parent_Type_id], [First_Name], [Middle_Name], [Last_Name], [Contact_Number],
+                    [Bank_Account_no], [Bank_IFSC_Code], [Family_Ration_Card_Type], [Family_Ration_Card_no], [Mobile_Number], [Date_of_Birth], [Aadhar_no], 
+                    [PAN_card_no], [Residential_Address], tbl_StudentParentsInfo.Occupation_id, [Designation], [Name_of_the_Employer], [Office_no], [Email_id], [Annual_Income], 
+                    [File_Name],tbl_Occupation.Occupation_Type
+                    FROM [dbo].[tbl_StudentParentsInfo]
+                    INNER JOIN tbl_Occupation ON tbl_Occupation.Occupation_id = tbl_StudentParentsInfo.Occupation_id
+                    WHERE student_id = @studentId;
+
                     SELECT * FROM [dbo].[tbl_StudentSiblings] WHERE student_id = @studentId;
                     SELECT * FROM [dbo].[tbl_StudentPreviousSchool] WHERE student_id = @studentId;
                     SELECT * FROM [dbo].[tbl_StudentHealthInfo] WHERE student_id = @studentId;
@@ -223,7 +291,7 @@ namespace Student_API.Repository.Implementations
 
         public async Task<ServiceResponse<int>> AddUpdateStudentParentInfo(StudentParentInfoDTO request)
         {
-            _connection.Open(); 
+            _connection.Open();
             using (var transaction = _connection.BeginTransaction())
             {
                 try
@@ -575,9 +643,9 @@ namespace Student_API.Repository.Implementations
             {
                 // Assume that Parent_Type_id = 1 means father
                 string sql = @"
-                    SELECT tbl_StudentMaster.student_id , tbl_StudentMaster.First_Name , tbl_StudentMaster.Last_Name , class_name , section_name , Admission_Number , Roll_Number ,Date_of_Joining,tbl_StudentMaster.Date_of_Birth,Religion_Type , Gender_Type ,CONCAT(tbl_StudentParentsInfo.First_Name, ' ', tbl_StudentParentsInfo.Last_Name) AS Father_Name FROM [dbo].[tbl_StudentMaster]
-                    INNER JOIN tbl_Class ON tbl_StudentMaster.class_id = tbl_Class.class_id 
-                    INNER JOIN tbl_Section ON tbl_StudentMaster.section_id = tbl_Section.section_id
+                    SELECT tbl_StudentMaster.student_id , tbl_StudentMaster.First_Name , tbl_StudentMaster.Last_Name , class_course , Section , Admission_Number , Roll_Number ,Date_of_Joining,tbl_StudentMaster.Date_of_Birth,Religion_Type , Gender_Type ,CONCAT(tbl_StudentParentsInfo.First_Name, ' ', tbl_StudentParentsInfo.Last_Name) AS Father_Name FROM [dbo].[tbl_StudentMaster]
+                    INNER JOIN tbl_CourseClass ON tbl_StudentMaster.class_id = tbl_CourseClass.CourseClass_id
+                    INNER JOIN tbl_CourseClassSection on tbl_StudentMaster.section_id =  tbl_CourseClassSection.CourseClassSection_id
                     INNER JOIN tbl_Religion ON tbl_StudentMaster.Religion_id = tbl_Religion.Religion_id
                     INNER JOIN tbl_Gender ON tbl_StudentMaster.gender_id = tbl_Gender.Gender_id
                     INNER JOIN tbl_StudentParentsInfo ON tbl_StudentMaster.student_id = tbl_StudentParentsInfo.Student_id AND tbl_StudentParentsInfo.Parent_Type_id = 1";
@@ -624,7 +692,7 @@ namespace Student_API.Repository.Implementations
 
                 if (request.Student_Documents_id == 0)
                 {
-                   
+
                     var newDocument = new StudentDocuments
                     {
                         Student_id = Student_id,
@@ -661,7 +729,7 @@ namespace Student_API.Repository.Implementations
                 }
                 else
                 {
-                   
+
                     string updateSql = @"
                 UPDATE [dbo].[tbl_StudentDocuments] 
                 SET 
