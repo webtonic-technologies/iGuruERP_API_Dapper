@@ -2,6 +2,7 @@
 using Student_API.DTOs.ServiceResponse;
 using Student_API.Repository.Interfaces;
 using Student_API.Services.Interfaces;
+using System.Reflection.Metadata;
 
 namespace Student_API.Services.Implementations
 {
@@ -10,7 +11,7 @@ namespace Student_API.Services.Implementations
         private readonly IStudentInformationRepository _studentInformationRepository;
         private readonly IWebHostEnvironment _hostingEnvironment;
         private readonly IImageService _imageService;
-        public StudentInformationServices(IImageService imageService, IStudentInformationRepository studentInformationRepository , IWebHostEnvironment webHostEnvironment)
+        public StudentInformationServices(IImageService imageService, IStudentInformationRepository studentInformationRepository, IWebHostEnvironment webHostEnvironment)
         {
             _studentInformationRepository = studentInformationRepository;
             _hostingEnvironment = webHostEnvironment;
@@ -21,18 +22,22 @@ namespace Student_API.Services.Implementations
         {
             try
             {
-               
-                if (request.Base64File != null && request.Base64File != "")
+
+                if (request.File_Name != null && request.File_Name != "")
                 {
-                    var file = await _imageService.SaveImageAsync(request.Base64File, "StudentsInfoFile");
+                    var file = await _imageService.SaveImageAsync(request.File_Name, "StudentsInfoFile");
                     if (request.student_id != 0)
                     {
-                        _imageService.DeleteFile(request.File_Name);
+                        var ImageName = await _studentInformationRepository.GetStudentInfoImageById(request.student_id);
+                        if (ImageName.Data != null & ImageName.Data != "")
+                        {
+                            _imageService.DeleteFile(ImageName.Data);
+                        }
                     }
                     request.File_Name = file.relativePath;
                 }
-               
-                
+
+
                 var data = await _studentInformationRepository.AddUpdateStudentInformation(request);
                 return data;
             }
@@ -49,7 +54,18 @@ namespace Student_API.Services.Implementations
                 var data = await _studentInformationRepository.GetStudentDetailsById(studentId);
                 if (data.Data != null && data.Data.File_Name != null && data.Data.File_Name != "")
                 {
-                    data.Data.Base64File = _imageService.GetImageAsBase64(data.Data.File_Name);
+                    data.Data.File_Name = _imageService.GetImageAsBase64(data.Data.File_Name);
+                }
+
+                if (data.Data.studentParentInfos != null)
+                {
+                    foreach (var studentParentInfos in data.Data.studentParentInfos)
+                    {
+                        if (!string.IsNullOrEmpty(studentParentInfos.File_Name) && File.Exists(studentParentInfos.File_Name))
+                        {
+                            studentParentInfos.File_Name = _imageService.GetImageAsBase64(studentParentInfos.File_Name);
+                        }
+                    }
                 }
                 if (data.Data != null && data.Data.studentDocumentListDTOs != null)
                 {
@@ -108,6 +124,19 @@ namespace Student_API.Services.Implementations
         {
             try
             {
+                if (request.File_Name != null && request.File_Name != "")
+                {
+                    var file = await _imageService.SaveImageAsync(request.File_Name, "StudentsInfoFile");
+                    if (request.Student_Parent_Info_id != 0)
+                    {
+                        var ImageName = await _studentInformationRepository.GetStudentparentImageById(request.Student_Parent_Info_id);
+                        if (ImageName.Data != null & ImageName.Data != "")
+                        {
+                            _imageService.DeleteFile(ImageName.Data);
+                        }
+                    }
+                    request.File_Name = file.relativePath;
+                }
                 var data = await _studentInformationRepository.AddUpdateStudentParentInfo(request);
                 return data;
             }
@@ -159,9 +188,9 @@ namespace Student_API.Services.Implementations
             {
                 foreach (var item in request.Base64Files)
                 {
-					StudentDocumentListDTO listDTO = new StudentDocumentListDTO();
+                    StudentDocumentListDTO listDTO = new StudentDocumentListDTO();
 
-                   var data = await _imageService.SaveImageAsync(item, "StudentsDoc");
+                    var data = await _imageService.SaveImageAsync(item, "StudentsDoc");
                     //var fileName = data.fileName;
                     //var relativePath = data.relativePath;
                     //var absolutePath = data.absolutePath;

@@ -34,7 +34,11 @@
         public bool IsNSS { get; set; }
         public bool IsScout { get; set; }
         public string File_Name { get; set; }
-        public string Base64File { get; set; }
+        public string class_course { get; set; }   
+        public string Section { get; set; } 
+        public string Gender_Type { get; set; }  
+        public string Religion_Type { get; set; }
+        public string Father_Name { get; set; }  
         public StudentOtherInfoDTO studentOtherInfoDTO { get; set; }
         public List<StudentParentInfoDTO> studentParentInfos { get; set; }
         public StudentSiblings studentSiblings { get; set; }

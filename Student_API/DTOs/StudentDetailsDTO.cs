@@ -5,8 +5,8 @@
         public int student_id { get; set; }
         public string First_Name { get; set; }
         public string Last_Name { get; set; }
-        public string class_name { get; set; }
-        public string section_name { get; set; }
+        public string class_course { get; set; }
+        public string Section { get; set; }
         public string Admission_Number { get; set; }
         public string Roll_Number { get; set; }
         public DateTime? Date_of_Joining { get; set; }
