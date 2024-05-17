@@ -90,6 +90,9 @@ namespace Institute_API.Repository.Implementations
         {
             try
             {
+                string deleteQuery = "DELETE FROM tbl_CourseClassSection WHERE CourseClass_id = @CourseClass_id";
+                int rowsAffected = await _connection.ExecuteAsync(deleteQuery, new { CourseClass_id });
+
                 string sql = @"DELETE FROM [dbo].[tbl_CourseClass]
                        WHERE CourseClass_id = @CourseClass_id";
 
@@ -97,9 +100,6 @@ namespace Institute_API.Repository.Implementations
                 int affectedRows = await _connection.ExecuteAsync(sql, new { CourseClass_id });
                 if (affectedRows > 0)
                 {
-                    string deleteQuery = "DELETE FROM tbl_CourseClassSection WHERE CourseClass_id = @CourseClass_id";
-                    int rowsAffected = await _connection.ExecuteAsync(deleteQuery, new { CourseClass_id });
-
                     return new ServiceResponse<string>(true, "Operation successful", "Data deleted successfully", 200);
                 }
                 else

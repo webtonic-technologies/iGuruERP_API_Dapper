@@ -8,22 +8,26 @@ namespace Institute_API.Services.Implementations
     public class EventServices : IEventServices
     {
         private readonly IEventRepository _eventRepository;
-        private readonly IImageService _imageService;       
+        private readonly IImageService _imageService;
         public EventServices(IEventRepository eventRepository, IImageService imageService)
         {
             _eventRepository = eventRepository;
-            _imageService = imageService;   
+            _imageService = imageService;
         }
         public async Task<ServiceResponse<int>> AddUpdateEvent(EventDTO eventDto)
         {
             try
             {
-                if (eventDto.Base64File != null && eventDto.Base64File != "")
+                if (eventDto.AttachmentFile != null && eventDto.AttachmentFile != "")
                 {
-                    var file = await _imageService.SaveImageAsync(eventDto.Base64File, "Event");
+                    var file = await _imageService.SaveImageAsync(eventDto.AttachmentFile, "Event");
                     if (eventDto.Event_id != 0)
                     {
-                        _imageService.DeleteFile(eventDto.AttachmentFile);
+                        var data = await _eventRepository.GetEventAttachmentFileById(eventDto.Event_id);
+                        if (data.Data != null)
+                        {
+                            _imageService.DeleteFile(data.Data);
+                        }
                     }
                     eventDto.AttachmentFile = file.relativePath;
                 }
@@ -47,11 +51,11 @@ namespace Institute_API.Services.Implementations
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
-        public async Task<ServiceResponse<bool>> ToggleEventActiveStatus(int eventId, bool isActive , int userId)
+        public async Task<ServiceResponse<bool>> ToggleEventActiveStatus(int eventId, bool isActive, int userId)
         {
             try
             {
-                return await _eventRepository.ToggleEventActiveStatus(eventId, isActive , userId);
+                return await _eventRepository.ToggleEventActiveStatus(eventId, isActive, userId);
             }
             catch (Exception ex)
             {
@@ -63,14 +67,14 @@ namespace Institute_API.Services.Implementations
             try
             {
                 var data = await _eventRepository.GetApprovedEvents();
-                foreach (var eventDto in data.Data) 
+                foreach (var eventDto in data.Data)
                 {
                     if (eventDto != null && eventDto.AttachmentFile != null && eventDto.AttachmentFile != "")
                     {
-                        eventDto.Base64File = _imageService.GetImageAsBase64(eventDto.AttachmentFile);
+                        eventDto.AttachmentFile = _imageService.GetImageAsBase64(eventDto.AttachmentFile);
                     }
                 }
-                
+
                 return data;
             }
             catch (Exception ex)
@@ -85,7 +89,7 @@ namespace Institute_API.Services.Implementations
                 var data = await _eventRepository.GetEventById(eventId);
                 if (data.Data != null && data.Data.AttachmentFile != null && data.Data.AttachmentFile != "")
                 {
-                    data.Data.Base64File = _imageService.GetImageAsBase64(data.Data.AttachmentFile);
+                    data.Data.AttachmentFile = _imageService.GetImageAsBase64(data.Data.AttachmentFile);
                 }
                 return data;
             }

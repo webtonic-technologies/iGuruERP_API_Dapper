@@ -18,5 +18,7 @@
         public int Holiday_id { get; set; }
         public int Class_id { get; set; }
         public int Section_id { get; set; }
+        public string? Section {  get; set; }    
+        public string? class_course {  get; set; }   
     }
 }
