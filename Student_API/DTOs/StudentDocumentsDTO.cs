@@ -3,7 +3,7 @@
     public class StudentDocumentsDTO
     {
         public int Student_id { get; set; }
-        public List<string> Base64Files { get; set; }  
+        public List<string> File_Name { get; set; }  
         //public List<StudentDocumentListDTO> studentDocumentListDTO { get; set; }  
 
     }
