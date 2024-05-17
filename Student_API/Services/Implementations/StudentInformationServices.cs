@@ -186,7 +186,7 @@ namespace Student_API.Services.Implementations
         {
             try
             {
-                foreach (var item in request.Base64Files)
+                foreach (var item in request.File_Name)
                 {
                     StudentDocumentListDTO listDTO = new StudentDocumentListDTO();
 
