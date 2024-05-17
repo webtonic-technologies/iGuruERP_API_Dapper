@@ -4,6 +4,7 @@ using Employee_API.DTOs.ServiceResponse;
 using Employee_API.Models;
 using Employee_API.Repository.Interfaces;
 using System.Data;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Employee_API.Repository.Implementations
 {
@@ -527,6 +528,10 @@ namespace Employee_API.Repository.Implementations
                     var documents = await _connection.QueryAsync<EmployeeDocument>(docsql, new { EmployeeId = employeeId });
                     if (documents != null)
                     {
+                        foreach (var item in documents)
+                        {
+                            item.file_path = GetImage(item.file_path);
+                        }
                         response.EmployeeDocuments = documents.AsList();
                     }
                     string quasql = @"SELECT Qualification_Info_id, employee_id, Educational_Qualification, Year_of_Completion
@@ -580,7 +585,7 @@ namespace Employee_API.Repository.Implementations
                     [Primary_Emergency_Contact_no],
                     [Secondary_Emergency_Contact_no]
                 FROM 
-                    [iGuruERP].[dbo].[tbl_EmployeeFamilyMaster]
+                    [tbl_EmployeeFamilyMaster]
                 WHERE 
                     [Employee_id] = @EmployeeId";
 
@@ -603,19 +608,45 @@ namespace Employee_API.Repository.Implementations
         {
             try
             {
-                string sql = @"SELECT Employee_id, First_Name, Middle_Name, Last_Name, Gender_id, Department_id, 
-                            Designation_id, mobile_number, Date_of_Joining, Nationality_id, Religion_id, 
-                            Date_of_Birth, EmailID, Employee_code_id, marrital_status_id, Blood_Group_id, 
-                            aadhar_no, pan_no, EPF_no, ESIC_no, Institute_id
-                       FROM [dbo].[tbl_EmployeeProfileMaster]
-                       WHERE Institute_id = @InstituteId
-                       AND (@DepartmentId IS 0 OR [Department_id] = @DepartmentId)
-                       AND (@DesignationId IS 0 OR [Designation_id] = @DesignationId)";
+                string query = @"
+                SELECT 
+                    [Employee_id], [First_Name], [Middle_Name], [Last_Name], [Gender_id], 
+                    [Department_id], [Designation_id], [mobile_number], [Date_of_Joining], 
+                    [Nationality_id], [Religion_id], [Date_of_Birth], [EmailID], [Employee_code_id], 
+                    [marrital_status_id], [Blood_Group_id], [aadhar_no], [pan_no], [EPF_no], 
+                    [ESIC_no], [Institute_id], [EmpPhoto], [uan_no] 
+                FROM [tbl_EmployeeProfileMaster] 
+                WHERE (1=1)";
 
-                // Execute the query and retrieve the list of employees
-                var employees = await _connection.QueryAsync<EmployeeProfile>(sql, new { request });
+                var parameters = new DynamicParameters();
+
+                if (request.InstituteId > 0)
+                {
+                    query += " AND Institute_id = @InstituteId";
+                    parameters.Add("@InstituteId", request.InstituteId);
+                }
+
+                if (request.DepartmentId > 0)
+                {
+                    query += " AND Department_id = @DepartmentId";
+                    parameters.Add("@DepartmentId", request.DepartmentId);
+                }
+
+                if (request.DesignationId > 0)
+                {
+                    query += " AND Designation_id = @DesignationId";
+                    parameters.Add("@DesignationId", request.DesignationId);
+                }
+
+                var employees = await _connection.QueryAsync<EmployeeProfile>(query, parameters);
+
+
                 if (employees != null)
                 {
+                    foreach (var data in employees)
+                    {
+                        data.EmpPhoto = GetImage(data.EmpPhoto);
+                    }
                     return new ServiceResponse<List<EmployeeProfile>>(true, "operation successful", employees.AsList(), 200);
                 }
                 else
@@ -632,7 +663,6 @@ namespace Employee_API.Repository.Implementations
         {
             try
             {
-                var response = new List<EmployeeDocument>();
                 var data = await _connection.QueryAsync<EmployeeDocument>(
                    "SELECT * FROM tbl_DocumentsMaster WHERE employee_id = @employee_id",
                    new { employee_id }) ?? throw new Exception("Data not found");
@@ -642,7 +672,7 @@ namespace Employee_API.Repository.Implementations
                 {
                     item.file_path = GetImage(item.file_path);
                 }
-                return new ServiceResponse<List<EmployeeDocument>>(true, "Record Found", response, 200);
+                return new ServiceResponse<List<EmployeeDocument>>(true, "Record Found", data.AsList(), 200);
             }
             catch (Exception ex)
             {
@@ -660,7 +690,7 @@ namespace Employee_API.Repository.Implementations
                     [Educational_Qualification],
                     [Year_of_Completion]
                 FROM 
-                    [iGuruERP].[dbo].[tbl_QualificationInfoMaster]
+                    [tbl_QualificationInfoMaster]
                 WHERE 
                     [employee_id] = @EmployeeId";
 
@@ -692,7 +722,7 @@ namespace Employee_API.Repository.Implementations
                     [Previous_Designation],
                     [Employee_id]
                 FROM 
-                    [iGuruERP].[dbo].[tbl_WorkExperienceMaster]
+                    [tbl_WorkExperienceMaster]
                 WHERE 
                     [Employee_id] = @EmployeeId";
 
@@ -725,7 +755,7 @@ namespace Employee_API.Repository.Implementations
                     [IFSC_code],
                     [Bank_address]
                 FROM 
-                    [iGuruERP].[dbo].[tbl_BankDetailsmaster]
+                    [tbl_BankDetailsmaster]
                 WHERE 
                     [employee_id] = @EmployeeId";
 
@@ -746,6 +776,10 @@ namespace Employee_API.Repository.Implementations
         }
         private string ImageUpload(string image)
         {
+            if (string.IsNullOrEmpty(image) || image == "string")
+            {
+                return string.Empty;
+            }
             byte[] imageData = Convert.FromBase64String(image);
             string directoryPath = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "EmployeeProfile");
 
@@ -783,7 +817,7 @@ namespace Employee_API.Repository.Implementations
 
             if (!File.Exists(filePath))
             {
-                throw new Exception("File not found");
+                return string.Empty;
             }
             byte[] fileBytes = File.ReadAllBytes(filePath);
             string base64String = Convert.ToBase64String(fileBytes);

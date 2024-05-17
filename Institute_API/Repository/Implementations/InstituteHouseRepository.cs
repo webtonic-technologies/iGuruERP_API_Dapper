@@ -46,12 +46,13 @@ namespace Institute_API.Repository.Implementations
                                 FileName = ImageUpload(data.FileName),
                                 HouseColor = data.HouseColor,
                                 HouseName = data.HouseName,
-                                Institute_id = request.Institute_id
+                                Institute_id = request.Institute_id,
+                                en_date = data.en_date
                             };
                             houses.Add(newHouse);
                         }
-                        string insertQuery = @"INSERT INTO [dbo].[tbl_InstituteHouse] (Institute_id, HouseName, HouseColor, FileName)
-                       VALUES (@Institute_id, @HouseName, @HouseColor, @FileName);
+                        string insertQuery = @"INSERT INTO [dbo].[tbl_InstituteHouse] (Institute_id, HouseName, HouseColor, FileName, en_date)
+                       VALUES (@Institute_id, @HouseName, @HouseColor, @FileName, @en_date);
                         SELECT SCOPE_IDENTITY();";
                         // Execute the query with multiple parameterized sets of values
                         addedRecords = await _connection.ExecuteAsync(insertQuery, houses);
@@ -67,12 +68,13 @@ namespace Institute_API.Repository.Implementations
                             FileName = ImageUpload(data.FileName),
                             HouseColor = data.HouseColor,
                             HouseName = data.HouseName,
-                            Institute_id = request.Institute_id
+                            Institute_id = request.Institute_id,
+                            en_date = data.en_date
                         };
                         houses.Add(newHouse);
                     }
-                    string insertQuery = @"INSERT INTO [dbo].[tbl_InstituteHouse] (Institute_id, HouseName, HouseColor, FileName)
-                       VALUES (@Institute_id, @HouseName, @HouseColor, @FileName);
+                    string insertQuery = @"INSERT INTO [dbo].[tbl_InstituteHouse] (Institute_id, HouseName, HouseColor, FileName, en_date)
+                       VALUES (@Institute_id, @HouseName, @HouseColor, @FileName, @en_date);
                          SELECT SCOPE_IDENTITY();";
                     // Execute the query with multiple parameterized sets of values
                     addedRecords = await _connection.ExecuteAsync(insertQuery, houses);
@@ -96,7 +98,7 @@ namespace Institute_API.Repository.Implementations
             try
             {
                 var response = new InstituteHouseDTO();
-                string sql = @"SELECT Institute_house_id, Institute_id, HouseName, HouseColor
+                string sql = @"SELECT Institute_house_id, Institute_id, HouseName, HouseColor, en_date, FileName
                        FROM [dbo].[tbl_InstituteHouse]
                        WHERE Institute_id = @Id";
                 var instituteHouse = await _connection.QueryAsync<InstituteHouses>(sql, new { Id });
@@ -122,6 +124,10 @@ namespace Institute_API.Repository.Implementations
         }
         private string ImageUpload(string image)
         {
+            if (string.IsNullOrEmpty(image) || image == "string")
+            {
+                return string.Empty;
+            }
             byte[] imageData = Convert.FromBase64String(image);
             string directoryPath = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "InstituteHouse");
 
@@ -159,7 +165,7 @@ namespace Institute_API.Repository.Implementations
 
             if (!File.Exists(filePath))
             {
-                throw new Exception("File not found");
+                return string.Empty;
             }
             byte[] fileBytes = File.ReadAllBytes(filePath);
             string base64String = Convert.ToBase64String(fileBytes);
