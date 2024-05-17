@@ -34,7 +34,7 @@
         public bool IsNSS {  get; set; }   
         public bool IsScout {  get; set; }   
         public string File_Name {  get; set; }   
-        public string Base64File { get; set; }    
+        //public string Base64File { get; set; }    
 
     }
 
@@ -56,6 +56,7 @@
         public string Place_of_Birth { get; set; }
         public string comments { get; set; }
         public string language_known { get; set; }
+        public string? Student_Group_Type {  get; set; } 
     }
     public class StudentParentInfoDTO
     {
@@ -82,6 +83,7 @@
         public string Email_id { get; set; }
         public decimal Annual_Income { get; set; }
         public string File_Name { get; set; }
+        public string? Occupation_Type {  get; set; }    
         public StudentParentOfficeInfo studentParentOfficeInfo { get; set; }    
     }
 
