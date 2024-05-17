@@ -2,6 +2,7 @@
 using Institute_API.DTOs;
 using Institute_API.DTOs.ServiceResponse;
 using Institute_API.Repository.Interfaces;
+using Microsoft.Extensions.Logging;
 using System.Data;
 using System.Data.Common;
 
@@ -19,7 +20,7 @@ namespace Institute_API.Repository.Implementations
         {
             try
             {
-                 _connection.Open();
+                _connection.Open();
                 using (var transaction = _connection.BeginTransaction())
                 {
                     try
@@ -63,7 +64,7 @@ namespace Institute_API.Repository.Implementations
                                 Employee_id = @Employee_id
                             WHERE EventEmployeeMapping_id = @EventEmployeeMapping_id";
                             }
-                            else 
+                            else
                             {
                                 employeeMappingQuery = @"
                             INSERT INTO [dbo].[tbl_EventEmployeeMapping] (Event_id, Employee_id)
@@ -81,7 +82,7 @@ namespace Institute_API.Repository.Implementations
                         // Save or update EventClassSessionMappings
                         foreach (var mapping in eventDto.ClassSessionMappings)
                         {
-                            
+
                             string classSessionMappingQuery;
                             if (mapping.EventClassSessionMapping_id > 0)
                             {
@@ -179,17 +180,7 @@ namespace Institute_API.Repository.Implementations
             {
                 // Get event details from tbl_CreateEvent
                 string eventQuery = @"
-            SELECT Event_id,
-                   EventName,
-                   StartDate,
-                   EndDate,
-                   Description,
-                   Location,
-                   ScheduleTime,
-                   Time,
-                   AttachmentFile,
-                   isApproved,
-                   approvedBy
+            SELECT Event_id,EventName,StartDate,EndDate,Description,Location,ScheduleTime,Time,AttachmentFile,isApproved,approvedBy
             FROM tbl_CreateEvent
             WHERE Event_id = @EventId";
 
@@ -212,11 +203,10 @@ namespace Institute_API.Repository.Implementations
 
                 // Get EventClassSessionMappings
                 string classSessionMappingsQuery = @"
-            SELECT EventClassSessionMapping_id,
-                   Event_id,
-                   Class_id,
-                   Section_id
+            SELECT EventClassSessionMapping_id,Event_id,Class_id,Section_id,class_course,Section
             FROM tbl_EventClassSessionMapping
+            INNER JOIN tbl_CourseClass ON tbl_CourseClass.CourseClass_id = Class_id
+            INNER JOIN tbl_CourseClassSection ON tbl_CourseClassSection.CourseClassSection_id = Section_id
             WHERE Event_id = @EventId";
 
                 var classSessionMappings = await _connection.QueryAsync<EventClassSessionMapping>(classSessionMappingsQuery, new { EventId = eventId });
@@ -281,6 +271,28 @@ namespace Institute_API.Repository.Implementations
             }
         }
 
+        public async Task<ServiceResponse<string>> GetEventAttachmentFileById(int eventId)
+        {
+            try
+            {
+                // Get event details from tbl_CreateEvent
+                string eventQuery = @"
+            SELECT  AttachmentFile,
+            FROM tbl_CreateEvent
+            WHERE Event_id = @EventId";
 
+                var eventDto = await _connection.QuerySingleOrDefaultAsync<string>(eventQuery, new { EventId = eventId });
+
+                if (eventDto == null)
+                {
+                    return new ServiceResponse<string>(false, "Event not found", null, 404);
+                }
+                return new ServiceResponse<string>(true, "Event retrieved successfully", eventDto, 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<string>(false, ex.Message, null, 500);
+            }
+        }
     }
 }

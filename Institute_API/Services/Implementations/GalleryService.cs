@@ -36,9 +36,9 @@ namespace Institute_API.Services.Implementations
                 //{
                 //    await galleryDTO.File.CopyToAsync(fileStream);
                 //}
-                if (galleryDTO.Base64File != null && galleryDTO.Base64File != "")
+                if (galleryDTO.FileName != null && galleryDTO.FileName != "")
                 {
-                    var file = await _imageService.SaveImageAsync(galleryDTO.Base64File, "Gallery");
+                    var file = await _imageService.SaveImageAsync(galleryDTO.FileName, "Gallery");
                     galleryDTO.FileName = file.relativePath;
                 }
 
@@ -101,7 +101,7 @@ namespace Institute_API.Services.Implementations
                         {
                             if(item != null && item != "")
                             {
-                                galleryEvent.Base64Files.Add(_imageService.GetImageAsBase64(item));
+                                galleryEvent.FileName.Add(_imageService.GetImageAsBase64(item));
                             }
                           
                             //for (int i = 0; i < galleryEvent.FileNames.Count; i++)
