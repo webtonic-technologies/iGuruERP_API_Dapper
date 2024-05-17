@@ -16,5 +16,7 @@ namespace Student_API.Repository.Interfaces
         Task<ServiceResponse<List<StudentDetailsDTO>>> GetAllStudentDetails();
         Task<ServiceResponse<int>> ChangeStudentStatus(StudentStatusDTO statusDTO);
         Task<ServiceResponse<int>> AddUpdateStudentDocuments(StudentDocumentListDTO request, int Student_id);
+        Task<ServiceResponse<string>> GetStudentInfoImageById(int studentId);
+        Task<ServiceResponse<string>> GetStudentparentImageById(int Student_Parent_Info_id);
     }
 }

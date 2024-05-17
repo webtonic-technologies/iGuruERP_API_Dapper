@@ -585,7 +585,7 @@ namespace Employee_API.Repository.Implementations
                     [Primary_Emergency_Contact_no],
                     [Secondary_Emergency_Contact_no]
                 FROM 
-                    [iGuruERP].[dbo].[tbl_EmployeeFamilyMaster]
+                    [tbl_EmployeeFamilyMaster]
                 WHERE 
                     [Employee_id] = @EmployeeId";
 
@@ -615,7 +615,7 @@ namespace Employee_API.Repository.Implementations
                     [Nationality_id], [Religion_id], [Date_of_Birth], [EmailID], [Employee_code_id], 
                     [marrital_status_id], [Blood_Group_id], [aadhar_no], [pan_no], [EPF_no], 
                     [ESIC_no], [Institute_id], [EmpPhoto], [uan_no] 
-                FROM [iGuruERP].[dbo].[tbl_EmployeeProfileMaster] 
+                FROM [tbl_EmployeeProfileMaster] 
                 WHERE (1=1)";
 
                 var parameters = new DynamicParameters();
@@ -690,7 +690,7 @@ namespace Employee_API.Repository.Implementations
                     [Educational_Qualification],
                     [Year_of_Completion]
                 FROM 
-                    [iGuruERP].[dbo].[tbl_QualificationInfoMaster]
+                    [tbl_QualificationInfoMaster]
                 WHERE 
                     [employee_id] = @EmployeeId";
 
@@ -722,7 +722,7 @@ namespace Employee_API.Repository.Implementations
                     [Previous_Designation],
                     [Employee_id]
                 FROM 
-                    [iGuruERP].[dbo].[tbl_WorkExperienceMaster]
+                    [tbl_WorkExperienceMaster]
                 WHERE 
                     [Employee_id] = @EmployeeId";
 
@@ -755,7 +755,7 @@ namespace Employee_API.Repository.Implementations
                     [IFSC_code],
                     [Bank_address]
                 FROM 
-                    [iGuruERP].[dbo].[tbl_BankDetailsmaster]
+                    [tbl_BankDetailsmaster]
                 WHERE 
                     [employee_id] = @EmployeeId";
 

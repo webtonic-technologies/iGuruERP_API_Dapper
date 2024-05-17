@@ -11,7 +11,6 @@
         public string ScheduleTime { get; set; }
         public string Time { get; set; }
         public string? AttachmentFile { get; set; }
-        public string? Base64File { get; set; }
 
         public List<EventEmployeeMapping> EmployeeMappings { get; set; }
         public List<EventClassSessionMapping> ClassSessionMappings { get; set; }
@@ -29,5 +28,7 @@
         public int Event_id { get; set; }
         public int Class_id { get; set; }
         public int Section_id { get; set; }
+        public string Section {  get; set; }      
+        public string class_course {  get; set; }   
     }
 }
