@@ -49,7 +49,7 @@ namespace Student_API.Repository.Implementations
                         query = @"
                     UPDATE [dbo].[tbl_TimetableGroup] 
                     SET GroupName = @GroupName, StartTime = @StartTime, EndTime = @EndTime 
-                    WHERE TimetableGroup_id = @TimetableGroupId";
+                    WHERE TimetableGroup_id = @TimetableGroup_id";
                         result = await _connection.ExecuteAsync(query, timeTableGroupDTO, transaction);
                         timetableGroupSuccess = result > 0;
                     }
@@ -63,7 +63,7 @@ namespace Student_API.Repository.Implementations
                             // Add new Period
                             query = @"
                         INSERT INTO [dbo].[tbl_Period] (TimetableGroup_id, PeriodName, StartTime, EndTime) 
-                        VALUES (@TimetableGroupId, @PeriodName, @StartTime, @EndTime)";
+                        VALUES (@TimetableGroup_id, @PeriodName, @StartTime, @EndTime)";
                         }
                         else
                         {
@@ -86,7 +86,7 @@ namespace Student_API.Repository.Implementations
                             // Add new PeriodBreak
                             query = @"
                         INSERT INTO [dbo].[tbl_PeriodBreak] (TimetableGroup_id, BreakName, StartTime, EndTime) 
-                        VALUES (@TimetableGroupId, @BreakName, @StartTime, @EndTime)";
+                        VALUES (@TimetableGroup_id, @BreakName, @StartTime, @EndTime)";
                         }
                         else
                         {
@@ -109,18 +109,18 @@ namespace Student_API.Repository.Implementations
                             // Add new TimetableClassMapping
                             query = @"
                         INSERT INTO [dbo].[tbl_TimetableClassMapping] (TimetableGroup_id, Class_id, Section_id) 
-                        VALUES (@TimetableGroupId, @ClassId, @SectionId)";
+                        VALUES (@TimetableGroup_id, @Class_id, @Section_id)";
                         }
                         else
                         {
                             // Update existing TimetableClassMapping
                             query = @"
                         UPDATE [dbo].[tbl_TimetableClassMapping] 
-                        SET Class_id = @ClassId, Section_id = @SectionId 
+                        SET Class_id = @Class_id, Section_id = @Section_id 
                         WHERE TimetableClassMapping_id = @TimetableClassMappingId";
                         }
                         result = await _connection.ExecuteAsync(query, timetableClassMapping, transaction);
-                        timetableClassMappingsSuccess &= result > 0;
+                        timetableClassMappingsSuccess =  result > 0 ? true : false;
                     }
 
                     bool success = timetableGroupSuccess && periodsSuccess && periodBreaksSuccess && timetableClassMappingsSuccess;
