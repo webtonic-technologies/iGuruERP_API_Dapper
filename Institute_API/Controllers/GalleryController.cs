@@ -16,7 +16,7 @@ namespace Institute_API.Controllers
         }
 
         [HttpPost("AddGalleryImage")]
-        public async Task<IActionResult> AddGalleryImage([FromForm] GalleryDTO galleryDTO)
+        public async Task<IActionResult> AddGalleryImage([FromBody] GalleryDTO galleryDTO)
         {
             try
             {
