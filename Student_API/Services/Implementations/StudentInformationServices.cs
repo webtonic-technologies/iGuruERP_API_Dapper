@@ -84,12 +84,12 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<StudentInformationDTO>(false, ex.Message, null, 500);
             }
         }
-        public async Task<ServiceResponse<List<StudentDetailsDTO>>> GetAllStudentDetails()
+        public async Task<ServiceResponse<List<StudentDetailsDTO>>> GetAllStudentDetails(int Institute_id)
         {
 
             try
             {
-                return await _studentInformationRepository.GetAllStudentDetails();
+                return await _studentInformationRepository.GetAllStudentDetails(Institute_id);
             }
             catch (Exception ex)
             {
