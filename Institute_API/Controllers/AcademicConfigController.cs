@@ -54,12 +54,12 @@ namespace Institute_API.Controllers
             }
         }
 
-        [HttpGet("GetAllCourseClassList")]
-        public async Task<IActionResult> GetAcademicConfigList(int Instituteid)
+        [HttpPost("GetAllCourseClassList")]
+        public async Task<IActionResult> GetAcademicConfigList(GetAllCourseClassRequest request)
         {
             try
             {
-                var data = await _academicConfigServices.GetAcademicConfigList(Instituteid);
+                var data = await _academicConfigServices.GetAcademicConfigList(request);
                 return Ok(data);
             }
             catch (Exception ex)
