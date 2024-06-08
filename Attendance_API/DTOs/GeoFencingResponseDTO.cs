@@ -2,6 +2,11 @@
 {
     public class GeoFencingResponseDTO
     {
+        public IEnumerable<GeoFencingResponse> Data { get; set; }
+        public long Total { get; set; }
+    }
+    public class GeoFencingResponse
+    {
         public int Geo_Fencing_id { get; set; }
         public string Latitude { get; set; }
         public string Longitude { get; set; }
