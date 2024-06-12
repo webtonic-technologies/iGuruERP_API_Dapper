@@ -220,7 +220,6 @@ namespace Student_API.Repository.Implementations
                         App_User_id = @App_User_id,
                         Aadhar_Number = @Aadhar_Number,
                         NEP = @NEP,
-                        QR_code = @QR_code,
                         IsPhysicallyChallenged = @IsPhysicallyChallenged,
                         IsSports = @IsSports,
                         IsAided = @IsAided,
@@ -655,10 +654,14 @@ namespace Student_API.Repository.Implementations
                 return new ServiceResponse<int>(false, "Some error occured", 0, 500);
             }
         }
-        public async Task<ServiceResponse<List<StudentDetailsDTO>>> GetAllStudentDetails(int Institute_id)
+        public async Task<ServiceResponse<List<StudentDetailsDTO>>> GetAllStudentDetails(int Institute_id, int? pageNumber = null, int? pageSize = null)
         {
             try
             {
+                const int MaxPageSize = int.MaxValue;
+                int actualPageSize = pageSize ?? MaxPageSize;
+                int actualPageNumber = pageNumber ?? 1;
+                int offset = (actualPageNumber - 1) * actualPageSize;
                 // Assume that Parent_Type_id = 1 means father
                 string sql = @"
                     SELECT tbl_StudentMaster.student_id , tbl_StudentMaster.First_Name , tbl_StudentMaster.Last_Name , class_course , Section , Admission_Number , Roll_Number ,Date_of_Joining,tbl_StudentMaster.Date_of_Birth,Religion_Type , Gender_Type ,CONCAT(tbl_StudentParentsInfo.First_Name, ' ', tbl_StudentParentsInfo.Last_Name) AS Father_Name FROM [dbo].[tbl_StudentMaster]
@@ -666,16 +669,27 @@ namespace Student_API.Repository.Implementations
                     INNER JOIN tbl_CourseClassSection on tbl_StudentMaster.section_id =  tbl_CourseClassSection.CourseClassSection_id
                     INNER JOIN tbl_Religion ON tbl_StudentMaster.Religion_id = tbl_Religion.Religion_id
                     INNER JOIN tbl_Gender ON tbl_StudentMaster.gender_id = tbl_Gender.Gender_id
-                    INNER JOIN tbl_StudentParentsInfo ON tbl_StudentMaster.student_id = tbl_StudentParentsInfo.Student_id AND tbl_StudentParentsInfo.Parent_Type_id = 1 AND Institute_id = @Institute_id";
-                var StudentList = await _connection.QueryAsync<StudentDetailsDTO>(sql, new { Institute_id });
+                    INNER JOIN tbl_StudentParentsInfo ON tbl_StudentMaster.student_id = tbl_StudentParentsInfo.Student_id AND tbl_StudentParentsInfo.Parent_Type_id = 1
+                    WHERE tbl_StudentMaster.Institute_id = @InstituteId
+                    ORDER BY tbl_StudentMaster.student_id
+                    OFFSET @Offset ROWS
+                    FETCH NEXT @PageSize ROWS ONLY;
 
-                if (StudentList != null)
+                    SELECT COUNT(0) FROM [dbo].[tbl_StudentMaster]
+                    WHERE Institute_id = @InstituteId";
+                using (var multi = await _connection.QueryMultipleAsync(sql, new { InstituteId = Institute_id, Offset = offset, PageSize = actualPageSize }))
                 {
-                    return new ServiceResponse<List<StudentDetailsDTO>>(true, "Operation successful", StudentList.ToList(), 200);
-                }
-                else
-                {
-                    return new ServiceResponse<List<StudentDetailsDTO>>(false, "Student not found", null, 404);
+                    var studentList = multi.Read<StudentDetailsDTO>().ToList();
+                    int? totalRecords = (pageSize.HasValue && pageNumber.HasValue) == true ? multi.ReadSingle<int>() : null;
+
+                    if (studentList.Any())
+                    {
+                        return new ServiceResponse<List<StudentDetailsDTO>>(true, "Operation successful", studentList, 200, totalRecords);
+                    }
+                    else
+                    {
+                        return new ServiceResponse<List<StudentDetailsDTO>>(false, "Student not found", null, 404);
+                    }
                 }
             }
 
