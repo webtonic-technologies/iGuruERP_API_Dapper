@@ -9,4 +9,10 @@
         public DateTime Applicable_Date { get; set; }
         public List<int> Designations { get; set; }
     }
+
+    public class ShiftTimingFilterDTO 
+    {
+        public int? pageNumber { get; set; }
+        public int? pageSize { get; set; }
+    }
 }
