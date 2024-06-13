@@ -7,7 +7,7 @@ namespace Student_API.Services.Interfaces
     {
         Task<ServiceResponse<int>> AddUpdateStudentInformation(StudentMasterDTO request);
         Task<ServiceResponse<StudentInformationDTO>> GetStudentDetailsById(int studentId);
-        Task<ServiceResponse<List<StudentDetailsDTO>>> GetAllStudentDetails(int Institute_id);
+        Task<ServiceResponse<List<StudentDetailsDTO>>> GetAllStudentDetails(int Institute_id, int? pageNumber = null, int? pageSize = null);
         Task<ServiceResponse<int>> ChangeStudentStatus(StudentStatusDTO statusDTO);
         Task<ServiceResponse<int>> AddUpdateStudentOtherInfo(StudentOtherInfoDTO request);
         Task<ServiceResponse<int>> AddUpdateStudentParentInfo(StudentParentInfoDTO request);

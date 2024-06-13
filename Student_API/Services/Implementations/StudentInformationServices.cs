@@ -1,8 +1,12 @@
-﻿using Student_API.DTOs;
+﻿using QRCoder;
+using Student_API.DTOs;
 using Student_API.DTOs.ServiceResponse;
 using Student_API.Repository.Interfaces;
 using Student_API.Services.Interfaces;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.Reflection.Metadata;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Student_API.Services.Implementations
 {
@@ -17,6 +21,7 @@ namespace Student_API.Services.Implementations
             _hostingEnvironment = webHostEnvironment;
             _imageService = imageService;
         }
+
 
         public async Task<ServiceResponse<int>> AddUpdateStudentInformation(StudentMasterDTO request)
         {
@@ -36,7 +41,26 @@ namespace Student_API.Services.Implementations
                     }
                     request.File_Name = file.relativePath;
                 }
+                if (request.student_id == 0)
+                {
+                    QRCodeGenerator qrGenerator = new QRCodeGenerator();
+                    QRCodeData qrCodeData = qrGenerator.CreateQrCode(request.First_Name + "  " + request.Last_Name, QRCodeGenerator.ECCLevel.Q);
+                    QRCode qrCodeImage = new QRCode(qrCodeData);
 
+                    using (Bitmap bitmap = qrCodeImage.GetGraphic(60))
+                    {
+                        string base64String;
+                        using (MemoryStream ms = new MemoryStream())
+                        {
+                            bitmap.Save(ms, ImageFormat.Png);
+                            byte[] byteImage = ms.ToArray();
+                            base64String = Convert.ToBase64String(byteImage);
+                        }
+
+                        var result = await _imageService.SaveImageAsync(base64String, "QrCodes");
+                        request.QR_code = result.relativePath;
+                    }
+                }
 
                 var data = await _studentInformationRepository.AddUpdateStudentInformation(request);
                 return data;
@@ -84,12 +108,12 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<StudentInformationDTO>(false, ex.Message, null, 500);
             }
         }
-        public async Task<ServiceResponse<List<StudentDetailsDTO>>> GetAllStudentDetails(int Institute_id)
+        public async Task<ServiceResponse<List<StudentDetailsDTO>>> GetAllStudentDetails(int Institute_id, int? pageNumber = null, int? pageSize = null)
         {
 
             try
             {
-                return await _studentInformationRepository.GetAllStudentDetails(Institute_id);
+                return await _studentInformationRepository.GetAllStudentDetails(Institute_id,pageNumber,pageSize);
             }
             catch (Exception ex)
             {
