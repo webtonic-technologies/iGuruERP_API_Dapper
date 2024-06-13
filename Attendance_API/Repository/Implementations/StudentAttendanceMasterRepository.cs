@@ -26,9 +26,10 @@ namespace Attendance_API.Repository.Implementations
                 return new ServiceResponse<List<StudentAttendanceMasterResponseDTO>>(false, "Invalid request", new List<StudentAttendanceMasterResponseDTO>(), 400);
             }
             string sql = $"SELECT sam.Student_Attendance_id, sam.Student_Attendance_Status_id, sam.Remark, '{request.Date.ToString("yyyy-MM-dd")}' as Date, sm.student_id as Student_id, sm.First_Name + ' ' + sm.Last_Name AS Student_Name, " +
-                         $"sm.Admission_Number, sm.Roll_Number " +
+                         $"sm.Admission_Number, sm.Roll_Number, sas.Student_Attendance_Status_Type, sas.Short_Name as Student_Attendance_Status_Short_Name " +
                          $"FROM tbl_StudentMaster sm " +
                          $"LEFT JOIN tbl_StudentAttendanceMaster sam ON sam.Student_id = sm.student_id and sam.Date = '{request.Date.ToString("yyyy-MM-dd")}' " +
+                         $"join tbl_StudentAttendanceStatus sas on sas.Student_Attendance_Status_id = sam.Student_Attendance_Status_id " +
                          $"where sm.class_id = {request.class_id} and sm.section_id = {request.section_id}";
 
             var result = await _connection.QueryAsync<StudentAttendanceMasterResponseDTO>(sql);

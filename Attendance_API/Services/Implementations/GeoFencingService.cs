@@ -22,9 +22,9 @@ namespace Attendance_API.Services.Implementations
             return await _geoFencingRepository.GetGeoFencingById(id);
         }
 
-        public async Task<ServiceResponse<IEnumerable<GeoFencingResponseDTO>>> GetAllGeoFencings()
+        public async Task<ServiceResponse<GeoFencingResponseDTO>> GetAllGeoFencings(GeoFencingQueryParams request)
         {
-            return await _geoFencingRepository.GetAllGeoFencings();
+            return await _geoFencingRepository.GetAllGeoFencings(request);
         }
 
         public async Task<ServiceResponse<bool>> AddGeoFencing(GeoFencingDTO geoFencing)

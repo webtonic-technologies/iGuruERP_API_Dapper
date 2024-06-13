@@ -25,9 +25,10 @@ namespace Attendance_API.Repository.Implementations
             {
                 return new ServiceResponse<List<EmployeeAttendanceMasterResponseDTO>>(false, "Invalid request", new List<EmployeeAttendanceMasterResponseDTO>(), 400);
             }
-            string sql = $"select eam.Employee_Attendance_Master_id, epm.First_Name + epm.Last_Name as Employee_Name, epm.Employee_id, d.Department_id, d.DepartmentName, eam.Employee_Attendance_Status_id, eam.Remarks from tbl_EmployeeProfileMaster epm " +
+            string sql = $"select eam.Employee_Attendance_Master_id, epm.First_Name + epm.Last_Name as Employee_Name, epm.Employee_id, d.Department_id, d.DepartmentName, eam.Employee_Attendance_Status_id, eam.Remarks, eas.Employee_Attendance_Status_Type, eas.Short_Name as Employee_Attendance_Status_Short_Name from tbl_EmployeeProfileMaster epm " +
                          $"left join tbl_EmployeeAttendanceMaster eam on epm.Employee_id = eam.Employee_id and eam.Date = '{request.Date.ToString("yyyy-MM-dd")}' " +
                          $"join tbl_Department d on epm.Department_id = d.Department_id " +
+                         $"join tbl_EmployeeAttendanceStatusMaster eas on eas.Employee_Attendance_Status_id = eam.Employee_Attendance_Status_id " +
                          $"where epm.Department_id = {request.Department_id}";
 
             var result = await _connection.QueryAsync<EmployeeAttendanceMasterResponseDTO>(sql);
