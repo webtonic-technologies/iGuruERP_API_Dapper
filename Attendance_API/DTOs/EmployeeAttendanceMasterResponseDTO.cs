@@ -2,6 +2,11 @@
 {
     public class EmployeeAttendanceMasterResponseDTO
     {
+        public IEnumerable<EmployeeAttendanceMasterResponse> Data { get; set; }
+        public long Total { get; set; }
+    }
+    public class EmployeeAttendanceMasterResponse
+    {
         public string Employee_Name { get; set; }
         public int Employee_Id { get; set; }
         public int Department_id { get; set; }
