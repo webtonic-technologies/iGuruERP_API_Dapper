@@ -21,6 +21,10 @@ builder.Services.AddTransient<IStudentInfoDropdownService, StudentInfoDropdownSe
 builder.Services.AddTransient<ITimetableRepository, TimetableRepository>();
 builder.Services.AddTransient<ITimetableServices, TimetableServices>();
 builder.Services.AddTransient<IImageService, ImageService>();
+builder.Services.AddTransient<IStudentQRService, StudentQRService>();
+builder.Services.AddTransient<IStudentQRRepository, StudentQRRepository>();
+builder.Services.AddTransient<IDocumentConfigService, DocumentConfigService>();
+builder.Services.AddTransient<IDocumentConfigRepository, DocumentConfigRepository>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
