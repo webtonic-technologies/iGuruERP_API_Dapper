@@ -48,11 +48,11 @@ namespace Institute_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<CourseClassDTO>>> GetAcademicConfigList(int Institute_id)
+        public async Task<ServiceResponse<List<CourseClassDTO>>> GetAcademicConfigList(GetAllCourseClassRequest request)
         {
             try
             {
-                return await _academicConfigRepository.GetAcademicConfigList(Institute_id);
+                return await _academicConfigRepository.GetAcademicConfigList(request);
             }
             catch (Exception ex)
             {

@@ -9,4 +9,10 @@ namespace Institute_API.DTOs
         public string Class_course { get; set; } = string.Empty;
         public List<CourseClassSection>? CourseClassSections { get; set; }
     }
+    public class GetAllCourseClassRequest
+    {
+        public int PageNumber { get; set; }
+        public int PageSize { get; set; }
+        public int Institute_id { get; set; }
+    }
 }

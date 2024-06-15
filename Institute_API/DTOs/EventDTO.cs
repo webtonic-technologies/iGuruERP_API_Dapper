@@ -20,6 +20,7 @@
         public int EventEmployeeMapping_id { get; set; }
         public int Event_id { get; set; }
         public int Employee_id { get; set; }
+        public string? Employee_Name {  get; set; }      
     }
 
     public class EventClassSessionMapping
@@ -28,7 +29,7 @@
         public int Event_id { get; set; }
         public int Class_id { get; set; }
         public int Section_id { get; set; }
-        public string Section {  get; set; }      
-        public string class_course {  get; set; }   
+        public string? Section {  get; set; }      
+        public string?   class_course {  get; set; }   
     }
 }

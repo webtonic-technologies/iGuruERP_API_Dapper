@@ -9,7 +9,7 @@ namespace Attendance_API.Repository.Interfaces
     public interface IGeoFencingRepository
     {
         Task<ServiceResponse<GeoFencingResponseDTO>> GetGeoFencingById(int id);
-        Task<ServiceResponse<IEnumerable<GeoFencingResponseDTO>>> GetAllGeoFencings();
+        Task<ServiceResponse<GeoFencingResponseDTO>> GetAllGeoFencings(GeoFencingQueryParams request);
         Task<ServiceResponse<bool>> AddGeoFencing(GeoFencingDTO geoFencing);
         Task<ServiceResponse<bool>> UpdateGeoFencing(GeoFencingDTO geoFencing);
         Task<ServiceResponse<bool>> DeleteGeoFencing(int id);

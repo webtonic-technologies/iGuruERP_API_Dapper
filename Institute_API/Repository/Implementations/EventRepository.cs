@@ -195,8 +195,10 @@ namespace Institute_API.Repository.Implementations
                 string employeeMappingsQuery = @"
             SELECT EventEmployeeMapping_id,
                    Event_id,
-                   Employee_id
+                   Employee_id,
+                   CONCAT(tbl_EmployeeProfileMaster.First_Name, ' ', tbl_EmployeeProfileMaster.Last_Name) AS Employee_Name 
             FROM tbl_EventEmployeeMapping
+            INNER JOIN tbl_EmployeeProfileMaster ON tbl_EmployeeProfileMaster.Employee_id = tbl_EventEmployeeMapping.Employee_id
             WHERE Event_id = @EventId";
 
                 var employeeMappings = await _connection.QueryAsync<EventEmployeeMapping>(employeeMappingsQuery, new { EventId = eventId });

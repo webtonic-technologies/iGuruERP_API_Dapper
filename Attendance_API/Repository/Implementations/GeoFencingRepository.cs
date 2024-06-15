@@ -28,11 +28,19 @@ namespace Attendance_API.Repository.Implementations
             return new ServiceResponse<GeoFencingResponseDTO>(true, "GeoFencing found", geoFencing, 200);
         }
 
-        public async Task<ServiceResponse<IEnumerable<GeoFencingResponseDTO>>> GetAllGeoFencings()
+        public async Task<ServiceResponse<GeoFencingResponseDTO>> GetAllGeoFencings(GeoFencingQueryParams request)
         {
-            var query = "SELECT g.*, d.DepartmentName as Department_Name FROM tbl_GeoFencing g JOIN tbl_Department d ON g.Department_id = d.Department_id";
-            var geoFencings = await _dbConnection.QueryAsync<GeoFencingResponseDTO>(query);
-            return new ServiceResponse<IEnumerable<GeoFencingResponseDTO>>(true, "All GeoFencings found", geoFencings, 200);
+            var query = "SELECT g.*, d.DepartmentName as Department_Name FROM tbl_GeoFencing g JOIN tbl_Department d ON g.Department_id = d.Department_id ";
+            if(request.pageNumber != null && request.pageSize != null)
+            {
+                query += $" Order by 1 OFFSET {(request.pageNumber - 1) * request.pageSize} ROWS FETCH NEXT {request.pageSize} ROWS ONLY;";
+            }
+
+            var geoFencings = await _dbConnection.QueryAsync<GeoFencingResponse>(query);
+            query = "SELECT COUNT(*) FROM tbl_GeoFencing g JOIN tbl_Department d ON g.Department_id = d.Department_id ";
+            var countRes = await _dbConnection.QueryAsync<long>(query);
+            var count = countRes.FirstOrDefault();
+            return new ServiceResponse<GeoFencingResponseDTO>(true, "All GeoFencings found", new GeoFencingResponseDTO { Data = geoFencings, Total = count }, 200);
         }
 
         public async Task<ServiceResponse<bool>> AddGeoFencing(GeoFencingDTO geoFencing)
