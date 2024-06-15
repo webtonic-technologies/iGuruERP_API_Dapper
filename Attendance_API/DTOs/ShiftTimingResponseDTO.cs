@@ -4,6 +4,11 @@ namespace Attendance_API.DTOs
 {
     public class ShiftTimingResponseDTO
     {
+        public IEnumerable<ShiftTimingResponse> Data { get; set; }
+        public long Total { get; set; }
+    }
+    public class ShiftTimingResponse
+    {
         public int Shift_Timing_id { get; set; }
         public string Clock_In { get; set; }
         public string Clock_Out { get; set; }

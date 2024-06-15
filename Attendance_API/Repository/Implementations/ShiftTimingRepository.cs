@@ -5,6 +5,7 @@ using Dapper;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -74,7 +75,7 @@ namespace Attendance_API.Repository.Implementations
             }
         }
 
-        public async Task<ShiftTimingResponseDTO> GetShiftTimingById(int id)
+        public async Task<ShiftTimingResponse> GetShiftTimingById(int id)
         {
             var query = @"
                 SELECT st.Shift_Timing_id, st.Clock_In, st.Clock_Out, st.Late_Coming, st.Applicable_Date, d.Designation_id, d.DesignationName
@@ -83,9 +84,9 @@ namespace Attendance_API.Repository.Implementations
                 JOIN tbl_Designation d ON stm.Designation_id = d.Designation_id
                 WHERE st.Shift_Timing_id = @Id;";
 
-            var shiftTimingDictionary = new Dictionary<int, ShiftTimingResponseDTO>();
+            var shiftTimingDictionary = new Dictionary<int, ShiftTimingResponse>();
 
-            var result = await _connection.QueryAsync<ShiftTimingResponseDTO, ShiftTimingDesignations, ShiftTimingResponseDTO>(
+            var result = await _connection.QueryAsync<ShiftTimingResponse, ShiftTimingDesignations, ShiftTimingResponse>(
                 query,
                 (shiftTiming, designation) =>
                 {
@@ -200,7 +201,7 @@ namespace Attendance_API.Repository.Implementations
             }
         }
 
-        public async Task<List<ShiftTimingResponseDTO>> GetAllShiftTimings()
+        public async Task<ShiftTimingResponseDTO> GetAllShiftTimings(ShiftTimingFilterDTO request)
         {
             var query = @"
                 SELECT st.Shift_Timing_id, st.Clock_In, st.Clock_Out, st.Late_Coming, st.Applicable_Date, d.Designation_id, d.DesignationName
@@ -208,9 +209,14 @@ namespace Attendance_API.Repository.Implementations
                 JOIN tbl_ShiftTimingDesignationMapping stm ON st.Shift_Timing_id = stm.Shift_Timing_id
                 JOIN tbl_Designation d ON stm.Designation_id = d.Designation_id;";
 
-            var shiftTimingDictionary = new Dictionary<int, ShiftTimingResponseDTO>();
+            if (request.pageNumber != null && request.pageSize != null)
+            {
+                query += $" Order by 1 OFFSET {(request.pageNumber - 1) * request.pageSize} ROWS FETCH NEXT {request.pageSize} ROWS ONLY;";
+            }
 
-            var result = await _connection.QueryAsync<ShiftTimingResponseDTO, ShiftTimingDesignations, ShiftTimingResponseDTO>(
+            var shiftTimingDictionary = new Dictionary<int, ShiftTimingResponse>();
+
+            var result = await _connection.QueryAsync<ShiftTimingResponse, ShiftTimingDesignations, ShiftTimingResponse>(
                 query,
                 (shiftTiming, designation) =>
                 {
@@ -226,8 +232,16 @@ namespace Attendance_API.Repository.Implementations
                 },
                 splitOn: "Designation_id"
             );
+            query = @"
+                SELECT COUNT(*)
+                FROM tbl_ShiftTimingMaster st
+                JOIN tbl_ShiftTimingDesignationMapping stm ON st.Shift_Timing_id = stm.Shift_Timing_id
+                JOIN tbl_Designation d ON stm.Designation_id = d.Designation_id;"
+            ;
 
-            return shiftTimingDictionary.Values.ToList();
+            var countRes = await _connection.QueryAsync<long>(query);
+            var count = countRes.FirstOrDefault();
+            return new ShiftTimingResponseDTO { Data = shiftTimingDictionary.Values.ToList(), Total = count};
         }
     }
 }
