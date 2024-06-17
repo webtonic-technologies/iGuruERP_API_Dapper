@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
 using Attendance_API.DTOs;
@@ -19,20 +21,30 @@ namespace Attendance_API.Repository.Implementations
             _connection = connection;
         }
 
-        public async Task<ServiceResponse<List<EmployeeAttendanceMasterResponseDTO>>> GetEmployeeAttendanceMasterList(EmployeeAttendanceMasterRequestDTO request)
+        public async Task<ServiceResponse<EmployeeAttendanceMasterResponseDTO>> GetEmployeeAttendanceMasterList(EmployeeAttendanceMasterRequestDTO request)
         {
             if (request == null || request.Date == DateTime.MinValue || request.Department_id == 0)
             {
-                return new ServiceResponse<List<EmployeeAttendanceMasterResponseDTO>>(false, "Invalid request", new List<EmployeeAttendanceMasterResponseDTO>(), 400);
+                return new ServiceResponse<EmployeeAttendanceMasterResponseDTO>(false, "Invalid request", new EmployeeAttendanceMasterResponseDTO(), 400);
             }
             string sql = $"select eam.Employee_Attendance_Master_id, epm.First_Name + epm.Last_Name as Employee_Name, epm.Employee_id, d.Department_id, d.DepartmentName, eam.Employee_Attendance_Status_id, eam.Remarks, eas.Employee_Attendance_Status_Type, eas.Short_Name as Employee_Attendance_Status_Short_Name from tbl_EmployeeProfileMaster epm " +
                          $"left join tbl_EmployeeAttendanceMaster eam on epm.Employee_id = eam.Employee_id and eam.Date = '{request.Date.ToString("yyyy-MM-dd")}' " +
                          $"join tbl_Department d on epm.Department_id = d.Department_id " +
                          $"join tbl_EmployeeAttendanceStatusMaster eas on eas.Employee_Attendance_Status_id = eam.Employee_Attendance_Status_id " +
                          $"where epm.Department_id = {request.Department_id}";
-
-            var result = await _connection.QueryAsync<EmployeeAttendanceMasterResponseDTO>(sql);
-            return new ServiceResponse<List<EmployeeAttendanceMasterResponseDTO>>(true, "Operation successful", result.ToList(), 200);
+            if (request.pageNumber != null && request.pageSize != null)
+            {
+                sql += $" Order by 1 OFFSET {(request.pageNumber - 1) * request.pageSize} ROWS FETCH NEXT {request.pageSize} ROWS ONLY;";
+            }
+            var result = await _connection.QueryAsync<EmployeeAttendanceMasterResponse>(sql);
+            sql = $"select COUNT(*) from tbl_EmployeeProfileMaster epm " +
+                         $"left join tbl_EmployeeAttendanceMaster eam on epm.Employee_id = eam.Employee_id and eam.Date = '{request.Date.ToString("yyyy-MM-dd")}' " +
+                         $"join tbl_Department d on epm.Department_id = d.Department_id " +
+                         $"join tbl_EmployeeAttendanceStatusMaster eas on eas.Employee_Attendance_Status_id = eam.Employee_Attendance_Status_id " +
+                         $"where epm.Department_id = {request.Department_id}";
+            var countRes = await _connection.QueryAsync<long>(sql);
+            var count = countRes.FirstOrDefault();
+            return new ServiceResponse<EmployeeAttendanceMasterResponseDTO>(true, "Operation successful", new EmployeeAttendanceMasterResponseDTO{ Data = result.ToList(), Total = count }, 200);
         }
 
         public async Task<ServiceResponse<EmployeeAttendanceMasterDTO>> InsertOrUpdateEmployeeAttendanceMaster(EmployeeAttendanceMasterDTO employeeAttendanceMaster)

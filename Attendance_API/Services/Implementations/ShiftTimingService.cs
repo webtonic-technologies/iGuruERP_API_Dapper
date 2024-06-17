@@ -20,12 +20,12 @@ namespace Attendance_API.Services.Implementations
             return await _shiftTimingRepository.AddShiftTimingAndDesignations(request);
         }
 
-        public async Task<List<ShiftTimingResponseDTO>> GetAllShiftTimings()
+        public async Task<ShiftTimingResponseDTO> GetAllShiftTimings(ShiftTimingFilterDTO request)
         {
-            return await _shiftTimingRepository.GetAllShiftTimings();
+            return await _shiftTimingRepository.GetAllShiftTimings(request);
         }
 
-        public async Task<ShiftTimingResponseDTO> GetShiftTimingById(int id)
+        public async Task<ShiftTimingResponse> GetShiftTimingById(int id)
         {
             return await _shiftTimingRepository.GetShiftTimingById(id);
         }
