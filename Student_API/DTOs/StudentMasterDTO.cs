@@ -31,7 +31,7 @@ namespace Student_API.DTOs
         public DateTime? Date_of_Birth { get; set; }
         [Required]
         public int? Mother_Tongue_id { get; set; }
-        [MaxLength(20)]
+     
         public int? Caste_id { get; set; }
         public string First_Language { get; set; }
         public string Second_Language { get; set; }
@@ -242,7 +242,7 @@ namespace Student_API.DTOs
         public string History_Majorillness { get; set; }
         [MaxLength(50)]
         public string History_Accident { get; set; }
-        [MaxLength(50)]
+      
         public decimal? Vision { get; set; }
         [MaxLength(50)]
         public string Hearing { get; set; }
@@ -256,7 +256,7 @@ namespace Student_API.DTOs
         public string Student_Name { get; set; }
         [Range(0, 99)]
         public int Student_Age { get; set; }
-        [MaxLength(5)]
+     
         public int Admission_Status { get; set; }
     }
 }
