@@ -31,6 +31,10 @@ builder.Services.AddTransient<IPermissionSlipService, PermissionSlipService>();
 builder.Services.AddTransient<IPermissionSlipRepository, PermissionSlipRepository>();
 builder.Services.AddTransient<IStudentDashboardRepository, StudentDashboardRepository>();
 builder.Services.AddTransient<IStudentDashboardService, StudentDashboardService>();
+builder.Services.AddTransient<ITemplateService, TemplateService>();
+builder.Services.AddTransient<ITemplateRepository, TemplateRepository>();
+builder.Services.AddTransient<IStudentPromotionService, StudentPromotionService>();
+builder.Services.AddTransient<IStudentPromotionRepository, StudentPromotionRepository>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

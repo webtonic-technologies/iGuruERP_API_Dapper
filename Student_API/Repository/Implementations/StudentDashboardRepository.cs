@@ -18,12 +18,12 @@ namespace Student_API.Repository.Implementations
             _dbConnection = dbConnection;
         }
 
-        public async Task<StudentStatisticsDTO> GetStudentStatisticsAsync()
+        public async Task<ServiceResponse<StudentStatisticsDTO>> GetStudentStatisticsAsync()
         {
             string sql = @"
             -- Gender-wise count
             SELECT 
-                g.GenderName AS Gender,
+                g.Gender_Type AS Gender,
                 COUNT(s.student_id) AS Count,
                 CAST(COUNT(s.student_id) * 100.0 / SUM(COUNT(s.student_id)) OVER () AS DECIMAL(5, 2)) AS Percentage
             INTO #GenderWiseCount
@@ -33,7 +33,7 @@ namespace Student_API.Repository.Implementations
 
             -- Status-wise count
             SELECT 
-                CASE WHEN s.is_active = 1 THEN 'Active' ELSE 'Inactive' END AS Status,
+                CASE WHEN s.isActive = 1 THEN 'Active' ELSE 'Inactive' END AS Status,
                 COUNT(s.student_id) AS Count,
                 CAST(COUNT(s.student_id) * 100.0 / SUM(COUNT(s.student_id)) OVER () AS DECIMAL(5, 2)) AS Percentage
             INTO #StatusWiseCount
@@ -42,12 +42,12 @@ namespace Student_API.Repository.Implementations
 
             -- Student Type-wise count
             SELECT 
-                st.StudentTypeName AS StudentType,
+                st.Student_Type_Name AS StudentType,
                 COUNT(s.student_id) AS Count,
                 CAST(COUNT(s.student_id) * 100.0 / SUM(COUNT(s.student_id)) OVER () AS DECIMAL(5, 2)) AS Percentage
             INTO #StudentTypeWiseCount
-            FROM tbl_StudentMaster s
-            JOIN tbl_StudentType st ON s.student_type_id = st.StudentType_Id
+            FROM tbl_StudentOtherInfo s
+            JOIN tbl_StudentType st ON s.Student_Type_id = st.StudentType_Id
             GROUP BY st.StudentTypeName;
 
             -- Select data from temp tables
@@ -60,21 +60,54 @@ namespace Student_API.Repository.Implementations
             DROP TABLE #StatusWiseCount;
             DROP TABLE #StudentTypeWiseCount;";
 
-            using (var multi = await _dbConnection.QueryMultipleAsync(sql))
+            try
             {
-                var genderCounts = multi.Read<GenderWiseStudentCountDTO>().ToList();
-                var statusCounts = multi.Read<StatusWiseStudentCountDTO>().ToList();
-                var studentTypeCounts = multi.Read<StudentTypeWiseCountDTO>().ToList();
-
-                return new StudentStatisticsDTO
+                using (var multi = await _dbConnection.QueryMultipleAsync(sql))
                 {
-                    GenderCounts = genderCounts,
-                    StatusCounts = statusCounts,
-                    StudentTypeCounts = studentTypeCounts
-                };
+                    var genderCounts = multi.Read<GenderWiseStudentCountDTO>().ToList();
+                    var statusCounts = multi.Read<StatusWiseStudentCountDTO>().ToList();
+                    var studentTypeCounts = multi.Read<StudentTypeWiseCountDTO>().ToList();
+
+                    var studentStatistics = new StudentStatisticsDTO
+                    {
+                        GenderCounts = genderCounts,
+                        StatusCounts = statusCounts,
+                        StudentTypeCounts = studentTypeCounts
+                    };
+
+                    return new ServiceResponse<StudentStatisticsDTO>(true, "Operation successful", studentStatistics, 200);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<StudentStatisticsDTO>(false, $"Error retrieving student statistics: {ex.Message}", null, 500);
             }
         }
-        public async Task<ServiceResponse<List<StudentBirthdayDTO>>> GetTodaysBirthdaysAsync(int sectionId, int classId)
+
+        public async Task<ServiceResponse<List<HouseWiseStudentCountDTO>>> GetHouseWiseStudentCountAsync()
+        {
+            string sql = @"
+            SELECT 
+                h.HouseName AS House,
+                COUNT(s.student_id) AS Count,
+                CAST(COUNT(s.student_id) * 100.0 / SUM(COUNT(s.student_id)) OVER () AS DECIMAL(5, 2)) AS Percentage
+            FROM tbl_StudentMaster s
+            JOIN tbl_InstituteHouse h ON s.Institute_house_id = h.Institute_house_id
+            GROUP BY h.HouseName;";
+
+            try
+            {
+                var houseCounts = (await _dbConnection.QueryAsync<HouseWiseStudentCountDTO>(sql)).ToList();
+
+                return new ServiceResponse<List<HouseWiseStudentCountDTO>>(true, "Operation successful", houseCounts, 200, houseCounts.Count);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<HouseWiseStudentCountDTO>>(false, $"Error retrieving house-wise student counts: {ex.Message}", null, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<List<StudentBirthdayDTO>>> GetTodaysBirthdaysAsync()
         {
             try
             {
@@ -83,21 +116,19 @@ namespace Student_API.Repository.Implementations
                     tbl_StudentMaster.student_id as StudentId, 
                     tbl_StudentMaster.First_Name as FirstName, 
                     tbl_StudentMaster.Last_Name as LastName, 
-                    tbl_Class.class_name as ClassName, 
-                    tbl_Section.section_name as SectionName, 
+                    c.class_Course as ClassName, 
+                    sec.section as SectionName, 
                     tbl_StudentMaster.date_of_birth as DateOfBirth
                 FROM 
                     tbl_StudentMaster
              INNER JOIN tbl_CourseClass c ON tbl_StudentMaster.class_id = c.CourseClass_id
            INNER JOIN tbl_CourseClassSection sec ON tbl_StudentMaster.section_id = sec.CourseClassSection_id
                 WHERE 
-                    tbl_StudentMaster.class_id = @classId 
-                    AND tbl_StudentMaster.section_id = @sectionId
-                    AND MONTH(tbl_StudentMaster.date_of_birth) = MONTH(GETDATE()) 
+                     MONTH(tbl_StudentMaster.date_of_birth) = MONTH(GETDATE()) 
                     AND DAY(tbl_StudentMaster.date_of_birth) = DAY(GETDATE())";
 
 
-                var studentList = await _dbConnection.QueryAsync<StudentBirthdayDTO>(sql, new { classId, sectionId });
+                var studentList = await _dbConnection.QueryAsync<StudentBirthdayDTO>(sql);
 
                 if (studentList != null && studentList.Any())
                 {
@@ -113,5 +144,71 @@ namespace Student_API.Repository.Implementations
                 return new ServiceResponse<List<StudentBirthdayDTO>>(false, $"Error retrieving student birthdays: {ex.Message}", null, 500);
             }
         }
+
+        public async Task<ServiceResponse<List<ClassWiseGenderCountDTO>>> GetClassWiseGenderCountAsync()
+        {
+            string sql = @"
+            SELECT 
+                c.class_Course AS ClassName,
+                g.Gender_Type AS Gender,
+                COUNT(s.student_id) AS Count
+            FROM tbl_StudentMaster s
+            JOIN tbl_CourseClass c ON s.class_id = c.CourseClass_id
+            JOIN tbl_Gender g ON s.gender_id = g.Gender_Id
+            GROUP BY c.class_Course, g.Gender_Type;";
+
+            try
+            {
+                var classWiseGenderCounts = (await _dbConnection.QueryAsync<ClassWiseGenderCountDTO>(sql)).ToList();
+
+                return new ServiceResponse<List<ClassWiseGenderCountDTO>>(true, "Operation successful", classWiseGenderCounts, 200, classWiseGenderCounts.Count);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<ClassWiseGenderCountDTO>>(false, $"Error retrieving class-wise gender counts: {ex.Message}", null, 500);
+            }
+        }
+
+        //public async Task<ServiceResponse<List<CourseClassDTO>>> GetCourseClassesAsync()
+        //{
+        //    string sql = @"
+        //    SELECT 
+        //        CourseClass_id AS CourseClassId,
+        //        class_Course AS ClassName
+        //    FROM tbl_CourseClass;";
+
+        //    try
+        //    {
+        //        var courseClasses = (await _dbConnection.QueryAsync<CourseClassDTO>(sql)).ToList();
+
+        //        return new ServiceResponse<List<CourseClassDTO>>(true, "Operation successful", courseClasses, 200, courseClasses.Count);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return new ServiceResponse<List<CourseClassDTO>>(false, $"Error retrieving course classes: {ex.Message}", null, 500);
+        //    }
+        //}
+
+        //public async Task<ServiceResponse<List<CourseClassSectionDTO>>> GetCourseClassSectionsAsync()
+        //{
+        //    string sql = @"
+        //    SELECT 
+        //        CourseClassSection_id AS CourseClassSectionId,
+        //        section AS SectionName
+        //    FROM tbl_CourseClassSection;";
+
+        //    try
+        //    {
+        //        var courseClassSections = (await _dbConnection.QueryAsync<CourseClassSectionDTO>(sql)).ToList();
+
+        //        return new ServiceResponse<List<CourseClassSectionDTO>>(true, "Operation successful", courseClassSections, 200, courseClassSections.Count);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return new ServiceResponse<List<CourseClassSectionDTO>>(false, $"Error retrieving course class sections: {ex.Message}", null, 500);
+        //    }
+        //}
     }
 }
+
+

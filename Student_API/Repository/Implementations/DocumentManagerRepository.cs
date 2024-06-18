@@ -26,7 +26,7 @@ namespace Student_API.Repository.Implementations
                 SELECT 
                     s.Student_id,
                     s.First_Name AS StudentName,
-                    s.Admission_No,
+                    s.Admission_Number,
                     c.class_course AS Class_Name,
                     sec.Section AS Section_Name,
                     doc.Student_Document_id,
@@ -78,7 +78,7 @@ namespace Student_API.Repository.Implementations
                         {
                             Student_id = studentId,
                             StudentName = row.Student_Name,
-                            Admission_No = row.Admission_No,
+                            Admission_Number = row.Admission_Number,
                             Class_Name = row.Class_Name,
                             Section_Name = row.Section_Name,
                             DocumentStatus = new Dictionary<string, DocumentStatusInfo>()
