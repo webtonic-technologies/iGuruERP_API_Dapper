@@ -55,7 +55,7 @@ namespace Student_API.Repository.Implementations
                     }
                     else
                     {
-                        return new ServiceResponse<List<StudentQRDTO>>(false, "Student not found", null, 404);
+                        return new ServiceResponse<List<StudentQRDTO>>(true, "Student not found", null, 404);
                     }
                 }
             }

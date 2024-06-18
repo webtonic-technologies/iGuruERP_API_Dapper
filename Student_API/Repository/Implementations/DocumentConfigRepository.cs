@@ -147,7 +147,7 @@ namespace Student_API.Repository.Implementations
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<List<StudentDocumentConfigDTO>>(false, ex.Message, null, 500);
+                return new ServiceResponse<List<StudentDocumentConfigDTO>>(false, ex.Message, null, 500);   
             }
         }
 

@@ -6,5 +6,8 @@ namespace Student_API.Services.Interfaces
     public interface IStudentDashboardService
     {
         Task<ServiceResponse<StudentStatisticsDTO>> GetStudentStatisticsAsync();
+        Task<ServiceResponse<List<HouseWiseStudentCountDTO>>> GetHouseWiseStudentCountAsync();
+        Task<ServiceResponse<List<StudentBirthdayDTO>>> GetTodaysBirthdaysAsync();
+        Task<ServiceResponse<List<ClassWiseGenderCountDTO>>> GetClassWiseGenderCountAsync();
     }
 }

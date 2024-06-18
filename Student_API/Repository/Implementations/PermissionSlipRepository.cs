@@ -47,8 +47,8 @@ namespace Student_API.Repository.Implementations
                 ps.ModifiedDate
             INTO #PermissionSlipTempTable
             FROM tbl_PermissionSlip ps
-            JOIN tbl_Student_Master s ON ps.Student_Id = s.student_id
-            JOIN tbl_Student_Parents_Info p ON ps.Student_Parent_Info_id = p.student_parent_info_id
+            JOIN tbl_StudentMaster s ON ps.Student_Id = s.student_id
+            JOIN tbl_StudentParentsInfo p ON ps.Student_Parent_Info_id = p.student_parent_info_id
             JOIN tbl_CourseClass c ON s.class_id = c.CourseClass_id
             JOIN tbl_CourseClassSection sec ON s.section_id = sec.CourseClassSection_id
             JOIN tbl_Gender g ON s.gender_id = g.Gender_Id
@@ -130,7 +130,7 @@ namespace Student_API.Repository.Implementations
                 s.student_id AS Student_Id,
                 s.admission_number AS Admission_Number,
                 s.first_name + ' ' + s.last_name AS StudentName,
-                c.ClassName,
+                c.class_course  AS ClassName,
                 sec.SectionName,
                 ps.RequestedDateTime AS ApprovalDate,
                 pt.ParentTypeName AS ParentType,
@@ -138,7 +138,7 @@ namespace Student_API.Repository.Implementations
                 ps.Reason AS Remark
             INTO #PermissionSlipTempTable
             FROM tbl_PermissionSlip ps
-            JOIN tbl_Student_Master s ON ps.Student_Id = s.student_id
+            JOIN tbl_StudentMaster s ON ps.Student_Id = s.student_id
             JOIN tbl_Student_Parents_Info p ON ps.Student_Parent_Info_id = p.student_parent_info_id
             JOIN tbl_CourseClass c ON s.class_id = c.CourseClass_id
             JOIN tbl_CourseClassSection sec ON s.section_id = sec.CourseClassSection_id
