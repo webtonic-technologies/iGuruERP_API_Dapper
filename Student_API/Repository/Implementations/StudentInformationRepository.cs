@@ -65,10 +65,10 @@ namespace Student_API.Repository.Implementations
             try
             {
                 string sql = @"
-                    SELECT [student_id], [First_Name], [Middle_Name], [Last_Name], tbl_StudentMaster.gender_id, Gender_Type,[class_id], class_course,[section_id], Section,[Admission_Number], [Roll_Number],
-                    [Date_of_Joining], [Academic_Year], tbl_StudentMaster.Nationality_id, Nationality_Type,tbl_Religion.Religion_id,Religion_Type, [Date_of_Birth], tbl_StudentMaster.Mother_Tongue_id, Mother_Tongue_Name,tbl_StudentMaster.Caste_id,caste_type, [First_Language],
+                    SELECT  tbl_StudentMaster.student_id, tbl_StudentMaster.First_Name, tbl_StudentMaster.Middle_Name, tbl_StudentMaster.Last_Name, tbl_StudentMaster.gender_id, Gender_Type,[class_id], class_course,[section_id], Section,[Admission_Number], [Roll_Number],
+                    [Date_of_Joining], [Academic_Year], tbl_StudentMaster.Nationality_id, Nationality_Type,tbl_Religion.Religion_id,Religion_Type, tbl_StudentMaster.Date_of_Birth, tbl_StudentMaster.Mother_Tongue_id, Mother_Tongue_Name,tbl_StudentMaster.Caste_id,caste_type, [First_Language],
                     [Second_Language], [Third_Language], [Medium], tbl_StudentMaster.Blood_Group_id,Blood_Group_Type, [App_User_id], [Aadhar_Number], [NEP], [QR_code], [IsPhysicallyChallenged],
-                    [IsSports], [IsAided], [IsNCC], [IsNSS], [IsScout], [File_Name], [isActive] ,tbl_CourseClass.class_course , tbl_CourseClassSection.Section
+                    [IsSports], [IsAided], [IsNCC], [IsNSS], [IsScout], tbl_StudentMaster.File_Name, [isActive] ,tbl_CourseClass.class_course , tbl_CourseClassSection.Section
                     ,tbl_Gender.Gender_Type,Religion_Type , Gender_Type,tbl_StudentMaster.Institute_id,Institute_name ,CONCAT(tbl_StudentParentsInfo.First_Name, ' ', tbl_StudentParentsInfo.Last_Name) AS Father_Name 
                     FROM tbl_StudentMaster 
                     INNER JOIN tbl_CourseClass ON tbl_StudentMaster.class_id = tbl_CourseClass.CourseClass_id
@@ -85,11 +85,11 @@ namespace Student_API.Repository.Implementations
 
                     SELECT [Student_Other_Info_id], [student_id], [StudentType_id], [email_id], [Hall_Ticket_Number], tbl_StudentOtherInfo.Exam_Board_id, [Identification_Mark_1],
                     [Identification_Mark_2], [Admission_Date], tbl_StudentOtherInfo.Student_Group_id, [Register_Date], [Register_Number], [samagra_ID], [Place_of_Birth], [comments], 
-                    [language_known]  ,Student_Group_Type,Exam_Board_Type ,tbl_StudentOtherInfo.Student_Type_id , Student_Type_Name
+                    [language_known]  ,Student_Group_Type,Exam_Board_Type ,tbl_StudentOtherInfo.StudentType_id , Student_Type_Name
                     FROM [dbo].[tbl_StudentOtherInfo] 
                     INNER JOIN tbl_StudentGroup ON tbl_StudentGroup.Student_Group_id = tbl_StudentOtherInfo.Student_Group_id
                     INNER JOIN tbl_ExamBoard ON tbl_ExamBoard.Exam_Board_id = tbl_StudentOtherInfo.Exam_Board_id
-                    INNER JOIN tbl_StudentType ON tbl_StudentType.Student_Type_id = tbl_StudentOtherInfo.Student_Type_id
+                    INNER JOIN tbl_StudentType ON tbl_StudentType.Student_Type_id = tbl_StudentOtherInfo.StudentType_id
                     WHERE student_id = @studentId;
 
                     SELECT [Student_Parent_Info_id], [Student_id], tbl_StudentParentsInfo.Parent_Type_id, [First_Name], [Middle_Name], [Last_Name], [Contact_Number],
@@ -103,7 +103,7 @@ namespace Student_API.Repository.Implementations
 
                    
 
-                    SELECT ss.[Student_Siblings_id],ss.[Student_id],sm.[Admission_Number],sm.[Date_of_Birth],ss.[Class_id],ss.[Selection_id],
+                    SELECT ss.[Student_Siblings_id],ss.[Student_id],ss.[Admission_Number],ss.[Date_of_Birth],ss.[Class_id],ss.[Selection_id],
                     ss.[Institute_Name],ss.[Aadhar_no],cc.[class_course],ccs.[Section]
                     FROM [tbl_StudentSiblings] ss
                     INNER JOIN [tbl_CourseClass] cc ON ss.[Class_id] = cc.[CourseClass_id]

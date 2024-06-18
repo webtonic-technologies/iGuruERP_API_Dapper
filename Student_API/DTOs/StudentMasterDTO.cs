@@ -126,7 +126,7 @@ namespace Student_API.DTOs
         public string Office_no { get; set; }
         [MaxLength(30)]
         public string Email_id { get; set; }
-        [MaxLength(30)]
+        
         public decimal Annual_Income { get; set; }
         public string File_Name { get; set; }
 
@@ -207,9 +207,9 @@ namespace Student_API.DTOs
         public string Doctor_Name { get; set; }
         [MaxLength(50)]
         public string Doctor_Phone_no { get; set; }
-        [MaxLength(50)]
+        
         public float height { get; set; }
-        [MaxLength(50)]
+        
         public float weight { get; set; }
         [MaxLength(50)]
         public string Government_ID { get; set; }
