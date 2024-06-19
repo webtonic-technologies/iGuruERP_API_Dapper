@@ -76,28 +76,31 @@ namespace Student_API.Services.Implementations
             try
             {
                 var data = await _studentInformationRepository.GetStudentDetailsById(studentId);
-                if (data.Data != null && data.Data.File_Name != null && data.Data.File_Name != "")
+                if (data.Data != null)
                 {
-                    data.Data.File_Name = _imageService.GetImageAsBase64(data.Data.File_Name);
-                }
-
-                if (data.Data.studentParentInfos != null)
-                {
-                    foreach (var studentParentInfos in data.Data.studentParentInfos)
+                    if (data.Data != null && data.Data.File_Name != null && data.Data.File_Name != "")
                     {
-                        if (!string.IsNullOrEmpty(studentParentInfos.File_Name) && File.Exists(studentParentInfos.File_Name))
+                        data.Data.File_Name = _imageService.GetImageAsBase64(data.Data.File_Name);
+                    }
+
+                    if (data.Data.studentParentInfos != null)
+                    {
+                        foreach (var studentParentInfos in data.Data.studentParentInfos)
                         {
-                            studentParentInfos.File_Name = _imageService.GetImageAsBase64(studentParentInfos.File_Name);
+                            if (!string.IsNullOrEmpty(studentParentInfos.File_Name) && File.Exists(studentParentInfos.File_Name))
+                            {
+                                studentParentInfos.File_Name = _imageService.GetImageAsBase64(studentParentInfos.File_Name);
+                            }
                         }
                     }
-                }
-                if (data.Data != null && data.Data.studentDocumentListDTOs != null)
-                {
-                    foreach (var document in data.Data.studentDocumentListDTOs)
+                    if (data.Data != null && data.Data.studentDocumentListDTOs != null)
                     {
-                        if (!string.IsNullOrEmpty(document.File_Name) && File.Exists(document.File_Name))
+                        foreach (var document in data.Data.studentDocumentListDTOs)
                         {
-                            document.Document = _imageService.GetImageAsBase64(document.File_Name);
+                            if (!string.IsNullOrEmpty(document.File_Name) && File.Exists(document.File_Name))
+                            {
+                                document.Document = _imageService.GetImageAsBase64(document.File_Name);
+                            }
                         }
                     }
                 }
@@ -113,7 +116,7 @@ namespace Student_API.Services.Implementations
 
             try
             {
-                return await _studentInformationRepository.GetAllStudentDetails(Institute_id,pageNumber,pageSize);
+                return await _studentInformationRepository.GetAllStudentDetails(Institute_id, pageNumber, pageSize);
             }
             catch (Exception ex)
             {
