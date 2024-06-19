@@ -59,11 +59,11 @@ namespace Student_API.Controllers
         }
         [HttpGet]
         [Route("StudentDetails/GetAllStudentDetails")]
-        public async Task<IActionResult> GetAllStudentDetails(int Institute_id, int? pageNumber = null, int? pageSize = null)
+        public async Task<IActionResult> GetAllStudentDetails(int Institute_id, string? sortField = "Student_Name", string? sortDirection = "ASC", int? pageNumber = null, int? pageSize = null)
         {
             try
             {
-                var data = await _studentInformationService.GetAllStudentDetails(Institute_id,pageNumber,pageSize);
+                var data = await _studentInformationService.GetAllStudentDetails(Institute_id, sortField, sortDirection, pageNumber,pageSize);
 				return Ok(data);
 			}
             catch (Exception e)

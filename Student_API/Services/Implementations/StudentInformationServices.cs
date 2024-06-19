@@ -111,12 +111,12 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<StudentInformationDTO>(false, ex.Message, null, 500);
             }
         }
-        public async Task<ServiceResponse<List<StudentDetailsDTO>>> GetAllStudentDetails(int Institute_id, int? pageNumber = null, int? pageSize = null)
+        public async Task<ServiceResponse<List<StudentDetailsDTO>>> GetAllStudentDetails(int Institute_id, string sortField = "Student_Name", string sortDirection = "ASC", int? pageNumber = null, int? pageSize = null)
         {
 
             try
             {
-                return await _studentInformationRepository.GetAllStudentDetails(Institute_id, pageNumber, pageSize);
+                return await _studentInformationRepository.GetAllStudentDetails(Institute_id, sortField, sortDirection, pageNumber, pageSize);
             }
             catch (Exception ex)
             {
