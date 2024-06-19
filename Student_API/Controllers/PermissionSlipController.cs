@@ -4,7 +4,7 @@ using Student_API.Services.Interfaces;
 
 namespace Student_API.Controllers
 {
-    [Route("iGuru/[controller]")]
+    [Route("iGuru/Approvals/[controller]")]
     [ApiController]
     public class PermissionSlipController : ControllerBase
     {

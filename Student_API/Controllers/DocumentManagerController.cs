@@ -4,7 +4,7 @@ using Student_API.Services.Interfaces;
 
 namespace Student_API.Controllers
 {
-    [Route("iGuru/[controller]")]
+    [Route("iGuru/UpdateStudentDocument/[controller]")]
     [ApiController]
     public class DocumentManagerController : ControllerBase
     {
@@ -13,7 +13,7 @@ namespace Student_API.Controllers
         {
             _documentManagerService = documentManagerService;
         }
-        [HttpGet("GetStudentDocuments")]
+        [HttpGet("GetAllStudentDocumentsList")]
         public async Task<IActionResult> GetStudentDocuments(int classId, int sectionId, int? pageSize = null, int? pageNumber = null)
         {
             var response = await _documentManagerService.GetStudentDocuments(classId, sectionId, pageSize, pageNumber);
@@ -24,8 +24,8 @@ namespace Student_API.Controllers
             return StatusCode(response.StatusCode, response);
         }
 
-        [HttpPost("UpdateStudentDocumentStatuses")]
-        public async Task<IActionResult> UpdateStudentDocumentStatuses([FromBody] List<DocumentUpdateRequest> updates)
+        [HttpPost("ApprovedStudentDocument")]
+        public async Task<IActionResult> ApprovedStudentDocument([FromBody] List<DocumentUpdateRequest> updates)
         {
             var response = await _documentManagerService.UpdateStudentDocumentStatuses(updates);
             if (response.Success)
