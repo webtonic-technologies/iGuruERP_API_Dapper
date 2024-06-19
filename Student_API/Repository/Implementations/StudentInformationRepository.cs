@@ -654,7 +654,7 @@ namespace Student_API.Repository.Implementations
                 return new ServiceResponse<int>(false, "Some error occured", 0, 500);
             }
         }
-        public async Task<ServiceResponse<List<StudentDetailsDTO>>> GetAllStudentDetails(int Institute_id, int? pageNumber = null, int? pageSize = null)
+        public async Task<ServiceResponse<List<StudentDetailsDTO>>> GetAllStudentDetails(int Institute_id,  string sortField = "Student_Name", string sortDirection = "ASC", int? pageNumber = null, int? pageSize = null)
         {
             try
             {
@@ -662,21 +662,78 @@ namespace Student_API.Repository.Implementations
                 int actualPageSize = pageSize ?? MaxPageSize;
                 int actualPageNumber = pageNumber ?? 1;
                 int offset = (actualPageNumber - 1) * actualPageSize;
-                // Assume that Parent_Type_id = 1 means father
-                string sql = @"
-                    SELECT tbl_StudentMaster.student_id , tbl_StudentMaster.First_Name , tbl_StudentMaster.Last_Name , class_course , Section , Admission_Number , Roll_Number ,Date_of_Joining,tbl_StudentMaster.Date_of_Birth,Religion_Type , Gender_Type ,CONCAT(tbl_StudentParentsInfo.First_Name, ' ', tbl_StudentParentsInfo.Last_Name) AS Father_Name FROM [dbo].[tbl_StudentMaster]
-                    INNER JOIN tbl_CourseClass ON tbl_StudentMaster.class_id = tbl_CourseClass.CourseClass_id
-                    INNER JOIN tbl_CourseClassSection on tbl_StudentMaster.section_id =  tbl_CourseClassSection.CourseClassSection_id
-                    INNER JOIN tbl_Religion ON tbl_StudentMaster.Religion_id = tbl_Religion.Religion_id
-                    INNER JOIN tbl_Gender ON tbl_StudentMaster.gender_id = tbl_Gender.Gender_id
-                    INNER JOIN tbl_StudentParentsInfo ON tbl_StudentMaster.student_id = tbl_StudentParentsInfo.Student_id AND tbl_StudentParentsInfo.Parent_Type_id = 1
-                    WHERE tbl_StudentMaster.Institute_id = @InstituteId
-                    ORDER BY tbl_StudentMaster.student_id
-                    OFFSET @Offset ROWS
-                    FETCH NEXT @PageSize ROWS ONLY;
+                var allowedSortFields = new List<string>
+        {
+            "Student_Name", "Admission_Number", "Date_of_Joining", "Roll_Number"
+        };
+                var allowedSortDirections = new List<string> { "ASC", "DESC" };
 
-                    SELECT COUNT(0) FROM [dbo].[tbl_StudentMaster]
-                    WHERE Institute_id = @InstituteId";
+                // Validate sort field
+                if (!allowedSortFields.Contains(sortField))
+                {
+                    sortField = "Student_Name";  // Default to Student_Name if invalid
+                }
+
+                // Validate sort direction
+                sortDirection = sortDirection.ToUpper();
+                if (!allowedSortDirections.Contains(sortDirection))
+                {
+                    sortDirection = "ASC";  // Default to ASC if invalid
+                }
+                // Assume that Parent_Type_id = 1 means father
+                string sql = $@"
+            -- Insert data into the temporary table using SELECT INTO
+            IF OBJECT_ID('tempdb..#TempStudentDetails') IS NOT NULL DROP TABLE #TempStudentDetails;
+
+            SELECT 
+                tbl_StudentMaster.student_id, 
+                CONCAT(tbl_StudentMaster.First_Name, ' ', tbl_StudentMaster.Last_Name) AS Student_Name, 
+                class_course, 
+                Section, 
+                Admission_Number, 
+                Roll_Number,
+                Date_of_Joining,
+                tbl_StudentMaster.Date_of_Birth,
+                Religion_Type, 
+                Gender_Type,
+                CONCAT(tbl_StudentParentsInfo.First_Name, ' ', tbl_StudentParentsInfo.Last_Name) AS Father_Name 
+            INTO 
+                #TempStudentDetails
+            FROM 
+                [dbo].[tbl_StudentMaster]
+            INNER JOIN 
+                tbl_CourseClass ON tbl_StudentMaster.class_id = tbl_CourseClass.CourseClass_id
+            INNER JOIN 
+                tbl_CourseClassSection ON tbl_StudentMaster.section_id = tbl_CourseClassSection.CourseClassSection_id
+            INNER JOIN 
+                tbl_Religion ON tbl_StudentMaster.Religion_id = tbl_Religion.Religion_id
+            INNER JOIN 
+                tbl_Gender ON tbl_StudentMaster.gender_id = tbl_Gender.gender_id
+            INNER JOIN 
+                tbl_StudentParentsInfo ON tbl_StudentMaster.student_id = tbl_StudentParentsInfo.Student_id 
+                AND tbl_StudentParentsInfo.Parent_Type_id = 1
+            WHERE 
+                tbl_StudentMaster.Institute_id = @InstituteId;
+
+            -- Query the temporary table with sorting and pagination
+            SELECT 
+                *
+            FROM 
+                #TempStudentDetails
+            ORDER BY 
+                {sortField} {sortDirection}, 
+                student_id
+            OFFSET 
+                @Offset ROWS
+            FETCH NEXT 
+                @PageSize ROWS ONLY;
+
+            -- Get the total count of records
+            SELECT 
+                COUNT(*) 
+            FROM 
+                #TempStudentDetails;";
+
                 using (var multi = await _connection.QueryMultipleAsync(sql, new { InstituteId = Institute_id, Offset = offset, PageSize = actualPageSize }))
                 {
                     var studentList = multi.Read<StudentDetailsDTO>().ToList();
