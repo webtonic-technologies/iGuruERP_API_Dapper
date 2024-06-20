@@ -5,7 +5,7 @@ using Student_API.Services.Interfaces;
 
 namespace Student_API.Controllers
 {
-    [Route("iGuru/[controller]")]
+    [Route("iGuru/StudentManagement/[controller]")]
     [ApiController]
     public class StudentQRController : ControllerBase
     {
@@ -16,7 +16,7 @@ namespace Student_API.Controllers
         }
 
         [HttpGet]
-        [Route("GetAllStudentQR")]
+        [Route("GetAllStudentQRcode")]
         public async Task<IActionResult> GetAllStudentQR( int section_id, int class_id, string sortField = "Student_Name", string sortDirection = "ASC",  int? pageNumber = null, int? pageSize = null)
         {
             try

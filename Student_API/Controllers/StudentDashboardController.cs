@@ -24,7 +24,7 @@ namespace Student_API.Controllers
             }
             return StatusCode(response.StatusCode, response);
         }
-        [HttpGet("GetHouseWiseStudentCount")]
+        [HttpGet("HousewiseStudent/GetHouseWiseStudentCount")]
         public async Task<IActionResult> GetHouseWiseStudentCount()
         {
             var response = await _studentService.GetHouseWiseStudentCountAsync();
@@ -34,7 +34,7 @@ namespace Student_API.Controllers
             }
             return StatusCode(response.StatusCode, response);
         }
-        [HttpGet("GetTodaysBirthdays")]
+        [HttpGet("StudentBirthdays/GetTodaysBirthdays")]
         public async Task<IActionResult> GetTodaysBirthdays()
         {
             var response = await _studentService.GetTodaysBirthdaysAsync();
@@ -45,7 +45,7 @@ namespace Student_API.Controllers
             return StatusCode(response.StatusCode, response);
         }
 
-        [HttpGet("GetClassWiseGenderCount")]
+        [HttpGet("GenderCount/GetClassWiseGenderCount")]
         public async Task<IActionResult> GetClassWiseGenderCount()
         {
             var response = await _studentService.GetClassWiseGenderCountAsync();

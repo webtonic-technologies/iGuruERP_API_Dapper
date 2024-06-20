@@ -1,10 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Student_API.DTOs;
 using Student_API.Services.Interfaces;
 
 namespace Student_API.Controllers
 {
-    [Route("iGuru/[controller]")]
+    [Route("iGuru/UpdateStudentDocument/[controller]")]
     [ApiController]
     public class DocumentConfigController : ControllerBase
     {
@@ -14,7 +15,7 @@ namespace Student_API.Controllers
             _documentConfigService = documentConfigService;
         }
 
-        [HttpPost]
+        [HttpPost("AddUpdateDocument")]
         public async Task<IActionResult> AddUpdateStudentDocument(StudentDocumentConfigDTO studentDocumentDto)
         {
             try
@@ -28,7 +29,7 @@ namespace Student_API.Controllers
             }
         }
 
-        [HttpGet("{documentConfigId}")]
+        [HttpGet("GetByIDStudentDocument/{documentConfigId}")]
         public async Task<IActionResult> GetStudentDocumentConfigById(int documentConfigId)
         {
             try
@@ -42,7 +43,7 @@ namespace Student_API.Controllers
             }
         }
 
-        [HttpDelete("{studentDocumentId}")]
+        [HttpDelete("DeleteByIDStudentDocument/{studentDocumentId}")]
         public async Task<IActionResult> DeleteStudentDocument(int studentDocumentId)
         {
             try
@@ -56,7 +57,7 @@ namespace Student_API.Controllers
             }
         }
 
-        [HttpGet]
+        [HttpGet("GetAllStudentDocumentList")]
         public async Task<IActionResult> GetAllStudentDocuments(string sortColumn = "Document_Name", string sortDirection = "ASC",int? pageSize = null,  int? pageNumber = null)
         {
             try

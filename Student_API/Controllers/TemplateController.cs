@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Student_API.Controllers
 {
-    [Route("iGuru/[controller]")]
+    [Route("iGuru/Certificate/[controller]")]
     [ApiController]
     public class TemplateController : ControllerBase
     {
@@ -41,7 +41,7 @@ namespace Student_API.Controllers
         }
 
         [HttpGet]
-        [Route("GetTemplateById/{templateId}")]
+        [Route("GetByIdStudentTemplateSelection/{templateId}")]
         public async Task<IActionResult> GetTemplateById(int templateId)
         {
             try
@@ -63,7 +63,7 @@ namespace Student_API.Controllers
         }
 
         [HttpDelete]
-        [Route("DeleteTemplate/{templateId}")]
+        [Route("DeleteByIDStudentTemplate/{templateId}")]
         public async Task<IActionResult> DeleteTemplate(int templateId)
         {
             try
@@ -85,7 +85,7 @@ namespace Student_API.Controllers
         }
 
         [HttpGet]
-        [Route("GetAllTemplates")]
+        [Route("GetAllStudentTemplateSelectionList")]
         public async Task<IActionResult> GetAllTemplates([FromQuery] int? pageSize = null, [FromQuery] int? pageNumber = null)
         {
             try

@@ -5,7 +5,7 @@ using Student_API.Services.Interfaces;
 
 namespace Student_API.Controllers
 {
-    [Route("iGuru/[controller]")]
+    [Route("iGuru/StudentManagement/[controller]")]
     [ApiController]
     public class StudentPromotionController : ControllerBase
     {
