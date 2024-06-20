@@ -3,8 +3,9 @@
     public class StudentQRDTO
     {
         public int student_id { get; set; }
-        public string First_Name { get; set; }
-        public string Last_Name { get; set; }
+        //public string First_Name { get; set; }
+        //public string Last_Name { get; set; }
+        public string Student_Name { get; set; }
         public int? class_id { get; set; }
         public string class_course { get; set; }
         public int? section_id { get; set; }

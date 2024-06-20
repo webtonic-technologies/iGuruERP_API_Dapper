@@ -5,7 +5,7 @@ namespace Student_API.Services.Interfaces
 {
     public interface IStudentPromotionService
     {
-        Task<ServiceResponse<List<StudentPromotionDTO>>> GetStudentsForPromotion(int classId, int? pageSize = null, int? pageNumber = null);
+        Task<ServiceResponse<List<StudentPromotionDTO>>> GetStudentsForPromotion(int classId, string sortField, string sortDirection, int? pageSize = null, int? pageNumber = null);
         Task<ServiceResponse<bool>> PromoteStudents(List<int> studentIds, int nextClassId);
     }
 }

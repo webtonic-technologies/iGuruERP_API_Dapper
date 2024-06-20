@@ -217,6 +217,8 @@ namespace Student_API.Repository.Implementations
 
         public async Task<ServiceResponse<bool>> DeleteTimetableGroup(int timetableGroupId)
         {
+            if (_connection.State != ConnectionState.Open)
+                _connection.Open();
             using (var transaction = _connection.BeginTransaction())
             {
                 try
@@ -259,44 +261,115 @@ namespace Student_API.Repository.Implementations
             }
         }
 
-
-        public async Task<ServiceResponse<int>> AddTimeTableDaysPlan(DaysSetupDTO daysSetupDTO)
+        public async Task<ServiceResponse<int>> AddOrUpdateTimeTableDaysPlan(DaysSetupDTO daysSetupDTO)
         {
             try
             {
                 if (_connection.State != ConnectionState.Open)
                     _connection.Open();
+
                 using (var transaction = _connection.BeginTransaction())
                 {
                     try
                     {
+                        int daysSetupId;
 
-                        string addDaysSetupQuery = @"
-                    INSERT INTO [dbo].[tbl_DaysSetup] (PlanName, WorkingDays) 
-                    VALUES (@PlanName, @WorkingDays);
-                    SELECT CAST(SCOPE_IDENTITY() as int)";
-                        int daysSetupId = await _connection.ExecuteScalarAsync<int>(addDaysSetupQuery, daysSetupDTO, transaction);
-
-
-                        if (daysSetupDTO.TimetableGroupIds != null && daysSetupDTO.TimetableGroupIds.Any())
+                        if (daysSetupDTO.DaysSetupId > 0)
                         {
+                            // Update existing record
+                            daysSetupId = daysSetupDTO.DaysSetupId;
+
+                            string updateDaysSetupQuery = @"
+                        UPDATE [dbo].[tbl_DaysSetup]
+                        SET PlanName = @PlanName, WorkingDays = @WorkingDays
+                        WHERE DaysSetup_id = @DaysSetupId";
+
+                            await _connection.ExecuteAsync(updateDaysSetupQuery, new
+                            {
+                                PlanName = daysSetupDTO.PlanName,
+                                WorkingDays = daysSetupDTO.WorkingDays,
+                                DaysSetupId = daysSetupId
+                            }, transaction);
+
+                            // Retrieve existing mappings
+                            string selectExistingMappingsQuery = @"
+                        SELECT TimetableGroup_id
+                        FROM [dbo].[tbl_DaysGroupMapping]
+                        WHERE DaysSetup_id = @DaysSetupId";
+
+                            var existingMappings = await _connection.QueryAsync<int>(selectExistingMappingsQuery, new { DaysSetupId = daysSetupId }, transaction);
+
+                            // Convert existing mappings to HashSet for quick lookup
+                            var existingMappingsSet = new HashSet<int>(existingMappings);
+
+                            // Determine new mappings to add
+                            var newMappingsToAdd = daysSetupDTO.TimetableGroupIds.Except(existingMappingsSet);
+
+                            // Insert new mappings
                             string addDaysGroupMappingQuery = @"
                         INSERT INTO [dbo].[tbl_DaysGroupMapping] (DaysSetup_id, TimetableGroup_id) 
                         VALUES (@DaysSetupId, @TimetableGroupId)";
+
+                            foreach (var timetableGroupId in newMappingsToAdd)
+                            {
+                                await _connection.ExecuteAsync(addDaysGroupMappingQuery, new
+                                {
+                                    DaysSetupId = daysSetupId,
+                                    TimetableGroupId = timetableGroupId
+                                }, transaction);
+                            }
+
+                            // Determine mappings to remove (if any)
+                            var mappingsToRemove = existingMappingsSet.Except(daysSetupDTO.TimetableGroupIds);
+
+                            // Remove mappings that are no longer needed
+                            if (mappingsToRemove.Any())
+                            {
+                                string deleteMappingsQuery = @"
+                            DELETE FROM [dbo].[tbl_DaysGroupMapping]
+                            WHERE DaysSetup_id = @DaysSetupId AND TimetableGroup_id IN @TimetableGroupIds";
+
+                                await _connection.ExecuteAsync(deleteMappingsQuery, new
+                                {
+                                    DaysSetupId = daysSetupId,
+                                    TimetableGroupIds = mappingsToRemove.ToList()
+                                }, transaction);
+                            }
+                        }
+                        else
+                        {
+                            // Insert new record
+                            string addDaysSetupQuery = @"
+                        INSERT INTO [dbo].[tbl_DaysSetup] (PlanName, WorkingDays) 
+                        VALUES (@PlanName, @WorkingDays);
+                        SELECT CAST(SCOPE_IDENTITY() as int)";
+
+                            daysSetupId = await _connection.ExecuteScalarAsync<int>(addDaysSetupQuery, new
+                            {
+                                PlanName = daysSetupDTO.PlanName,
+                                WorkingDays = daysSetupDTO.WorkingDays
+                            }, transaction);
+
+                            // Insert mappings for the new record
+                            string addDaysGroupMappingQuery = @"
+                        INSERT INTO [dbo].[tbl_DaysGroupMapping] (DaysSetup_id, TimetableGroup_id) 
+                        VALUES (@DaysSetupId, @TimetableGroupId)";
+
                             foreach (var timetableGroupId in daysSetupDTO.TimetableGroupIds)
                             {
-                                await _connection.ExecuteAsync(addDaysGroupMappingQuery, new { DaysSetupId = daysSetupId, TimetableGroupId = timetableGroupId }, transaction);
+                                await _connection.ExecuteAsync(addDaysGroupMappingQuery, new
+                                {
+                                    DaysSetupId = daysSetupId,
+                                    TimetableGroupId = timetableGroupId
+                                }, transaction);
                             }
                         }
 
-
                         transaction.Commit();
-
-                        return new ServiceResponse<int>(true, "Days plan added successfully", daysSetupId, 200);
+                        return new ServiceResponse<int>(true, "Days plan added or updated successfully", daysSetupId, 200);
                     }
                     catch (Exception ex)
                     {
-
                         transaction.Rollback();
                         return new ServiceResponse<int>(false, ex.Message, 0, 500);
                     }
@@ -305,6 +378,58 @@ namespace Student_API.Repository.Implementations
             catch (Exception ex)
             {
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
+            }
+        }
+        public async Task<ServiceResponse<DaysSetupDTO>> GetDaysSetupById(int daysSetupId)
+        {
+            try
+            {
+                if (_connection.State != ConnectionState.Open)
+                    _connection.Open();
+
+                // Query to fetch DaysSetup details and WorkingDays
+                string query = @"
+            SELECT DaysSetup_id, PlanName, WorkingDays
+            FROM [dbo].[tbl_DaysSetup]
+            WHERE DaysSetup_id = @DaysSetupId;
+
+            SELECT TimetableGroup_id
+            FROM [dbo].[tbl_DaysGroupMapping]
+            WHERE DaysSetup_id = @DaysSetupId";
+
+                using (var multi = await _connection.QueryMultipleAsync(query, new { DaysSetupId = daysSetupId }))
+                {
+                    // Read DaysSetup details
+                    var daysSetup = await multi.ReadSingleOrDefaultAsync<DaysSetupDTO>();
+
+                    if (daysSetup == null)
+                    {
+                        return new ServiceResponse<DaysSetupDTO>(false, "Days setup not found", null, 404);
+                    }
+
+                    // Read TimetableGroup mappings
+                    var timetableGroupIds = await multi.ReadAsync<int>();
+
+                    //if (!string.IsNullOrEmpty(daysSetup.WorkingDays))
+                    //{
+                    //    var workingDaysArray = daysSetup.WorkingDays.Split(',').Select(int.Parse).ToList();
+                    //    daysSetup.WorkingDaysList = workingDaysArray;
+                    //}
+                    //else
+                    //{
+                    //    daysSetup.WorkingDaysList = new List<int>();
+                    //}
+
+
+                    // Assign TimetableGroup_ids to the DTO
+                    daysSetup.TimetableGroupIds = timetableGroupIds.ToList();
+
+                    return new ServiceResponse<DaysSetupDTO>(true, "Days setup retrieved successfully", daysSetup, 200);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<DaysSetupDTO>(false, ex.Message, null, 500);
             }
         }
 

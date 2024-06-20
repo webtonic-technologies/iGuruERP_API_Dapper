@@ -57,11 +57,11 @@ namespace Student_API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllStudentDocuments([FromQuery] int? pageSize = null, [FromQuery] int? pageNumber = null)
+        public async Task<IActionResult> GetAllStudentDocuments(string sortColumn = "Document_Name", string sortDirection = "ASC",int? pageSize = null,  int? pageNumber = null)
         {
             try
             {
-                var response = await _documentConfigService.GetAllStudentDocuments(pageSize, pageNumber);
+                var response = await _documentConfigService.GetAllStudentDocuments(sortColumn, sortDirection, pageSize, pageNumber);
                 return StatusCode(response.StatusCode, response);
             }
             catch (Exception e)

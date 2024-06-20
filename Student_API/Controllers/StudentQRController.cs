@@ -17,11 +17,11 @@ namespace Student_API.Controllers
 
         [HttpGet]
         [Route("GetAllStudentQR")]
-        public async Task<IActionResult> GetAllStudentQR( int section_id, int class_id, int? pageNumber = null, int? pageSize = null)
+        public async Task<IActionResult> GetAllStudentQR( int section_id, int class_id, string sortField = "Student_Name", string sortDirection = "ASC",  int? pageNumber = null, int? pageSize = null)
         {
             try
             {
-                var data = await _studentQRService.GetAllStudentQR(section_id, class_id,pageNumber,pageSize);
+                var data = await _studentQRService.GetAllStudentQR(section_id, class_id, sortField, sortDirection, pageNumber, pageSize);
                 if (data.Success)
                 {
                     return Ok(data);

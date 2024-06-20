@@ -8,6 +8,6 @@ namespace Student_API.Repository.Interfaces
         Task<ServiceResponse<int>> AddUpdateStudentDocument(StudentDocumentConfigDTO studentDocumentDto);
         Task<ServiceResponse<StudentDocumentConfigDTO>> GetStudentDocumentConfigById(int DocumentConfigtId);
         Task<ServiceResponse<bool>> DeleteStudentDocument(int studentDocumentId);
-        Task<ServiceResponse<List<StudentDocumentConfigDTO>>> GetAllStudentDocuments(int? pageSize = null, int? pageNumber = null);
+        Task<ServiceResponse<List<StudentDocumentConfigDTO>>> GetAllStudentDocuments(string sortColumn, string sortDirection, int? pageSize = null, int? pageNumber = null);
     }
 }
