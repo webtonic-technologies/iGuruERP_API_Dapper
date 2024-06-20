@@ -195,7 +195,7 @@ namespace Institute_API.Repository.Implementations
                 string employeeMappingsQuery = @"
             SELECT EventEmployeeMapping_id,
                    Event_id,
-                   Employee_id,
+                   tbl_EventEmployeeMapping.Employee_id,
                    CONCAT(tbl_EmployeeProfileMaster.First_Name, ' ', tbl_EmployeeProfileMaster.Last_Name) AS Employee_Name 
             FROM tbl_EventEmployeeMapping
             INNER JOIN tbl_EmployeeProfileMaster ON tbl_EmployeeProfileMaster.Employee_id = tbl_EventEmployeeMapping.Employee_id
@@ -266,6 +266,30 @@ namespace Institute_API.Repository.Implementations
                 var events = await _connection.QueryAsync<EventDTO>(query);
 
                 return new ServiceResponse<List<EventDTO>>(true, "Approved events retrieved successfully", events.ToList(), 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<EventDTO>>(false, ex.Message, null, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<List<EventDTO>>> GetAllEvents()
+        {
+            try
+            {
+                string query = @"
+            SELECT Event_id,
+                   EventName,
+                   StartDate,
+                   EndDate,
+                   Description,
+                   Location,
+                   AttachmentFile
+            FROM tbl_CreateEvent";
+
+                var events = await _connection.QueryAsync<EventDTO>(query);
+
+                return new ServiceResponse<List<EventDTO>>(true, "events retrieved successfully", events.ToList(), 200);
             }
             catch (Exception ex)
             {
