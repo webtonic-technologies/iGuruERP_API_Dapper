@@ -57,9 +57,9 @@ namespace Student_API.Repository.Implementations
             FROM 
                 tbl_StudentMaster s
             JOIN 
-                tbl_CourseClass c ON s.Class_id = c.CourseClass_id
+                tbl_class c ON s.Class_id = c.Class_id
             JOIN 
-                tbl_CourseClassSection sec ON s.Section_id = sec.CourseClassSection_id
+                tbl_Section sec ON s.Section_id = sec.Section_id
             LEFT JOIN 
                 tbl_StudentDocumentMaster doc ON doc.Student_Document_id IS NOT NULL
             LEFT JOIN 

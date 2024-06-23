@@ -49,8 +49,8 @@ namespace Student_API.Repository.Implementations
             FROM tbl_PermissionSlip ps
             JOIN tbl_StudentMaster s ON ps.Student_Id = s.student_id
             JOIN tbl_StudentParentsInfo p ON ps.Student_Parent_Info_id = p.student_parent_info_id
-            JOIN tbl_CourseClass c ON s.class_id = c.CourseClass_id
-            JOIN tbl_CourseClassSection sec ON s.section_id = sec.CourseClassSection_id
+            JOIN tbl_Class c ON s.class_id = c.class_id
+            JOIN tbl_section sec ON s.section_id = sec.section_id
             JOIN tbl_Gender g ON s.gender_id = g.Gender_Id
             WHERE s.class_id = @ClassId
               AND s.section_id = @SectionId;
@@ -140,8 +140,8 @@ namespace Student_API.Repository.Implementations
             FROM tbl_PermissionSlip ps
             JOIN tbl_StudentMaster s ON ps.Student_Id = s.student_id
             JOIN tbl_Student_Parents_Info p ON ps.Student_Parent_Info_id = p.student_parent_info_id
-            JOIN tbl_CourseClass c ON s.class_id = c.CourseClass_id
-            JOIN tbl_CourseClassSection sec ON s.section_id = sec.CourseClassSection_id
+            JOIN tbl_Class c ON s.class_id = c.class_id
+            JOIN tbl_section sec ON s.section_id = sec.section_id
             JOIN tbl_ParentType pt ON p.parent_type_id = pt.ParentTypeId
             WHERE s.class_id = @ClassId
               AND s.section_id = @SectionId

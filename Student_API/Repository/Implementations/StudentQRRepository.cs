@@ -51,8 +51,8 @@ namespace Student_API.Repository.Implementations
             SELECT 
                 tbl_StudentMaster.student_id,  
                 CONCAT(tbl_StudentMaster.first_name, ' ', tbl_StudentMaster.last_name) AS Student_Name, 
-                class_course, 
-                Section, 
+               class_name AS  class_course, 
+                Section_name AS Section, 
                 Admission_Number, 
                 Roll_Number, 
                 QR_code 
@@ -61,9 +61,9 @@ namespace Student_API.Repository.Implementations
             FROM 
                 [dbo].[tbl_StudentMaster]
             INNER JOIN 
-                tbl_CourseClass ON tbl_StudentMaster.class_id = tbl_CourseClass.CourseClass_id
+                tbl_Class ON tbl_StudentMaster.class_id = tbl_Class.class_id
             INNER JOIN 
-                tbl_CourseClassSection ON tbl_StudentMaster.section_id = tbl_CourseClassSection.CourseClassSection_id
+                tbl_Section ON tbl_StudentMaster.section_id = tbl_Section.section_id
             WHERE 
                 tbl_StudentMaster.class_id = @classId 
                 AND tbl_StudentMaster.section_id = @sectionId;

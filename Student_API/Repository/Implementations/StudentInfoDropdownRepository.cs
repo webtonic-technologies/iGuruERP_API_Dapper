@@ -44,8 +44,8 @@ namespace Student_API.Repository.Implementations
             try
             {
                 string sql = @"
-            SELECT CourseClassSection_id AS section_id, Section AS [section_name]
-            FROM [dbo].[tbl_CourseClassSection]";
+            SELECT Section_id AS section_id, section_name AS [section_name]
+            FROM [dbo].[tbl_Section]";
 
                 var sections = await _connection.QueryAsync<Sections>(sql);
 

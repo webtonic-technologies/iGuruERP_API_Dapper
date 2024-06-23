@@ -56,17 +56,17 @@ namespace Student_API.Repository.Implementations
         SELECT 
             student_id, 
             CONCAT(first_name, ' ', last_name) AS Student_Name, 
-            CONCAT(tbl_CourseClass.class_course, ' - ', tbl_CourseClassSection.Section) AS Class_Section,
+            CONCAT(tbl_Class.class_name, ' - ', tbl_Section.Section_name) AS Class_Section,
             tbl_StudentMaster.class_id,
             tbl_StudentMaster.Section_Id
         INTO 
             #TempStudentDetails
         FROM 
             tbl_StudentMaster
-        INNER JOIN 
-            tbl_CourseClass ON tbl_CourseClass.CourseClass_id = tbl_StudentMaster.class_id
-        INNER JOIN 
-            tbl_CourseClassSection ON tbl_CourseClassSection.CourseClassSection_id = tbl_StudentMaster.section_id
+        LEFT JOIN 
+            tbl_Class ON tbl_Class.Class_id = tbl_StudentMaster.class_id
+        LEFT JOIN 
+            tbl_Section ON tbl_Section.section_id = tbl_StudentMaster.section_id
         WHERE 
             tbl_StudentMaster.class_id = @ClassId;
 

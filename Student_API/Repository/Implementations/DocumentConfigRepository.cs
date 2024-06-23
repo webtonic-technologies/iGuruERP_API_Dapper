@@ -86,7 +86,8 @@ namespace Student_API.Repository.Implementations
                 try
                 {
                     string query = @"
-                DELETE FROM [dbo].[tbl_StudentDocumentMaster]
+                Update  [dbo].[tbl_StudentDocumentMaster]
+                SET isDelete = 1
                 WHERE Student_Document_id = @studentDocumentId";
 
                     await _connection.ExecuteAsync(query, new { studentDocumentId });
@@ -132,11 +133,11 @@ namespace Student_API.Repository.Implementations
                 // SQL queries
                 string queryAll = @"
             SELECT Student_Document_id, Student_Document_Name, en_date
-            FROM [dbo].[tbl_StudentDocumentMaster]";
+            FROM [dbo].[tbl_StudentDocumentMaster] where isDelete = 0";
 
                 string queryCount = @"
             SELECT COUNT(*)
-            FROM [dbo].[tbl_StudentDocumentMaster]";
+            FROM [dbo].[tbl_StudentDocumentMaster] where isDelete =0";
 
                 List<StudentDocumentConfigDTO> studentDocuments;
                 int totalRecords = 0;
