@@ -11,5 +11,6 @@ namespace Institute_API.Repository.Interfaces
         Task<ServiceResponse<EventDTO>> GetEventById(int eventId);
         Task<ServiceResponse<List<EventDTO>>> GetApprovedEvents();
         Task<ServiceResponse<string>> GetEventAttachmentFileById(int eventId);
+        Task<ServiceResponse<List<EventDTO>>> GetAllEvents();
     }
 }

@@ -3,7 +3,7 @@
     public class StudentDocumentInfo
     {
         public int Student_id { get; set; }           
-        public string StudentName { get; set; }      
+        public string Student_Name { get; set; }      
         public string Admission_Number { get; set; }   
         public string Class_Name { get; set; }        
         public string Section_Name { get; set; }      

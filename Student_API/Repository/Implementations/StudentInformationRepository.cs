@@ -65,22 +65,22 @@ namespace Student_API.Repository.Implementations
             try
             {
                 string sql = @"
-                    SELECT  tbl_StudentMaster.student_id, tbl_StudentMaster.First_Name, tbl_StudentMaster.Middle_Name, tbl_StudentMaster.Last_Name, tbl_StudentMaster.gender_id, Gender_Type,[class_id], class_course,[section_id], Section,[Admission_Number], [Roll_Number],
+                    SELECT  tbl_StudentMaster.student_id, tbl_StudentMaster.First_Name, tbl_StudentMaster.Middle_Name, tbl_StudentMaster.Last_Name, tbl_StudentMaster.gender_id, Gender_Type,tbl_Class.[class_id], class_name AS class_course,tbl_section.[section_id], section_name AS Section,[Admission_Number], [Roll_Number],
                     [Date_of_Joining], [Academic_Year], tbl_StudentMaster.Nationality_id, Nationality_Type,tbl_Religion.Religion_id,Religion_Type, tbl_StudentMaster.Date_of_Birth, tbl_StudentMaster.Mother_Tongue_id, Mother_Tongue_Name,tbl_StudentMaster.Caste_id,caste_type, [First_Language],
                     [Second_Language], [Third_Language], [Medium], tbl_StudentMaster.Blood_Group_id,Blood_Group_Type, [App_User_id], [Aadhar_Number], [NEP], [QR_code], [IsPhysicallyChallenged],
-                    [IsSports], [IsAided], [IsNCC], [IsNSS], [IsScout], tbl_StudentMaster.File_Name, [isActive] ,tbl_CourseClass.class_course , tbl_CourseClassSection.Section
+                    [IsSports], [IsAided], [IsNCC], [IsNSS], [IsScout], tbl_StudentMaster.File_Name, [isActive] 
                     ,tbl_Gender.Gender_Type,Religion_Type , Gender_Type,tbl_StudentMaster.Institute_id,Institute_name ,CONCAT(tbl_StudentParentsInfo.First_Name, ' ', tbl_StudentParentsInfo.Last_Name) AS Father_Name 
                     FROM tbl_StudentMaster 
-                    INNER JOIN tbl_CourseClass ON tbl_StudentMaster.class_id = tbl_CourseClass.CourseClass_id
-                    INNER JOIN tbl_CourseClassSection on tbl_StudentMaster.section_id =  tbl_CourseClassSection.CourseClassSection_id
-                    INNER JOIN tbl_Gender ON tbl_StudentMaster.gender_id = tbl_Gender.Gender_id
-                    INNER JOIN tbl_Religion ON tbl_StudentMaster.Religion_id = tbl_Religion.Religion_id
-                    INNER JOIN tbl_Nationality ON tbl_Nationality.Nationality_id = tbl_StudentMaster.Nationality_id 
-                    INNER JOIN tbl_MotherTongue ON tbl_StudentMaster.Mother_Tongue_id = tbl_MotherTongue.Mother_Tongue_id
-                    INNER JOIN tbl_BloodGroup ON tbl_BloodGroup.Blood_Group_id = tbl_StudentMaster.Blood_Group_id
-                    INNER JOIN tbl_CasteMaster ON tbl_CasteMaster.caste_id = tbl_StudentMaster.Caste_id
-                    INNER JOIN tbl_InstituteDetails ON tbl_InstituteDetails.Institute_id = tbl_StudentMaster.Institute_id
-                    INNER JOIN tbl_StudentParentsInfo ON tbl_StudentMaster.student_id = tbl_StudentParentsInfo.Student_id AND tbl_StudentParentsInfo.Parent_Type_id = 1
+                    LEFT JOIN tbl_Class ON tbl_StudentMaster.class_id = tbl_Class.class_id
+                    LEFT JOIN tbl_Section on tbl_StudentMaster.section_id =  tbl_Section.section_id
+                    LEFT JOIN tbl_Gender ON tbl_StudentMaster.gender_id = tbl_Gender.Gender_id
+                    LEFT JOIN tbl_Religion ON tbl_StudentMaster.Religion_id = tbl_Religion.Religion_id
+                    LEFT JOIN tbl_Nationality ON tbl_Nationality.Nationality_id = tbl_StudentMaster.Nationality_id 
+                    LEFt JOIN tbl_MotherTongue ON tbl_StudentMaster.Mother_Tongue_id = tbl_MotherTongue.Mother_Tongue_id
+                    LEFT JOIN tbl_BloodGroup ON tbl_BloodGroup.Blood_Group_id = tbl_StudentMaster.Blood_Group_id
+                    LEFT JOIN tbl_CasteMaster ON tbl_CasteMaster.caste_id = tbl_StudentMaster.Caste_id
+                    LEFT JOIN tbl_InstituteDetails ON tbl_InstituteDetails.Institute_id = tbl_StudentMaster.Institute_id
+                    LEFT JOIN tbl_StudentParentsInfo ON tbl_StudentMaster.student_id = tbl_StudentParentsInfo.Student_id AND tbl_StudentParentsInfo.Parent_Type_id = 1
                     WHERE tbl_StudentMaster.student_id = @studentId;
 
                     SELECT [Student_Other_Info_id], [student_id], [StudentType_id], [email_id], [Hall_Ticket_Number], tbl_StudentOtherInfo.Exam_Board_id, [Identification_Mark_1],
@@ -104,10 +104,10 @@ namespace Student_API.Repository.Implementations
                    
 
                     SELECT ss.[Student_Siblings_id],ss.[Student_id],ss.[Admission_Number],ss.[Date_of_Birth],ss.[Class_id],ss.[Selection_id],
-                    ss.[Institute_Name],ss.[Aadhar_no],cc.[class_course],ccs.[Section]
+                    ss.[Institute_Name],ss.[Aadhar_no],cc.class_Name AS [class_course],ccs.section_name AS [Section]
                     FROM [tbl_StudentSiblings] ss
-                    INNER JOIN [tbl_CourseClass] cc ON ss.[Class_id] = cc.[CourseClass_id]
-                    INNER JOIN [tbl_CourseClassSection] ccs ON ss.[Selection_id] = ccs.[CourseClassSection_id]
+                    INNER JOIN [tbl_Class] cc ON ss.[Class_id] = cc.class_id
+                    INNER JOIN [tbl_Section] ccs ON ss.[Selection_id] = ccs.[section_id]
                     WHERE ss.[Student_id] = @studentId;
 
 
@@ -688,8 +688,8 @@ namespace Student_API.Repository.Implementations
             SELECT 
                 tbl_StudentMaster.student_id, 
                 CONCAT(tbl_StudentMaster.First_Name, ' ', tbl_StudentMaster.Last_Name) AS Student_Name, 
-                class_course, 
-                Section, 
+                class_name AS class_course, 
+                Section_name AS Section, 
                 Admission_Number, 
                 Roll_Number,
                 Date_of_Joining,
@@ -701,15 +701,15 @@ namespace Student_API.Repository.Implementations
                 #TempStudentDetails
             FROM 
                 [dbo].[tbl_StudentMaster]
-            INNER JOIN 
-                tbl_CourseClass ON tbl_StudentMaster.class_id = tbl_CourseClass.CourseClass_id
-            INNER JOIN 
-                tbl_CourseClassSection ON tbl_StudentMaster.section_id = tbl_CourseClassSection.CourseClassSection_id
-            INNER JOIN 
+            LEFT JOIN 
+                tbl_Class ON tbl_StudentMaster.class_id = tbl_Class.Class_id
+            LEFT JOIN 
+                tbl_Section ON tbl_StudentMaster.section_id = tbl_Section.section_id
+            LEFT JOIN 
                 tbl_Religion ON tbl_StudentMaster.Religion_id = tbl_Religion.Religion_id
-            INNER JOIN 
+            LEFT JOIN 
                 tbl_Gender ON tbl_StudentMaster.gender_id = tbl_Gender.gender_id
-            INNER JOIN 
+            LEFT JOIN 
                 tbl_StudentParentsInfo ON tbl_StudentMaster.student_id = tbl_StudentParentsInfo.Student_id 
                 AND tbl_StudentParentsInfo.Parent_Type_id = 1
             WHERE 

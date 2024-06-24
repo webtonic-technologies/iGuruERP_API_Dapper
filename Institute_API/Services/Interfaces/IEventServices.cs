@@ -10,5 +10,6 @@ namespace Institute_API.Services.Interfaces
         Task<ServiceResponse<EventDTO>> GetEventById(int eventId);
         Task<ServiceResponse<List<EventDTO>>> GetApprovedEvents();
         Task<ServiceResponse<bool>> ToggleEventActiveStatus(int eventId, bool isActive, int userId);
+        Task<ServiceResponse<List<EventDTO>>> GetAllEvents();
     }
 }

@@ -86,7 +86,8 @@ namespace Student_API.Repository.Implementations
                 try
                 {
                     string query = @"
-                DELETE FROM [dbo].[tbl_StudentDocumentMaster]
+                Update  [dbo].[tbl_StudentDocumentMaster]
+                SET isDelete = 1
                 WHERE Student_Document_id = @studentDocumentId";
 
                     await _connection.ExecuteAsync(query, new { studentDocumentId });
@@ -105,17 +106,38 @@ namespace Student_API.Repository.Implementations
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
-        public async Task<ServiceResponse<List<StudentDocumentConfigDTO>>> GetAllStudentDocuments(int? pageSize = null, int? pageNumber = null)
+        public async Task<ServiceResponse<List<StudentDocumentConfigDTO>>> GetAllStudentDocuments(string sortColumn, string sortDirection, int? pageSize = null, int? pageNumber = null)
         {
             try
             {
+                // List of valid sortable columns
+                var validSortColumns = new Dictionary<string, string>
+        {
+            { "Document_Name", "Student_Document_Name" },
+            { "Created", "en_date" }
+        };
+
+                // Ensure the sort column is valid, default to "Student_Document_Name" if not
+                if (!validSortColumns.ContainsKey(sortColumn))
+                {
+                    sortColumn = "Student_Document_Name";
+                }
+                else
+                {
+                    sortColumn = validSortColumns[sortColumn];
+                }
+
+                // Ensure sort direction is valid, default to "ASC" if not
+                sortDirection = sortDirection.ToUpper() == "DESC" ? "DESC" : "ASC";
+
+                // SQL queries
                 string queryAll = @"
-        SELECT Student_Document_id, Student_Document_Name, en_date
-        FROM [dbo].[tbl_StudentDocumentMaster]";
+            SELECT Student_Document_id, Student_Document_Name, en_date
+            FROM [dbo].[tbl_StudentDocumentMaster] where isDelete = 0";
 
                 string queryCount = @"
-        SELECT COUNT(*)
-        FROM [dbo].[tbl_StudentDocumentMaster]";
+            SELECT COUNT(*)
+            FROM [dbo].[tbl_StudentDocumentMaster] where isDelete =0";
 
                 List<StudentDocumentConfigDTO> studentDocuments;
                 int totalRecords = 0;
@@ -123,13 +145,15 @@ namespace Student_API.Repository.Implementations
                 if (pageSize.HasValue && pageNumber.HasValue)
                 {
                     int offset = (pageNumber.Value - 1) * pageSize.Value;
-                    string queryPaginated = $@"
-            {queryAll}
-            ORDER BY Student_Document_id
-            OFFSET @Offset ROWS
-            FETCH NEXT @PageSize ROWS ONLY;
 
-            {queryCount}";
+                    // Build the paginated query with dynamic sorting
+                    string queryPaginated = $@"
+                {queryAll}
+                ORDER BY {sortColumn} {sortDirection}
+                OFFSET @Offset ROWS
+                FETCH NEXT @PageSize ROWS ONLY;
+
+                {queryCount}";
 
                     using (var multi = await _connection.QueryMultipleAsync(queryPaginated, new { Offset = offset, PageSize = pageSize }))
                     {
@@ -141,15 +165,21 @@ namespace Student_API.Repository.Implementations
                 }
                 else
                 {
-                    studentDocuments = (await _connection.QueryAsync<StudentDocumentConfigDTO>(queryAll)).ToList();
+                    // No pagination, return all records with sorting
+                    string querySorted = $@"
+                {queryAll}
+                ORDER BY {sortColumn} {sortDirection}";
+
+                    studentDocuments = (await _connection.QueryAsync<StudentDocumentConfigDTO>(querySorted)).ToList();
                     return new ServiceResponse<List<StudentDocumentConfigDTO>>(true, "All student documents retrieved successfully", studentDocuments, 200);
                 }
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<List<StudentDocumentConfigDTO>>(false, ex.Message, null, 500);   
+                return new ServiceResponse<List<StudentDocumentConfigDTO>>(false, ex.Message, null, 500);
             }
         }
+
 
     }
 }
