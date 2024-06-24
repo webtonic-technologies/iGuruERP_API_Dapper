@@ -225,5 +225,25 @@ namespace Student_API.Controllers
                 return this.BadRequest(e.Message);
             }
         }
+        [HttpDelete("StudentDocuments/DeleteStudentDocument/{Student_Documents_id}")]
+        public async Task<IActionResult> DeleteStudentDocument(int Student_Documents_id)
+        {
+            try
+            {
+                var data = await _studentInformationService.DeleteStudentDocument(Student_Documents_id);
+                if (data.Success)
+                {
+                    return Ok(data);
+                }
+                else
+                {
+                    return BadRequest("Bad Request");
+                }
+            }
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
+        }
     }
 }

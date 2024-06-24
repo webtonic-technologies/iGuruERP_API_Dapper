@@ -114,7 +114,7 @@ namespace Student_API.Repository.Implementations
                     SELECT * FROM [dbo].[tbl_StudentPreviousSchool] WHERE student_id = @studentId;
                     SELECT * FROM [dbo].[tbl_StudentHealthInfo] WHERE student_id = @studentId;
                     SELECT * FROM [dbo].[tbl_StudentParentsOfficeInfo] WHERE student_id = @studentId;
-                    SELECT * FROM [dbo].[tbl_StudentDocuments] WHERE student_id = @studentId;";
+                    SELECT * FROM [dbo].[tbl_StudentDocuments] WHERE student_id = @studentId AND isDelete = 0;";
 
                 using (var result = await _connection.QueryMultipleAsync(sql, new { studentId }))
                 {
@@ -840,6 +840,24 @@ namespace Student_API.Repository.Implementations
             catch (Exception ex)
             {
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<int>> DeleteStudentDocument(int Student_Documents_id)
+        {
+            try
+            {
+                string sql = @"
+                    update tbl_StudentDocuments
+                    SET isDelete = 1
+                    where Student_Documents_id = @Student_Documents_id;";
+
+                var updatedId = await _connection.ExecuteScalarAsync<int>(sql, new { Student_Documents_id });
+                return new ServiceResponse<int>(true, "Operation successful", updatedId, 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(false, "Some error occured", 0, 500);
             }
         }
     }

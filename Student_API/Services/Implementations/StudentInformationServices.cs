@@ -254,6 +254,20 @@ namespace Student_API.Services.Implementations
             {
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
+
+        }
+
+        public async Task<ServiceResponse<int>> DeleteStudentDocument(int Student_Documents_id)
+        {
+            try
+            {
+                var data = await _studentInformationRepository.DeleteStudentDocument(Student_Documents_id);
+                return data;
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(false, ex.Message, 0, 500);
+            }
         }
     }
 }
