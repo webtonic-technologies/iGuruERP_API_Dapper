@@ -69,7 +69,7 @@ namespace Student_API.Repository.Implementations
         {
             try
             {
-                string query = "DELETE FROM [dbo].[tbl_TemplateType] WHERE Template_Type_Id = @Template_Type_Id";
+                string query = "update  [dbo].[tbl_TemplateType] SET isDelete = 1 WHERE Template_Type_Id = @Template_Type_Id";
                 int rowsAffected = await _connection.ExecuteAsync(query, new { Template_Type_Id = templateId });
 
                 if (rowsAffected > 0)
@@ -87,8 +87,8 @@ namespace Student_API.Repository.Implementations
         {
             try
             {
-                string queryAll = "SELECT * FROM [dbo].[tbl_TemplateType]";
-                string queryCount = "SELECT COUNT(*) FROM [dbo].[tbl_TemplateType]";
+                string queryAll = "SELECT * FROM [dbo].[tbl_TemplateType] WHERE isDelete = 0";
+                string queryCount = "SELECT COUNT(*) FROM [dbo].[tbl_TemplateType] WHERE isDelete = 0";
 
                 List<TemplateDTO> templates;
                 int totalRecords = 0;

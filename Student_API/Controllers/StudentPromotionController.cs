@@ -17,11 +17,11 @@ namespace Student_API.Controllers
 
         [HttpGet]
         [Route("GetStudentsForPromotion")]
-        public async Task<IActionResult> GetStudentsForPromotion(int classId, int? pageSize = null, int? pageNumber = null)
+        public async Task<IActionResult> GetStudentsForPromotion(int classId, string sortField = "Student_Name",string sortDirection = "ASC", int? pageSize = null, int? pageNumber = null)
         {
             try
             {
-                var data = await _studentPromotionService.GetStudentsForPromotion(classId, pageNumber, pageSize);
+                var data = await _studentPromotionService.GetStudentsForPromotion(classId, sortField, sortDirection, pageSize,pageNumber );
                 if (data.Success)
                 {
                     return Ok(data);

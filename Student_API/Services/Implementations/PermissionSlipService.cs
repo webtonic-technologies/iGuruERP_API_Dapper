@@ -18,7 +18,10 @@ namespace Student_API.Services.Implementations
         {
             return await _repository.GetAllPermissionSlips(classId, sectionId,pageNumber,pageSize);
         }
-
+        public async Task<ServiceResponse<List<PermissionSlipDTO>>> GetPermissionSlips(int classId, int sectionId, DateTime? startDate, DateTime? endDate, bool isApproved, int? pageNumber = null, int? pageSize = null)
+        {
+            return await _repository.GetPermissionSlips(classId, sectionId, startDate, endDate, isApproved,pageNumber, pageSize);
+        }
         public async Task<ServiceResponse<string>> UpdatePermissionSlipStatus(int permissionSlipId, bool isApproved)
         {
             return await _repository.UpdatePermissionSlipStatus(permissionSlipId, isApproved);

@@ -13,11 +13,11 @@ namespace Student_API.Services.Implementations
         {
             _studentPromotionRepository = studentPromotionRepository;
         }
-        public async Task<ServiceResponse<List<StudentPromotionDTO>>> GetStudentsForPromotion(int classId, int? pageSize = null, int? pageNumber = null)
+        public async Task<ServiceResponse<List<StudentPromotionDTO>>> GetStudentsForPromotion(int classId, string sortField, string sortDirection, int? pageSize = null, int? pageNumber = null)
         {
             try
             {
-                var data = await _studentPromotionRepository.GetStudentsForPromotion(classId, pageSize, pageNumber);
+                var data = await _studentPromotionRepository.GetStudentsForPromotion(classId, sortField, sortDirection, pageSize, pageNumber);
                 return data;
             }
             catch (Exception ex)

@@ -29,7 +29,7 @@ namespace Student_API.Repository.Implementations
             INTO #GenderWiseCount
             FROM tbl_StudentMaster s
             JOIN tbl_Gender g ON s.gender_id = g.Gender_Id
-            GROUP BY g.GenderName;
+            GROUP BY g.Gender_Type;
 
             -- Status-wise count
             SELECT 
@@ -38,7 +38,7 @@ namespace Student_API.Repository.Implementations
                 CAST(COUNT(s.student_id) * 100.0 / SUM(COUNT(s.student_id)) OVER () AS DECIMAL(5, 2)) AS Percentage
             INTO #StatusWiseCount
             FROM tbl_StudentMaster s
-            GROUP BY s.is_active;
+            GROUP BY s.isActive;
 
             -- Student Type-wise count
             SELECT 
@@ -47,8 +47,8 @@ namespace Student_API.Repository.Implementations
                 CAST(COUNT(s.student_id) * 100.0 / SUM(COUNT(s.student_id)) OVER () AS DECIMAL(5, 2)) AS Percentage
             INTO #StudentTypeWiseCount
             FROM tbl_StudentOtherInfo s
-            JOIN tbl_StudentType st ON s.Student_Type_id = st.StudentType_Id
-            GROUP BY st.StudentTypeName;
+            JOIN tbl_StudentType st ON s.StudentType_Id = st.Student_Type_id 
+            GROUP BY st.Student_Type_Name;
 
             -- Select data from temp tables
             SELECT * FROM #GenderWiseCount;
@@ -116,13 +116,13 @@ namespace Student_API.Repository.Implementations
                     tbl_StudentMaster.student_id as StudentId, 
                     tbl_StudentMaster.First_Name as FirstName, 
                     tbl_StudentMaster.Last_Name as LastName, 
-                    c.class_Course as ClassName, 
-                    sec.section as SectionName, 
+                    c.class_name as ClassName, 
+                    sec.section_name as SectionName, 
                     tbl_StudentMaster.date_of_birth as DateOfBirth
                 FROM 
                     tbl_StudentMaster
-             INNER JOIN tbl_CourseClass c ON tbl_StudentMaster.class_id = c.CourseClass_id
-           INNER JOIN tbl_CourseClassSection sec ON tbl_StudentMaster.section_id = sec.CourseClassSection_id
+             INNER JOIN tbl_Class c ON tbl_StudentMaster.class_id = c.Class_id
+           INNER JOIN tbl_Section sec ON tbl_StudentMaster.section_id = sec.Section_id
                 WHERE 
                      MONTH(tbl_StudentMaster.date_of_birth) = MONTH(GETDATE()) 
                     AND DAY(tbl_StudentMaster.date_of_birth) = DAY(GETDATE())";
@@ -149,13 +149,13 @@ namespace Student_API.Repository.Implementations
         {
             string sql = @"
             SELECT 
-                c.class_Course AS ClassName,
+                c.class_name AS ClassName,
                 g.Gender_Type AS Gender,
                 COUNT(s.student_id) AS Count
             FROM tbl_StudentMaster s
-            JOIN tbl_CourseClass c ON s.class_id = c.CourseClass_id
+            JOIN tbl_Class c ON s.class_id = c.Class_id
             JOIN tbl_Gender g ON s.gender_id = g.Gender_Id
-            GROUP BY c.class_Course, g.Gender_Type;";
+            GROUP BY c.class_name, g.Gender_Type;";
 
             try
             {

@@ -14,9 +14,9 @@ namespace Student_API.Controllers
             _documentManagerService = documentManagerService;
         }
         [HttpGet("GetAllStudentDocumentsList")]
-        public async Task<IActionResult> GetStudentDocuments(int classId, int sectionId, int? pageSize = null, int? pageNumber = null)
+        public async Task<IActionResult> GetStudentDocuments(int classId, int sectionId, string sortColumn = "Student_Name", string sortDirection = "ASC", int? pageSize = null, int? pageNumber = null)
         {
-            var response = await _documentManagerService.GetStudentDocuments(classId, sectionId, pageSize, pageNumber);
+            var response = await _documentManagerService.GetStudentDocuments(classId, sectionId, sortColumn, sortDirection, pageSize, pageNumber);
             if (response.Success)
             {
                 return Ok(response);
