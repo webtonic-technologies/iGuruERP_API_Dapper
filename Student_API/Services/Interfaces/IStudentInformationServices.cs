@@ -15,5 +15,6 @@ namespace Student_API.Services.Interfaces
         Task<ServiceResponse<int>> AddOrUpdateStudentPreviousSchool(StudentPreviousSchool previousSchool);
         Task<ServiceResponse<int>> AddOrUpdateStudentHealthInfo(StudentHealthInfo healthInfo);
         Task<ServiceResponse<int>> AddUpdateStudentDocuments(StudentDocumentsDTO request);
+        Task<ServiceResponse<int>> DeleteStudentDocument(int Student_Documents_id);
     }
 }
