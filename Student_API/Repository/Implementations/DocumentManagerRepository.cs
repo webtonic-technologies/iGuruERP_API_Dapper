@@ -47,8 +47,8 @@ namespace Student_API.Repository.Implementations
                 s.Student_id,
                 CONCAT(s.first_name, ' ', s.last_name) AS Student_Name,
                 s.Admission_Number,
-                c.class_course AS Class_Name,
-                sec.Section AS Section_Name,
+                c.Class_Name,
+                sec.Section_name ,
                 doc.Student_Document_id,
                 doc.Student_Document_Name,
                 CASE WHEN dm.document_id IS NOT NULL THEN 1 ELSE 0 END AS IsSubmitted
