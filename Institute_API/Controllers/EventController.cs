@@ -47,6 +47,20 @@ namespace Institute_API.Controllers
             }
         }
 
+        [HttpGet("GetAllEvents")]
+        public async Task<IActionResult> GetAllEvents()
+        {
+            try
+            {
+                var data = await _eventService.GetAllEvents();
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
 
         [HttpPost("AddUpdateEvent")]
         public async Task<IActionResult> AddUpdateEvent([FromBody] EventDTO eventDto)

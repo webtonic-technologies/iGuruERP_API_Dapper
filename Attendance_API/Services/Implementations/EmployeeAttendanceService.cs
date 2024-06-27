@@ -20,7 +20,7 @@ namespace Attendance_API.Services.Implementations
             _employeeAttendanceRepository = employeeAttendanceRepository;
         }
 
-        public async Task<ServiceResponse<List<EmployeeAttendanceMasterResponseDTO>>> GetEmployeeAttendanceMasterList(EmployeeAttendanceMasterRequestDTO request)
+        public async Task<ServiceResponse<EmployeeAttendanceMasterResponseDTO>> GetEmployeeAttendanceMasterList(EmployeeAttendanceMasterRequestDTO request)
         {
             return await _employeeAttendanceRepository.GetEmployeeAttendanceMasterList(request);
         }

@@ -21,6 +21,20 @@ builder.Services.AddTransient<IStudentInfoDropdownService, StudentInfoDropdownSe
 builder.Services.AddTransient<ITimetableRepository, TimetableRepository>();
 builder.Services.AddTransient<ITimetableServices, TimetableServices>();
 builder.Services.AddTransient<IImageService, ImageService>();
+builder.Services.AddTransient<IStudentQRService, StudentQRService>();
+builder.Services.AddTransient<IStudentQRRepository, StudentQRRepository>();
+builder.Services.AddTransient<IDocumentConfigService, DocumentConfigService>();
+builder.Services.AddTransient<IDocumentConfigRepository, DocumentConfigRepository>();
+builder.Services.AddTransient<IDocumentManagerRepository, DocumentManagerRepository>();
+builder.Services.AddTransient<IDocumentManagerService, DocumentManagerService>();
+builder.Services.AddTransient<IPermissionSlipService, PermissionSlipService>();
+builder.Services.AddTransient<IPermissionSlipRepository, PermissionSlipRepository>();
+builder.Services.AddTransient<IStudentDashboardRepository, StudentDashboardRepository>();
+builder.Services.AddTransient<IStudentDashboardService, StudentDashboardService>();
+builder.Services.AddTransient<ITemplateService, TemplateService>();
+builder.Services.AddTransient<ITemplateRepository, TemplateRepository>();
+builder.Services.AddTransient<IStudentPromotionService, StudentPromotionService>();
+builder.Services.AddTransient<IStudentPromotionRepository, StudentPromotionRepository>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

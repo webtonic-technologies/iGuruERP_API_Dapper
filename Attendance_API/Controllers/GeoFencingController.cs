@@ -18,9 +18,9 @@ namespace Attendance_API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllGeoFencings()
+        public async Task<IActionResult> GetAllGeoFencings([FromQuery]GeoFencingQueryParams request)
         {
-            var response = await _geoFencingService.GetAllGeoFencings();
+            var response = await _geoFencingService.GetAllGeoFencings(request);
             if (response.Success)
             {
                 return Ok(response);

@@ -17,7 +17,7 @@ namespace Attendance_API.Services.Implementations
             _studentAttendanceMasterRepository = studentAttendanceMasterRepository;
         }
 
-        public async Task<ServiceResponse<List<StudentAttendanceMasterResponseDTO>>> GetStudentAttendanceMasterList(StudentAttendanceMasterRequestDTO request)
+        public async Task<ServiceResponse<StudentAttendanceMasterResponseDTO>> GetStudentAttendanceMasterList(StudentAttendanceMasterRequestDTO request)
         {
             return await _studentAttendanceMasterRepository.GetStudentAttendanceMasterList(request);
         }

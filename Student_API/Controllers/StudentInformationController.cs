@@ -15,7 +15,7 @@ namespace Student_API.Controllers
         }
 
         [HttpPost]
-        [Route("AddUpdateStudentInformation")]
+        [Route("StudentInformation/AddUpdateStudentInformation")]
         public async Task<IActionResult> AddUpdateStudentInformation([FromBody] StudentMasterDTO studentMasterDTO)
         {
             try
@@ -37,12 +37,12 @@ namespace Student_API.Controllers
         }
 
         [HttpGet]
-        [Route("GetStudentDetailsById")]
-        public async Task<IActionResult> GetStudentDetailsById(int studentId)
+        [Route("StudentDetails/GetStudentDetailsById")]
+        public async Task<IActionResult> GetStudentDetailsById(int id)
         {
             try
             {
-                var data = await _studentInformationService.GetStudentDetailsById(studentId);
+                var data = await _studentInformationService.GetStudentDetailsById(id);
                 if (data.Success)
                 {
                     return Ok(data);
@@ -58,12 +58,12 @@ namespace Student_API.Controllers
             }
         }
         [HttpGet]
-        [Route("GetAllStudentDetails")]
-        public async Task<IActionResult> GetAllStudentDetails()
+        [Route("StudentDetails/GetAllStudentDetails")]
+        public async Task<IActionResult> GetAllStudentDetails(int Institute_id, string? sortField = "Student_Name", string? sortDirection = "ASC", int? pageNumber = null, int? pageSize = null)
         {
             try
             {
-                var data = await _studentInformationService.GetAllStudentDetails();
+                var data = await _studentInformationService.GetAllStudentDetails(Institute_id, sortField, sortDirection, pageNumber,pageSize);
 				return Ok(data);
 			}
             catch (Exception e)
@@ -73,7 +73,7 @@ namespace Student_API.Controllers
         }
 
         [HttpPost]
-        [Route("ChangeStudentStatus")]
+        [Route("StudentStatus/ChangeStudentStatus")]
         public async Task<IActionResult> ChangeStudentStatus([FromBody] StudentStatusDTO statusDTO)
         {
             try
@@ -95,7 +95,7 @@ namespace Student_API.Controllers
         }
 
         [HttpPost]
-        [Route("AddUpdateStudentOtherInfo")]
+        [Route("StudentOtherInfo/AddUpdateStudentOtherInfo")]
         public async Task<IActionResult> AddUpdateStudentOtherInfo([FromBody] StudentOtherInfoDTO otherInfoDTO)
         {
             try
@@ -117,7 +117,7 @@ namespace Student_API.Controllers
         }
 
         [HttpPost]
-        [Route("AddUpdateStudentParentInfo")]
+        [Route("StudentParentInfo/AddUpdateStudentParentInfo")]
         public async Task<IActionResult> AddUpdateStudentParentInfo([FromBody] StudentParentInfoDTO parentInfoDTO)
         {
             try
@@ -139,7 +139,7 @@ namespace Student_API.Controllers
         }
 
         [HttpPost]
-        [Route("AddOrUpdateStudentSiblings")]
+        [Route("StudentSiblings/AddUpdateStudentSiblings")]
         public async Task<IActionResult> AddOrUpdateStudentSiblings([FromBody] StudentSiblings siblingsDTO)
         {
             try
@@ -161,7 +161,7 @@ namespace Student_API.Controllers
         }
 
         [HttpPost]
-        [Route("AddOrUpdateStudentPreviousSchool")]
+        [Route("StudentPreviousSchool/AddUpdateStudentPreviousSchool")]
         public async Task<IActionResult> AddOrUpdateStudentPreviousSchool([FromBody] StudentPreviousSchool previousSchoolDTO)
         {
             try
@@ -183,7 +183,7 @@ namespace Student_API.Controllers
         }
 
         [HttpPost]
-        [Route("AddOrUpdateStudentHealthInfo")]
+        [Route("StudentHealthInfo/AddUpdateStudentHealthInfo")]
         public async Task<IActionResult> AddOrUpdateStudentHealthInfo([FromBody] StudentHealthInfo healthInfoDTO)
         {
             try
@@ -205,12 +205,32 @@ namespace Student_API.Controllers
         }
 
         [HttpPost]
-        [Route("AddUpdateStudentDocuments")]
+        [Route("StudentDocuments/AddUpdateStudentDocuments")]
         public async Task<IActionResult> AddUpdateStudentDocuments([FromBody] StudentDocumentsDTO documentsDTO)
         {
             try
             {
                 var data = await _studentInformationService.AddUpdateStudentDocuments(documentsDTO);
+                if (data.Success)
+                {
+                    return Ok(data);
+                }
+                else
+                {
+                    return BadRequest("Bad Request");
+                }
+            }
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
+        }
+        [HttpDelete("StudentDocuments/DeleteStudentDocument/{Student_Documents_id}")]
+        public async Task<IActionResult> DeleteStudentDocument(int Student_Documents_id)
+        {
+            try
+            {
+                var data = await _studentInformationService.DeleteStudentDocument(Student_Documents_id);
                 if (data.Success)
                 {
                     return Ok(data);
