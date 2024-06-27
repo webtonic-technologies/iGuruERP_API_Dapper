@@ -138,21 +138,23 @@ namespace Institute_API.Repository.Implementations
                     try
                     {
                         // Delete EventEmployeeMappings
-                        string deleteEmployeeMappingsQuery = @"
-                    DELETE FROM [dbo].[tbl_EventEmployeeMapping]
-                    WHERE Event_id = @eventId";
-                        await _connection.ExecuteAsync(deleteEmployeeMappingsQuery, new { eventId }, transaction);
+                        //    string deleteEmployeeMappingsQuery = @"
+                        //DELETE FROM [dbo].[tbl_EventEmployeeMapping]
+                        //WHERE Event_id = @eventId";
+                        //    await _connection.ExecuteAsync(deleteEmployeeMappingsQuery, new { eventId }, transaction);
 
-                        // Delete EventClassSessionMappings
-                        string deleteClassSessionMappingsQuery = @"
-                    DELETE FROM [dbo].[tbl_EventClassSessionMapping]
-                    WHERE Event_id = @eventId";
-                        await _connection.ExecuteAsync(deleteClassSessionMappingsQuery, new { eventId }, transaction);
+                        //    // Delete EventClassSessionMappings
+                        //    string deleteClassSessionMappingsQuery = @"
+                        //DELETE FROM [dbo].[tbl_EventClassSessionMapping]
+                        //WHERE Event_id = @eventId";
+                        //    await _connection.ExecuteAsync(deleteClassSessionMappingsQuery, new { eventId }, transaction);
 
-                        // Delete the event
-                        string deleteEventQuery = @"
-                    DELETE FROM [dbo].[tbl_CreateEvent]
-                    WHERE Event_id = @eventId";
+                        //    // Delete the event
+                        //    string deleteEventQuery = @"
+                        //DELETE FROM [dbo].[tbl_CreateEvent]
+                        //WHERE Event_id = @eventId";
+
+                        string deleteEventQuery = @"UPDATE tbl_CreateEvent SET isDelete = 1 WHERE Event_id = @eventId";
                         await _connection.ExecuteAsync(deleteEventQuery, new { eventId }, transaction);
 
                         // Commit the transaction if all delete operations succeed
@@ -261,7 +263,7 @@ namespace Institute_API.Repository.Implementations
                    Location,
                    AttachmentFile
             FROM tbl_CreateEvent
-            WHERE isApproved = 1";
+            WHERE isApproved = 1 AND isDelete = 0";
 
                 var events = await _connection.QueryAsync<EventDTO>(query);
 
