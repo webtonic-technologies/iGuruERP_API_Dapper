@@ -5,8 +5,8 @@
     {
         public int TimetableGroup_id { get; set; }
         public string GroupName { get; set; }
-        public DateTime StartTime { get; set; }
-        public DateTime EndTime { get; set; }
+        public TimeSpan StartTime { get; set; }
+        public TimeSpan EndTime { get; set; }
         public List<PeriodDTO>periodDTOs { get; set; }  
         public List<PeriodBreakDTO> periodBreakDTOs { get; set; }  
         public List<TimetableClassMapping> timetableClassMappings { get; set; } 
@@ -18,8 +18,8 @@
         public int Period_id { get; set; }
         public int TimetableGroup_id { get; set; }
         public string PeriodName { get; set; }
-        public DateTime StartTime { get; set; }
-        public DateTime EndTime { get; set; }
+        public TimeSpan StartTime { get; set; }
+        public TimeSpan EndTime { get; set; }
     }
 
  
@@ -28,8 +28,8 @@
         public int PeriodBreak_id { get; set; }
         public int TimetableGroup_id { get; set; }
         public string BreakName { get; set; }
-        public DateTime StartTime { get; set; }
-        public DateTime EndTime { get; set; }
+        public TimeSpan StartTime { get; set; }
+        public TimeSpan EndTime { get; set; }
     }
 
     public class TimetableClassMapping

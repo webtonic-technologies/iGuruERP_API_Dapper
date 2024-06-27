@@ -16,5 +16,6 @@ namespace Student_API.Services.Interfaces
         Task<ServiceResponse<bool>> DeleteTimetableGroup(int timetableGroupId);
         Task<ServiceResponse<List<Timetable>>> GetTimetablesByCriteria(TimetableParam timetableParam);
         Task<ServiceResponse<DaysSetupDTO>> GetDaysSetupById(int daysSetupId);
+        Task<ServiceResponse<List<ClassTimetableResponse>>> GetClassTimetableDataForDayAsync(int dayId);
     }
 }

@@ -120,7 +120,7 @@ namespace Student_API.Repository.Implementations
                         WHERE TimetableClassMapping_id = @TimetableClassMappingId";
                         }
                         result = await _connection.ExecuteAsync(query, timetableClassMapping, transaction);
-                        timetableClassMappingsSuccess =  result > 0 ? true : false;
+                        timetableClassMappingsSuccess = result > 0 ? true : false;
                     }
 
                     bool success = timetableGroupSuccess && periodsSuccess && periodBreaksSuccess && timetableClassMappingsSuccess;
@@ -183,7 +183,7 @@ namespace Student_API.Repository.Implementations
                 {
                     timetableGroup.periodDTOs = await GetPeriodsForTimeTableGroup(timetableGroupId);
                     timetableGroup.periodBreakDTOs = await GetPeriodBreaksForTimeTableGroup(timetableGroupId);
-                    timetableGroup.timetableClassMappings = await GetTimetableClassMappingsForTimeTableGroup(timetableGroupId); 
+                    timetableGroup.timetableClassMappings = await GetTimetableClassMappingsForTimeTableGroup(timetableGroupId);
                     return new ServiceResponse<TimeTableGroupDTO>(true, "Operation successful", timetableGroup, 200);
                 }
                 else
@@ -463,7 +463,7 @@ namespace Student_API.Repository.Implementations
             }
         }
         public async Task<ServiceResponse<int>> AddOrUpdateTimetable(Timetable timetable)
-        {   
+        {
             try
             {
                 string addOrUpdateQuery = @"
@@ -537,8 +537,78 @@ namespace Student_API.Repository.Implementations
             }
         }
 
+        public async Task<List<ClassTimetableData>> GetClassTimetableData(int dayId, string academicYear)
+        {
 
+            string query = @"
+            SELECT 
+                t.Class_id AS ClassId,
+                c.Class_Name AS ClassName,
+                COUNT(DISTINCT t.Period_id) AS Sessions,
+                COUNT(DISTINCT t.Subject_id) AS Subjects
+            FROM [dbo].[tbl_Timetable] t
+            JOIN [dbo].[tbl_Class] c ON t.Class_id = c.Class_id
+            WHERE t.Day_Id = @DayId
+              AND t.AcademicYear = @AcademicYear
+            GROUP BY t.Class_id, c.Class_Name
+            ORDER BY t.Class_id";
 
+            var classTimetableData = await _connection.QueryAsync<ClassTimetableData>(
+                query,
+                new { DayId = dayId, AcademicYear = academicYear }
+            );
 
+            return classTimetableData.ToList();
+
+        }
+        public async Task<ServiceResponse<ClassDayWiseDTO>> GetClassDayWiseData(int classId, int sectionId, string academicYear)
+        {
+            try
+            {
+                string query = @"SELECT 
+                    t.Day_Id AS DayId,
+                    d.Day_Name AS DayName,
+                    t.Period_id AS PeriodId,
+                    p.PeriodName,
+                    t.Subject_id AS SubjectId,
+                    s.SubjectName,
+                    t.Employee_id AS EmployeeId,
+                    e.EmployeeName
+                FROM [dbo].[tbl_Timetable] t
+                JOIN [dbo].[tbl_Day] d ON t.Day_Id = d.Day_Id
+                JOIN [dbo].[tbl_Period] p ON t.Period_id = p.Period_id
+                JOIN [dbo].[tbl_Subject] s ON t.Subject_id = s.Subject_id
+                JOIN [dbo].[tbl_Employee] e ON t.Employee_id = e.Employee_id
+                WHERE t.Class_id = @ClassId
+                  AND t.Section_id = @SectionId
+                  AND t.AcademicYear = @AcademicYear
+                ORDER BY t.Day_Id, p.StartTime";
+                var classDayWiseData = await _connection.QueryAsync<ClassDayWiseDetailDTO>(query,
+                    new { ClassId = classId, SectionId = sectionId, AcademicYear = academicYear });
+                var sessionsPerWeek = classDayWiseData.GroupBy(d => d.DayId).Count();
+                var subjectsPerWeek = classDayWiseData.GroupBy(d => d.SubjectId)
+                                                      .Select(g => new SubjectCountDTO
+                                                      {
+                                                          SubjectId = g.Key,
+                                                          SubjectName = g.First().SubjectName,
+                                                          Count = g.Count()
+                                                      }).ToList();
+
+                var result = new ClassDayWiseDTO
+                {
+                    ClassId = classId,
+                    SectionId = sectionId,
+                    AcademicYear = academicYear,
+                    SessionsPerWeek = sessionsPerWeek,
+                    SubjectsPerWeek = subjectsPerWeek,
+                    DayWiseDetails = classDayWiseData.ToList()
+                };
+                return new ServiceResponse<ClassDayWiseDTO>(true, "Operation successful", result, 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<ClassDayWiseDTO>(false, ex.Message, null, 500);
+            }
+        }
     }
 }
