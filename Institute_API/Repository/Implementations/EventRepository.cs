@@ -287,7 +287,7 @@ namespace Institute_API.Repository.Implementations
                    Description,
                    Location,
                    AttachmentFile
-            FROM tbl_CreateEvent";
+            FROM tbl_CreateEvent where isDelete = 0";
 
                 var events = await _connection.QueryAsync<EventDTO>(query);
 
