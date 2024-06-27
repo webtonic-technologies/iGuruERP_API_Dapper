@@ -150,7 +150,7 @@ namespace Institute_API.Repository.Implementations
                 FROM [dbo].[tbl_HolidayClassSessionMapping]
             INNER JOIN tbl_CourseClass ON tbl_CourseClass.CourseClass_id = Class_id
             INNER JOIN tbl_CourseClassSection ON tbl_CourseClassSection.CourseClassSection_id = Section_id
-                WHERE Holiday_id = @HolidayId AND isDelete = 1 ;
+                WHERE Holiday_id = @HolidayId AND isDelete = 0 ;
             ";
 
                     var mappings = await _connection.QueryAsync<HolidayClassSessionMappingDTO>(mappingQuery, new { HolidayId = holiday.Holiday_id });
@@ -173,7 +173,7 @@ namespace Institute_API.Repository.Implementations
                 string query = @"
             SELECT Holiday_id, HolidayName, StartDate, EndDate, Description, IsApproved, ApprovedBy
             FROM [dbo].[tbl_Holiday]
-            WHERE IsApproved = 1 AND isDelete = 1 ;
+            WHERE IsApproved = 1 AND isDelete = 0 ;
         ";
 
                 var holidays = await _connection.QueryAsync<HolidayDTO>(query);
