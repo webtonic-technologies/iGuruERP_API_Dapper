@@ -3,6 +3,7 @@ using Institute_API.DTOs;
 using Institute_API.DTOs.ServiceResponse;
 using Institute_API.Models;
 using Institute_API.Repository.Interfaces;
+using System.Collections.Generic;
 using System.Data;
 
 namespace Institute_API.Repository.Implementations
@@ -148,7 +149,7 @@ namespace Institute_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<CourseClassDTO>>> GetAcademicConfigList(int Institute_id)
+        public async Task<ServiceResponse<List<CourseClassDTO>>> GetAcademicConfigList(GetAllCourseClassRequest request)
         {
             try
             {
@@ -158,7 +159,7 @@ namespace Institute_API.Repository.Implementations
                        WHERE Institute_id = @Institute_id";
 
                 // Execute the query and retrieve the department
-                var data = await _connection.QueryAsync<CourseClass>(sql, new { Institute_id });
+                var data = await _connection.QueryAsync<CourseClass>(sql, new { request.Institute_id });
                 if (data != null)
                 {
                     foreach (var item in data)
@@ -178,7 +179,10 @@ namespace Institute_API.Repository.Implementations
                         }
                         response.Add(record);
                     }
-                    return new ServiceResponse<List<CourseClassDTO>>(true, "Record found", response, 200);
+                    var paginatedList = response.Skip((request.PageNumber - 1) * request.PageSize)
+                           .Take(request.PageSize)
+                           .ToList();
+                    return new ServiceResponse<List<CourseClassDTO>>(true, "Record found", paginatedList, 200);
                 }
                 else
                 {

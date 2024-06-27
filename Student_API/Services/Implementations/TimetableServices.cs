@@ -54,11 +54,11 @@ namespace Student_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<int>> AddTimeTableDaysPlan(DaysSetupDTO daysSetupDTO)
+        public async Task<ServiceResponse<int>> AddOrUpdateTimeTableDaysPlan(DaysSetupDTO daysSetupDTO)
         {
             try
             {
-                var data = await _timetableRepository.AddTimeTableDaysPlan(daysSetupDTO);
+                var data = await _timetableRepository.AddOrUpdateTimeTableDaysPlan(daysSetupDTO);
                 return data;
             }
             catch (Exception ex)
@@ -128,6 +128,18 @@ namespace Student_API.Services.Implementations
             catch (Exception ex)
             {
                 return new ServiceResponse<List<Timetable>>(false, ex.Message, null, 500);
+            }
+        }
+        public async Task<ServiceResponse<DaysSetupDTO>> GetDaysSetupById(int daysSetupId)
+        {
+            try
+            {
+                var data = await _timetableRepository.GetDaysSetupById(daysSetupId);
+                return data;
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<DaysSetupDTO>(false, ex.Message, null, 500);
             }
         }
     }

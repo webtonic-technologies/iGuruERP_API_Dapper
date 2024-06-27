@@ -1,8 +1,12 @@
-﻿using Student_API.DTOs;
+﻿using QRCoder;
+using Student_API.DTOs;
 using Student_API.DTOs.ServiceResponse;
 using Student_API.Repository.Interfaces;
 using Student_API.Services.Interfaces;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.Reflection.Metadata;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Student_API.Services.Implementations
 {
@@ -17,6 +21,7 @@ namespace Student_API.Services.Implementations
             _hostingEnvironment = webHostEnvironment;
             _imageService = imageService;
         }
+
 
         public async Task<ServiceResponse<int>> AddUpdateStudentInformation(StudentMasterDTO request)
         {
@@ -36,7 +41,26 @@ namespace Student_API.Services.Implementations
                     }
                     request.File_Name = file.relativePath;
                 }
+                if (request.student_id == 0)
+                {
+                    QRCodeGenerator qrGenerator = new QRCodeGenerator();
+                    QRCodeData qrCodeData = qrGenerator.CreateQrCode(request.First_Name + "  " + request.Last_Name, QRCodeGenerator.ECCLevel.Q);
+                    QRCode qrCodeImage = new QRCode(qrCodeData);
 
+                    using (Bitmap bitmap = qrCodeImage.GetGraphic(60))
+                    {
+                        string base64String;
+                        using (MemoryStream ms = new MemoryStream())
+                        {
+                            bitmap.Save(ms, ImageFormat.Png);
+                            byte[] byteImage = ms.ToArray();
+                            base64String = Convert.ToBase64String(byteImage);
+                        }
+
+                        var result = await _imageService.SaveImageAsync(base64String, "QrCodes");
+                        request.QR_code = result.relativePath;
+                    }
+                }
 
                 var data = await _studentInformationRepository.AddUpdateStudentInformation(request);
                 return data;
@@ -52,28 +76,31 @@ namespace Student_API.Services.Implementations
             try
             {
                 var data = await _studentInformationRepository.GetStudentDetailsById(studentId);
-                if (data.Data != null && data.Data.File_Name != null && data.Data.File_Name != "")
+                if (data.Data != null)
                 {
-                    data.Data.File_Name = _imageService.GetImageAsBase64(data.Data.File_Name);
-                }
-
-                if (data.Data.studentParentInfos != null)
-                {
-                    foreach (var studentParentInfos in data.Data.studentParentInfos)
+                    if (data.Data != null && data.Data.File_Name != null && data.Data.File_Name != "")
                     {
-                        if (!string.IsNullOrEmpty(studentParentInfos.File_Name) && File.Exists(studentParentInfos.File_Name))
+                        data.Data.File_Name = _imageService.GetImageAsBase64(data.Data.File_Name);
+                    }
+
+                    if (data.Data.studentParentInfos != null)
+                    {
+                        foreach (var studentParentInfos in data.Data.studentParentInfos)
                         {
-                            studentParentInfos.File_Name = _imageService.GetImageAsBase64(studentParentInfos.File_Name);
+                            if (!string.IsNullOrEmpty(studentParentInfos.File_Name) && File.Exists(studentParentInfos.File_Name))
+                            {
+                                studentParentInfos.File_Name = _imageService.GetImageAsBase64(studentParentInfos.File_Name);
+                            }
                         }
                     }
-                }
-                if (data.Data != null && data.Data.studentDocumentListDTOs != null)
-                {
-                    foreach (var document in data.Data.studentDocumentListDTOs)
+                    if (data.Data != null && data.Data.studentDocumentListDTOs != null)
                     {
-                        if (!string.IsNullOrEmpty(document.File_Name) && File.Exists(document.File_Name))
+                        foreach (var document in data.Data.studentDocumentListDTOs)
                         {
-                            document.Document = _imageService.GetImageAsBase64(document.File_Name);
+                            if (!string.IsNullOrEmpty(document.File_Name) && File.Exists(document.File_Name))
+                            {
+                                document.Document = _imageService.GetImageAsBase64(document.File_Name);
+                            }
                         }
                     }
                 }
@@ -84,12 +111,12 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<StudentInformationDTO>(false, ex.Message, null, 500);
             }
         }
-        public async Task<ServiceResponse<List<StudentDetailsDTO>>> GetAllStudentDetails()
+        public async Task<ServiceResponse<List<StudentDetailsDTO>>> GetAllStudentDetails(int Institute_id, string sortField = "Student_Name", string sortDirection = "ASC", int? pageNumber = null, int? pageSize = null)
         {
 
             try
             {
-                return await _studentInformationRepository.GetAllStudentDetails();
+                return await _studentInformationRepository.GetAllStudentDetails(Institute_id, sortField, sortDirection, pageNumber, pageSize);
             }
             catch (Exception ex)
             {
@@ -222,6 +249,20 @@ namespace Student_API.Services.Implementations
                     await _studentInformationRepository.AddUpdateStudentDocuments(listDTO, request.Student_id);
                 }
                 return new ServiceResponse<int>(true, "Operation successful", 1, 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(false, ex.Message, 0, 500);
+            }
+
+        }
+
+        public async Task<ServiceResponse<int>> DeleteStudentDocument(int Student_Documents_id)
+        {
+            try
+            {
+                var data = await _studentInformationRepository.DeleteStudentDocument(Student_Documents_id);
+                return data;
             }
             catch (Exception ex)
             {

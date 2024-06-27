@@ -8,7 +8,7 @@ namespace Attendance_API.Repository.Interfaces
 {
     public interface IEmployeeAttendanceRepository
     {
-        Task<ServiceResponse<List<EmployeeAttendanceMasterResponseDTO>>> GetEmployeeAttendanceMasterList(EmployeeAttendanceMasterRequestDTO request);
+        Task<ServiceResponse<EmployeeAttendanceMasterResponseDTO>> GetEmployeeAttendanceMasterList(EmployeeAttendanceMasterRequestDTO request);
         Task<ServiceResponse<EmployeeAttendanceMasterDTO>> InsertOrUpdateEmployeeAttendanceMaster(EmployeeAttendanceMasterDTO employeeAttendanceMaster);
         Task<ServiceResponse<bool>> DeleteEmployeeAttendanceMaster(int employeeAttendanceId);
     }

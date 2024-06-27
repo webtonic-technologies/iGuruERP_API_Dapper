@@ -82,6 +82,27 @@ namespace Institute_API.Services.Implementations
                 return new ServiceResponse<List<EventDTO>>(false, ex.Message, null, 500);
             }
         }
+
+        public async Task<ServiceResponse<List<EventDTO>>> GetAllEvents()
+        {
+            try
+            {
+                var data = await _eventRepository.GetAllEvents();
+                foreach (var eventDto in data.Data)
+                {
+                    if (eventDto != null && eventDto.AttachmentFile != null && eventDto.AttachmentFile != "")
+                    {
+                        eventDto.AttachmentFile = _imageService.GetImageAsBase64(eventDto.AttachmentFile);
+                    }
+                }
+
+                return data;
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<EventDTO>>(false, ex.Message, null, 500);
+            }
+        }
         public async Task<ServiceResponse<EventDTO>> GetEventById(int eventId)
         {
             try

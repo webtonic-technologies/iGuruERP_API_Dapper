@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
 using Attendance_API.DTOs;
@@ -19,20 +21,36 @@ namespace Attendance_API.Repository.Implementations
             _connection = connection;
         }
 
-        public async Task<ServiceResponse<List<StudentAttendanceMasterResponseDTO>>> GetStudentAttendanceMasterList(StudentAttendanceMasterRequestDTO request)
+        public async Task<ServiceResponse<StudentAttendanceMasterResponseDTO>> GetStudentAttendanceMasterList(StudentAttendanceMasterRequestDTO request)
         {
             if (request == null || request.Date == DateTime.MinValue || request.class_id == 0 || request.section_id == 0)
             {
-                return new ServiceResponse<List<StudentAttendanceMasterResponseDTO>>(false, "Invalid request", new List<StudentAttendanceMasterResponseDTO>(), 400);
+                return new ServiceResponse<StudentAttendanceMasterResponseDTO>(false, "Invalid request", new StudentAttendanceMasterResponseDTO(), 400);
             }
             string sql = $"SELECT sam.Student_Attendance_id, sam.Student_Attendance_Status_id, sam.Remark, '{request.Date.ToString("yyyy-MM-dd")}' as Date, sm.student_id as Student_id, sm.First_Name + ' ' + sm.Last_Name AS Student_Name, " +
-                         $"sm.Admission_Number, sm.Roll_Number " +
+                         $"sm.Admission_Number, sm.Roll_Number, sas.Student_Attendance_Status_Type, sas.Short_Name as Student_Attendance_Status_Short_Name " +
                          $"FROM tbl_StudentMaster sm " +
                          $"LEFT JOIN tbl_StudentAttendanceMaster sam ON sam.Student_id = sm.student_id and sam.Date = '{request.Date.ToString("yyyy-MM-dd")}' " +
+                         $"join tbl_StudentAttendanceStatus sas on sas.Student_Attendance_Status_id = sam.Student_Attendance_Status_id " +
                          $"where sm.class_id = {request.class_id} and sm.section_id = {request.section_id}";
 
-            var result = await _connection.QueryAsync<StudentAttendanceMasterResponseDTO>(sql);
-            return new ServiceResponse<List<StudentAttendanceMasterResponseDTO>>(true, "Operation successful", result.ToList(), 200);
+            if (request.pageNumber != null && request.pageSize != null)
+            {
+                sql += $" Order by 1 OFFSET {(request.pageNumber - 1) * request.pageSize} ROWS FETCH NEXT {request.pageSize} ROWS ONLY;";
+            }
+
+            var result = await _connection.QueryAsync<StudentAttendanceMasterResponse>(sql);
+
+            sql = $"SELECT COUNT(*) " +
+                         $"FROM tbl_StudentMaster sm " +
+                         $"LEFT JOIN tbl_StudentAttendanceMaster sam ON sam.Student_id = sm.student_id and sam.Date = '{request.Date.ToString("yyyy-MM-dd")}' " +
+                         $"join tbl_StudentAttendanceStatus sas on sas.Student_Attendance_Status_id = sam.Student_Attendance_Status_id " +
+                         $"where sm.class_id = {request.class_id} and sm.section_id = {request.section_id}";
+
+            var countRes = await _connection.QueryAsync<long>(sql);
+            var count = countRes.FirstOrDefault();
+
+            return new ServiceResponse<StudentAttendanceMasterResponseDTO>(true, "Operation successful", new StudentAttendanceMasterResponseDTO{ Data = result.ToList(), Total = count}, 200);
         }
 
         public async Task<ServiceResponse<StudentAttendanceMasterDTO>> InsertOrUpdateStudentAttendanceMaster(StudentAttendanceMasterDTO studentAttendanceMaster)

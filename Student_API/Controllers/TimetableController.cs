@@ -83,13 +83,35 @@ namespace Student_API.Controllers
             }
         }
 
-        [HttpPost]
-        [Route("AddTimeTableDaysPlan")]
-        public async Task<IActionResult> AddTimeTableDaysPlan(DaysSetupDTO daysSetupDTO)
+        [HttpGet]
+        [Route("GetDaysSetupById/{daysSetupId}")]
+        public async Task<IActionResult> GetDaysSetupById(int daysSetupId)
         {
             try
             {
-                var data = await _timetableServices.AddTimeTableDaysPlan(daysSetupDTO);
+                var data = await _timetableServices.GetDaysSetupById(daysSetupId);
+                if (data.Success)
+                {
+                    return Ok(data);
+                }
+                else
+                {
+                    return NotFound(data.Message);
+                }
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+        [HttpPost]
+        [Route("AddOrUpdateTimeTableDaysPlan")]
+        public async Task<IActionResult> AddOrUpdateTimeTableDaysPlan(DaysSetupDTO daysSetupDTO)
+        {
+            try
+            {
+                var data = await _timetableServices.AddOrUpdateTimeTableDaysPlan(daysSetupDTO);
                 if (data != null)
                 {
                     return Ok(data);
