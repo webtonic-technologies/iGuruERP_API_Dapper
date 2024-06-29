@@ -3,8 +3,10 @@ using System.Data;
 using Student_API.DTOs;
 using Student_API.DTOs.ServiceResponse;
 using Dapper;
-using Student_API.Models;
+
 using System.Collections.Generic;
+using Student_API.DTOs.RequestDTO;
+using Student_API.Models;
 
 namespace Student_API.Repository.Implementations
 {
@@ -84,10 +86,10 @@ namespace Student_API.Repository.Implementations
                     WHERE tbl_StudentMaster.student_id = @studentId;
 
                     SELECT [Student_Other_Info_id], [student_id], [StudentType_id], [email_id], [Hall_Ticket_Number], tbl_StudentOtherInfo.Exam_Board_id, [Identification_Mark_1],
-                    [Identification_Mark_2], [Admission_Date], tbl_StudentOtherInfo.Student_Group_id, [Register_Date], [Register_Number], [samagra_ID], [Place_of_Birth], [comments], 
+                    [Identification_Mark_2], [Admission_Date], tbl_StudentOtherInfo.Student_House_id, [Register_Date], [Register_Number], [samagra_ID], [Place_of_Birth], [comments], 
                     [language_known]  ,Student_Group_Type,Exam_Board_Type ,tbl_StudentOtherInfo.StudentType_id , Student_Type_Name
                     FROM [dbo].[tbl_StudentOtherInfo] 
-                    INNER JOIN tbl_StudentGroup ON tbl_StudentGroup.Student_Group_id = tbl_StudentOtherInfo.Student_Group_id
+                    INNER JOIN tbl_InstituteHouse ON tbl_InstituteHouse.Institute_House_id = tbl_StudentOtherInfo.Student_House_id
                     INNER JOIN tbl_ExamBoard ON tbl_ExamBoard.Exam_Board_id = tbl_StudentOtherInfo.Exam_Board_id
                     INNER JOIN tbl_StudentType ON tbl_StudentType.Student_Type_id = tbl_StudentOtherInfo.StudentType_id
                     WHERE student_id = @studentId;
@@ -155,7 +157,7 @@ namespace Student_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<int>> AddUpdateStudentInformation(StudentMasterDTO request)
+        public async Task<ServiceResponse<int>> AddUpdateStudentInformation(StudentMasters request)
         {
             try
             {
@@ -248,15 +250,15 @@ namespace Student_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<int>> AddUpdateStudentOtherInfo(StudentOtherInfoDTO request)
+        public async Task<ServiceResponse<int>> AddUpdateStudentOtherInfo(StudentOtherInfos request)
         {
             try
             {
                 if (request.Student_Other_Info_id == 0)
                 {
                     string addSql = @"
-                        INSERT INTO [dbo].[tbl_StudentOtherInfo] (student_id, StudentType_id, email_id, Hall_Ticket_Number, Exam_Board_id, Identification_Mark_1, Identification_Mark_2, Admission_Date, Student_Group_id, Register_Date, Register_Number, samagra_ID, Place_of_Birth, comments, language_known)
-                        VALUES (@student_id, @StudentType_id, @email_id, @Hall_Ticket_Number, @Exam_Board_id, @Identification_Mark_1, @Identification_Mark_2, @Admission_Date, @Student_Group_id, @Register_Date, @Register_Number, @samagra_ID, @Place_of_Birth, @comments, @language_known);
+                        INSERT INTO [dbo].[tbl_StudentOtherInfo] (student_id, StudentType_id, email_id, Hall_Ticket_Number, Exam_Board_id, Identification_Mark_1, Identification_Mark_2, Admission_Date, Student_House_id, Register_Date, Register_Number, samagra_ID, Place_of_Birth, comments, language_known)
+                        VALUES (@student_id, @StudentType_id, @email_id, @Hall_Ticket_Number, @Exam_Board_id, @Identification_Mark_1, @Identification_Mark_2, @Admission_Date, @Student_House_id, @Register_Date, @Register_Number, @samagra_ID, @Place_of_Birth, @comments, @language_known);
                         SELECT CAST(SCOPE_IDENTITY() as int)";
                     int insertedId = await _connection.ExecuteScalarAsync<int>(addSql, request);
                     if (insertedId > 0)
@@ -306,7 +308,7 @@ namespace Student_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<int>> AddUpdateStudentParentInfo(StudentParentInfoDTO request)
+        public async Task<ServiceResponse<int>> AddUpdateStudentParentInfo(StudentParentInfo request)
         {
             _connection.Open();
             using (var transaction = _connection.BeginTransaction())
@@ -317,8 +319,8 @@ namespace Student_API.Repository.Implementations
                     {
                         // Insert Student Parent Info
                         var addSql = @"
-                    INSERT INTO [dbo].[tbl_StudentParentsInfo] ([Student_id],[Parent_Type_id],[First_Name],[Middle_Name],[Last_Name],[Contact_Number],[Bank_Account_no],[Bank_IFSC_Code],[Family_Ration_Card_Type],[Family_Ration_Card_no],[Mobile_Number],[Date_of_Birth],[Aadhar_no],[PAN_card_no],[Residential_Address],[Occupation_id],[Designation],[Name_of_the_Employer],[Office_no],[Email_id],[Annual_Income],[File_Name])
-                    VALUES (@Student_id,@Parent_Type_id,@First_Name,@Middle_Name,@Last_Name,@Contact_Number,@Bank_Account_no,@Bank_IFSC_Code,@Family_Ration_Card_Type,@Family_Ration_Card_no,@Mobile_Number,@Date_of_Birth,@Aadhar_no,@PAN_card_no,@Residential_Address,@Occupation_id,@Designation,@Name_of_the_Employer,@Office_no,@Email_id,@Annual_Income,@File_Name); 
+                    INSERT INTO [dbo].[tbl_StudentParentsInfo] ([Student_id],[Parent_Type_id],[First_Name],[Middle_Name],[Last_Name],[Contact_Number],[Bank_Account_no],[Bank_IFSC_Code],[Family_Ration_Card_Type],[Family_Ration_Card_no],[Date_of_Birth],[Aadhar_no],[PAN_card_no],[Residential_Address],[Occupation_id],[Designation],[Name_of_the_Employer],[Office_no],[Email_id],[Annual_Income],[File_Name])
+                    VALUES (@Student_id,@Parent_Type_id,@First_Name,@Middle_Name,@Last_Name,@Contact_Number,@Bank_Account_no,@Bank_IFSC_Code,@Family_Ration_Card_Type,@Family_Ration_Card_no,@Date_of_Birth,@Aadhar_no,@PAN_card_no,@Residential_Address,@Occupation_id,@Designation,@Name_of_the_Employer,@Office_no,@Email_id,@Annual_Income,@File_Name); 
                     SELECT CAST(SCOPE_IDENTITY() as int);";
                         int insertedId = await _connection.ExecuteScalarAsync<int>(addSql, request, transaction);
 
@@ -354,7 +356,6 @@ namespace Student_API.Repository.Implementations
                         [Bank_IFSC_Code] = @Bank_IFSC_Code,
                         [Family_Ration_Card_Type] = @Family_Ration_Card_Type,
                         [Family_Ration_Card_no] = @Family_Ration_Card_no,
-                        [Mobile_Number] = @Mobile_Number,
                         [Date_of_Birth] = @Date_of_Birth,
                         [Aadhar_no] = @Aadhar_no,
                         [PAN_card_no] = @PAN_card_no,
@@ -403,7 +404,7 @@ namespace Student_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<int>> AddOrUpdateStudentSiblings(StudentSiblings sibling)
+        public async Task<ServiceResponse<int>> AddOrUpdateStudentSiblings(StudentSibling sibling)
         {
 
             try
@@ -486,7 +487,7 @@ namespace Student_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<int>> AddOrUpdateStudentPreviousSchool(StudentPreviousSchool previousSchool)
+        public async Task<ServiceResponse<int>> AddOrUpdateStudentPreviousSchool(StudentPreviousSchools previousSchool)
         {
             try
             {
@@ -565,7 +566,7 @@ namespace Student_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<int>> AddOrUpdateStudentHealthInfo(StudentHealthInfo healthInfo)
+        public async Task<ServiceResponse<int>> AddOrUpdateStudentHealthInfo(StudentHealthInfos healthInfo)
         {
             try
             {
@@ -579,14 +580,14 @@ namespace Student_API.Repository.Implementations
                         [Hepatitis], [Triple_Antigen], [Others], [General_Health], [Head_Eye_ENT], 
                         [Chest], [CVS], [Abdomen], [Genitalia], [Congenital_Disease], [Physical_Deformity], 
                         [History_Majorillness], [History_Accident], [Vision], [Hearing], [Speech], 
-                        [Behavioral_Problem], [Remarks_Weakness], [Student_Name], [Student_Age], [Admission_Status]
+                        [Behavioral_Problem], [Remarks_Weakness], [Student_Name], [Student_Age]
                     ) VALUES (
                         @Student_id, @Allergies, @Medications, @Doctor_Name, @Doctor_Phone_no, 
                         @height, @weight, @Government_ID, @BCG, @MMR_Measles, @Polio, 
                         @Hepatitis, @Triple_Antigen, @Others, @General_Health, @Head_Eye_ENT, 
                         @Chest, @CVS, @Abdomen, @Genitalia, @Congenital_Disease, @Physical_Deformity, 
                         @History_Majorillness, @History_Accident, @Vision, @Hearing, @Speech, 
-                        @Behavioral_Problem, @Remarks_Weakness, @Student_Name, @Student_Age, @Admission_Status
+                        @Behavioral_Problem, @Remarks_Weakness, @Student_Name, @Student_Age
                     );
                     SELECT CAST(SCOPE_IDENTITY() as int);";
                     int insertedId = await _connection.ExecuteScalarAsync<int>(query, healthInfo);
@@ -633,8 +634,7 @@ namespace Student_API.Repository.Implementations
                         [Behavioral_Problem] = @Behavioral_Problem,
                         [Remarks_Weakness] = @Remarks_Weakness,
                         [Student_Name] = @Student_Name,
-                        [Student_Age] = @Student_Age,
-                        [Admission_Status] = @Admission_Status
+                        [Student_Age] = @Student_Age
                     WHERE [Student_Health_Info_id] = @Student_Health_Info_id;";
                     int affectedRows = await _connection.ExecuteAsync(query, healthInfo);
                     if (affectedRows > 0)

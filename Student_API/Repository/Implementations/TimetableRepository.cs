@@ -573,12 +573,12 @@ namespace Student_API.Repository.Implementations
                     t.Subject_id AS SubjectId,
                     s.SubjectName,
                     t.Employee_id AS EmployeeId,
-                    e.EmployeeName
+                    e.First_Name AS EmployeeName
                 FROM [dbo].[tbl_Timetable] t
                 JOIN [dbo].[tbl_Day] d ON t.Day_Id = d.Day_Id
                 JOIN [dbo].[tbl_Period] p ON t.Period_id = p.Period_id
                 JOIN [dbo].[tbl_Subject] s ON t.Subject_id = s.Subject_id
-                JOIN [dbo].[tbl_Employee] e ON t.Employee_id = e.Employee_id
+                JOIN [dbo].[tbl_EmployeeProfileMaster] e ON t.Employee_id = e.Employee_id
                 WHERE t.Class_id = @ClassId
                   AND t.Section_id = @SectionId
                   AND t.AcademicYear = @AcademicYear

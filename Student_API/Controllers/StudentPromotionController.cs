@@ -17,7 +17,7 @@ namespace Student_API.Controllers
 
         [HttpGet]
         [Route("GetStudentsForPromotion")]
-        public async Task<IActionResult> GetStudentsForPromotion(int classId, string sortField = "Student_Name",string sortDirection = "ASC", int? pageSize = null, int? pageNumber = null)
+        public async Task<IActionResult> GetStudentsForPromotion(int classId=0, string sortField = "Student_Name",string sortDirection = "ASC", int? pageSize = null, int? pageNumber = null)
         {
             try
             {

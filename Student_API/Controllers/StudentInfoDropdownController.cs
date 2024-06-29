@@ -28,14 +28,28 @@ namespace Student_API.Controllers
             }
         }
         [HttpGet]
-        [Route("Sections/GetAllSections")]
-        public async Task<IActionResult> GetAllSections()
+        [Route("Sections/GetAllSections/{Class_Id}")]
+        public async Task<IActionResult> GetAllSections(int Class_Id)
         {
             try
             {
-                var data = await _studentInfoDropdownService.GetAllSections();
+                var data = await _studentInfoDropdownService.GetAllSections(Class_Id);
 				return Ok(data);
 			}
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
+        }
+        [HttpGet]
+        [Route("Sections/GetAllClass/{institute_id}")]
+        public async Task<IActionResult> GetAllClass(int institute_id)
+        {
+            try
+            {
+                var data = await _studentInfoDropdownService.GetAllClass(institute_id);
+                return Ok(data);
+            }
             catch (Exception e)
             {
                 return this.BadRequest(e.Message);
@@ -148,6 +162,36 @@ namespace Student_API.Controllers
                 var data = await _studentInfoDropdownService.GetAllParentTypes();
 				return Ok(data);
 			}
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
+        }
+
+        [HttpGet]
+        [Route("ParentTypes/GetAllStates")]
+        public async Task<IActionResult> GetAllStates()
+        {
+            try
+            {
+                var data = await _studentInfoDropdownService.GetAllStates();
+                return Ok(data);
+            }
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
+        }
+
+        [HttpGet]
+        [Route("ParentTypes/GetAllCities/{StateId}")]
+        public async Task<IActionResult> GetAllCities(int StateId)
+        {
+            try
+            {
+                var data = await _studentInfoDropdownService.GetAllCities(StateId);
+                return Ok(data);
+            }
             catch (Exception e)
             {
                 return this.BadRequest(e.Message);

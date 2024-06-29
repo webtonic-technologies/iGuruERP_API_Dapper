@@ -1,5 +1,6 @@
 ﻿using QRCoder;
 using Student_API.DTOs;
+using Student_API.DTOs.RequestDTO;
 using Student_API.DTOs.ServiceResponse;
 using Student_API.Repository.Interfaces;
 using Student_API.Services.Interfaces;
@@ -23,7 +24,7 @@ namespace Student_API.Services.Implementations
         }
 
 
-        public async Task<ServiceResponse<int>> AddUpdateStudentInformation(StudentMasterDTO request)
+        public async Task<ServiceResponse<int>> AddUpdateStudentInformation(StudentMasters request)
         {
             try
             {
@@ -135,7 +136,7 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
-        public async Task<ServiceResponse<int>> AddUpdateStudentOtherInfo(StudentOtherInfoDTO request)
+        public async Task<ServiceResponse<int>> AddUpdateStudentOtherInfo(StudentOtherInfos request)
         {
             try
             {
@@ -147,7 +148,7 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
-        public async Task<ServiceResponse<int>> AddUpdateStudentParentInfo(StudentParentInfoDTO request)
+        public async Task<ServiceResponse<int>> AddUpdateStudentParentInfo(StudentParentInfo request)
         {
             try
             {
@@ -172,7 +173,7 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
-        public async Task<ServiceResponse<int>> AddOrUpdateStudentSiblings(StudentSiblings sibling)
+        public async Task<ServiceResponse<int>> AddOrUpdateStudentSiblings(StudentSibling sibling)
         {
             try
             {
@@ -184,7 +185,7 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
-        public async Task<ServiceResponse<int>> AddOrUpdateStudentPreviousSchool(StudentPreviousSchool previousSchool)
+        public async Task<ServiceResponse<int>> AddOrUpdateStudentPreviousSchool(StudentPreviousSchools previousSchool)
         {
             try
             {
@@ -196,7 +197,7 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
-        public async Task<ServiceResponse<int>> AddOrUpdateStudentHealthInfo(StudentHealthInfo healthInfo)
+        public async Task<ServiceResponse<int>> AddOrUpdateStudentHealthInfo(StudentHealthInfos healthInfo)
         {
             try
             {

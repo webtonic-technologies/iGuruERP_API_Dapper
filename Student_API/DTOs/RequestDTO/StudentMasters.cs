@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Student_API.DTOs
+namespace Student_API.DTOs.RequestDTO
 {
-    public class StudentMasterDTO
+    public class StudentMasters
     {
         public int student_id { get; set; }
         [Required]
@@ -31,7 +31,7 @@ namespace Student_API.DTOs
         public DateTime? Date_of_Birth { get; set; }
         [Required]
         public int? Mother_Tongue_id { get; set; }
-     
+
         public int? Caste_id { get; set; }
         public string First_Language { get; set; }
         public string Second_Language { get; set; }
@@ -43,37 +43,30 @@ namespace Student_API.DTOs
         public string Aadhar_Number { get; set; }
         public string NEP { get; set; }
         public string QR_code { get; set; }
-        public bool IsPhysicallyChallenged {  get; set; }   
-        public bool IsSports {  get; set; }   
-        public bool IsAided {  get; set; }   
-        public bool IsNCC {  get; set; }   
-        public bool IsNSS {  get; set; }   
-        public bool IsScout {  get; set; }   
-        public string? File_Name {  get; set; }   
-        public int Institute_id {  get; set; }      
-      
-        //public string Base64File { get; set; }    
+        public bool IsPhysicallyChallenged { get; set; }
+        public bool IsSports { get; set; }
+        public bool IsAided { get; set; }
+        public bool IsNCC { get; set; }
+        public bool IsNSS { get; set; }
+        public bool IsScout { get; set; }
+        public string? File_Name { get; set; }
+        public int Institute_id { get; set; }
 
     }
-
-    public class StudentOtherInfoDTO
+    public class StudentOtherInfos
     {
         public int Student_Other_Info_id { get; set; }
         public int student_id { get; set; }
         public int? StudentType_id { get; set; }
-        public string? Student_Type_Name {  get; set; }
         [MaxLength(50)]
         public string email_id { get; set; }
         public string Hall_Ticket_Number { get; set; }
-        public int? Exam_Board_id { get; set; }
-        public string? Exam_Board_Type { get; set; }
         [MaxLength(30)]
         public string Identification_Mark_1 { get; set; }
         [MaxLength(30)]
         public string Identification_Mark_2 { get; set; }
         public DateTime? Admission_Date { get; set; }
-        public int? Student_Group_id { get; set; }
-        public string? Student_Group_Type { get; set; }
+        public int? Student_House_id { get; set; }
         public DateTime? Register_Date { get; set; }
         [MaxLength(30)]
         public string Register_Number { get; set; }
@@ -85,9 +78,9 @@ namespace Student_API.DTOs
         public string comments { get; set; }
         [MaxLength(30)]
         public string language_known { get; set; }
-       
+
     }
-    public class StudentParentInfoDTO
+    public class StudentParentInfo
     {
         public int Student_Parent_Info_id { get; set; }
         public int Student_id { get; set; }
@@ -114,7 +107,7 @@ namespace Student_API.DTOs
         [MaxLength(30)]
         public string PAN_card_no { get; set; }
         [MaxLength(30)]
-        public string Residential_Address { get; set; } 
+        public string Residential_Address { get; set; }
         public int Occupation_id { get; set; }
         [MaxLength(30)]
         public string Designation { get; set; }
@@ -124,16 +117,16 @@ namespace Student_API.DTOs
         public string Office_no { get; set; }
         [MaxLength(30)]
         public string Email_id { get; set; }
-        
+
         public decimal Annual_Income { get; set; }
         public string File_Name { get; set; }
 
         [MaxLength(30)]
-        public string? Occupation_Type {  get; set; }    
-        public StudentParentOfficeInfo studentParentOfficeInfo { get; set; }    
+        public string? Occupation_Type { get; set; }
+        public StudentParentOfficeInfos studentParentOfficeInfo { get; set; }
     }
 
-    public class StudentParentOfficeInfo
+    public class StudentParentOfficeInfos
     {
         public int Student_Parent_Office_Info_id { get; set; }
         public int Student_id { get; set; }
@@ -153,7 +146,7 @@ namespace Student_API.DTOs
     }
 
 
-    public class StudentSiblings
+    public class StudentSibling
     {
         public int Student_Siblings_id { get; set; }
         public int Student_id { get; set; }
@@ -171,7 +164,7 @@ namespace Student_API.DTOs
         [MaxLength(20)]
         public string Aadhar_no { get; set; }
     }
-    public class StudentPreviousSchool
+    public class StudentPreviousSchools
     {
         public int Student_Prev_School_id { get; set; }
         public int student_id { get; set; }
@@ -192,7 +185,7 @@ namespace Student_API.DTOs
         public DateTime TC_date { get; set; }
         public bool isTC_Submitted { get; set; }
     }
-    public class StudentHealthInfo
+    public class StudentHealthInfos
     {
         public int Student_Health_Info_id { get; set; }
         public int Student_id { get; set; }
@@ -205,9 +198,9 @@ namespace Student_API.DTOs
         public string Doctor_Name { get; set; }
         [MaxLength(50)]
         public string Doctor_Phone_no { get; set; }
-        
+
         public float height { get; set; }
-        
+
         public float weight { get; set; }
         [MaxLength(50)]
         public string Government_ID { get; set; }
@@ -240,7 +233,7 @@ namespace Student_API.DTOs
         public string History_Majorillness { get; set; }
         [MaxLength(50)]
         public string History_Accident { get; set; }
-      
+
         public decimal? Vision { get; set; }
         [MaxLength(50)]
         public string Hearing { get; set; }
@@ -254,6 +247,5 @@ namespace Student_API.DTOs
         public string Student_Name { get; set; }
         [Range(0, 99)]
         public int Student_Age { get; set; }
-     
     }
 }

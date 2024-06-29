@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Student_API.DTOs;
+using Student_API.DTOs.RequestDTO;
 using Student_API.Services.Interfaces;
 
 namespace Student_API.Controllers
@@ -16,7 +17,7 @@ namespace Student_API.Controllers
 
         [HttpPost]
         [Route("StudentInformation/AddUpdateStudentInformation")]
-        public async Task<IActionResult> AddUpdateStudentInformation([FromBody] StudentMasterDTO studentMasterDTO)
+        public async Task<IActionResult> AddUpdateStudentInformation([FromBody] StudentMasters studentMasterDTO)
         {
             try
             {
@@ -36,13 +37,13 @@ namespace Student_API.Controllers
             }
         }
 
-        [HttpGet]
+        [HttpPost]
         [Route("StudentDetails/GetStudentDetailsById")]
-        public async Task<IActionResult> GetStudentDetailsById(int id)
+        public async Task<IActionResult> GetStudentDetailsById(GetCommonIdRequestModel obj)
         {
             try
             {
-                var data = await _studentInformationService.GetStudentDetailsById(id);
+                var data = await _studentInformationService.GetStudentDetailsById(obj.id);
                 if (data.Success)
                 {
                     return Ok(data);
@@ -57,13 +58,15 @@ namespace Student_API.Controllers
                 return this.BadRequest(e.Message);
             }
         }
-        [HttpGet]
+        [HttpPost]
         [Route("StudentDetails/GetAllStudentDetails")]
-        public async Task<IActionResult> GetAllStudentDetails(int Institute_id, string? sortField = "Student_Name", string? sortDirection = "ASC", int? pageNumber = null, int? pageSize = null)
+        public async Task<IActionResult> GetAllStudentDetails(GetStudentRequestModel obj)
         {
             try
             {
-                var data = await _studentInformationService.GetAllStudentDetails(Institute_id, sortField, sortDirection, pageNumber,pageSize);
+                obj.sortField = obj.sortField ?? "Student_Name";
+                obj.sortDirection = obj.sortDirection?? "Student_Name";
+                var data = await _studentInformationService.GetAllStudentDetails(obj.Institute_id, obj.sortField, obj.sortDirection, obj.pageNumber,obj.pageSize);
 				return Ok(data);
 			}
             catch (Exception e)
@@ -96,7 +99,7 @@ namespace Student_API.Controllers
 
         [HttpPost]
         [Route("StudentOtherInfo/AddUpdateStudentOtherInfo")]
-        public async Task<IActionResult> AddUpdateStudentOtherInfo([FromBody] StudentOtherInfoDTO otherInfoDTO)
+        public async Task<IActionResult> AddUpdateStudentOtherInfo([FromBody] StudentOtherInfos otherInfoDTO)
         {
             try
             {
@@ -118,7 +121,7 @@ namespace Student_API.Controllers
 
         [HttpPost]
         [Route("StudentParentInfo/AddUpdateStudentParentInfo")]
-        public async Task<IActionResult> AddUpdateStudentParentInfo([FromBody] StudentParentInfoDTO parentInfoDTO)
+        public async Task<IActionResult> AddUpdateStudentParentInfo([FromBody] StudentParentInfo parentInfoDTO)
         {
             try
             {
@@ -140,7 +143,7 @@ namespace Student_API.Controllers
 
         [HttpPost]
         [Route("StudentSiblings/AddUpdateStudentSiblings")]
-        public async Task<IActionResult> AddOrUpdateStudentSiblings([FromBody] StudentSiblings siblingsDTO)
+        public async Task<IActionResult> AddOrUpdateStudentSiblings([FromBody] StudentSibling siblingsDTO)
         {
             try
             {
@@ -162,7 +165,7 @@ namespace Student_API.Controllers
 
         [HttpPost]
         [Route("StudentPreviousSchool/AddUpdateStudentPreviousSchool")]
-        public async Task<IActionResult> AddOrUpdateStudentPreviousSchool([FromBody] StudentPreviousSchool previousSchoolDTO)
+        public async Task<IActionResult> AddOrUpdateStudentPreviousSchool([FromBody] StudentPreviousSchools previousSchoolDTO)
         {
             try
             {
@@ -184,7 +187,7 @@ namespace Student_API.Controllers
 
         [HttpPost]
         [Route("StudentHealthInfo/AddUpdateStudentHealthInfo")]
-        public async Task<IActionResult> AddOrUpdateStudentHealthInfo([FromBody] StudentHealthInfo healthInfoDTO)
+        public async Task<IActionResult> AddOrUpdateStudentHealthInfo([FromBody] StudentHealthInfos healthInfoDTO)
         {
             try
             {

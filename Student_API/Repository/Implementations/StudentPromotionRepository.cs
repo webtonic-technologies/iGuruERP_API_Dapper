@@ -68,7 +68,7 @@ namespace Student_API.Repository.Implementations
         LEFT JOIN 
             tbl_Section ON tbl_Section.section_id = tbl_StudentMaster.section_id
         WHERE 
-            tbl_StudentMaster.class_id = @ClassId;
+            tbl_StudentMaster.class_id = @ClassId OR @ClassId= 0;
 
        
         SELECT 
