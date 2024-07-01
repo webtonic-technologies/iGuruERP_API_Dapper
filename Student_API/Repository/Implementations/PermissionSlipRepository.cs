@@ -16,7 +16,7 @@ namespace Student_API.Repository.Implementations
             _dbConnection = dbConnection;
         }
 
-        public async Task<ServiceResponse<List<PermissionSlipDTO>>> GetAllPermissionSlips(int classId, int sectionId, int? pageNumber = null, int? pageSize = null)
+        public async Task<ServiceResponse<List<PermissionSlipDTO>>> GetAllPermissionSlips(int Institute_id,int classId, int sectionId, int? pageNumber = null, int? pageSize = null)
         {
             try
             {
@@ -52,8 +52,8 @@ namespace Student_API.Repository.Implementations
             JOIN tbl_Class c ON s.class_id = c.class_id
             JOIN tbl_section sec ON s.section_id = sec.section_id
             JOIN tbl_Gender g ON s.gender_id = g.Gender_Id
-            WHERE s.class_id = @ClassId
-              AND s.section_id = @SectionId;
+            WHERE ps.Institute_id = @Institute_id ,s.class_id = @ClassId
+              AND s.section_id = @SectionId AND IsApproved IS NULL;
 
             -- Select paginated data from the temporary table
             SELECT * 
@@ -109,7 +109,7 @@ namespace Student_API.Repository.Implementations
                 return new ServiceResponse<string>(false, ex.Message, null, 500);
             }
         }
-        public async Task<ServiceResponse<List<PermissionSlipDTO>>> GetPermissionSlips(int classId,int sectionId,DateTime? startDate,DateTime? endDate,bool isApproved,int? pageNumber = null,int? pageSize = null)
+        public async Task<ServiceResponse<List<PermissionSlipDTO>>> GetPermissionSlips(int Institute_id,int classId,int sectionId,DateTime? startDate,DateTime? endDate,bool isApproved,int? pageNumber = null,int? pageSize = null)
         {
             try
             {
@@ -143,7 +143,8 @@ namespace Student_API.Repository.Implementations
             JOIN tbl_Class c ON s.class_id = c.class_id
             JOIN tbl_section sec ON s.section_id = sec.section_id
             JOIN tbl_ParentType pt ON p.parent_type_id = pt.ParentTypeId
-            WHERE s.class_id = @ClassId
+            WHERE ps.Institute_id = @Institute_id
+              AND s.class_id = @ClassId
               AND s.section_id = @SectionId
               AND ps.IsApproved = @IsApproved
               AND (@StartDate IS NULL OR ps.ModifiedDate >= @StartDate)
@@ -169,7 +170,8 @@ namespace Student_API.Repository.Implementations
                     EndDate = endDate,
                     IsApproved = isApproved,
                     Offset = offset,
-                    PageSize = actualPageSize
+                    PageSize = actualPageSize,
+                    Institute_id = Institute_id
                 }))
                 {
                     var permissionSlips = multi.Read<PermissionSlipDTO>().ToList();

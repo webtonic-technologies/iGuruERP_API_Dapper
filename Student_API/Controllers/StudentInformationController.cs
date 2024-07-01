@@ -14,6 +14,27 @@ namespace Student_API.Controllers
         {
             _studentInformationService = studentInformationServices;
         }
+        [HttpPost]
+        [Route("StudentInformation/AddUpdateStudent")]
+        public async Task<IActionResult> AddUpdateStudent([FromBody] StudentDTO studentDTO)
+        {
+            try
+            {
+                var data = await _studentInformationService.AddUpdateStudent(studentDTO);
+                if (data != null)
+                {
+                    return Ok(data);
+                }
+                else
+                {
+                    return BadRequest("Bad Request");
+                }
+            }
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
+        }
 
         [HttpPost]
         [Route("StudentInformation/AddUpdateStudentInformation")]

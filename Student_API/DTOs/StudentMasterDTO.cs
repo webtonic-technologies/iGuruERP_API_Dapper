@@ -65,15 +65,13 @@ namespace Student_API.DTOs
         [MaxLength(50)]
         public string email_id { get; set; }
         public string Hall_Ticket_Number { get; set; }
-        public int? Exam_Board_id { get; set; }
-        public string? Exam_Board_Type { get; set; }
         [MaxLength(30)]
         public string Identification_Mark_1 { get; set; }
         [MaxLength(30)]
         public string Identification_Mark_2 { get; set; }
         public DateTime? Admission_Date { get; set; }
-        public int? Student_Group_id { get; set; }
-        public string? Student_Group_Type { get; set; }
+        public int? Student_House_id { get; set; }
+        public string? HouseName { get; set; }
         public DateTime? Register_Date { get; set; }
         [MaxLength(30)]
         public string Register_Number { get; set; }

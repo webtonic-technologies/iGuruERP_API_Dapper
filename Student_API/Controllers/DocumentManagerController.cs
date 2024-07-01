@@ -19,7 +19,7 @@ namespace Student_API.Controllers
         {
             obj.sortField = obj.sortField ?? "Student_Name";
             obj.sortDirection = obj.sortDirection ?? "ASC";
-            var response = await _documentManagerService.GetStudentDocuments(obj.classId, obj.sectionId, obj.sortField, obj.sortDirection, obj.pageSize, obj.pageNumber);
+            var response = await _documentManagerService.GetStudentDocuments(obj.Institute_id,obj.classId, obj.sectionId, obj.sortField, obj.sortDirection, obj.pageSize, obj.pageNumber);
             if (response.Success)
             {
                 return Ok(response);

@@ -17,7 +17,7 @@ namespace Student_API.Controllers
         }
 
         [HttpPost("AddUpdateDocument")]
-        public async Task<IActionResult> AddUpdateStudentDocument(StudentDocumentConfigDTO studentDocumentDto)
+        public async Task<IActionResult> AddUpdateStudentDocument(List<StudentDocumentConfigDTO> studentDocumentDto)
         {
             try
             {
@@ -59,13 +59,13 @@ namespace Student_API.Controllers
         }
 
         [HttpPost("GetAllStudentDocumentList")]
-        public async Task<IActionResult> GetAllStudentDocuments(PagedListModel obj )
+        public async Task<IActionResult> GetAllStudentDocuments(GetCommonRequestPageListModel obj )
         {
             try
             {
                 obj.sortField = obj.sortField?? "Document_Name";
                 obj.sortDirection = obj.sortDirection ?? "ASC";
-                var response = await _documentConfigService.GetAllStudentDocuments(obj.sortField, obj.sortDirection, obj.pageSize, obj.pageNumber);
+                var response = await _documentConfigService.GetAllStudentDocuments(obj.Institute_id,obj.sortField, obj.sortDirection, obj.pageSize, obj.pageNumber);
                 return StatusCode(response.StatusCode, response);
             }
             catch (Exception e)

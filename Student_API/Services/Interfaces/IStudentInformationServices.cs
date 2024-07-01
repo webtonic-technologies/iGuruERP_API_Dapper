@@ -6,6 +6,7 @@ namespace Student_API.Services.Interfaces
 {
     public interface IStudentInformationServices
     {
+        Task<ServiceResponse<int>> AddUpdateStudent(StudentDTO request);
         Task<ServiceResponse<int>> AddUpdateStudentInformation(StudentMasters request);
         Task<ServiceResponse<StudentInformationDTO>> GetStudentDetailsById(int studentId);
         Task<ServiceResponse<List<StudentDetailsDTO>>> GetAllStudentDetails(int Institute_id, string sortField = "Student_Name", string sortDirection = "ASC", int? pageNumber = null, int? pageSize = null);

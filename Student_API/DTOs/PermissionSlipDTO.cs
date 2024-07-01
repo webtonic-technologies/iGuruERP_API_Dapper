@@ -12,6 +12,6 @@
         public string ParentName { get; set; }
         public DateTime RequestedDateTime { get; set; }
         public string Reason { get; set; }
-        public bool IsApproved { get; set; }
+        public bool? IsApproved { get; set; }
     }
 }

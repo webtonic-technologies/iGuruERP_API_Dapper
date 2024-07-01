@@ -85,12 +85,11 @@ namespace Student_API.Repository.Implementations
                     LEFT JOIN tbl_StudentParentsInfo ON tbl_StudentMaster.student_id = tbl_StudentParentsInfo.Student_id AND tbl_StudentParentsInfo.Parent_Type_id = 1
                     WHERE tbl_StudentMaster.student_id = @studentId;
 
-                    SELECT [Student_Other_Info_id], [student_id], [StudentType_id], [email_id], [Hall_Ticket_Number], tbl_StudentOtherInfo.Exam_Board_id, [Identification_Mark_1],
+                    SELECT [Student_Other_Info_id], [student_id], [StudentType_id], [email_id], [Hall_Ticket_Number], [Identification_Mark_1],
                     [Identification_Mark_2], [Admission_Date], tbl_StudentOtherInfo.Student_House_id, [Register_Date], [Register_Number], [samagra_ID], [Place_of_Birth], [comments], 
-                    [language_known]  ,Student_Group_Type,Exam_Board_Type ,tbl_StudentOtherInfo.StudentType_id , Student_Type_Name
+                    [language_known]  ,tbl_InstituteHouse.HouseName ,tbl_StudentOtherInfo.StudentType_id , Student_Type_Name
                     FROM [dbo].[tbl_StudentOtherInfo] 
-                    INNER JOIN tbl_InstituteHouse ON tbl_InstituteHouse.Institute_House_id = tbl_StudentOtherInfo.Student_House_id
-                    INNER JOIN tbl_ExamBoard ON tbl_ExamBoard.Exam_Board_id = tbl_StudentOtherInfo.Exam_Board_id
+                    LEFT JOIN tbl_InstituteHouse ON tbl_InstituteHouse.Institute_House_id = tbl_StudentOtherInfo.Student_House_id
                     INNER JOIN tbl_StudentType ON tbl_StudentType.Student_Type_id = tbl_StudentOtherInfo.StudentType_id
                     WHERE student_id = @studentId;
 
@@ -154,6 +153,469 @@ namespace Student_API.Repository.Implementations
             catch (Exception ex)
             {
                 return new ServiceResponse<StudentInformationDTO>(false, ex.Message, null, 500);
+            }
+        }
+        public async Task<ServiceResponse<int>> AddUpdateStudent(StudentDTO request, List<StudentDocumentListDTO> studentDocuments)
+        {
+            try
+            {
+                _connection.Open();
+                using (var transaction = _connection.BeginTransaction())
+                {
+                    try
+                    {
+                        int studentId = request.student_id;
+                        if (studentId == 0)
+                        {
+                            // Insert student data
+                            string insertStudentSql = @"
+                        INSERT INTO [dbo].[tbl_StudentMaster] (
+                            First_Name, Middle_Name, Last_Name, gender_id, class_id,
+                            section_id, Admission_Number, Roll_Number, Date_of_Joining,
+                            Academic_Year, Nationality_id, Religion_id, Date_of_Birth,
+                            Mother_Tongue_id, Caste_id, First_Language, Second_Language,
+                            Third_Language, Medium, Blood_Group_id, App_User_id, Aadhar_Number,
+                            NEP, QR_code, IsPhysicallyChallenged, IsSports, IsAided,
+                            IsNCC, IsNSS, IsScout, File_Name, Institute_id)
+                        VALUES (
+                            @First_Name, @Middle_Name, @Last_Name, @gender_id, @class_id,
+                            @section_id, @Admission_Number, @Roll_Number, @Date_of_Joining,
+                            @Academic_Year, @Nationality_id, @Religion_id, @Date_of_Birth,
+                            @Mother_Tongue_id, @Caste_id, @First_Language, @Second_Language,
+                            @Third_Language, @Medium, @Blood_Group_id, @App_User_id, @Aadhar_Number,
+                            @NEP, @QR_code, @IsPhysicallyChallenged, @IsSports, @IsAided,
+                            @IsNCC, @IsNSS, @IsScout, @File_Name, @Institute_id);
+                        SELECT CAST(SCOPE_IDENTITY() as int);";
+
+                            studentId = await _connection.ExecuteScalarAsync<int>(insertStudentSql, request, transaction);
+
+                            if (studentId <= 0)
+                            {
+                                transaction.Rollback();
+                                return new ServiceResponse<int>(false, "Failed to insert student data.", 0, 500);
+                            }
+                        }
+                        else
+                        {
+                            // Update student data
+                            string updateStudentSql = @"
+                        UPDATE [dbo].[tbl_StudentMaster]
+                        SET 
+                            First_Name = @First_Name,
+                            Middle_Name = @Middle_Name,
+                            Last_Name = @Last_Name,
+                            gender_id = @gender_id,
+                            class_id = @class_id,
+                            section_id = @section_id,
+                            Admission_Number = @Admission_Number,
+                            Roll_Number = @Roll_Number,
+                            Date_of_Joining = @Date_of_Joining,
+                            Academic_Year = @Academic_Year,
+                            Nationality_id = @Nationality_id,
+                            Religion_id = @Religion_id,
+                            Date_of_Birth = @Date_of_Birth,
+                            Mother_Tongue_id = @Mother_Tongue_id,
+                            Caste_id = @Caste_id,
+                            First_Language = @First_Language,
+                            Second_Language = @Second_Language,
+                            Third_Language = @Third_Language,
+                            Medium = @Medium,
+                            Blood_Group_id = @Blood_Group_id,
+                            App_User_id = @App_User_id,
+                            Aadhar_Number = @Aadhar_Number,
+                            NEP = @NEP,
+                            QR_code = @QR_code,
+                            IsPhysicallyChallenged = @IsPhysicallyChallenged,
+                            IsSports = @IsSports,
+                            IsAided = @IsAided,
+                            IsNCC = @IsNCC,
+                            IsNSS = @IsNSS,
+                            IsScout = @IsScout,
+                            File_Name = @File_Name,
+                            Institute_id = @Institute_id
+                        WHERE student_id = @student_id";
+
+                            int affectedRows = await _connection.ExecuteAsync(updateStudentSql, request, transaction);
+                            if (affectedRows <= 0)
+                            {
+                                transaction.Rollback();
+                                return new ServiceResponse<int>(false, "Failed to update student data.", 0, 500);
+                            }
+                        }
+
+                        // Insert or Update StudentOtherInfos
+                        if (request.StudentOtherInfos != null)
+                        {
+                            request.StudentOtherInfos.student_id = studentId;
+                            if (request.StudentOtherInfos.Student_Other_Info_id == 0)
+                            {
+                                string insertOtherInfoSql = @"
+                               INSERT INTO [dbo].[tbl_StudentOtherInfo] (student_id, StudentType_id, email_id, Hall_Ticket_Number, Identification_Mark_1, Identification_Mark_2, Admission_Date, Student_House_id, Register_Date, Register_Number, samagra_ID, Place_of_Birth, comments, language_known)
+                               VALUES (@student_id, @StudentType_id, @email_id, @Hall_Ticket_Number, @Identification_Mark_1, @Identification_Mark_2, @Admission_Date, @Student_House_id, @Register_Date, @Register_Number, @samagra_ID, @Place_of_Birth, @comments, @language_known);
+                               SELECT CAST(SCOPE_IDENTITY() as int)";
+
+                                int otherInfoId = await _connection.ExecuteScalarAsync<int>(insertOtherInfoSql, request.StudentOtherInfos, transaction);
+                                if (otherInfoId <= 0)
+                                {
+                                    transaction.Rollback();
+                                    return new ServiceResponse<int>(false, "Failed to insert student other info.", 0, 500);
+                                }
+                            }
+                            else
+                            {
+                                string updateOtherInfoSql = @"
+                           UPDATE [dbo].[tbl_StudentOtherInfo]
+                            SET 
+                                StudentType_id = @StudentType_id,
+                                email_id = @email_id,
+                                Hall_Ticket_Number = @Hall_Ticket_Number,
+                                Identification_Mark_1 = @Identification_Mark_1,
+                                Identification_Mark_2 = @Identification_Mark_2,
+                                Admission_Date = @Admission_Date,
+                                Student_Group_id = @Student_Group_id,
+                                Register_Date = @Register_Date,
+                                Register_Number = @Register_Number,
+                                samagra_ID = @samagra_ID,
+                                Place_of_Birth = @Place_of_Birth,
+                                comments = @comments,
+                                language_known = @language_known
+                            WHERE Student_Other_Info_id = @Student_Other_Info_id;
+                            SELECT @Student_Other_Info_id";
+
+                                int affectedRows = await _connection.ExecuteAsync(updateOtherInfoSql, request.StudentOtherInfos, transaction);
+                                if (affectedRows <= 0)
+                                {
+                                    transaction.Rollback();
+                                    return new ServiceResponse<int>(false, "Failed to update student other info.", 0, 500);
+                                }
+                            }
+                        }
+
+                        // Insert or Update StudentParentInfos
+                        foreach (var parentInfo in request.studentParentInfos)
+                        {
+                            parentInfo.Student_id = studentId;
+
+                            if (parentInfo.Student_Parent_Info_id == 0)
+                            {
+                                // Insert Student Parent Info
+                                var addSql = @"
+                    INSERT INTO [dbo].[tbl_StudentParentsInfo] ([Student_id],[Parent_Type_id],[First_Name],[Middle_Name],[Last_Name],[Contact_Number],[Bank_Account_no],[Bank_IFSC_Code],[Family_Ration_Card_Type],[Family_Ration_Card_no],[Date_of_Birth],[Aadhar_no],[PAN_card_no],[Residential_Address],[Occupation_id],[Designation],[Name_of_the_Employer],[Office_no],[Email_id],[Annual_Income],[File_Name])
+                    VALUES (@Student_id,@Parent_Type_id,@First_Name,@Middle_Name,@Last_Name,@Contact_Number,@Bank_Account_no,@Bank_IFSC_Code,@Family_Ration_Card_Type,@Family_Ration_Card_no,@Date_of_Birth,@Aadhar_no,@PAN_card_no,@Residential_Address,@Occupation_id,@Designation,@Name_of_the_Employer,@Office_no,@Email_id,@Annual_Income,@File_Name); 
+                    SELECT CAST(SCOPE_IDENTITY() as int);";
+                                int insertedId = await _connection.ExecuteScalarAsync<int>(addSql, parentInfo, transaction);
+
+                                // Insert Student Parent Office Info
+                                var addOfficeSql = @"
+                    INSERT INTO [dbo].[tbl_StudentParentsOfficeInfo] ([Student_id],[Parents_Type_id],[Office_Building_no],[Street],[Area],[City],[State],[Pincode])
+                    VALUES (@Student_id,@Parents_Type_id,@Office_Building_no,@Street,@Area,@City,@State,@Pincode);";
+                                await _connection.ExecuteAsync(addOfficeSql, parentInfo.studentParentOfficeInfo, transaction);
+
+                                if (insertedId <= 0)
+                                {
+                                    transaction.Rollback();
+                                    return new ServiceResponse<int>(false, "Failed to Add student parent info.", 0, 500);
+                                }
+                            }
+                            else
+                            {
+                                // Update Student Parent Info
+                                var updateSql = @"
+                    UPDATE [dbo].[tbl_StudentParentsInfo] SET
+                        [Student_id] = @Student_id,
+                        [Parent_Type_id] = @Parent_Type_id,
+                        [First_Name] = @First_Name,
+                        [Middle_Name] = @Middle_Name,
+                        [Last_Name] = @Last_Name,
+                        [Contact_Number] = @Contact_Number,
+                        [Bank_Account_no] = @Bank_Account_no,
+                        [Bank_IFSC_Code] = @Bank_IFSC_Code,
+                        [Family_Ration_Card_Type] = @Family_Ration_Card_Type,
+                        [Family_Ration_Card_no] = @Family_Ration_Card_no,
+                        [Date_of_Birth] = @Date_of_Birth,
+                        [Aadhar_no] = @Aadhar_no,
+                        [PAN_card_no] = @PAN_card_no,
+                        [Residential_Address] = @Residential_Address,
+                        [Occupation_id] = @Occupation_id,
+                        [Designation] = @Designation,
+                        [Name_of_the_Employer] = @Name_of_the_Employer,
+                        [Office_no] = @Office_no,
+                        [Email_id] = @Email_id,
+                        [Annual_Income] = @Annual_Income,
+                        [File_Name] = @File_Name
+                    WHERE [Student_Parent_Info_id] = @Student_Parent_Info_id;";
+                                int affectedRows = await _connection.ExecuteAsync(updateSql, parentInfo, transaction);
+
+                                // Update Student Parent Office Info
+                                var updateOfficeSql = @"
+                    UPDATE [dbo].[tbl_StudentParentsOfficeInfo] SET
+                        [Student_id] = @Student_id,
+                        [Parents_Type_id] = @Parents_Type_id,
+                        [Office_Building_no] = @Office_Building_no,
+                        [Street] = @Street,
+                        [Area] = @Area,
+                        [City] = @City,
+                        [State] = @State,
+                        [Pincode] = @Pincode
+                    WHERE [Student_Parent_Office_Info_id] = @Student_Parent_Office_Info_id;";
+                                int affectedRowsOffice = await _connection.ExecuteAsync(updateOfficeSql, parentInfo.studentParentOfficeInfo, transaction);
+
+
+                                if (affectedRows <= 0 || affectedRowsOffice <= 0)
+                                {
+                                    transaction.Rollback();
+                                    return new ServiceResponse<int>(false, "Failed to update student parent info.", 0, 500);
+                                }
+                            }
+
+
+                        }
+
+                        // Insert or Update StudentSiblingDetails
+                        foreach (var siblingInfo in request.studentSiblings)
+                        {
+                            siblingInfo.Student_id = studentId;
+                            if (siblingInfo.Student_Siblings_id == 0)
+                            {
+                                string insertSiblingInfoSql = @"
+                            INSERT INTO [dbo].[tbl_StudentSiblings] (
+                                  [Student_id],
+                                  [Name],
+                                  [Last_Name],
+                                  [Admission_Number],
+                                  [Date_of_Birth],
+                                  [Class_id],
+                                  [Selection_id],
+                                  [Institute_Name],
+                                  [Aadhar_no]
+                              ) VALUES (
+                                  @Student_id,
+                                  @Name,
+                                  @Last_Name,
+                                  @Admission_Number,
+                                  @Date_of_Birth,
+                                  @Class_id,
+                                  @Selection_id,
+                                  @Institute_Name,
+                                  @Aadhar_no
+                              );
+                              SELECT CAST(SCOPE_IDENTITY() as int);";
+
+                                int siblingId = await _connection.ExecuteScalarAsync<int>(insertSiblingInfoSql, siblingInfo, transaction);
+                                if (siblingId <= 0)
+                                {
+                                    transaction.Rollback();
+                                    return new ServiceResponse<int>(false, "Failed to insert student sibling info.", 0, 500);
+                                }
+                            }
+                            else
+                            {
+                                string updateSiblingInfoSql = @"
+                              UPDATE [dbo].[tbl_StudentSiblings] SET
+                        [Student_id] = @Student_id,
+                        [Name] = @Name,
+                        [Last_Name] = @Last_Name,
+                        [Admission_Number] = @Admission_Number,
+                        [Date_of_Birth] = @Date_of_Birth,
+                        [Class_id] = @Class_id,
+                        [Selection_id] = @Selection_id,
+                        [Institute_Name] = @Institute_Name,
+                        [Aadhar_no] = @Aadhar_no
+                    WHERE [Student_Siblings_id] = @Student_Siblings_id;";
+
+                                int affectedRows = await _connection.ExecuteAsync(updateSiblingInfoSql, siblingInfo, transaction);
+                                if (affectedRows <= 0)
+                                {
+                                    transaction.Rollback();
+                                    return new ServiceResponse<int>(false, "Failed to update student sibling info.", 0, 500);
+                                }
+                            }
+                        }
+
+                        // Insert or Update PreviousSchoolDetails
+                        if (request.studentPreviousSchools != null)
+                        {
+                            request.studentPreviousSchools.student_id = studentId;
+                            if (request.studentPreviousSchools.Student_Prev_School_id == 0)
+                            {
+                                string insertPreviousSchoolSql = @"
+                           INSERT INTO [dbo].[tbl_StudentPreviousSchool] (
+                            [student_id],
+                            [Previous_School_Name],
+                            [Previous_Board],
+                            [Previous_Medium],
+                            [Previous_School_Address],
+                            [Previous_School_Group],
+                            [Previous_Class],
+                            [TC_number],
+                            [TC_date],
+                            [isTC_Submitted]
+                        ) VALUES (
+                            @student_id,
+                            @Previous_School_Name,
+                            @Previous_Board,
+                            @Previous_Medium,
+                            @Previous_School_Address,
+                            @Previous_School_Group,
+                            @Previous_Class,
+                            @TC_number,
+                            @TC_date,
+                            @isTC_Submitted
+                        );
+                        SELECT CAST(SCOPE_IDENTITY() as int);";
+
+                                int previousSchoolId = await _connection.ExecuteScalarAsync<int>(insertPreviousSchoolSql, request.studentPreviousSchools, transaction);
+                                if (previousSchoolId <= 0)
+                                {
+                                    return new ServiceResponse<int>(false, "Failed to insert previous school details.", 0, 500);
+                                }
+                            }
+                            else
+                            {
+                                string updatePreviousSchoolSql = @"
+                              UPDATE [dbo].[tbl_StudentPreviousSchool] SET
+                            [student_id] = @student_id,
+                            [Previous_School_Name] = @Previous_School_Name,
+                            [Previous_Board] = @Previous_Board,
+                            [Previous_Medium] = @Previous_Medium,
+                            [Previous_School_Address] = @Previous_School_Address,
+                            [Previous_School_Group] = @Previous_School_Group,
+                            [Previous_Class] = @Previous_Class,
+                            [TC_number] = @TC_number,
+                            [TC_date] = @TC_date,
+                            [isTC_Submitted] = @isTC_Submitted
+                        WHERE [Student_Prev_School_id] = @Student_Prev_School_id;";
+
+                                int affectedRows = await _connection.ExecuteAsync(updatePreviousSchoolSql, request.studentPreviousSchools, transaction);
+                                if (affectedRows <= 0)
+                                {
+                                    transaction.Rollback();
+                                    return new ServiceResponse<int>(false, "Failed to update previous school details.", 0, 500);
+                                }
+                            }
+                        }
+
+                        // Insert or Update StudentHealthInfos
+                        if (request.studentHealthInfos != null)
+                        {
+                            request.studentHealthInfos.Student_id = studentId;
+                            if (request.studentHealthInfos.Student_Health_Info_id == 0)
+                            {
+                                string insertHealthInfoSql = @"
+                            INSERT INTO [dbo].[tbl_StudentHealthInfo] (
+                                 [Student_id], [Allergies], [Medications], [Doctor_Name], [Doctor_Phone_no], 
+                                 [height], [weight], [Government_ID], [BCG], [MMR_Measles], [Polio], 
+                                 [Hepatitis], [Triple_Antigen], [Others], [General_Health], [Head_Eye_ENT], 
+                                 [Chest], [CVS], [Abdomen], [Genitalia], [Congenital_Disease], [Physical_Deformity], 
+                                 [History_Majorillness], [History_Accident], [Vision], [Hearing], [Speech], 
+                                 [Behavioral_Problem], [Remarks_Weakness], [Student_Name], [Student_Age]
+                             ) VALUES (
+                                 @Student_id, @Allergies, @Medications, @Doctor_Name, @Doctor_Phone_no, 
+                                 @height, @weight, @Government_ID, @BCG, @MMR_Measles, @Polio, 
+                                 @Hepatitis, @Triple_Antigen, @Others, @General_Health, @Head_Eye_ENT, 
+                                 @Chest, @CVS, @Abdomen, @Genitalia, @Congenital_Disease, @Physical_Deformity, 
+                                 @History_Majorillness, @History_Accident, @Vision, @Hearing, @Speech, 
+                                 @Behavioral_Problem, @Remarks_Weakness, @Student_Name, @Student_Age
+                             );
+                             SELECT CAST(SCOPE_IDENTITY() as int);";
+
+                                int healthInfoId = await _connection.ExecuteScalarAsync<int>(insertHealthInfoSql, request.studentHealthInfos, transaction);
+                                if (healthInfoId <= 0)
+                                {
+                                    transaction.Rollback();
+                                    return new ServiceResponse<int>(false, "Failed to insert student health info.", 0, 500);
+                                }
+                            }
+                            else
+                            {
+                                string updateHealthInfoSql = @"
+                           UPDATE [dbo].[tbl_StudentHealthInfo] SET
+                                [Student_id] = @Student_id,
+                                [Allergies] = @Allergies,
+                                [Medications] = @Medications,
+                                [Doctor_Name] = @Doctor_Name,
+                                [Doctor_Phone_no] = @Doctor_Phone_no,
+                                [height] = @height,
+                                [weight] = @weight,
+                                [Government_ID] = @Government_ID,
+                                [BCG] = @BCG,
+                                [MMR_Measles] = @MMR_Measles,
+                                [Polio] = @Polio,
+                                [Hepatitis] = @Hepatitis,
+                                [Triple_Antigen] = @Triple_Antigen,
+                                [Others] = @Others,
+                                [General_Health] = @General_Health,
+                                [Head_Eye_ENT] = @Head_Eye_ENT,
+                                [Chest] = @Chest,
+                                [CVS] = @CVS,
+                                [Abdomen] = @Abdomen,
+                                [Genitalia] = @Genitalia,
+                                [Congenital_Disease] = @Congenital_Disease,
+                                [Physical_Deformity] = @Physical_Deformity,
+                                [History_Majorillness] = @History_Majorillness,
+                                [History_Accident] = @History_Accident,
+                                [Vision] = @Vision,
+                                [Hearing] = @Hearing,
+                                [Speech] = @Speech,
+                                [Behavioral_Problem] = @Behavioral_Problem,
+                                [Remarks_Weakness] = @Remarks_Weakness,
+                                [Student_Name] = @Student_Name,
+                                [Student_Age] = @Student_Age
+                            WHERE [Student_Health_Info_id] = @Student_Health_Info_id;";
+
+                                int affectedRows = await _connection.ExecuteAsync(updateHealthInfoSql, request.studentHealthInfos, transaction);
+                                if (affectedRows <= 0)
+                                {
+                                    return new ServiceResponse<int>(false, "Failed to update student health info.", 0, 500);
+                                }
+                            }
+                        }
+
+                        foreach (var item in studentDocuments)
+                        {
+                            if (item.Student_Documents_id == 0)
+                            {
+
+                                var newDocument = new StudentDocuments
+                                {
+                                    Student_id = studentId,
+                                    Document_Name = item.Document_Name,
+                                    File_Path = item.File_Path,
+                                    File_Name = item.File_Name
+                                };
+
+                                string insertSql = @"
+                INSERT INTO [dbo].[tbl_StudentDocuments] (student_id, Document_Name, File_Name , File_Path)
+                VALUES (@Student_id, @Document_Name, @File_Name, @File_Path);
+                SELECT CAST(SCOPE_IDENTITY() as int);";
+
+                                int insertedId = await _connection.ExecuteScalarAsync<int>(insertSql, newDocument);
+                                if (insertedId <= 0)
+                                {
+                                    transaction.Rollback();
+                                    return new ServiceResponse<int>(false, "Failed to Add student Documents.", 0, 500);
+                                }
+                            }
+
+                        }
+
+                        transaction.Commit();
+                        return new ServiceResponse<int>(true, "Student data saved successfully.", studentId, 200);
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        return new ServiceResponse<int>(false, $"Error saving student data: {ex.Message}", 0, 500);
+                    }
+                    finally
+                    {
+                        _connection.Close();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(false, $"Error opening connection: {ex.Message}", 0, 500);
             }
         }
 
@@ -257,8 +719,8 @@ namespace Student_API.Repository.Implementations
                 if (request.Student_Other_Info_id == 0)
                 {
                     string addSql = @"
-                        INSERT INTO [dbo].[tbl_StudentOtherInfo] (student_id, StudentType_id, email_id, Hall_Ticket_Number, Exam_Board_id, Identification_Mark_1, Identification_Mark_2, Admission_Date, Student_House_id, Register_Date, Register_Number, samagra_ID, Place_of_Birth, comments, language_known)
-                        VALUES (@student_id, @StudentType_id, @email_id, @Hall_Ticket_Number, @Exam_Board_id, @Identification_Mark_1, @Identification_Mark_2, @Admission_Date, @Student_House_id, @Register_Date, @Register_Number, @samagra_ID, @Place_of_Birth, @comments, @language_known);
+                        INSERT INTO [dbo].[tbl_StudentOtherInfo] (student_id, StudentType_id, email_id, Hall_Ticket_Number, Identification_Mark_1, Identification_Mark_2, Admission_Date, Student_House_id, Register_Date, Register_Number, samagra_ID, Place_of_Birth, comments, language_known)
+                        VALUES (@student_id, @StudentType_id, @email_id, @Hall_Ticket_Number, @Identification_Mark_1, @Identification_Mark_2, @Admission_Date, @Student_House_id, @Register_Date, @Register_Number, @samagra_ID, @Place_of_Birth, @comments, @language_known);
                         SELECT CAST(SCOPE_IDENTITY() as int)";
                     int insertedId = await _connection.ExecuteScalarAsync<int>(addSql, request);
                     if (insertedId > 0)
@@ -278,7 +740,6 @@ namespace Student_API.Repository.Implementations
                             StudentType_id = @StudentType_id,
                             email_id = @email_id,
                             Hall_Ticket_Number = @Hall_Ticket_Number,
-                            Exam_Board_id = @Exam_Board_id,
                             Identification_Mark_1 = @Identification_Mark_1,
                             Identification_Mark_2 = @Identification_Mark_2,
                             Admission_Date = @Admission_Date,
@@ -654,7 +1115,7 @@ namespace Student_API.Repository.Implementations
                 return new ServiceResponse<int>(false, "Some error occured", 0, 500);
             }
         }
-        public async Task<ServiceResponse<List<StudentDetailsDTO>>> GetAllStudentDetails(int Institute_id,  string sortField = "Student_Name", string sortDirection = "ASC", int? pageNumber = null, int? pageSize = null)
+        public async Task<ServiceResponse<List<StudentDetailsDTO>>> GetAllStudentDetails(int Institute_id, string sortField = "Student_Name", string sortDirection = "ASC", int? pageNumber = null, int? pageSize = null)
         {
             try
             {
@@ -801,18 +1262,18 @@ namespace Student_API.Repository.Implementations
                         return new ServiceResponse<int>(false, "Some error occurred during insertion", 0, 500);
                     }
 
-                    var newStudentDocument = new StudentDocumentMaster
-                    {
-                        Student_Document_id = insertedId,
-                        Student_Document_Name = newDocument.Document_Name,
-                        en_date = DateTime.Now
-                    };
+                    //    var newStudentDocument = new StudentDocumentMaster
+                    //    {
+                    //        Student_Document_id = insertedId,
+                    //        Student_Document_Name = newDocument.Document_Name,
+                    //        en_date = DateTime.Now
+                    //    };
 
-                    string documentSql = @"
-                INSERT INTO [dbo].[tbl_StudentDocumentMaster] (Student_Document_id, Student_Document_Name, en_date)
-                VALUES (@Student_Document_id , @Student_Document_Name, @en_date);";
+                    //    string documentSql = @"
+                    //INSERT INTO [dbo].[tbl_StudentDocumentMaster] (Student_Document_id, Student_Document_Name, en_date)
+                    //VALUES (@Student_Document_id , @Student_Document_Name, @en_date);";
 
-                    await _connection.ExecuteAsync(documentSql, newStudentDocument);
+                    //    await _connection.ExecuteAsync(documentSql, newStudentDocument);
 
                     return new ServiceResponse<int>(true, "Insertion successful", 1, 200);
                 }

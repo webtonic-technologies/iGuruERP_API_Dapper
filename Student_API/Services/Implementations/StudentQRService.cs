@@ -25,9 +25,12 @@ namespace Student_API.Services.Implementations
                 var data = await _studentORRepository.GetAllStudentQR(sectionId, classId, sortField, sortDirection, pageNumber, pageSize);
                 if (data.Success)
                 {
-                    foreach (var item in data.Data)
+                    if (data.Data != null)
                     {
-                        item.QR_code = _imageService.GetImageAsBase64(item.QR_code);
+                        foreach (var item in data.Data)
+                        {
+                            item.QR_code = _imageService.GetImageAsBase64(item.QR_code);
+                        }
                     }
                 }
 

@@ -20,5 +20,6 @@ namespace Student_API.Repository.Interfaces
         Task<ServiceResponse<string>> GetStudentInfoImageById(int studentId);
         Task<ServiceResponse<string>> GetStudentparentImageById(int Student_Parent_Info_id);
         Task<ServiceResponse<int>> DeleteStudentDocument(int Student_Documents_id);
+        Task<ServiceResponse<int>> AddUpdateStudent(StudentDTO request, List<StudentDocumentListDTO> studentDocuments);
     }
 }
