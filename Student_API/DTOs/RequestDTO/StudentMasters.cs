@@ -24,9 +24,9 @@ namespace Student_API.DTOs.RequestDTO
         public DateTime? Date_of_Joining { get; set; }
         public DateTime? Academic_Year { get; set; }
         [Required]
-        public string Nationality_id { get; set; }
+        public int? Nationality_id { get; set; }
         [Required]
-        public string Religion_id { get; set; }
+        public int? Religion_id { get; set; }
         [Required]
         public DateTime? Date_of_Birth { get; set; }
         [Required]
@@ -121,8 +121,6 @@ namespace Student_API.DTOs.RequestDTO
         public decimal Annual_Income { get; set; }
         public string File_Name { get; set; }
 
-        [MaxLength(30)]
-        public string? Occupation_Type { get; set; }
         public StudentParentOfficeInfos studentParentOfficeInfo { get; set; }
     }
 
@@ -137,10 +135,10 @@ namespace Student_API.DTOs.RequestDTO
         public string Street { get; set; }
         [MaxLength(30)]
         public string Area { get; set; }
-        [MaxLength(30)]
-        public string City { get; set; }
-        [MaxLength(30)]
-        public string State { get; set; }
+      
+        public int City_id { get; set; }
+      
+        public int State_id { get; set; }
         [MaxLength(30)]
         public string Pincode { get; set; }
     }

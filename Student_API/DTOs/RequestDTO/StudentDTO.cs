@@ -22,11 +22,11 @@ namespace Student_API.DTOs.RequestDTO
         [MaxLength(20)]
         public string Roll_Number { get; set; }
         public DateTime? Date_of_Joining { get; set; }
-        public DateTime? Academic_Year { get; set; }
+        public int Academic_year_id { get; set; }
         [Required]
-        public string Nationality_id { get; set; }
+        public int? Nationality_id { get; set; }
         [Required]
-        public string Religion_id { get; set; }
+        public int? Religion_id { get; set; }
         [Required]
         public DateTime? Date_of_Birth { get; set; }
         [Required]

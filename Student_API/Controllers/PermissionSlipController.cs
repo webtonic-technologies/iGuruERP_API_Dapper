@@ -37,7 +37,7 @@ namespace Student_API.Controllers
             }
             return StatusCode(response.StatusCode, response);
         }
-        [HttpGet("GetAllStudentApprovedList")]
+        [HttpPost("GetAllStudentApprovedList")]
         public async Task<IActionResult> GetAllStudentApprovedList(GetAllPermissionSlipsByStatus obj)
         {
             var response = await _permissionSlipService.GetPermissionSlips(obj.Institute_id, obj.classId, obj.sectionId, obj.startDate, obj.endDate, true, obj.pageNumber, obj.pageSize);
@@ -47,7 +47,7 @@ namespace Student_API.Controllers
             }
             return StatusCode(response.StatusCode, response);
         }
-        [HttpGet("GetAllStudentRejectedList")]
+        [HttpPost("GetAllStudentRejectedList")]
         public async Task<IActionResult> GetAllStudentRejectedList(GetAllPermissionSlipsByStatus obj)
         {
             var response = await _permissionSlipService.GetPermissionSlips(obj.Institute_id, obj.classId, obj.sectionId, obj.startDate, obj.endDate, false, obj.pageNumber, obj.pageSize);

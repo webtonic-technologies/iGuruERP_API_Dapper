@@ -68,10 +68,10 @@ namespace Student_API.Repository.Implementations
             {
                 string sql = @"
                     SELECT  tbl_StudentMaster.student_id, tbl_StudentMaster.First_Name, tbl_StudentMaster.Middle_Name, tbl_StudentMaster.Last_Name, tbl_StudentMaster.gender_id, Gender_Type,tbl_Class.[class_id], class_name AS class_course,tbl_section.[section_id], section_name AS Section,[Admission_Number], [Roll_Number],
-                    [Date_of_Joining], [Academic_Year], tbl_StudentMaster.Nationality_id, Nationality_Type,tbl_Religion.Religion_id,Religion_Type, tbl_StudentMaster.Date_of_Birth, tbl_StudentMaster.Mother_Tongue_id, Mother_Tongue_Name,tbl_StudentMaster.Caste_id,caste_type, [First_Language],
+                    [Date_of_Joining], Academic_year_id, tbl_AcademicYear.YearName,tbl_StudentMaster.Nationality_id, Nationality_Type,tbl_Religion.Religion_id,Religion_Type, tbl_StudentMaster.Date_of_Birth, tbl_StudentMaster.Mother_Tongue_id, Mother_Tongue_Name,tbl_StudentMaster.Caste_id,caste_type, [First_Language],
                     [Second_Language], [Third_Language], [Medium], tbl_StudentMaster.Blood_Group_id,Blood_Group_Type, [App_User_id], [Aadhar_Number], [NEP], [QR_code], [IsPhysicallyChallenged],
                     [IsSports], [IsAided], [IsNCC], [IsNSS], [IsScout], tbl_StudentMaster.File_Name, [isActive] 
-                    ,tbl_Gender.Gender_Type,Religion_Type , Gender_Type,tbl_StudentMaster.Institute_id,Institute_name ,CONCAT(tbl_StudentParentsInfo.First_Name, ' ', tbl_StudentParentsInfo.Last_Name) AS Father_Name 
+                    ,tbl_Gender.Gender_Type,Religion_Type , Gender_Type,tbl_StudentMaster.Institute_id,Institute_name 
                     FROM tbl_StudentMaster 
                     LEFT JOIN tbl_Class ON tbl_StudentMaster.class_id = tbl_Class.class_id
                     LEFT JOIN tbl_Section on tbl_StudentMaster.section_id =  tbl_Section.section_id
@@ -82,7 +82,7 @@ namespace Student_API.Repository.Implementations
                     LEFT JOIN tbl_BloodGroup ON tbl_BloodGroup.Blood_Group_id = tbl_StudentMaster.Blood_Group_id
                     LEFT JOIN tbl_CasteMaster ON tbl_CasteMaster.caste_id = tbl_StudentMaster.Caste_id
                     LEFT JOIN tbl_InstituteDetails ON tbl_InstituteDetails.Institute_id = tbl_StudentMaster.Institute_id
-                    LEFT JOIN tbl_StudentParentsInfo ON tbl_StudentMaster.student_id = tbl_StudentParentsInfo.Student_id AND tbl_StudentParentsInfo.Parent_Type_id = 1
+                    LEFT JOIN tbl_AcademicYear ON tbl_AcademicYear.Id = tbl_StudentMaster.Academic_year_id
                     WHERE tbl_StudentMaster.student_id = @studentId;
 
                     SELECT [Student_Other_Info_id], [student_id], [StudentType_id], [email_id], [Hall_Ticket_Number], [Identification_Mark_1],
@@ -104,7 +104,7 @@ namespace Student_API.Repository.Implementations
 
                    
 
-                    SELECT ss.[Student_Siblings_id],ss.[Student_id],ss.[Admission_Number],ss.[Date_of_Birth],ss.[Class_id],ss.[Selection_id],
+                    SELECT ss.[Student_Siblings_id],ss.Name,ss.Last_Name,ss.[Student_id],ss.[Admission_Number],ss.[Date_of_Birth],ss.[Class_id],ss.[Selection_id],
                     ss.[Institute_Name],ss.[Aadhar_no],cc.class_Name AS [class_course],ccs.section_name AS [Section]
                     FROM [tbl_StudentSiblings] ss
                     INNER JOIN [tbl_Class] cc ON ss.[Class_id] = cc.class_id
@@ -114,7 +114,11 @@ namespace Student_API.Repository.Implementations
 
                     SELECT * FROM [dbo].[tbl_StudentPreviousSchool] WHERE student_id = @studentId;
                     SELECT * FROM [dbo].[tbl_StudentHealthInfo] WHERE student_id = @studentId;
-                    SELECT * FROM [dbo].[tbl_StudentParentsOfficeInfo] WHERE student_id = @studentId;
+                    select Student_Parent_Office_Info_id , Student_id , Parents_Type_id  , Office_Building_no , Street , Area , Pincode,tbl_StudentParentsOfficeInfo.City_id , city_name,tbl_StudentParentsOfficeInfo.State_id , state_name from tbl_StudentParentsOfficeInfo
+INNER JOIN tbl_State ON  tbl_State.state_id = tbl_StudentParentsOfficeInfo.state_id
+INNER JOIN tbl_City ON tbl_City.city_id = tbl_StudentParentsOfficeInfo.city_id WHERE tbl_StudentParentsOfficeInfo.student_id = @studentId;
+
+
                     SELECT * FROM [dbo].[tbl_StudentDocuments] WHERE student_id = @studentId AND isDelete = 0;";
 
                 using (var result = await _connection.QueryMultipleAsync(sql, new { studentId }))
@@ -159,7 +163,8 @@ namespace Student_API.Repository.Implementations
         {
             try
             {
-                _connection.Open();
+                if (_connection.State != ConnectionState.Open)
+                    _connection.Open();
                 using (var transaction = _connection.BeginTransaction())
                 {
                     try
@@ -172,7 +177,7 @@ namespace Student_API.Repository.Implementations
                         INSERT INTO [dbo].[tbl_StudentMaster] (
                             First_Name, Middle_Name, Last_Name, gender_id, class_id,
                             section_id, Admission_Number, Roll_Number, Date_of_Joining,
-                            Academic_Year, Nationality_id, Religion_id, Date_of_Birth,
+                            Academic_Year_id, Nationality_id, Religion_id, Date_of_Birth,
                             Mother_Tongue_id, Caste_id, First_Language, Second_Language,
                             Third_Language, Medium, Blood_Group_id, App_User_id, Aadhar_Number,
                             NEP, QR_code, IsPhysicallyChallenged, IsSports, IsAided,
@@ -180,7 +185,7 @@ namespace Student_API.Repository.Implementations
                         VALUES (
                             @First_Name, @Middle_Name, @Last_Name, @gender_id, @class_id,
                             @section_id, @Admission_Number, @Roll_Number, @Date_of_Joining,
-                            @Academic_Year, @Nationality_id, @Religion_id, @Date_of_Birth,
+                            @Academic_year_id, @Nationality_id, @Religion_id, @Date_of_Birth,
                             @Mother_Tongue_id, @Caste_id, @First_Language, @Second_Language,
                             @Third_Language, @Medium, @Blood_Group_id, @App_User_id, @Aadhar_Number,
                             @NEP, @QR_code, @IsPhysicallyChallenged, @IsSports, @IsAided,
@@ -210,7 +215,7 @@ namespace Student_API.Repository.Implementations
                             Admission_Number = @Admission_Number,
                             Roll_Number = @Roll_Number,
                             Date_of_Joining = @Date_of_Joining,
-                            Academic_Year = @Academic_Year,
+                            Academic_year_id = @Academic_year_id,
                             Nationality_id = @Nationality_id,
                             Religion_id = @Religion_id,
                             Date_of_Birth = @Date_of_Birth,
@@ -295,6 +300,8 @@ namespace Student_API.Repository.Implementations
                         foreach (var parentInfo in request.studentParentInfos)
                         {
                             parentInfo.Student_id = studentId;
+                            parentInfo.studentParentOfficeInfo.Student_id = studentId;
+                            parentInfo.studentParentOfficeInfo.Parents_Type_id = parentInfo.Parent_Type_id;
 
                             if (parentInfo.Student_Parent_Info_id == 0)
                             {
@@ -307,8 +314,8 @@ namespace Student_API.Repository.Implementations
 
                                 // Insert Student Parent Office Info
                                 var addOfficeSql = @"
-                    INSERT INTO [dbo].[tbl_StudentParentsOfficeInfo] ([Student_id],[Parents_Type_id],[Office_Building_no],[Street],[Area],[City],[State],[Pincode])
-                    VALUES (@Student_id,@Parents_Type_id,@Office_Building_no,@Street,@Area,@City,@State,@Pincode);";
+                    INSERT INTO [dbo].[tbl_StudentParentsOfficeInfo] ([Student_id],[Parents_Type_id],[Office_Building_no],[Street],[Area],[City_id],[State_id],[Pincode])
+                    VALUES (@Student_id,@Parents_Type_id,@Office_Building_no,@Street,@Area,@City_id,@State_id,@Pincode);";
                                 await _connection.ExecuteAsync(addOfficeSql, parentInfo.studentParentOfficeInfo, transaction);
 
                                 if (insertedId <= 0)
@@ -354,8 +361,8 @@ namespace Student_API.Repository.Implementations
                         [Office_Building_no] = @Office_Building_no,
                         [Street] = @Street,
                         [Area] = @Area,
-                        [City] = @City,
-                        [State] = @State,
+                        [City_id] = @City_id,
+                        [State_id] = @State_id,
                         [Pincode] = @Pincode
                     WHERE [Student_Parent_Office_Info_id] = @Student_Parent_Office_Info_id;";
                                 int affectedRowsOffice = await _connection.ExecuteAsync(updateOfficeSql, parentInfo.studentParentOfficeInfo, transaction);
@@ -589,7 +596,7 @@ namespace Student_API.Repository.Implementations
                 VALUES (@Student_id, @Document_Name, @File_Name, @File_Path);
                 SELECT CAST(SCOPE_IDENTITY() as int);";
 
-                                int insertedId = await _connection.ExecuteScalarAsync<int>(insertSql, newDocument);
+                                int insertedId = await _connection.ExecuteScalarAsync<int>(insertSql, newDocument, transaction);
                                 if (insertedId <= 0)
                                 {
                                     transaction.Rollback();
@@ -787,8 +794,8 @@ namespace Student_API.Repository.Implementations
 
                         // Insert Student Parent Office Info
                         var addOfficeSql = @"
-                    INSERT INTO [dbo].[tbl_StudentParentsOfficeInfo] ([Student_id],[Parents_Type_id],[Office_Building_no],[Street],[Area],[City],[State],[Pincode])
-                    VALUES (@Student_id,@Parents_Type_id,@Office_Building_no,@Street,@Area,@City,@State,@Pincode);";
+                    INSERT INTO [dbo].[tbl_StudentParentsOfficeInfo] ([Student_id],[Parents_Type_id],[Office_Building_no],[Street],[Area],[City_id],[State_id],[Pincode])
+                    VALUES (@Student_id,@Parents_Type_id,@Office_Building_no,@Street,@Area,@City_id,@State_id,@Pincode);";
                         await _connection.ExecuteAsync(addOfficeSql, request.studentParentOfficeInfo, transaction);
 
                         transaction.Commit();
@@ -839,8 +846,8 @@ namespace Student_API.Repository.Implementations
                         [Office_Building_no] = @Office_Building_no,
                         [Street] = @Street,
                         [Area] = @Area,
-                        [City] = @City,
-                        [State] = @State,
+                        [City_id] = @City_id,
+                        [State_id] = @State_id,
                         [Pincode] = @Pincode
                     WHERE [Student_Parent_Office_Info_id] = @Student_Parent_Office_Info_id;";
                         int affectedRowsOffice = await _connection.ExecuteAsync(updateOfficeSql, request.studentParentOfficeInfo, transaction);
@@ -1115,13 +1122,13 @@ namespace Student_API.Repository.Implementations
                 return new ServiceResponse<int>(false, "Some error occured", 0, 500);
             }
         }
-        public async Task<ServiceResponse<List<StudentDetailsDTO>>> GetAllStudentDetails(int Institute_id, string sortField = "Student_Name", string sortDirection = "ASC", int? pageNumber = null, int? pageSize = null)
+        public async Task<ServiceResponse<List<StudentDetailsDTO>>> GetAllStudentDetails(GetStudentRequestModel obj)
         {
             try
             {
                 const int MaxPageSize = int.MaxValue;
-                int actualPageSize = pageSize ?? MaxPageSize;
-                int actualPageNumber = pageNumber ?? 1;
+                int actualPageSize = obj.pageSize ?? MaxPageSize;
+                int actualPageNumber = obj.pageNumber ?? 1;
                 int offset = (actualPageNumber - 1) * actualPageSize;
                 var allowedSortFields = new List<string>
         {
@@ -1130,16 +1137,16 @@ namespace Student_API.Repository.Implementations
                 var allowedSortDirections = new List<string> { "ASC", "DESC" };
 
                 // Validate sort field
-                if (!allowedSortFields.Contains(sortField))
+                if (!allowedSortFields.Contains(obj.sortField))
                 {
-                    sortField = "Student_Name";  // Default to Student_Name if invalid
+                    obj.sortField = "Student_Name";  // Default to Student_Name if invalid
                 }
 
                 // Validate sort direction
-                sortDirection = sortDirection.ToUpper();
-                if (!allowedSortDirections.Contains(sortDirection))
+                obj.sortDirection = obj.sortDirection.ToUpper();
+                if (!allowedSortDirections.Contains(obj.sortDirection))
                 {
-                    sortDirection = "ASC";  // Default to ASC if invalid
+                    obj.sortDirection = "ASC";  // Default to ASC if invalid
                 }
                 // Assume that Parent_Type_id = 1 means father
                 string sql = $@"
@@ -1162,6 +1169,8 @@ namespace Student_API.Repository.Implementations
                 #TempStudentDetails
             FROM 
                 [dbo].[tbl_StudentMaster]
+            INNER JOIN 
+                tbl_StudentOtherInfo ON tbl_StudentOtherInfo.Student_id = tbl_StudentMaster.Student_id
             LEFT JOIN 
                 tbl_Class ON tbl_StudentMaster.class_id = tbl_Class.Class_id
             LEFT JOIN 
@@ -1172,9 +1181,12 @@ namespace Student_API.Repository.Implementations
                 tbl_Gender ON tbl_StudentMaster.gender_id = tbl_Gender.gender_id
             LEFT JOIN 
                 tbl_StudentParentsInfo ON tbl_StudentMaster.student_id = tbl_StudentParentsInfo.Student_id 
-                AND tbl_StudentParentsInfo.Parent_Type_id = 1
+                AND tbl_StudentParentsInfo.Parent_Type_id = 1 
             WHERE 
-                tbl_StudentMaster.Institute_id = @InstituteId;
+                tbl_StudentMaster.Institute_id = @InstituteId AND (tbl_StudentMaster.Class_id = @class_id OR @class_id = 0)
+                AND (tbl_StudentMaster.Section_id = @section_id OR @section_id = 0) AND (tbl_StudentMaster.Academic_year_id = @Academic_year_id OR @Academic_year_id = 0)
+                AND (tbl_StudentOtherInfo.StudentType_id = @StudentType_id OR @StudentType_id = 0)
+                AND tbl_StudentMaster.isActive = @isActive;
 
             -- Query the temporary table with sorting and pagination
             SELECT 
@@ -1182,7 +1194,7 @@ namespace Student_API.Repository.Implementations
             FROM 
                 #TempStudentDetails
             ORDER BY 
-                {sortField} {sortDirection}, 
+                {obj.sortField} {obj.sortDirection}, 
                 student_id
             OFFSET 
                 @Offset ROWS
@@ -1195,10 +1207,10 @@ namespace Student_API.Repository.Implementations
             FROM 
                 #TempStudentDetails;";
 
-                using (var multi = await _connection.QueryMultipleAsync(sql, new { InstituteId = Institute_id, Offset = offset, PageSize = actualPageSize }))
+                using (var multi = await _connection.QueryMultipleAsync(sql, new { InstituteId = obj.Institute_id, Offset = offset, PageSize = actualPageSize, class_id = obj.class_id, section_id = obj.section_id , Academic_year_id  =obj.Academic_year_id, isActive=obj.isActive, StudentType_id = obj.StudentType_id }))
                 {
                     var studentList = multi.Read<StudentDetailsDTO>().ToList();
-                    int? totalRecords = (pageSize.HasValue && pageNumber.HasValue) == true ? multi.ReadSingle<int>() : null;
+                    int? totalRecords = (obj.pageSize.HasValue && obj.pageNumber.HasValue) == true ? multi.ReadSingle<int>() : null;
 
                     if (studentList.Any())
                     {

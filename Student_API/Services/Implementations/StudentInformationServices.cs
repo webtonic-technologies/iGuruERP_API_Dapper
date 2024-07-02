@@ -80,15 +80,18 @@ namespace Student_API.Services.Implementations
                 List<StudentDocumentListDTO> studentDocuments = new();
                 foreach (var item in request.studentDocuments.File_Name)
                 {
-                    StudentDocumentListDTO listDTO = new StudentDocumentListDTO();
+                    if (item != null && item != "")
+                    {
+                        StudentDocumentListDTO listDTO = new StudentDocumentListDTO();
 
-                    var doc = await _imageService.SaveImageAsync(item, "StudentsDoc");
+                        var doc = await _imageService.SaveImageAsync(item, "StudentsDoc");
 
-                    listDTO.File_Name = doc.relativePath;
-                    listDTO.File_Path = doc.absolutePath;
-                    listDTO.Document_Name = doc.fileName;
+                        listDTO.File_Name = doc.relativePath;
+                        listDTO.File_Path = doc.absolutePath;
+                        listDTO.Document_Name = doc.fileName;
 
-                    studentDocuments.Add(listDTO);
+                        studentDocuments.Add(listDTO);
+                    }
                 }
 
 
@@ -190,12 +193,12 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<StudentInformationDTO>(false, ex.Message, null, 500);
             }
         }
-        public async Task<ServiceResponse<List<StudentDetailsDTO>>> GetAllStudentDetails(int Institute_id, string sortField = "Student_Name", string sortDirection = "ASC", int? pageNumber = null, int? pageSize = null)
+        public async Task<ServiceResponse<List<StudentDetailsDTO>>> GetAllStudentDetails(GetStudentRequestModel obj)
         {
 
             try
             {
-                return await _studentInformationRepository.GetAllStudentDetails(Institute_id, sortField, sortDirection, pageNumber, pageSize);
+                return await _studentInformationRepository.GetAllStudentDetails(obj);
             }
             catch (Exception ex)
             {

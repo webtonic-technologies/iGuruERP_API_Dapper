@@ -66,7 +66,7 @@ namespace Student_API.Repository.Implementations
                 tbl_DocManager dm ON s.Student_id = dm.student_id AND dm.document_id = doc.Student_Document_id
             WHERE 
                 s.Institute_id = @Institute_id AND (s.Class_id = @ClassId OR @ClassId = 0)AND (s.Section_id = @SectionId OR @SectionId = 0)
-                AND s.isDelete = 0 AND doc.isDelete = 0 ;
+                AND s.isActive = 1 AND doc.isDelete = 0 ;
 
             SELECT 
                 * 

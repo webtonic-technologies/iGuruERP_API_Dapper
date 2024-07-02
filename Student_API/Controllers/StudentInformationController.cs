@@ -86,8 +86,8 @@ namespace Student_API.Controllers
             try
             {
                 obj.sortField = obj.sortField ?? "Student_Name";
-                obj.sortDirection = obj.sortDirection?? "Student_Name";
-                var data = await _studentInformationService.GetAllStudentDetails(obj.Institute_id, obj.sortField, obj.sortDirection, obj.pageNumber,obj.pageSize);
+                obj.sortDirection = obj.sortDirection?? "ASC";
+                var data = await _studentInformationService.GetAllStudentDetails(obj);
 				return Ok(data);
 			}
             catch (Exception e)

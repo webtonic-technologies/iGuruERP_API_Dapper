@@ -12,5 +12,12 @@
             Saturday =6,
             Sunday = 7
         }
+
+        public enum Permission_Status
+        {
+            Pending =1,
+            Approved = 2,
+            Rejected = 3
+        }
     }
 }

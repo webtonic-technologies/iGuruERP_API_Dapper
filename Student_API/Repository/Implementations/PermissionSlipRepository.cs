@@ -4,6 +4,7 @@ using Student_API.DTOs.ServiceResponse;
 using Student_API.Repository.Interfaces;
 using System.Data;
 using System.Drawing.Printing;
+using static Student_API.Models.Enums.Enums;
 
 namespace Student_API.Repository.Implementations
 {
@@ -43,7 +44,7 @@ namespace Student_API.Repository.Implementations
                 p.first_name + ' ' + p.last_name AS ParentName,
                 ps.RequestedDateTime,
                 ps.Reason,
-                ps.IsApproved,
+                ps.Status,
                 ps.ModifiedDate
             INTO #PermissionSlipTempTable
             FROM tbl_PermissionSlip ps
@@ -52,8 +53,8 @@ namespace Student_API.Repository.Implementations
             JOIN tbl_Class c ON s.class_id = c.class_id
             JOIN tbl_section sec ON s.section_id = sec.section_id
             JOIN tbl_Gender g ON s.gender_id = g.Gender_Id
-            WHERE ps.Institute_id = @Institute_id ,s.class_id = @ClassId
-              AND s.section_id = @SectionId AND IsApproved IS NULL;
+            WHERE ps.Institute_id = @Institute_id AND (s.class_id = @ClassId OR @ClassId =0)
+              AND (s.section_id = @SectionId OR @SectionId = 0)AND Status = 1;
 
             -- Select paginated data from the temporary table
             SELECT * 
@@ -70,7 +71,7 @@ namespace Student_API.Repository.Implementations
             DROP TABLE IF EXISTS #PermissionSlipTempTable;";
 
                 // Execute the query with pagination
-                using (var multi = await _dbConnection.QueryMultipleAsync(sql, new { ClassId = classId, SectionId = sectionId, Offset = offset, PageSize = actualPageSize }))
+                using (var multi = await _dbConnection.QueryMultipleAsync(sql, new { ClassId = classId, SectionId = sectionId, Offset = offset, PageSize = actualPageSize, Institute_id= Institute_id }))
                 {
                     var permissionSlips = multi.Read<PermissionSlipDTO>().ToList();
                     int? totalRecords = (pageSize.HasValue && pageNumber.HasValue) ? multi.ReadSingle<int>() : null;
@@ -95,12 +96,14 @@ namespace Student_API.Repository.Implementations
         {
             try
             {
+                int status = (int)Permission_Status.Pending;
+                status = isApproved ? (int)Permission_Status.Approved : (int)Permission_Status.Rejected;  
                 string query = @"
             UPDATE tbl_PermissionSlip 
-            SET IsApproved = @IsApproved , ModifiedDate = GETDATE()
+            SET Status = @Status , ModifiedDate = GETDATE()
             WHERE PermissionSlip_Id = @PermissionSlipId";
 
-                await _dbConnection.ExecuteAsync(query, new { PermissionSlipId = permissionSlipId, IsApproved = isApproved });
+                await _dbConnection.ExecuteAsync(query, new { PermissionSlipId = permissionSlipId, Status = status });
 
                 return new ServiceResponse<string>(true, "Permission slip status updated successfully", null, 200);
             }
@@ -113,6 +116,8 @@ namespace Student_API.Repository.Implementations
         {
             try
             {
+                int status = (int)Permission_Status.Pending;
+                status = isApproved ? (int)Permission_Status.Approved : (int)Permission_Status.Rejected;
                 // Define the maximum page size if pagination is not specified
                 const int MaxPageSize = int.MaxValue;
 
@@ -130,23 +135,24 @@ namespace Student_API.Repository.Implementations
                 s.student_id AS Student_Id,
                 s.admission_number AS Admission_Number,
                 s.first_name + ' ' + s.last_name AS StudentName,
-                c.class_course  AS ClassName,
-                sec.SectionName,
+                c.class_name AS ClassName,
+                sec.Section_name AS SectionName,
                 ps.RequestedDateTime AS ApprovalDate,
-                pt.ParentTypeName AS ParentType,
+                pt.parent_type AS ParentType,
                 p.first_name + ' ' + p.last_name AS ParentName,
-                ps.Reason AS Remark
+                ps.Reason AS Remark,
+                Status
             INTO #PermissionSlipTempTable
             FROM tbl_PermissionSlip ps
             JOIN tbl_StudentMaster s ON ps.Student_Id = s.student_id
-            JOIN tbl_Student_Parents_Info p ON ps.Student_Parent_Info_id = p.student_parent_info_id
+            JOIN tbl_StudentParentsInfo p ON ps.Student_Parent_Info_id = p.student_parent_info_id
             JOIN tbl_Class c ON s.class_id = c.class_id
             JOIN tbl_section sec ON s.section_id = sec.section_id
-            JOIN tbl_ParentType pt ON p.parent_type_id = pt.ParentTypeId
+            JOIN tbl_ParentType pt ON p.parent_type_id = pt.parent_type_id
             WHERE ps.Institute_id = @Institute_id
-              AND s.class_id = @ClassId
-              AND s.section_id = @SectionId
-              AND ps.IsApproved = @IsApproved
+              AND (s.class_id = @ClassId OR  @ClassId=0)
+              AND (s.section_id = @SectionId OR  @SectionId =0)
+              AND ps.Status = @Status
               AND (@StartDate IS NULL OR ps.ModifiedDate >= @StartDate)
               AND (@EndDate IS NULL OR ps.ModifiedDate <= @EndDate);
 
@@ -168,7 +174,7 @@ namespace Student_API.Repository.Implementations
                     SectionId = sectionId,
                     StartDate = startDate,
                     EndDate = endDate,
-                    IsApproved = isApproved,
+                    Status = status,
                     Offset = offset,
                     PageSize = actualPageSize,
                     Institute_id = Institute_id

@@ -132,12 +132,12 @@ namespace Student_API.Repository.Implementations
 
                 // SQL queries
                 string queryAll = @"
-            SELECT Student_Document_id, Student_Document_Name, en_date
-            FROM [dbo].[tbl_StudentDocumentMaster] where Institute_id = @Institute_id AND  isDelete = 0";
+            SELECT Student_Document_id, Student_Document_Name, en_date,Institute_id
+            FROM [dbo].[tbl_StudentDocumentMaster] where Institute_id = @Institute_id AND  ISNULL(isDelete,0) = 0 ";
 
                 string queryCount = @"
             SELECT COUNT(*)
-            FROM [dbo].[tbl_StudentDocumentMaster] where Institute_id = @Institute_id AND isDelete =0";
+            FROM [dbo].[tbl_StudentDocumentMaster] where Institute_id = @Institute_id AND ISNULL(isDelete,0) =0";
 
                 List<StudentDocumentConfigDTO> studentDocuments;
                 int totalRecords = 0;

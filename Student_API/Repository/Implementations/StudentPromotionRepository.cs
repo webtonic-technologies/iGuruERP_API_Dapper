@@ -1,8 +1,10 @@
 ﻿using Dapper;
 using Student_API.DTOs;
+using Student_API.DTOs.RequestDTO;
 using Student_API.DTOs.ServiceResponse;
 using Student_API.Repository.Interfaces;
 using System.Data;
+using System.Data.SqlClient;
 
 namespace Student_API.Repository.Implementations
 {
@@ -130,22 +132,138 @@ namespace Student_API.Repository.Implementations
         }
 
 
-        public async Task<ServiceResponse<bool>> PromoteStudents(List<int> studentIds, int nextClassId)
+        public async Task<ServiceResponse<bool>> PromoteStudents(List<int> studentIds, int nextClassId, int sectionId)
         {
             try
             {
                 string query = @"
                 UPDATE tbl_StudentMaster
-                SET class_id = @NextClassId
+                SET class_id = @NextClassId , section_id= @sectionId
                 WHERE student_id IN @StudentIds";
 
-                await _connection.ExecuteAsync(query, new { NextClassId = nextClassId, StudentIds = studentIds });
+                await _connection.ExecuteAsync(query, new { NextClassId = nextClassId, StudentIds = studentIds, sectionId = sectionId });
 
                 return new ServiceResponse<bool>(true, "Students promoted successfully", true, 200);
             }
             catch (Exception ex)
             {
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
+            }
+        }
+        public async Task<ServiceResponse<bool>> PromoteClasses(ClassPromotionDTO classPromotionDTO)
+        {
+
+
+            if (_connection.State != ConnectionState.Open)
+                _connection.Open();
+            using (var transaction = _connection.BeginTransaction())
+            {
+                try
+                {
+                    string tempTableQuery = @"
+            IF OBJECT_ID('tempdb..#TempPromotion') IS NOT NULL
+            DROP TABLE #TempPromotion;
+
+            CREATE TABLE #TempPromotion (
+                StudentId INT,
+                NewClassId INT,
+                NewSectionId INT
+            )";
+
+                    await _connection.ExecuteAsync(tempTableQuery, transaction: transaction);
+
+                    // Insert intermediate promotions into the temp table
+                    foreach (var classSection in classPromotionDTO.ClassSections)
+                    {
+                        string insertTempQuery = @"
+                INSERT INTO #TempPromotion (StudentId, NewClassId, NewSectionId)
+                SELECT student_id, @NewClassId, @NewSectionId
+                FROM tbl_StudentMaster
+                WHERE class_id = @OldClassId AND section_id = @OldSectionId";
+
+                        await _connection.ExecuteAsync(insertTempQuery, new
+                        {
+                            NewClassId = classSection.NewClassId,
+                            NewSectionId = classSection.NewSectionId,
+                            OldClassId = classSection.OldClassId,
+                            OldSectionId = classSection.OldSectionId
+                        }, transaction: transaction);
+                    }
+
+                    // Update the actual student master table
+                    string updateQuery = @"
+            UPDATE SM
+            SET SM.class_id = TP.NewClassId, SM.section_id = TP.NewSectionId
+            FROM tbl_StudentMaster SM
+            INNER JOIN #TempPromotion TP ON SM.student_id = TP.StudentId";
+
+                    await _connection.ExecuteAsync(updateQuery, transaction: transaction);
+
+
+                    string logQuery = @"
+                    INSERT INTO tbl_ClassPromotionLog ( UserId, IPAddress, PromotionDateTime,institute_id)
+                    VALUES ( @UserId, @IPAddress, GETDATE(),@institute_id)";
+
+                    await _connection.ExecuteAsync(logQuery, new
+                    {
+                        UserId = classPromotionDTO.UserId,
+                        IPAddress = classPromotionDTO.IPAddress,
+                        institute_id = classPromotionDTO.institute_id
+                    }, transaction: transaction);
+                    transaction.Commit();
+                    return new ServiceResponse<bool>(true, "Classes promoted successfully", true, 200);
+                }
+
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    return new ServiceResponse<bool>(false, ex.Message, false, 500);
+                }
+            }
+        }
+        public async Task<ServiceResponse<List<ClassPromotionLogDTO>>> GetClassPromotionLog(GetClassPromotionLogParam obj)
+        {
+            try
+            {
+                var allowedSortFields = new List<string> { "LogId", "UserId", "IPAddress" };
+                var allowedSortDirections = new List<string> { "ASC", "DESC" };
+
+                if (!allowedSortFields.Contains(obj.sortField))
+                {
+                    obj.sortField = "PromotionDateTime";
+                }
+
+                obj.sortDirection = obj.sortDirection?.ToUpper() ?? "DESC";
+                if (!allowedSortDirections.Contains(obj.sortDirection))
+                {
+                    obj.sortDirection = "DESC";
+                }
+                int offset = (obj.pageNumber.HasValue && obj.pageNumber.Value > 0) ? (obj.pageNumber.Value - 1) * obj.pageSize.Value : 0;
+                int pageSize = obj.pageSize ?? 10;
+
+                string query = $@"
+        SELECT COUNT(*) 
+        FROM tbl_ClassPromotionLog 
+        WHERE institute_id = @institute_id;
+
+        SELECT LogId, UserId, IPAddress, PromotionDateTime 
+        FROM tbl_ClassPromotionLog 
+        WHERE institute_id = @institute_id
+        ORDER BY {obj.sortField} {obj.sortDirection}
+        OFFSET @Offset ROWS 
+        FETCH NEXT @PageSize ROWS ONLY;";
+                using (var multi = await _connection.QueryMultipleAsync(query, new { institute_id = obj.institute_id, Offset = offset, PageSize = pageSize }))
+                {
+                    int totalRecords = multi.ReadSingle<int>();
+                    var logs = multi.Read<ClassPromotionLogDTO>().ToList();
+
+                    return new ServiceResponse<List<ClassPromotionLogDTO>>(true, "Logs retrieved successfully", logs, 200, totalRecords);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<ClassPromotionLogDTO>>(false, ex.Message, null, 500);
             }
         }
     }
