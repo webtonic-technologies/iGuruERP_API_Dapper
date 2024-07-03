@@ -1,0 +1,10 @@
+﻿namespace Admission_API.DTOs.Response
+{
+    public class LeadStageResponse
+    {
+        public int LeadStageID { get; set; }
+        public string StageName { get; set; }
+        public string ColorCode { get; set; }
+        public bool IsActive { get; set; }
+    }
+}
