@@ -39,15 +39,15 @@ namespace Student_API.Repository.Implementations
                 return new ServiceResponse<List<Gender>>(false, ex.Message, null, 500);
             }
         }
-        public async Task<ServiceResponse<List<Sections>>> GetAllSections()
+        public async Task<ServiceResponse<List<Sections>>> GetAllSections(int Class_Id)
         {
             try
             {
                 string sql = @"
             SELECT Section_id AS section_id, section_name AS [section_name]
-            FROM [dbo].[tbl_Section]";
+            FROM [dbo].[tbl_Section] where class_id = @Class_Id";
 
-                var sections = await _connection.QueryAsync<Sections>(sql);
+                var sections = await _connection.QueryAsync<Sections>(sql, new { Class_Id = Class_Id });
 
                 if (sections != null && sections.Any())
                 {
@@ -61,6 +61,30 @@ namespace Student_API.Repository.Implementations
             catch (Exception ex)
             {
                 return new ServiceResponse<List<Sections>>(false, ex.Message, null, 500);
+            }
+        }
+        public async Task<ServiceResponse<List<Class>>> GetAllClass(int institute_id)
+        {
+            try
+            {
+                string sql = @"
+            SELECT class_id, class_name 
+            FROM [dbo].[tbl_class] where institute_id = @institute_id";
+
+                var classes = await _connection.QueryAsync<Class>(sql, new { institute_id = institute_id });
+
+                if (classes != null && classes.Any())
+                {
+                    return new ServiceResponse<List<Class>>(true, "Operation successful", classes.ToList(), 200);
+                }
+                else
+                {
+                    return new ServiceResponse<List<Class>>(false, "Sections not found", null, 404);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<Class>>(false, ex.Message, null, 500);
             }
         }
         public async Task<ServiceResponse<List<Religion>>> GetAllReligions()
@@ -86,6 +110,7 @@ namespace Student_API.Repository.Implementations
             {
                 return new ServiceResponse<List<Religion>>(false, ex.Message, null, 500);
             }
+
         }
         public async Task<ServiceResponse<List<Nationality>>> GetAllNationalities()
         {
@@ -261,5 +286,56 @@ namespace Student_API.Repository.Implementations
                 return new ServiceResponse<List<ParentType>>(false, ex.Message, null, 500);
             }
         }
+        public async Task<ServiceResponse<List<State>>> GetAllStates()
+        {
+            try
+            {
+                string sql = @"
+            SELECT [State_id], [State_Name]
+            FROM [dbo].[tbl_State]";
+
+                var states = await _connection.QueryAsync<State>(sql);
+
+                if (states != null && states.Any())
+                {
+                    return new ServiceResponse<List<State>>(true, "Operation successful", states.ToList(), 200);
+                }
+                else
+                {
+                    return new ServiceResponse<List<State>>(false, "States not found", null, 404);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<State>>(false, ex.Message, null, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<List<City>>> GetAllCities(int stateId)
+        {
+            try
+            {
+                string sql = @"
+            SELECT [City_id], [City_Name]
+            FROM [dbo].[tbl_City]
+            WHERE [State_id] = @StateId";
+
+                var cities = await _connection.QueryAsync<City>(sql, new { StateId = stateId });
+
+                if (cities != null && cities.Any())
+                {
+                    return new ServiceResponse<List<City>>(true, "Operation successful", cities.ToList(), 200);
+                }
+                else
+                {
+                    return new ServiceResponse<List<City>>(false, "Cities not found", null, 404);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<City>>(false, ex.Message, null, 500);
+            }
+        }
     }
 }
+

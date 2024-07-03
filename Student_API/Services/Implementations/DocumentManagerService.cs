@@ -14,9 +14,9 @@ namespace Student_API.Services.Implementations
             _documentManagerRepository = documentManagerRepository;
         }
 
-        public async Task<ServiceResponse<List<StudentDocumentInfo>>> GetStudentDocuments(int classId, int sectionId, string sortColumn, string sortDirection, int? pageSize, int? pageNumber)
+        public async Task<ServiceResponse<List<StudentDocumentInfo>>> GetStudentDocuments(int Institute_id, int classId, int sectionId, string sortColumn, string sortDirection, int? pageSize, int? pageNumber)
         {
-            return await _documentManagerRepository.GetStudentDocuments(classId, sectionId,sortColumn ,sortDirection,pageSize, pageNumber);
+            return await _documentManagerRepository.GetStudentDocuments(Institute_id,classId, sectionId,sortColumn ,sortDirection,pageSize, pageNumber);
         }
 
         public async Task<ServiceResponse<bool>> UpdateStudentDocumentStatuses(List<DocumentUpdateRequest> updates)

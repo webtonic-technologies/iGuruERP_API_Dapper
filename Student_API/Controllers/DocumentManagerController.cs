@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Student_API.DTOs;
+using Student_API.DTOs.RequestDTO;
 using Student_API.Services.Interfaces;
 
 namespace Student_API.Controllers
@@ -13,10 +14,12 @@ namespace Student_API.Controllers
         {
             _documentManagerService = documentManagerService;
         }
-        [HttpGet("GetAllStudentDocumentsList")]
-        public async Task<IActionResult> GetStudentDocuments(int classId, int sectionId, string sortColumn = "Student_Name", string sortDirection = "ASC", int? pageSize = null, int? pageNumber = null)
+        [HttpPost("GetAllStudentDocumentsList")]
+        public async Task<IActionResult> GetStudentDocuments(GetStudentDocumentRequestModel obj)
         {
-            var response = await _documentManagerService.GetStudentDocuments(classId, sectionId, sortColumn, sortDirection, pageSize, pageNumber);
+            obj.sortField = obj.sortField ?? "Student_Name";
+            obj.sortDirection = obj.sortDirection ?? "ASC";
+            var response = await _documentManagerService.GetStudentDocuments(obj.Institute_id,obj.classId, obj.sectionId, obj.sortField, obj.sortDirection, obj.pageSize, obj.pageNumber);
             if (response.Success)
             {
                 return Ok(response);
