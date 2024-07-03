@@ -15,7 +15,7 @@ namespace Student_API.Repository.Implementations
             _connection = connection;
         }
 
-        public async Task<ServiceResponse<List<StudentDocumentInfo>>> GetStudentDocuments(int classId, int sectionId, string sortColumn, string sortDirection, int? pageSize, int? pageNumber)
+        public async Task<ServiceResponse<List<StudentDocumentInfo>>> GetStudentDocuments(int Institute_id,int classId, int sectionId, string sortColumn, string sortDirection, int? pageSize, int? pageNumber)
         {
             try
             {
@@ -65,7 +65,8 @@ namespace Student_API.Repository.Implementations
             LEFT JOIN 
                 tbl_DocManager dm ON s.Student_id = dm.student_id AND dm.document_id = doc.Student_Document_id
             WHERE 
-                s.Class_id = @ClassId AND s.Section_id = @SectionId;
+                s.Institute_id = @Institute_id AND (s.Class_id = @ClassId OR @ClassId = 0)AND (s.Section_id = @SectionId OR @SectionId = 0)
+                AND s.isActive = 1 AND doc.isDelete = 0 ;
 
             SELECT 
                 * 
@@ -90,7 +91,8 @@ namespace Student_API.Repository.Implementations
                     ClassId = classId,
                     SectionId = sectionId,
                     PageSize = pageSize ?? int.MaxValue, // Max value for page size if not specified
-                    Offset = (pageNumber.HasValue ? (pageNumber.Value - 1) * (pageSize ?? int.MaxValue) : 0) // Offset calculation
+                    Offset = (pageNumber.HasValue ? (pageNumber.Value - 1) * (pageSize ?? int.MaxValue) : 0), // Offset calculation
+                    Institute_id = Institute_id
                 };
 
                 // Fetch data using Dapper
@@ -172,8 +174,8 @@ namespace Student_API.Repository.Implementations
                         END
                         ELSE
                         BEGIN
-                            INSERT INTO tbl_DocManager (student_id, document_id, class_id, section_id)
-                            VALUES (@StudentId, @DocumentId, @ClassId, @SectionId)
+                            INSERT INTO tbl_DocManager (student_id, document_id, class_id, section_id,Institute_id)
+                            VALUES (@StudentId, @DocumentId, @ClassId, @SectionId,@Institute_id)
                         END";
 
                             await _connection.ExecuteAsync(insertOrUpdateQuery, new
@@ -181,7 +183,8 @@ namespace Student_API.Repository.Implementations
                                 update.StudentId,
                                 update.DocumentId,
                                 ClassId = update.ClassId,
-                                SectionId = update.SectionId
+                                SectionId = update.SectionId,
+                                Institute_id = update.Institute_id
                             }, transaction);
                         }
                         else

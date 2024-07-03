@@ -14,34 +14,34 @@ namespace Student_API.Repository.Implementations
         {
             _connection = connection;
         }
-        public async Task<ServiceResponse<int>> AddUpdateStudentDocument(StudentDocumentConfigDTO studentDocumentDto)
+        public async Task<ServiceResponse<int>> AddUpdateStudentDocument(List<StudentDocumentConfigDTO> studentDocumentDto)
         {
             try
             {
 
                 try
                 {
-                    string query;
-                    if (studentDocumentDto.Student_Document_id > 0)
+                    foreach (var item in studentDocumentDto)
                     {
-                        query = @"
+                        string query;
+                        if (item.Student_Document_id > 0)
+                        {
+                            query = @"
                     UPDATE [dbo].[tbl_StudentDocumentMaster]
-                    SET Student_Document_Name = @Student_Document_Name,
-                        en_date = @en_date
+                    SET Student_Document_Name = @Student_Document_Name
                     WHERE Student_Document_id = @Student_Document_id";
-                    }
-                    else
-                    {
-                        query = @"
-                    INSERT INTO [dbo].[tbl_StudentDocumentMaster] (Student_Document_Name, en_date)
-                    VALUES (@Student_Document_Name, @en_date);
+                        }
+                        else
+                        {
+                            query = @"
+                    INSERT INTO [dbo].[tbl_StudentDocumentMaster] (Student_Document_Name, en_date,Institute_id)
+                    VALUES (@Student_Document_Name, GETDATE(),@Institute_id);
                     SELECT SCOPE_IDENTITY();";
+                        }
+
+                        int id = await _connection.ExecuteScalarAsync<int>(query, item);
                     }
-
-                    int id = await _connection.ExecuteScalarAsync<int>(query, studentDocumentDto);
-
-
-                    return new ServiceResponse<int>(true, "Student document config saved successfully", id, 200);
+                    return new ServiceResponse<int>(true, "Student document config saved successfully", 1, 200);
                 }
                 catch (Exception ex)
                 {
@@ -106,7 +106,7 @@ namespace Student_API.Repository.Implementations
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
-        public async Task<ServiceResponse<List<StudentDocumentConfigDTO>>> GetAllStudentDocuments(string sortColumn, string sortDirection, int? pageSize = null, int? pageNumber = null)
+        public async Task<ServiceResponse<List<StudentDocumentConfigDTO>>> GetAllStudentDocuments(int Institute_id,string sortColumn, string sortDirection, int? pageSize = null, int? pageNumber = null)
         {
             try
             {
@@ -132,12 +132,12 @@ namespace Student_API.Repository.Implementations
 
                 // SQL queries
                 string queryAll = @"
-            SELECT Student_Document_id, Student_Document_Name, en_date
-            FROM [dbo].[tbl_StudentDocumentMaster] where isDelete = 0";
+            SELECT Student_Document_id, Student_Document_Name, en_date,Institute_id
+            FROM [dbo].[tbl_StudentDocumentMaster] where Institute_id = @Institute_id AND  ISNULL(isDelete,0) = 0 ";
 
                 string queryCount = @"
             SELECT COUNT(*)
-            FROM [dbo].[tbl_StudentDocumentMaster] where isDelete =0";
+            FROM [dbo].[tbl_StudentDocumentMaster] where Institute_id = @Institute_id AND ISNULL(isDelete,0) =0";
 
                 List<StudentDocumentConfigDTO> studentDocuments;
                 int totalRecords = 0;
@@ -155,7 +155,7 @@ namespace Student_API.Repository.Implementations
 
                 {queryCount}";
 
-                    using (var multi = await _connection.QueryMultipleAsync(queryPaginated, new { Offset = offset, PageSize = pageSize }))
+                    using (var multi = await _connection.QueryMultipleAsync(queryPaginated, new { Offset = offset, PageSize = pageSize, Institute_id = Institute_id }))
                     {
                         studentDocuments = multi.Read<StudentDocumentConfigDTO>().ToList();
                         totalRecords = multi.ReadSingle<int>();

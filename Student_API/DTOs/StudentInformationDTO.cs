@@ -15,7 +15,8 @@
         public string Admission_Number { get; set; }
         public string Roll_Number { get; set; }
         public DateTime? Date_of_Joining { get; set; }
-        public DateTime? Academic_Year { get; set; }
+        public int Academic_year_id { get; set; }
+        public string YearName { get; set; }
         public int? Nationality_id { get; set; }
         public string Nationality_Type {  get; set; }   
         public string Religion_id { get; set; }
