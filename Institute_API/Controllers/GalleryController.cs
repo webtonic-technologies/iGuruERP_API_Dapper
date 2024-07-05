@@ -29,12 +29,12 @@ namespace Institute_API.Controllers
             }
         }
 
-        [HttpGet("GetApprovedImagesByEvent")]
-        public async Task<IActionResult> GetApprovedImagesByEvent()
+        [HttpGet("GetApprovedImagesByEvent/{Institute_id}")]
+        public async Task<IActionResult> GetApprovedImagesByEvent(int Institute_id)
         {
             try
             {
-                var response = await _galleryService.GetApprovedImagesByEvent();
+                var response = await _galleryService.GetApprovedImagesByEvent(Institute_id);
                 return StatusCode(response.StatusCode, response);
             }
             catch (Exception ex)
@@ -57,12 +57,12 @@ namespace Institute_API.Controllers
             }
         }
 
-        [HttpGet("GetAllGalleryImagesByEvent")]
-        public async Task<IActionResult> GetAllGalleryImagesByEvent()
+        [HttpGet("GetAllGalleryImagesByEvent/{Institute_id}")]
+        public async Task<IActionResult> GetAllGalleryImagesByEvent(int Institute_id)
         {
             try
             {
-                var response = await _galleryService.GetAllGalleryImagesByEvent();
+                var response = await _galleryService.GetAllGalleryImagesByEvent(Institute_id);
                 return StatusCode(response.StatusCode, response);
             }
             catch (Exception ex)

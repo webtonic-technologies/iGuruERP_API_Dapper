@@ -1,6 +1,6 @@
 ﻿namespace Institute_API.DTOs
 {
-    public class EventDTO
+    public class EventRequestDTO
     {
         public int Event_id { get; set; }
         public string EventName { get; set; }
@@ -13,24 +13,21 @@
         public string? AttachmentFile { get; set; }
         public int Institute_id { get; set; }
 
-        public List<EventEmployeeMapping> EmployeeMappings { get; set; }
-        public List<EventClassSessionMapping> ClassSessionMappings { get; set; }
+        public List<EventEmployeeRequestMapping> EmployeeMappings { get; set; }
+        public List<EventClassSessionRequestMapping> ClassSessionMappings { get; set; }
     }
-    public class EventEmployeeMapping
+    public class EventEmployeeRequestMapping
     {
         public int EventEmployeeMapping_id { get; set; }
         public int Event_id { get; set; }
         public int Employee_id { get; set; }
-        public string? Employee_Name { get; set; }
     }
 
-    public class EventClassSessionMapping
+    public class EventClassSessionRequestMapping
     {
         public int EventClassSessionMapping_id { get; set; }
         public int Event_id { get; set; }
         public int Class_id { get; set; }
         public int Section_id { get; set; }
-        public string? section_name { get; set; }
-        public string? class_name { get; set; }
     }
 }
