@@ -16,7 +16,7 @@ namespace Institute_API.Controllers
         }
 
         [HttpPost("AddUpdateHoliday")]
-        public async Task<IActionResult> AddUpdateHoliday([FromBody] HolidayDTO holidayDTO)
+        public async Task<IActionResult> AddUpdateHoliday([FromBody] HolidayRequestDTO holidayDTO)
         {
             try
             {
@@ -43,12 +43,12 @@ namespace Institute_API.Controllers
             }
         }
 
-        [HttpGet("GetAllHolidays")]
-        public async Task<IActionResult> GetAllHolidays()
+        [HttpGet("GetAllHolidays/{Institute_id}")]
+        public async Task<IActionResult> GetAllHolidays(int Institute_id)
         {
             try
             {
-                var response = await _holidayService.GetAllHolidays();
+                var response = await _holidayService.GetAllHolidays(Institute_id);
                 return StatusCode(response.StatusCode, response);
             }
             catch (Exception ex)
@@ -57,12 +57,12 @@ namespace Institute_API.Controllers
             }
         }
 
-        [HttpGet("GetApprovedHolidays")]
-        public async Task<IActionResult> GetApprovedHolidays()
+        [HttpGet("GetApprovedHolidays/{Institute_id}")]
+        public async Task<IActionResult> GetApprovedHolidays(int Institute_id)
         {
             try
             {
-                var response = await _holidayService.GetApprovedHolidays();
+                var response = await _holidayService.GetApprovedHolidays(Institute_id);
                 return StatusCode(response.StatusCode, response);
             }
             catch (Exception ex)

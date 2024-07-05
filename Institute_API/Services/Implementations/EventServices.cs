@@ -14,7 +14,7 @@ namespace Institute_API.Services.Implementations
             _eventRepository = eventRepository;
             _imageService = imageService;
         }
-        public async Task<ServiceResponse<int>> AddUpdateEvent(EventDTO eventDto)
+        public async Task<ServiceResponse<int>> AddUpdateEvent(EventRequestDTO eventDto)
         {
             try
             {
@@ -62,11 +62,11 @@ namespace Institute_API.Services.Implementations
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
-        public async Task<ServiceResponse<List<EventDTO>>> GetApprovedEvents()
+        public async Task<ServiceResponse<List<EventDTO>>> GetApprovedEvents(int Institute_id)
         {
             try
             {
-                var data = await _eventRepository.GetApprovedEvents();
+                var data = await _eventRepository.GetApprovedEvents(Institute_id);
                 foreach (var eventDto in data.Data)
                 {
                     if (eventDto != null && eventDto.AttachmentFile != null && eventDto.AttachmentFile != "")
@@ -83,11 +83,11 @@ namespace Institute_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<EventDTO>>> GetAllEvents()
+        public async Task<ServiceResponse<List<EventDTO>>> GetAllEvents(int Institute_id)
         {
             try
             {
-                var data = await _eventRepository.GetAllEvents();
+                var data = await _eventRepository.GetAllEvents(Institute_id);
                 foreach (var eventDto in data.Data)
                 {
                     if (eventDto != null && eventDto.AttachmentFile != null && eventDto.AttachmentFile != "")
