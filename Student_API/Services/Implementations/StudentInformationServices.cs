@@ -57,7 +57,7 @@ namespace Student_API.Services.Implementations
                             base64String = Convert.ToBase64String(byteImage);
                         }
 
-                        var result = await _imageService.SaveImageAsync(base64String, "QrCodes");
+                        var result = await _imageService.SaveImageAsync(base64String, "Insititute_" + request.Institute_id + "/QrCodes");
                         request.QR_code = result.relativePath;
                     }
                 }
