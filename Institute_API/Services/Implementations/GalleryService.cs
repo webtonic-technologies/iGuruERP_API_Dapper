@@ -36,11 +36,16 @@ namespace Institute_API.Services.Implementations
                 //{
                 //    await galleryDTO.File.CopyToAsync(fileStream);
                 //}
-                if (galleryDTO.FileName != null && galleryDTO.FileName != "")
+                List<string> savedFilePaths = new List<string>();
+                foreach (var item in galleryDTO.FileName)
                 {
-                    var file = await _imageService.SaveImageAsync(galleryDTO.FileName, "Gallery");
-                    galleryDTO.FileName = file.relativePath;
+                    if (item != null && item != "")
+                    {
+                        var file = await _imageService.SaveImageAsync(item, "Gallery");
+                        savedFilePaths.Add(file.relativePath);
+                    }
                 }
+               galleryDTO.FileName = savedFilePaths;
 
                 //galleryDTO.FileName = uniqueFileName;
                 var data = await _galleryRepository.AddGalleryImage(galleryDTO);
@@ -51,22 +56,41 @@ namespace Institute_API.Services.Implementations
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
-        public async Task<ServiceResponse<List<GalleryEventDTO>>> GetApprovedImagesByEvent()
+        public async Task<ServiceResponse<List<GalleryEventDTO>>> GetApprovedImagesByEvent(int Institute_id)
         {
             try
             {
-                var response = await _galleryRepository.GetApprovedImagesByEvent();
-
+                var response = await _galleryRepository.GetApprovedImagesByEvent(Institute_id);
                 if (response.Success)
                 {
                     foreach (var galleryEvent in response.Data)
                     {
-                        for (int i = 0; i < galleryEvent.FileNames.Count; i++)
+                        foreach (var item in galleryEvent.FileNames)
                         {
-                            galleryEvent.FileNames[i] = Path.Combine(Directory.GetCurrentDirectory(), "Assets", "Gallery", galleryEvent.FileNames[i]);
+                            if (item != null && item != "")
+                            {
+                                galleryEvent.FileName.Add(_imageService.GetImageAsBase64(item));
+                            }
+
+                            //for (int i = 0; i < galleryEvent.FileNames.Count; i++)
+                            //{
+                            //    galleryEvent.FileNames[i] = Path.Combine(Directory.GetCurrentDirectory(), "Assets", "Gallery", galleryEvent.FileNames[i]);
+                            //}
                         }
+
                     }
                 }
+
+                //if (response.Success)
+                //{
+                //    foreach (var galleryEvent in response.Data)
+                //    {
+                //        for (int i = 0; i < galleryEvent.FileNames.Count; i++)
+                //        {
+                //            galleryEvent.FileName[i] = Path.Combine(Directory.GetCurrentDirectory(), "Assets", "Gallery", galleryEvent.FileNames[i]);
+                //        }
+                //    }
+                //}
 
                 return response;
             }
@@ -87,11 +111,11 @@ namespace Institute_API.Services.Implementations
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
-        public async Task<ServiceResponse<List<GalleryEventDTO>>> GetAllGalleryImagesByEvent()
+        public async Task<ServiceResponse<List<GalleryEventDTO>>> GetAllGalleryImagesByEvent(int Institute_id)
         {
             try
             {
-                var response = await _galleryRepository.GetAllGalleryImagesByEvent();
+                var response = await _galleryRepository.GetAllGalleryImagesByEvent(Institute_id);
 
                 if (response.Success)
                 {
