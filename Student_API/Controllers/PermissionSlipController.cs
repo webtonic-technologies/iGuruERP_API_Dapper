@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Student_API.DTOs;
+using Student_API.DTOs.RequestDTO;
 using Student_API.Services.Interfaces;
 
 namespace Student_API.Controllers
@@ -15,10 +16,10 @@ namespace Student_API.Controllers
             _permissionSlipService = permissionSlipService;
         }
 
-        [HttpGet("GetAllPermissionSlips")]
-        public async Task<IActionResult> GetAllPermissionSlips(int classId, int sectionId, int? pageNumber = null, int? pageSize = null)
+        [HttpPost("GetAllPermissionSlips")]
+        public async Task<IActionResult> GetAllPermissionSlips(GetAllPermissionSlips obj)
         {
-            var response = await _permissionSlipService.GetAllPermissionSlips(classId, sectionId,pageNumber,pageSize);
+            var response = await _permissionSlipService.GetAllPermissionSlips(obj.Institute_id, obj.classId, obj.sectionId, obj.pageNumber, obj.pageSize);
             if (response.Success)
             {
                 return Ok(response);
@@ -36,20 +37,20 @@ namespace Student_API.Controllers
             }
             return StatusCode(response.StatusCode, response);
         }
-        [HttpGet("GetAllStudentApprovedList")]
-        public async Task<IActionResult> GetAllStudentApprovedList(int classId, int sectionId, DateTime? startDate, DateTime? endDate, int? pageNumber = null, int? pageSize = null)
+        [HttpPost("GetAllStudentApprovedList")]
+        public async Task<IActionResult> GetAllStudentApprovedList(GetAllPermissionSlipsByStatus obj)
         {
-            var response = await _permissionSlipService.GetPermissionSlips(classId, sectionId, startDate, endDate,true,pageNumber, pageSize);
+            var response = await _permissionSlipService.GetPermissionSlips(obj.Institute_id, obj.classId, obj.sectionId, obj.startDate, obj.endDate, true, obj.pageNumber, obj.pageSize);
             if (response.Success)
             {
                 return Ok(response);
             }
             return StatusCode(response.StatusCode, response);
         }
-        [HttpGet("GetAllStudentRejectedList")]
-        public async Task<IActionResult> GetAllStudentRejectedList(int classId, int sectionId, DateTime? startDate, DateTime? endDate, int? pageNumber = null, int? pageSize = null)
+        [HttpPost("GetAllStudentRejectedList")]
+        public async Task<IActionResult> GetAllStudentRejectedList(GetAllPermissionSlipsByStatus obj)
         {
-            var response = await _permissionSlipService.GetPermissionSlips(classId, sectionId, startDate, endDate, false, pageNumber, pageSize);
+            var response = await _permissionSlipService.GetPermissionSlips(obj.Institute_id, obj.classId, obj.sectionId, obj.startDate, obj.endDate, false, obj.pageNumber, obj.pageSize);
             if (response.Success)
             {
                 return Ok(response);

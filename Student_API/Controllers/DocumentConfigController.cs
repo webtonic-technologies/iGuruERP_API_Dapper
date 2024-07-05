@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Student_API.DTOs;
+using Student_API.DTOs.RequestDTO;
 using Student_API.Services.Interfaces;
 
 namespace Student_API.Controllers
@@ -16,7 +17,7 @@ namespace Student_API.Controllers
         }
 
         [HttpPost("AddUpdateDocument")]
-        public async Task<IActionResult> AddUpdateStudentDocument(StudentDocumentConfigDTO studentDocumentDto)
+        public async Task<IActionResult> AddUpdateStudentDocument(List<StudentDocumentConfigDTO> studentDocumentDto)
         {
             try
             {
@@ -57,12 +58,14 @@ namespace Student_API.Controllers
             }
         }
 
-        [HttpGet("GetAllStudentDocumentList")]
-        public async Task<IActionResult> GetAllStudentDocuments(string sortColumn = "Document_Name", string sortDirection = "ASC",int? pageSize = null,  int? pageNumber = null)
+        [HttpPost("GetAllStudentDocumentList")]
+        public async Task<IActionResult> GetAllStudentDocuments(GetCommonRequestPageListModel obj )
         {
             try
             {
-                var response = await _documentConfigService.GetAllStudentDocuments(sortColumn, sortDirection, pageSize, pageNumber);
+                obj.sortField = obj.sortField?? "Document_Name";
+                obj.sortDirection = obj.sortDirection ?? "ASC";
+                var response = await _documentConfigService.GetAllStudentDocuments(obj.Institute_id,obj.sortField, obj.sortDirection, obj.pageSize, obj.pageNumber);
                 return StatusCode(response.StatusCode, response);
             }
             catch (Exception e)
