@@ -16,7 +16,7 @@ namespace Transport_API.Controllers
         }
 
         [HttpPost("AddUpdateRoutePlan")]
-        public async Task<IActionResult> AddUpdateRoutePlan(Models.RoutePlan request)
+        public async Task<IActionResult> AddUpdateRoutePlan(RoutePlanRequestDTO request)
         {
             try
             {
