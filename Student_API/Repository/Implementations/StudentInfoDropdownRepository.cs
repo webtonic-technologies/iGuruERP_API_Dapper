@@ -336,6 +336,31 @@ namespace Student_API.Repository.Implementations
                 return new ServiceResponse<List<City>>(false, ex.Message, null, 500);
             }
         }
+
+        public async Task<ServiceResponse<List<Academic>>> GetAllAcademic()
+        {
+            try
+            {
+                string sql = @"
+            SELECT *
+            FROM [dbo].[tbl_AcademicYear]";
+
+                var states = await _connection.QueryAsync<Academic>(sql);
+
+                if (states != null && states.Any())
+                {
+                    return new ServiceResponse<List<Academic>>(true, "Operation successful", states.ToList(), 200);
+                }
+                else
+                {
+                    return new ServiceResponse<List<Academic>>(false, "Academic Yesr not found", null, 404);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<Academic>>(false, ex.Message, null, 500);
+            }
+        }
     }
 }
 

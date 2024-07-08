@@ -20,5 +20,6 @@ namespace Student_API.Repository.Interfaces
         Task<ServiceResponse<List<Class>>> GetAllClass(int institute_id);
         Task<ServiceResponse<List<City>>> GetAllCities(int stateId);
         Task<ServiceResponse<List<State>>> GetAllStates();
+        Task<ServiceResponse<List<Academic>>> GetAllAcademic();
     }
 }

@@ -197,5 +197,19 @@ namespace Student_API.Controllers
                 return this.BadRequest(e.Message);
             }
         }
+        [HttpGet]
+        [Route("AcademicYear/GetAllAcademicYear")]
+        public async Task<IActionResult> GetAllAcademic()
+        {
+            try
+            {
+                var data = await _studentInfoDropdownService.GetAllAcademic();
+                return Ok(data);
+            }
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
+        }
     }
 }
