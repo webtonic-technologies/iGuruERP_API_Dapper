@@ -14,7 +14,7 @@ namespace Transport_API.Services.Implementations
             _vehiclesRepository = vehiclesRepository;
         }
 
-        public async Task<ServiceResponse<string>> AddUpdateVehicle(Vehicle vehicle)
+        public async Task<ServiceResponse<string>> AddUpdateVehicle(VehicleRequest vehicle)
         {
             return await _vehiclesRepository.AddUpdateVehicle(vehicle);
         }
