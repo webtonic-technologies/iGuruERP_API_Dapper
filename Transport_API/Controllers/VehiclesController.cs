@@ -16,7 +16,7 @@ namespace Transport_API.Controllers
         }
 
         [HttpPost("AddUpdateVehicles")]
-        public async Task<IActionResult> AddUpdateVehicles(Vehicle request)
+        public async Task<IActionResult> AddUpdateVehicles(VehicleRequest request)
         {
             try
             {

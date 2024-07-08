@@ -16,7 +16,7 @@ namespace Transport_API.Controllers
         }
 
         [HttpPost("AddExpense")]
-        public async Task<IActionResult> AddExpense(VehicleExpense request)
+        public async Task<IActionResult> AddExpense(VehicleExpenseRequest request)
         {
             try
             {
@@ -43,12 +43,12 @@ namespace Transport_API.Controllers
             }
         }
 
-        [HttpGet("GetExpense/{VehicleExpenseId}")]
-        public async Task<IActionResult> GetExpense(int VehicleExpenseId)
+        [HttpGet("GetExpense/{VehicleId}")]
+        public async Task<IActionResult> GetExpense(int VehicleId)
         {
             try
             {
-                var response = await _vehicleMaintenanceService.GetVehicleExpenseById(VehicleExpenseId);
+                var response = await _vehicleMaintenanceService.GetVehicleExpenseById(VehicleId);
                 return StatusCode(response.StatusCode, response);
             }
             catch (Exception e)
@@ -57,12 +57,12 @@ namespace Transport_API.Controllers
             }
         }
 
-        [HttpPut("Status/{VehicleExpenseId}")]
-        public async Task<IActionResult> UpdateExpenseStatus(int VehicleExpenseId)
+        [HttpPut("Delete/{VehicleExpenseId}")]
+        public async Task<IActionResult> DeleteVehicleExpense(int VehicleExpenseId)
         {
             try
             {
-                var response = await _vehicleMaintenanceService.UpdateVehicleExpenseStatus(VehicleExpenseId);
+                var response = await _vehicleMaintenanceService.DeleteVehicleExpense(VehicleExpenseId);
                 return StatusCode(response.StatusCode, response);
             }
             catch (Exception e)

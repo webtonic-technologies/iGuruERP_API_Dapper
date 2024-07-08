@@ -1,4 +1,5 @@
 ﻿using Transport_API.DTOs.Requests;
+using Transport_API.DTOs.Response;
 using Transport_API.DTOs.ServiceResponse;
 using Transport_API.Models;
 using Transport_API.Repository.Interfaces;
@@ -15,12 +16,12 @@ namespace Transport_API.Services.Implementations
             _vehicleMaintenanceRepository = vehicleMaintenanceRepository;
         }
 
-        public async Task<ServiceResponse<string>> AddUpdateVehicleExpense(VehicleExpense vehicleExpense)
+        public async Task<ServiceResponse<string>> AddUpdateVehicleExpense(VehicleExpenseRequest vehicleExpense)
         {
             return await _vehicleMaintenanceRepository.AddUpdateVehicleExpense(vehicleExpense);
         }
 
-        public async Task<ServiceResponse<IEnumerable<VehicleExpense>>> GetAllVehicleExpenses(GetAllExpenseRequest request)
+        public async Task<ServiceResponse<IEnumerable<VehicleExpenseResponse>>> GetAllVehicleExpenses(GetAllExpenseRequest request)
         {
             return await _vehicleMaintenanceRepository.GetAllVehicleExpenses(request);
         }
@@ -30,9 +31,9 @@ namespace Transport_API.Services.Implementations
             return await _vehicleMaintenanceRepository.GetVehicleExpenseById(vehicleExpenseId);
         }
 
-        public async Task<ServiceResponse<bool>> UpdateVehicleExpenseStatus(int vehicleExpenseId)
+        public async Task<ServiceResponse<bool>> DeleteVehicleExpense(int vehicleExpenseId)
         {
-            return await _vehicleMaintenanceRepository.UpdateVehicleExpenseStatus(vehicleExpenseId);
+            return await _vehicleMaintenanceRepository.DeleteVehicleExpense(vehicleExpenseId);
         }
     }
 }

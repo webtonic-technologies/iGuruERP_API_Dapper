@@ -11,6 +11,7 @@
         public string ScheduleTime { get; set; }
         public string Time { get; set; }
         public string? AttachmentFile { get; set; }
+        public int Institute_id { get; set; }
 
         public List<EventEmployeeMapping> EmployeeMappings { get; set; }
         public List<EventClassSessionMapping> ClassSessionMappings { get; set; }
@@ -20,7 +21,7 @@
         public int EventEmployeeMapping_id { get; set; }
         public int Event_id { get; set; }
         public int Employee_id { get; set; }
-        public string? Employee_Name {  get; set; }      
+        public string? Employee_Name { get; set; }
     }
 
     public class EventClassSessionMapping
@@ -29,7 +30,7 @@
         public int Event_id { get; set; }
         public int Class_id { get; set; }
         public int Section_id { get; set; }
-        public string? Section {  get; set; }      
-        public string?   class_course {  get; set; }   
+        public string? section_name { get; set; }
+        public string? class_name { get; set; }
     }
 }

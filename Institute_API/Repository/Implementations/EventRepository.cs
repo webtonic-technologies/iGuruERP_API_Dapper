@@ -16,7 +16,7 @@ namespace Institute_API.Repository.Implementations
         {
             _connection = connection;
         }
-        public async Task<ServiceResponse<int>> AddUpdateEvent(EventDTO eventDto)
+        public async Task<ServiceResponse<int>> AddUpdateEvent(EventRequestDTO eventDto)
         {
             try
             {
@@ -38,14 +38,15 @@ namespace Institute_API.Repository.Implementations
                             Location = @Location,
                             ScheduleTime = @ScheduleTime,
                             Time = @Time,
+                            Institute_id=@Institute_id,
                             AttachmentFile = @AttachmentFile
                         WHERE Event_id = @Event_id";
                         }
                         else
                         {
                             eventQuery = @"
-                        INSERT INTO [dbo].[tbl_CreateEvent] (EventName, StartDate, EndDate, Description, Location, ScheduleTime, Time, AttachmentFile)
-                        VALUES (@EventName, @StartDate, @EndDate, @Description, @Location, @ScheduleTime, @Time, @AttachmentFile);
+                        INSERT INTO [dbo].[tbl_CreateEvent] (EventName, StartDate, EndDate, Description, Location, ScheduleTime, Time, AttachmentFile,Institute_id)
+                        VALUES (@EventName, @StartDate, @EndDate, @Description, @Location, @ScheduleTime, @Time, @AttachmentFile,@Institute_id);
                         SELECT SCOPE_IDENTITY();"
                             ; // Retrieve the inserted id
                         }
@@ -207,10 +208,10 @@ namespace Institute_API.Repository.Implementations
 
                 // Get EventClassSessionMappings
                 string classSessionMappingsQuery = @"
-            SELECT EventClassSessionMapping_id,Event_id,Class_id,Section_id,class_course,Section
+            SELECT EventClassSessionMapping_id,Event_id,tbl_Class.Class_id,tbl_Section.Section_id,class_name,section_name
             FROM tbl_EventClassSessionMapping
-            INNER JOIN tbl_CourseClass ON tbl_CourseClass.CourseClass_id = Class_id
-            INNER JOIN tbl_CourseClassSection ON tbl_CourseClassSection.CourseClassSection_id = Section_id
+            INNER JOIN tbl_Class ON tbl_Class.class_id = tbl_EventClassSessionMapping.class_id
+            INNER JOIN tbl_Section ON tbl_Section.section_id = tbl_EventClassSessionMapping.section_id
             WHERE Event_id = @EventId";
 
                 var classSessionMappings = await _connection.QueryAsync<EventClassSessionMapping>(classSessionMappingsQuery, new { EventId = eventId });
@@ -250,7 +251,7 @@ namespace Institute_API.Repository.Implementations
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
-        public async Task<ServiceResponse<List<EventDTO>>> GetApprovedEvents()
+        public async Task<ServiceResponse<List<EventDTO>>> GetApprovedEvents(int Institute_id)
         {
             try
             {
@@ -263,11 +264,18 @@ namespace Institute_API.Repository.Implementations
                    Location,
                    AttachmentFile
             FROM tbl_CreateEvent
-            WHERE isApproved = 1 AND isDelete = 0";
+            WHERE isApproved = 1 AND isDelete = 0 AND Institute_id =@Institute_id";
 
-                var events = await _connection.QueryAsync<EventDTO>(query);
-
-                return new ServiceResponse<List<EventDTO>>(true, "Approved events retrieved successfully", events.ToList(), 200);
+                var events = await _connection.QueryAsync<EventDTO>(query, new{ Institute_id });
+                if (events.Count() >0)
+                {
+                    return new ServiceResponse<List<EventDTO>>(true, "Approved events retrieved successfully", events.ToList(), 200);
+                }
+                else
+                {
+                    return new ServiceResponse<List<EventDTO>>(false, "Approved events Not Found", events.ToList(), 404);
+                }
+               
             }
             catch (Exception ex)
             {
@@ -275,7 +283,7 @@ namespace Institute_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<EventDTO>>> GetAllEvents()
+        public async Task<ServiceResponse<List<EventDTO>>> GetAllEvents(int Institute_id)
         {
             try
             {
@@ -287,11 +295,18 @@ namespace Institute_API.Repository.Implementations
                    Description,
                    Location,
                    AttachmentFile
-            FROM tbl_CreateEvent where isDelete = 0";
+            FROM tbl_CreateEvent where isDelete = 0 AND Institute_id = @Institute_id";
 
-                var events = await _connection.QueryAsync<EventDTO>(query);
+                var events = await _connection.QueryAsync<EventDTO>(query, new { Institute_id });
 
-                return new ServiceResponse<List<EventDTO>>(true, "events retrieved successfully", events.ToList(), 200);
+                if (events.Count() > 0)
+                {
+                    return new ServiceResponse<List<EventDTO>>(true, "Approved events retrieved successfully", events.ToList(), 200);
+                }
+                else
+                {
+                    return new ServiceResponse<List<EventDTO>>(false, "Approved events Not Found", events.ToList(), 404);
+                }
             }
             catch (Exception ex)
             {

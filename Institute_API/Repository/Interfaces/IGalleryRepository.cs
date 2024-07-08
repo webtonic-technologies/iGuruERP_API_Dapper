@@ -7,7 +7,7 @@ namespace Institute_API.Repository.Interfaces
     {
         Task<ServiceResponse<int>> AddGalleryImage(GalleryDTO galleryDTO);
         Task<ServiceResponse<bool>> UpdateGalleryImageApprovalStatus(int galleryId, bool isApproved, int userId);
-        Task<ServiceResponse<List<GalleryEventDTO>>> GetApprovedImagesByEvent();
-        Task<ServiceResponse<List<GalleryEventDTO>>> GetAllGalleryImagesByEvent();
+        Task<ServiceResponse<List<GalleryEventDTO>>> GetApprovedImagesByEvent(int Institute_id);
+        Task<ServiceResponse<List<GalleryEventDTO>>> GetAllGalleryImagesByEvent(int Institute_id);
     }
 }

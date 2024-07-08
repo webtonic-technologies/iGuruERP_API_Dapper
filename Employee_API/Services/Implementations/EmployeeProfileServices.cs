@@ -170,5 +170,17 @@ namespace Employee_API.Services.Implementations
                 return new ServiceResponse<List<EmployeeWorkExperience>>(false, ex.Message, [], 500);
             }
         }
+
+        public async Task<ServiceResponse<bool>> StatusActiveInactive(int employeeId)
+        {
+            try
+            {
+                return await _employeeProfileRepository.StatusActiveInactive(employeeId);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<bool>(false, ex.Message, false, 500);
+            }
+        }
     }
 }

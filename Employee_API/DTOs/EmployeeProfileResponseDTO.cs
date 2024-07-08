@@ -27,6 +27,7 @@ namespace Employee_API.DTOs
         public int Institute_id { get; set; }
         public string EmpPhoto { get; set; } = string.Empty;
         public string uan_no { get; set; } = string.Empty;
+        public bool Status {  get; set; }
         public List<EmployeeDocument>? EmployeeDocuments { get; set; }
         public List<EmployeeQualification>? EmployeeQualifications { get; set; }
         public List<EmployeeWorkExperience>? EmployeeWorkExperiences { get; set; }

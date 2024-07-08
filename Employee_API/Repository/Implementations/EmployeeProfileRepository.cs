@@ -26,11 +26,11 @@ namespace Employee_API.Repository.Implementations
                     string sql = @"INSERT INTO [dbo].[tbl_EmployeeProfileMaster] 
                         (First_Name, Middle_Name, Last_Name, Gender_id, Department_id, Designation_id, mobile_number, 
                          Date_of_Joining, Nationality_id, Religion_id, Date_of_Birth, EmailID, Employee_code_id, marrital_status_id, 
-                         Blood_Group_id, aadhar_no, pan_no, EPF_no, ESIC_no, Institute_id, EmpPhoto, uan_no) 
+                         Blood_Group_id, aadhar_no, pan_no, EPF_no, ESIC_no, Institute_id, EmpPhoto, uan_no, Status) 
                        VALUES 
                         (@First_Name, @Middle_Name, @Last_Name, @Gender_id, @Department_id, @Designation_id, @mobile_number, 
                          @Date_of_Joining, @Nationality_id, @Religion_id, @Date_of_Birth, @EmailID, @Employee_code_id, @marrital_status_id, 
-                         @Blood_Group_id, @aadhar_no, @pan_no, @EPF_no, @ESIC_no, @Institute_id, @EmpPhoto, @uan_no);
+                         @Blood_Group_id, @aadhar_no, @pan_no, @EPF_no, @ESIC_no, @Institute_id, @EmpPhoto, @uan_no, @Status);
                        SELECT SCOPE_IDENTITY();"; // Retrieve the inserted Employee_id
 
                     // Execute the query and retrieve the inserted Employee_id
@@ -57,6 +57,7 @@ namespace Employee_API.Repository.Implementations
                         request.ESIC_no,
                         request.Institute_id,
                         request.uan_no,
+                        request.Status,
                         EmpPhoto = ImageUpload(request.EmpPhoto)
                     });
                     if (employeeId > 0)
@@ -92,7 +93,8 @@ namespace Employee_API.Repository.Implementations
                         ESIC_no = @ESIC_no, 
                         Institute_id = @Institute_id,
                         EmpPhoto = @EmpPhoto,
-                        uan_no = @uan_no
+                        uan_no = @uan_no,
+                        Status = @Status
                       WHERE Employee_id = @Employee_id";
 
                     // Execute the query
@@ -120,6 +122,7 @@ namespace Employee_API.Repository.Implementations
                         request.ESIC_no,
                         request.Institute_id,
                         request.uan_no,
+                        request.Status,
                         EmpPhoto = ImageUpload(request.EmpPhoto)
                     });
                     if (rowsAffected > 0)
@@ -465,7 +468,7 @@ namespace Employee_API.Repository.Implementations
                 string sql = @"SELECT Employee_id, First_Name, Middle_Name, Last_Name, Gender_id, Department_id, 
                             Designation_id, mobile_number, Date_of_Joining, Nationality_id, Religion_id, 
                             Date_of_Birth, EmailID, Employee_code_id, marrital_status_id, Blood_Group_id, 
-                            aadhar_no, pan_no, EPF_no, ESIC_no, Institute_id, EmpPhoto, uan_no
+                            aadhar_no, pan_no, EPF_no, ESIC_no, Institute_id, EmpPhoto, uan_no, Status
                        FROM [dbo].[tbl_EmployeeProfileMaster]
                        WHERE Employee_id = @EmployeeId";
 
@@ -609,14 +612,14 @@ namespace Employee_API.Repository.Implementations
             try
             {
                 string query = @"
-                SELECT 
-                    [Employee_id], [First_Name], [Middle_Name], [Last_Name], [Gender_id], 
-                    [Department_id], [Designation_id], [mobile_number], [Date_of_Joining], 
-                    [Nationality_id], [Religion_id], [Date_of_Birth], [EmailID], [Employee_code_id], 
-                    [marrital_status_id], [Blood_Group_id], [aadhar_no], [pan_no], [EPF_no], 
-                    [ESIC_no], [Institute_id], [EmpPhoto], [uan_no] 
-                FROM [tbl_EmployeeProfileMaster] 
-                WHERE (1=1)";
+        SELECT 
+            [Employee_id], [First_Name], [Middle_Name], [Last_Name], [Gender_id], 
+            [Department_id], [Designation_id], [mobile_number], [Date_of_Joining], 
+            [Nationality_id], [Religion_id], [Date_of_Birth], [EmailID], [Employee_code_id], 
+            [marrital_status_id], [Blood_Group_id], [aadhar_no], [pan_no], [EPF_no], 
+            [ESIC_no], [Institute_id], [EmpPhoto], [uan_no], Status
+        FROM [tbl_EmployeeProfileMaster] 
+        WHERE (1=1)";
 
                 var parameters = new DynamicParameters();
 
@@ -638,25 +641,36 @@ namespace Employee_API.Repository.Implementations
                     parameters.Add("@DesignationId", request.DesignationId);
                 }
 
+                if (!string.IsNullOrEmpty(request.SearchText))
+                {
+                    query += " AND (First_Name LIKE @SearchText OR Middle_Name LIKE @SearchText OR Last_Name LIKE @SearchText OR EmailID LIKE @SearchText)";
+                    parameters.Add("@SearchText", "%" + request.SearchText + "%");
+                }
+
                 var employees = await _connection.QueryAsync<EmployeeProfile>(query, parameters);
 
-
-                if (employees != null)
+                if (employees != null && employees.Any())
                 {
-                    foreach (var data in employees)
+                    // Apply pagination in memory
+                    var paginatedList = employees.Skip((request.PageNumber - 1) * request.PageSize)
+                                                 .Take(request.PageSize)
+                                                 .ToList();
+
+                    foreach (var data in paginatedList)
                     {
                         data.EmpPhoto = GetImage(data.EmpPhoto);
                     }
-                    return new ServiceResponse<List<EmployeeProfile>>(true, "operation successful", employees.AsList(), 200);
+
+                    return new ServiceResponse<List<EmployeeProfile>>(true, "Operation successful", paginatedList, 200, employees.Count());
                 }
                 else
                 {
-                    return new ServiceResponse<List<EmployeeProfile>>(false, "Some error occured", [], 500);
+                    return new ServiceResponse<List<EmployeeProfile>>(false, "No records found", new List<EmployeeProfile>(), 204);
                 }
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<List<EmployeeProfile>>(false, ex.Message, [], 500);
+                return new ServiceResponse<List<EmployeeProfile>>(false, ex.Message, new List<EmployeeProfile>(), 500);
             }
         }
         public async Task<ServiceResponse<List<EmployeeDocument>>> GetEmployeeDocuments(int employee_id)
@@ -774,6 +788,38 @@ namespace Employee_API.Repository.Implementations
                 return new ServiceResponse<List<EmployeeBankDetails>>(false, ex.Message, [], 500);
             }
         }
+        public async Task<ServiceResponse<bool>> StatusActiveInactive(int employeeId)
+        {
+            try
+            {
+                var data = await GetEmployeeProfileById(employeeId);
+
+                if (data.Data != null)
+                {
+                    data.Data.Status = !data.Data.Status;
+
+                    string sql = "UPDATE tbl_EmployeeProfileMaster SET Status = @Status WHERE Employee_id = @Employee_id";
+
+                    int rowsAffected = await _connection.ExecuteAsync(sql, new { data.Data.Status, Employee_id = employeeId });
+                    if (rowsAffected > 0)
+                    {
+                        return new ServiceResponse<bool>(true, "Operation Successful", true, 200);
+                    }
+                    else
+                    {
+                        return new ServiceResponse<bool>(false, "Opertion Failed", false, 500);
+                    }
+                }
+                else
+                {
+                    return new ServiceResponse<bool>(false, "Record not Found", false, 204);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<bool>(false, ex.Message, false, 500);
+            }
+        }
         private string ImageUpload(string image)
         {
             if (string.IsNullOrEmpty(image) || image == "string")
@@ -825,4 +871,3 @@ namespace Employee_API.Repository.Implementations
         }
     }
 }
-
