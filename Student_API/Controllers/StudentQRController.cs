@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Student_API.DTOs;
+using Student_API.DTOs.RequestDTO;
 using Student_API.Services.Implementations;
 using Student_API.Services.Interfaces;
 
@@ -15,13 +16,15 @@ namespace Student_API.Controllers
             _studentQRService = studentQRService;
         }
 
-        [HttpGet]
+        [HttpPost]
         [Route("GetAllStudentQRcode")]
-        public async Task<IActionResult> GetAllStudentQR( int section_id, int class_id, string sortField = "Student_Name", string sortDirection = "ASC",  int? pageNumber = null, int? pageSize = null)
+        public async Task<IActionResult> GetAllStudentQR(GetQrcodeRequestModel obj)
         {
             try
             {
-                var data = await _studentQRService.GetAllStudentQR(section_id, class_id, sortField, sortDirection, pageNumber, pageSize);
+                obj.sortField = obj.sortField ?? "Student_Name";
+                obj.sortDirection = obj.sortDirection ?? "ASC";
+                var data = await _studentQRService.GetAllStudentQR(obj.section_id, obj.class_id, obj.sortField, obj.sortDirection, obj.pageNumber, obj.pageSize);
                 if (data.Success)
                 {
                     return Ok(data);

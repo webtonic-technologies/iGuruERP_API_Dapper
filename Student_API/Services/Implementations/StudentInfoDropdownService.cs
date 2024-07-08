@@ -26,16 +26,29 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<List<Gender>>(false, ex.Message, null, 500);
             }
         }
-        public async Task<ServiceResponse<List<Sections>>> GetAllSections()
+        public async Task<ServiceResponse<List<Sections>>> GetAllSections(int Class_Id)
         {
             try
             {
-                var data = await _studentInfoDropdownRepository.GetAllSections();
+                var data = await _studentInfoDropdownRepository.GetAllSections(Class_Id);
                 return data;
             }
             catch (Exception ex)
             {
                 return new ServiceResponse<List<Sections>>(false, ex.Message, null, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<List<Class>>> GetAllClass(int institute_id)
+        {
+            try
+            {
+                var data = await _studentInfoDropdownRepository.GetAllClass(institute_id);
+                return data;
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<Class>>(false, ex.Message, null, 500);
             }
         }
         public async Task<ServiceResponse<List<Religion>>> GetAllReligions()
@@ -132,6 +145,30 @@ namespace Student_API.Services.Implementations
             catch (Exception ex)
             {
                 return new ServiceResponse<List<ParentType>>(false, ex.Message, null, 500);
+            }
+        }
+        public async Task<ServiceResponse<List<State>>> GetAllStates()
+        {
+            try
+            {
+                var data = await _studentInfoDropdownRepository.GetAllStates();
+                return data;
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<State>>(false, ex.Message, null, 500);
+            }
+        }
+        public async Task<ServiceResponse<List<City>>> GetAllCities(int stateId)
+        {
+            try
+            {
+                var data = await _studentInfoDropdownRepository.GetAllCities( stateId);
+                return data;
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<City>>(false, ex.Message, null, 500);
             }
         }
     }

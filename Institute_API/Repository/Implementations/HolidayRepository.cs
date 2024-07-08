@@ -15,7 +15,7 @@ namespace Institute_API.Repository.Implementations
         {
             _connection = connection;
         }
-        public async Task<ServiceResponse<int>> AddUpdateHoliday(HolidayDTO holidayDTO)
+        public async Task<ServiceResponse<int>> AddUpdateHoliday(HolidayRequestDTO holidayDTO)
         {
             try
             {
@@ -34,15 +34,16 @@ namespace Institute_API.Repository.Implementations
                         HolidayName = @HolidayName,
                         StartDate = @StartDate,
                         EndDate = @EndDate,
-                        Description = @Description
+                        Description = @Description,
+                        Institute_id = @Institute_id
                     WHERE Holiday_id = @Holiday_id;
                 ";
                     }
                     else
                     {
                         holidayQuery = @"
-                    INSERT INTO [dbo].[tbl_Holiday] (HolidayName, StartDate, EndDate, Description)
-                    VALUES (@HolidayName, @StartDate, @EndDate, @Description);
+                    INSERT INTO [dbo].[tbl_Holiday] (HolidayName, StartDate, EndDate, Description,Institute_id)
+                    VALUES (@HolidayName, @StartDate, @EndDate, @Description,@Institute_id);
                     SELECT SCOPE_IDENTITY();
                 ";
                     }
@@ -100,12 +101,12 @@ namespace Institute_API.Repository.Implementations
             try
             {
                 string holidayQuery = @"
-            SELECT Holiday_id, HolidayName, StartDate, EndDate, Description, IsApproved, ApprovedBy
+            SELECT Holiday_id, HolidayName, StartDate, EndDate, Description, IsApproved, ApprovedBy,Institute_id
             FROM [dbo].[tbl_Holiday]
-            WHERE Holiday_id = @HolidayId;
+            WHERE Holiday_id = @HolidayId ;
         ";
 
-                var holiday = await _connection.QueryFirstOrDefaultAsync<HolidayDTO>(holidayQuery, new { HolidayId = holidayId });
+                var holiday = await _connection.QueryFirstOrDefaultAsync<HolidayDTO>(holidayQuery, new { HolidayId = holidayId});
 
                 if (holiday == null)
                 {
@@ -113,10 +114,10 @@ namespace Institute_API.Repository.Implementations
                 }
 
                 string mappingQuery = @"
-            SELECT HolidayClassSessionMapping_id, Holiday_id, Class_id, Section_id,class_course,Section
+            SELECT HolidayClassSessionMapping_id, Holiday_id, tbl_HolidayClassSessionMapping.Class_id, tbl_HolidayClassSessionMapping.Section_id,class_name,section_name
             FROM [dbo].[tbl_HolidayClassSessionMapping]
-            INNER JOIN tbl_CourseClass ON tbl_CourseClass.CourseClass_id = Class_id
-            INNER JOIN tbl_CourseClassSection ON tbl_CourseClassSection.CourseClassSection_id = Section_id
+            INNER JOIN tbl_Class ON tbl_Class.Class_id = tbl_HolidayClassSessionMapping.Class_id
+            INNER JOIN tbl_Section ON tbl_Section.Section_id = tbl_HolidayClassSessionMapping.Section_id
             WHERE Holiday_id = @HolidayId;
         ";
 
@@ -132,25 +133,25 @@ namespace Institute_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<HolidayDTO>>> GetAllHolidays()
+        public async Task<ServiceResponse<List<HolidayDTO>>> GetAllHolidays(int Institute_id)
         {
             try
             {
                 string query = @"
-            SELECT Holiday_id, HolidayName, StartDate, EndDate, Description, IsApproved, ApprovedBy
-            FROM [dbo].[tbl_Holiday];
+            SELECT Holiday_id, HolidayName, StartDate, EndDate, Description, IsApproved, ApprovedBy,Institute_id
+            FROM [dbo].[tbl_Holiday] WHERE Institute_id = @Institute_id AND isDelete = 0 ;
         ";
 
-                var holidays = await _connection.QueryAsync<HolidayDTO>(query);
+                var holidays = await _connection.QueryAsync<HolidayDTO>(query, new { Institute_id });
 
                 foreach (var holiday in holidays)
                 {
                     string mappingQuery = @"
-                SELECT HolidayClassSessionMapping_id, Holiday_id, Class_id, Section_id,class_course,Section
+                SELECT HolidayClassSessionMapping_id, Holiday_id, tbl_HolidayClassSessionMapping.Class_id, tbl_HolidayClassSessionMapping.Section_id,class_name,section_name
                 FROM [dbo].[tbl_HolidayClassSessionMapping]
-            INNER JOIN tbl_CourseClass ON tbl_CourseClass.CourseClass_id = Class_id
-            INNER JOIN tbl_CourseClassSection ON tbl_CourseClassSection.CourseClassSection_id = Section_id
-                WHERE Holiday_id = @HolidayId AND isDelete = 0 ;
+            INNER JOIN tbl_Class ON tbl_Class.Class_id = tbl_HolidayClassSessionMapping.Class_id
+            INNER JOIN tbl_Section ON tbl_Section.Section_id = tbl_HolidayClassSessionMapping.Section_id
+                WHERE Holiday_id = @HolidayId ;
             ";
 
                     var mappings = await _connection.QueryAsync<HolidayClassSessionMappingDTO>(mappingQuery, new { HolidayId = holiday.Holiday_id });
@@ -166,26 +167,26 @@ namespace Institute_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<HolidayDTO>>> GetApprovedHolidays()
+        public async Task<ServiceResponse<List<HolidayDTO>>> GetApprovedHolidays(int Institute_id)
         {
             try
             {
                 string query = @"
-            SELECT Holiday_id, HolidayName, StartDate, EndDate, Description, IsApproved, ApprovedBy
+            SELECT Holiday_id, HolidayName, StartDate, EndDate, Description, IsApproved, ApprovedBy,Institute_id
             FROM [dbo].[tbl_Holiday]
-            WHERE IsApproved = 1 AND isDelete = 0 ;
+            WHERE IsApproved = 1 AND isDelete = 0 AND Institute_id = @Institute_id;
         ";
 
-                var holidays = await _connection.QueryAsync<HolidayDTO>(query);
+                var holidays = await _connection.QueryAsync<HolidayDTO>(query, new{ Institute_id = Institute_id });
 
                 foreach (var holiday in holidays)
                 {
                     string mappingQuery = @"
-                SELECT HolidayClassSessionMapping_id, Holiday_id, Class_id, Section_id,class_course,Section
+                SELECT HolidayClassSessionMapping_id, Holiday_id, tbl_HolidayClassSessionMapping.Class_id, tbl_HolidayClassSessionMapping.Section_id,class_name,section_name
                 FROM [dbo].[tbl_HolidayClassSessionMapping]
-                INNER JOIN tbl_CourseClass ON tbl_CourseClass.CourseClass_id = Class_id
-                INNER JOIN tbl_CourseClassSection ON tbl_CourseClassSection.CourseClassSection_id = Section_id
-                WHERE Holiday_id = @HolidayId;
+            INNER JOIN tbl_Class ON tbl_Class.Class_id = tbl_HolidayClassSessionMapping.Class_id
+            INNER JOIN tbl_Section ON tbl_Section.Section_id = tbl_HolidayClassSessionMapping.Section_id
+                WHERE Holiday_id = @HolidayId ;
             ";
 
                     var mappings = await _connection.QueryAsync<HolidayClassSessionMappingDTO>(mappingQuery, new { HolidayId = holiday.Holiday_id });
@@ -219,7 +220,7 @@ namespace Institute_API.Repository.Implementations
             //";
 
                     string deleteHolidayQuery = @"
-                UPDTAE [dbo].[tbl_Holiday] SET isDelete = 1  WHERE Holiday_id = @HolidayId;
+                UPDATE [dbo].[tbl_Holiday] SET isDelete = 1  WHERE Holiday_id = @HolidayId;
             ";
 
                     int affectedRows = await _connection.ExecuteAsync(deleteHolidayQuery, new { HolidayId = holidayId }, transaction);
