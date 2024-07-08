@@ -14,11 +14,11 @@ namespace Student_API.Services.Implementations
             _studentRepository = studentRepository;
         }
 
-        public async Task<ServiceResponse<StudentStatisticsDTO>> GetStudentStatisticsAsync()
+        public async Task<ServiceResponse<StudentStatisticsDTO>> GetStudentStatisticsAsync(int Institute_id)
         {
             try
             {
-                var data = await _studentRepository.GetStudentStatisticsAsync();
+                var data = await _studentRepository.GetStudentStatisticsAsync(Institute_id);
                 return data;
             }
             catch (Exception ex)
@@ -27,11 +27,11 @@ namespace Student_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<HouseWiseStudentCountDTO>>> GetHouseWiseStudentCountAsync()
+        public async Task<ServiceResponse<List<HouseWiseStudentCountDTO>>> GetHouseWiseStudentCountAsync(int Institute_id)
         {
             try
             {
-                var data = await _studentRepository.GetHouseWiseStudentCountAsync();
+                var data = await _studentRepository.GetHouseWiseStudentCountAsync(Institute_id);
                 return data;
             }
             catch (Exception ex)
@@ -40,11 +40,11 @@ namespace Student_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<StudentBirthdayDTO>>> GetTodaysBirthdaysAsync()
+        public async Task<ServiceResponse<List<StudentBirthdayDTO>>> GetTodaysBirthdaysAsync(int Institute_id)
         {
             try
             {
-                var data = await _studentRepository.GetTodaysBirthdaysAsync();
+                var data = await _studentRepository.GetTodaysBirthdaysAsync(Institute_id);
                 return data;
             }
             catch (Exception ex)
@@ -53,11 +53,11 @@ namespace Student_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<ClassWiseGenderCountDTO>>> GetClassWiseGenderCountAsync()
+        public async Task<ServiceResponse<List<ClassWiseGenderCountDTO>>> GetClassWiseGenderCountAsync(int Institute_id)
         {
             try
             {
-                var data = await _studentRepository.GetClassWiseGenderCountAsync();
+                var data = await _studentRepository.GetClassWiseGenderCountAsync(Institute_id);
                 return data;
             }
             catch (Exception ex)
