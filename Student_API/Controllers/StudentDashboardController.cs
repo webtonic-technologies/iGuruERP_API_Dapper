@@ -14,30 +14,30 @@ namespace Student_API.Controllers
             _studentService = studentService;
         }
 
-        [HttpGet("GetStudentStatistics")]
-        public async Task<IActionResult> GetStudentStatistics()
+        [HttpGet("GetStudentStatistics/{Institute_id}")]
+        public async Task<IActionResult> GetStudentStatistics(int Institute_id)
         {
-            var response = await _studentService.GetStudentStatisticsAsync();
+            var response = await _studentService.GetStudentStatisticsAsync(Institute_id);
             if (response.Success)
             {
                 return Ok(response);
             }
             return StatusCode(response.StatusCode, response);
         }
-        [HttpGet("HousewiseStudent/GetHouseWiseStudentCount")]
-        public async Task<IActionResult> GetHouseWiseStudentCount()
+        [HttpGet("HousewiseStudent/GetHouseWiseStudentCount/{Institute_id}")]
+        public async Task<IActionResult> GetHouseWiseStudentCount(int Institute_id)
         {
-            var response = await _studentService.GetHouseWiseStudentCountAsync();
+            var response = await _studentService.GetHouseWiseStudentCountAsync(Institute_id);
             if (response.Success)
             {
                 return Ok(response);
             }
             return StatusCode(response.StatusCode, response);
         }
-        [HttpGet("StudentBirthdays/GetTodaysBirthdays")]
-        public async Task<IActionResult> GetTodaysBirthdays()
+        [HttpGet("StudentBirthdays/GetTodaysBirthdays/{Institute_id}")]
+        public async Task<IActionResult> GetTodaysBirthdays(int Institute_id)
         {
-            var response = await _studentService.GetTodaysBirthdaysAsync();
+            var response = await _studentService.GetTodaysBirthdaysAsync(Institute_id);
             if (response.Success)
             {
                 return Ok(response);
@@ -45,10 +45,10 @@ namespace Student_API.Controllers
             return StatusCode(response.StatusCode, response);
         }
 
-        [HttpGet("GenderCount/GetClassWiseGenderCount")]
-        public async Task<IActionResult> GetClassWiseGenderCount()
+        [HttpGet("GenderCount/GetClassWiseGenderCount/{Institute_id}")]
+        public async Task<IActionResult> GetClassWiseGenderCount(int Institute_id)
         {
-            var response = await _studentService.GetClassWiseGenderCountAsync();
+            var response = await _studentService.GetClassWiseGenderCountAsync(Institute_id);
             if (response.Success)
             {
                 return Ok(response);

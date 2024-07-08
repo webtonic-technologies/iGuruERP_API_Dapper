@@ -5,9 +5,9 @@ namespace Student_API.Services.Interfaces
 {
     public interface IStudentDashboardService
     {
-        Task<ServiceResponse<StudentStatisticsDTO>> GetStudentStatisticsAsync();
-        Task<ServiceResponse<List<HouseWiseStudentCountDTO>>> GetHouseWiseStudentCountAsync();
-        Task<ServiceResponse<List<StudentBirthdayDTO>>> GetTodaysBirthdaysAsync();
-        Task<ServiceResponse<List<ClassWiseGenderCountDTO>>> GetClassWiseGenderCountAsync();
+        Task<ServiceResponse<StudentStatisticsDTO>> GetStudentStatisticsAsync(int Institute_id);
+        Task<ServiceResponse<List<HouseWiseStudentCountDTO>>> GetHouseWiseStudentCountAsync(int Institute_id);
+        Task<ServiceResponse<List<StudentBirthdayDTO>>> GetTodaysBirthdaysAsync(int Institute_id);
+        Task<ServiceResponse<List<ClassWiseGenderCountDTO>>> GetClassWiseGenderCountAsync(int Institute_id);
     }
 }

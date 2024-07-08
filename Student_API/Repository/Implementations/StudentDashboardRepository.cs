@@ -18,17 +18,23 @@ namespace Student_API.Repository.Implementations
             _dbConnection = dbConnection;
         }
 
-        public async Task<ServiceResponse<StudentStatisticsDTO>> GetStudentStatisticsAsync()
+        public async Task<ServiceResponse<StudentStatisticsDTO>> GetStudentStatisticsAsync(int Institute_id)
         {
             string sql = @"
             -- Gender-wise count
+            
             SELECT 
                 g.Gender_Type AS Gender,
-                COUNT(s.student_id) AS Count,
-                CAST(COUNT(s.student_id) * 100.0 / SUM(COUNT(s.student_id)) OVER () AS DECIMAL(5, 2)) AS Percentage
+                COALESCE(COUNT(s.student_id), 0) AS Count,
+                CAST(
+                    COALESCE(COUNT(s.student_id), 0) * 100.0 / 
+                    (SELECT COUNT(student_id) FROM tbl_StudentMaster WHERE Institute_id =@Institute_id)
+                    AS DECIMAL(5, 2)
+                ) AS Percentage
             INTO #GenderWiseCount
-            FROM tbl_StudentMaster s
-            JOIN tbl_Gender g ON s.gender_id = g.Gender_Id
+            FROM tbl_Gender g
+            LEFT JOIN tbl_StudentMaster s 
+                ON s.gender_id = g.Gender_Id AND s.Institute_id = @Institute_id
             GROUP BY g.Gender_Type;
 
             -- Status-wise count
@@ -38,6 +44,7 @@ namespace Student_API.Repository.Implementations
                 CAST(COUNT(s.student_id) * 100.0 / SUM(COUNT(s.student_id)) OVER () AS DECIMAL(5, 2)) AS Percentage
             INTO #StatusWiseCount
             FROM tbl_StudentMaster s
+            WHERE s.Institute_id = @Institute_id
             GROUP BY s.isActive;
 
             -- Student Type-wise count
@@ -47,7 +54,9 @@ namespace Student_API.Repository.Implementations
                 CAST(COUNT(s.student_id) * 100.0 / SUM(COUNT(s.student_id)) OVER () AS DECIMAL(5, 2)) AS Percentage
             INTO #StudentTypeWiseCount
             FROM tbl_StudentOtherInfo s
+            JOIN tbl_StudentMaster sm ON sm.student_id = s.student_id
             JOIN tbl_StudentType st ON s.StudentType_Id = st.Student_Type_id 
+            WHERE sm.Institute_id = @Institute_id
             GROUP BY st.Student_Type_Name;
 
             -- Select data from temp tables
@@ -62,7 +71,7 @@ namespace Student_API.Repository.Implementations
 
             try
             {
-                using (var multi = await _dbConnection.QueryMultipleAsync(sql))
+                using (var multi = await _dbConnection.QueryMultipleAsync(sql,new{ Institute_id = Institute_id}))
                 {
                     var genderCounts = multi.Read<GenderWiseStudentCountDTO>().ToList();
                     var statusCounts = multi.Read<StatusWiseStudentCountDTO>().ToList();
@@ -84,7 +93,7 @@ namespace Student_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<HouseWiseStudentCountDTO>>> GetHouseWiseStudentCountAsync()
+        public async Task<ServiceResponse<List<HouseWiseStudentCountDTO>>> GetHouseWiseStudentCountAsync(int Institute_id)
         {
             string sql = @"
             SELECT 
@@ -92,7 +101,8 @@ namespace Student_API.Repository.Implementations
                 COUNT(s.student_id) AS Count,
                 CAST(COUNT(s.student_id) * 100.0 / SUM(COUNT(s.student_id)) OVER () AS DECIMAL(5, 2)) AS Percentage
             FROM tbl_StudentMaster s
-            JOIN tbl_InstituteHouse h ON s.Institute_house_id = h.Institute_house_id
+            JOIN tbl_StudentOtherInfo so on s.student_id = so.student_id
+            JOIN tbl_InstituteHouse h ON so.Student_House_id = h.Institute_house_id
             GROUP BY h.HouseName;";
 
             try
@@ -107,7 +117,7 @@ namespace Student_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<StudentBirthdayDTO>>> GetTodaysBirthdaysAsync()
+        public async Task<ServiceResponse<List<StudentBirthdayDTO>>> GetTodaysBirthdaysAsync(int Institute_id)
         {
             try
             {
@@ -145,7 +155,7 @@ namespace Student_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<ClassWiseGenderCountDTO>>> GetClassWiseGenderCountAsync()
+        public async Task<ServiceResponse<List<ClassWiseGenderCountDTO>>> GetClassWiseGenderCountAsync(int Institute_id)
         {
             string sql = @"
             SELECT 
