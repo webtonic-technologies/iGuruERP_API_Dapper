@@ -1,12 +1,10 @@
 using Institute_API.DTOs;
-using Institute_API.Models;
 using Institute_API.Repository.Interfaces;
-using Institute_API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Institute_API.Controllers
 {
-    [Route("iGuru/[controller]")]
+    [Route("iGuru/INSTIT/[controller]")]
     [ApiController]
     public class AcademicConfigController : ControllerBase
     {

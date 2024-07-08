@@ -53,12 +53,12 @@ namespace Institute_API.Controllers
             }
         }
 
-        [HttpGet("GetAllAdminDesignationList")]
-        public async Task<IActionResult> GetAdminDesignationList(int Instituteid)
+        [HttpPost("GetAllAdminDesignationList")]
+        public async Task<IActionResult> GetAdminDesignationList(GetListRequest request)
         {
             try
             {
-                var data = await _adminDesignationServices.GetAdminDesignationList(Instituteid);
+                var data = await _adminDesignationServices.GetAdminDesignationList(request);
                 return Ok(data);
             }
             catch (Exception ex)

@@ -279,5 +279,28 @@ namespace Employee_API.Controllers
             }
 
         }
+        [HttpPut("Status/{employeeId}")]
+        public async Task<IActionResult> StatusActiveInactive(int employeeId)
+        {
+            try
+            {
+                var data = await _employeeProfileServices.StatusActiveInactive(employeeId);
+                if (data != null)
+                {
+                    return Ok(data);
+
+                }
+                else
+                {
+                    return BadRequest("Bad Request");
+                }
+
+            }
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
+
+        }
     }
 }
