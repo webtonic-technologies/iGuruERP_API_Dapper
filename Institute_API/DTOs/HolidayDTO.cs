@@ -9,6 +9,7 @@
         public string Description { get; set; }
         public bool IsApproved { get; set; }
         public int? ApprovedBy { get; set; }
+        public int Institute_id { get; set; }
         public List<HolidayClassSessionMappingDTO> ClassSessionMappings { get; set; }
     }
 
@@ -18,7 +19,7 @@
         public int Holiday_id { get; set; }
         public int Class_id { get; set; }
         public int Section_id { get; set; }
-        public string? Section {  get; set; }    
-        public string? class_course {  get; set; }   
+        public string? section_name {  get; set; }    
+        public string? class_name {  get; set; }   
     }
 }

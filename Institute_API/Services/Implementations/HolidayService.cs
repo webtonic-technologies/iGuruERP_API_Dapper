@@ -14,7 +14,7 @@ namespace Institute_API.Services.Implementations
             _holidayRepository = holidayRepository;
         }
 
-        public async Task<ServiceResponse<int>> AddUpdateHoliday(HolidayDTO holidayDTO)
+        public async Task<ServiceResponse<int>> AddUpdateHoliday(HolidayRequestDTO holidayDTO)
         {
             try
             {
@@ -38,11 +38,11 @@ namespace Institute_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<HolidayDTO>>> GetAllHolidays()
+        public async Task<ServiceResponse<List<HolidayDTO>>> GetAllHolidays(int Institute_id)
         {
             try
             {
-                return await _holidayRepository.GetAllHolidays();
+                return await _holidayRepository.GetAllHolidays(Institute_id);
             }
             catch (Exception ex)
             {
@@ -50,11 +50,11 @@ namespace Institute_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<HolidayDTO>>> GetApprovedHolidays()
+        public async Task<ServiceResponse<List<HolidayDTO>>> GetApprovedHolidays(int Institute_id)
         {
             try
             {
-                return await _holidayRepository.GetApprovedHolidays();
+                return await _holidayRepository.GetApprovedHolidays(Institute_id);
             }
             catch (Exception ex)
             {

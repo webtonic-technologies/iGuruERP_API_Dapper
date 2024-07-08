@@ -19,5 +19,6 @@ namespace Employee_API.Services.Interfaces
         Task<ServiceResponse<List<EmployeeQualification>>> GetEmployeeQualificationById(int employeeId);
         Task<ServiceResponse<List<EmployeeWorkExperience>>> GetEmployeeWorkExperienceById(int employeeId);
         Task<ServiceResponse<List<EmployeeBankDetails>>> GetEmployeeBankDetailsById(int employeeId);
+        Task<ServiceResponse<bool>> StatusActiveInactive(int employeeId);
     }
 }
