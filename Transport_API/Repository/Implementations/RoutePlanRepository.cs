@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using System.Data;
+using System.Data.Common;
 using Transport_API.DTOs.Requests;
 using Transport_API.DTOs.Response;
 using Transport_API.DTOs.ServiceResponse;
@@ -62,9 +63,9 @@ namespace Transport_API.Repository.Implementations
 
                 int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql, new { VehicleId = request.VehicleId });
 
-                string sql = @"SELECT rp.RoutePlanID, rp.RouteName, rp.VehicleID, v.VehicleName, rp.InstituteID, rp.IsActive 
+                string sql = @"SELECT rp.RoutePlanID, rp.RouteName, rp.VehicleID, v.VehicleNumber as VehicleName , rp.InstituteID, rp.IsActive 
                        FROM tblRoutePlan rp
-                       JOIN tblVehicle v ON rp.VehicleID = v.VehicleID
+                       JOIN tblVehicleMaster v ON rp.VehicleID = v.VehicleID
                        WHERE rp.IsActive = 1";
 
                 if (request.VehicleId > 0)
@@ -105,9 +106,9 @@ namespace Transport_API.Repository.Implementations
         {
             try
             {
-                string sql = @"SELECT rp.RoutePlanID, rp.RouteName, rp.VehicleID, v.VehicleName, rp.InstituteID, rp.IsActive
+                string sql = @"SELECT rp.RoutePlanID, rp.RouteName, rp.VehicleID,  v.VehicleNumber as VehicleName, rp.InstituteID, rp.IsActive
                        FROM tblRoutePlan rp
-                       JOIN tblVehicle v ON rp.VehicleID = v.VehicleID
+                       JOIN tblVehicleMaster v ON rp.VehicleID = v.VehicleID
                        WHERE rp.RoutePlanID = @RoutePlanID AND rp.IsActive = 1";
 
                 var routePlan = await _dbConnection.QueryFirstOrDefaultAsync<RoutePlanResponseDTO>(sql, new { RoutePlanID });
@@ -130,7 +131,7 @@ namespace Transport_API.Repository.Implementations
         public async Task<ServiceResponse<bool>> UpdateRoutePlanStatus(int RoutePlanID)
         {
             string sql = @"UPDATE tblRoutePlan SET IsActive = @IsActive WHERE RoutePlanID = @RoutePlanID";
-            var result = await _dbConnection.ExecuteAsync(sql, new { RoutePlanID = RoutePlanID });
+            var result = await _dbConnection.ExecuteAsync(sql, new { IsActive = false, RoutePlanID = RoutePlanID });
 
             if (result > 0)
             {
@@ -143,16 +144,20 @@ namespace Transport_API.Repository.Implementations
         }
         private async Task<bool> HandleRouteStops(int routePlanID, List<RouteStop>? routeStops)
         {
+            if (_dbConnection.State != ConnectionState.Open)
+            {
+                _dbConnection.Open();
+            }
             if (routeStops == null || !routeStops.Any()) return true;
 
             using (var transaction = _dbConnection.BeginTransaction())
             {
                 try
                 {
-                    string deleteSql = @"DELETE FROM tblRouteStop WHERE RoutePlanID = @RoutePlanID";
+                    string deleteSql = @"DELETE FROM tblRouteStopMaster WHERE RoutePlanID = @RoutePlanID";
                     await _dbConnection.ExecuteAsync(deleteSql, new { RoutePlanID = routePlanID }, transaction);
 
-                    string insertSql = @"INSERT INTO tblRouteStop (RoutePlanID, StopName, PickUpTime, DropTime, FeeAmount) 
+                    string insertSql = @"INSERT INTO tblRouteStopMaster (RoutePlanID, StopName, PickUpTime, DropTime, FeeAmount) 
                                  VALUES (@RoutePlanID, @StopName, @PickUpTime, @DropTime, @FeeAmount)";
 
                     foreach (var stop in routeStops)
@@ -169,12 +174,16 @@ namespace Transport_API.Repository.Implementations
                     transaction.Rollback();
                     return false;
                 }
+                finally
+                {
+                    _dbConnection.Close();
+                }
             }
         }
         private async Task<List<RouteStopResponse>> GetRouteStopsByRoutePlanID(int routePlanID)
         {
             string sql = @"SELECT StopID, RoutePlanID, StopName, PickUpTime, DropTime, FeeAmount
-                   FROM tblRouteStop
+                   FROM tblRouteStopMaster
                    WHERE RoutePlanID = @RoutePlanID";
 
             return (await _dbConnection.QueryAsync<RouteStopResponse>(sql, new { RoutePlanID = routePlanID })).ToList();
