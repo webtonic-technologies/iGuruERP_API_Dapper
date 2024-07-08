@@ -171,5 +171,17 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<List<City>>(false, ex.Message, null, 500);
             }
         }
+        public async Task<ServiceResponse<List<Academic>>> GetAllAcademic()
+        {
+            try
+            {
+                var data = await _studentInfoDropdownRepository.GetAllAcademic();
+                return data;
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<Academic>>(false, ex.Message, null, 500);
+            }
+        }
     }
 }
