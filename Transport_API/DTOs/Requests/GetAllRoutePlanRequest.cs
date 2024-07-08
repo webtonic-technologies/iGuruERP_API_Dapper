@@ -4,6 +4,6 @@
     {
         public int PageNumber { get; set; }
         public int PageSize { get; set; }
-        public int VehicleId { get; set; }
+        public int InstituteId { get; set; }
     }
 }

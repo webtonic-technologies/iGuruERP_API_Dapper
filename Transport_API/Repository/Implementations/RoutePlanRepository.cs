@@ -55,32 +55,35 @@ namespace Transport_API.Repository.Implementations
         {
             try
             {
-                string countSql = @"SELECT COUNT(*) FROM tblRoutePlan WHERE IsActive = 1";
-                if (request.VehicleId > 0)
-                {
-                    countSql += " AND VehicleID = @VehicleId";
-                }
+                string countSql = @"SELECT COUNT(*) FROM tblRoutePlan WHERE IsActive = 1 AND InstituteID = @InstituteID";
+                int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql, new { InstituteID = request.InstituteId });
 
-                int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql, new { VehicleId = request.VehicleId });
-
-                string sql = @"SELECT rp.RoutePlanID, rp.RouteName, rp.VehicleID, v.VehicleNumber as VehicleName , rp.InstituteID, rp.IsActive 
-                       FROM tblRoutePlan rp
-                       JOIN tblVehicleMaster v ON rp.VehicleID = v.VehicleID
-                       WHERE rp.IsActive = 1";
-
-                if (request.VehicleId > 0)
-                {
-                    sql += " AND rp.VehicleID = @VehicleId";
-                }
-
-                sql += @" ORDER BY rp.RoutePlanID 
-                  OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+                string sql = @"
+            SELECT 
+                rp.RoutePlanID, 
+                rp.RouteName, 
+                rp.VehicleID, 
+                v.VehicleNumber AS VehicleName, 
+                rp.InstituteID, 
+                rp.IsActive, 
+                ISNULL(CONCAT(e.First_Name, ' ', e.Last_Name), '') AS EmployeeName,
+                (SELECT COUNT(*) FROM tblRouteStop rs WHERE rs.RoutePlanID = rp.RoutePlanID) AS NoOfStops
+            FROM 
+                tblRoutePlan rp
+                JOIN tblVehicleMaster v ON rp.VehicleID = v.VehicleID
+                LEFT JOIN tbl_EmployeeProfileMaster e ON v.AssignDriverID = e.Employee_id
+            WHERE 
+                rp.IsActive = 1 
+                AND rp.InstituteID = @InstituteID
+            ORDER BY 
+                rp.RoutePlanID 
+            OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 
                 var routePlans = await _dbConnection.QueryAsync<RoutePlanResponseDTO>(sql, new
                 {
                     Offset = (request.PageNumber - 1) * request.PageSize,
                     PageSize = request.PageSize,
-                    VehicleId = request.VehicleId
+                    InstituteID = request.InstituteId
                 });
 
                 foreach (var routePlan in routePlans)
@@ -94,22 +97,35 @@ namespace Transport_API.Repository.Implementations
                 }
                 else
                 {
-                    return new ServiceResponse<IEnumerable<RoutePlanResponseDTO>>(false, "No Records Found", [], StatusCodes.Status204NoContent);
+                    return new ServiceResponse<IEnumerable<RoutePlanResponseDTO>>(false, "No Records Found", new List<RoutePlanResponseDTO>(), StatusCodes.Status204NoContent);
                 }
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<IEnumerable<RoutePlanResponseDTO>>(false, ex.Message, [], StatusCodes.Status500InternalServerError);
+                return new ServiceResponse<IEnumerable<RoutePlanResponseDTO>>(false, ex.Message, new List<RoutePlanResponseDTO>(), StatusCodes.Status500InternalServerError);
             }
         }
         public async Task<ServiceResponse<RoutePlanResponseDTO>> GetRoutePlanById(int RoutePlanID)
         {
             try
             {
-                string sql = @"SELECT rp.RoutePlanID, rp.RouteName, rp.VehicleID,  v.VehicleNumber as VehicleName, rp.InstituteID, rp.IsActive
-                       FROM tblRoutePlan rp
-                       JOIN tblVehicleMaster v ON rp.VehicleID = v.VehicleID
-                       WHERE rp.RoutePlanID = @RoutePlanID AND rp.IsActive = 1";
+                string sql = @"
+            SELECT 
+                rp.RoutePlanID, 
+                rp.RouteName, 
+                rp.VehicleID, 
+                v.VehicleNumber as VehicleName, 
+                rp.InstituteID, 
+                rp.IsActive,
+                ISNULL(CONCAT(e.First_Name, ' ', e.Last_Name), '') AS EmployeeName,
+                (SELECT COUNT(*) FROM tblRouteStop rs WHERE rs.RoutePlanID = rp.RoutePlanID) AS NoOfStops
+            FROM 
+                tblRoutePlan rp
+                JOIN tblVehicleMaster v ON rp.VehicleID = v.VehicleID
+                LEFT JOIN tbl_EmployeeProfileMaster e ON v.AssignDriverID = e.Employee_id
+            WHERE 
+                rp.RoutePlanID = @RoutePlanID 
+                AND rp.IsActive = 1";
 
                 var routePlan = await _dbConnection.QueryFirstOrDefaultAsync<RoutePlanResponseDTO>(sql, new { RoutePlanID });
 
