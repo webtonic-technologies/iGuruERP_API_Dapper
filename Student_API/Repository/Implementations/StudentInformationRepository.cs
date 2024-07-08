@@ -177,7 +177,7 @@ INNER JOIN tbl_City ON tbl_City.city_id = tbl_StudentParentsOfficeInfo.city_id W
                         INSERT INTO [dbo].[tbl_StudentMaster] (
                             First_Name, Middle_Name, Last_Name, gender_id, class_id,
                             section_id, Admission_Number, Roll_Number, Date_of_Joining,
-                            Academic_Year_id, Nationality_id, Religion_id, Date_of_Birth,
+                            Academic_year_id, Nationality_id, Religion_id, Date_of_Birth,
                             Mother_Tongue_id, Caste_id, First_Language, Second_Language,
                             Third_Language, Medium, Blood_Group_id, App_User_id, Aadhar_Number,
                             NEP, QR_code, IsPhysicallyChallenged, IsSports, IsAided,
