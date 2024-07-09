@@ -57,7 +57,7 @@ namespace Transport_API.Controllers
             }
         }
 
-        [HttpPut("Status/{RoutePlanId}")]
+        [HttpDelete("Status/{RoutePlanId}")]
         public async Task<IActionResult> UpdateRoutePlanStatus(int RoutePlanId)
         {
             try

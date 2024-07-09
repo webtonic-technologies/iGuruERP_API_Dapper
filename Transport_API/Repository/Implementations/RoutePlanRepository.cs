@@ -67,7 +67,7 @@ namespace Transport_API.Repository.Implementations
                 rp.InstituteID, 
                 rp.IsActive, 
                 ISNULL(CONCAT(e.First_Name, ' ', e.Last_Name), '') AS EmployeeName,
-                (SELECT COUNT(*) FROM tblRouteStop rs WHERE rs.RoutePlanID = rp.RoutePlanID) AS NoOfStops
+                (SELECT COUNT(*) FROM tblRouteStopMaster rs WHERE rs.RoutePlanID = rp.RoutePlanID) AS NoOfStops
             FROM 
                 tblRoutePlan rp
                 JOIN tblVehicleMaster v ON rp.VehicleID = v.VehicleID
@@ -118,7 +118,7 @@ namespace Transport_API.Repository.Implementations
                 rp.InstituteID, 
                 rp.IsActive,
                 ISNULL(CONCAT(e.First_Name, ' ', e.Last_Name), '') AS EmployeeName,
-                (SELECT COUNT(*) FROM tblRouteStop rs WHERE rs.RoutePlanID = rp.RoutePlanID) AS NoOfStops
+                (SELECT COUNT(*) FROM tblRouteStopMaster rs WHERE rs.RoutePlanID = rp.RoutePlanID) AS NoOfStops
             FROM 
                 tblRoutePlan rp
                 JOIN tblVehicleMaster v ON rp.VehicleID = v.VehicleID
