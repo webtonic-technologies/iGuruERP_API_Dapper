@@ -60,7 +60,6 @@ namespace Student_API.DTOs.RequestDTO
         public int? StudentType_id { get; set; }
         [MaxLength(50)]
         public string email_id { get; set; }
-        public string Hall_Ticket_Number { get; set; }
         [MaxLength(30)]
         public string Identification_Mark_1 { get; set; }
         [MaxLength(30)]

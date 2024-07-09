@@ -60,7 +60,7 @@ namespace Student_API.Repository.Implementations
             try
             {
                 string query = @"
-        SELECT Student_Document_id, Student_Document_Name, en_date
+        SELECT Student_Document_id, Student_Document_Name, en_date,Institute_id
         FROM [dbo].[tbl_StudentDocumentMaster]
         WHERE Student_Document_id = @DocumentConfigtId";
 

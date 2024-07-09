@@ -33,9 +33,6 @@ namespace Student_API.DTOs.RequestDTO
         public int? Mother_Tongue_id { get; set; }
 
         public int? Caste_id { get; set; }
-        public string First_Language { get; set; }
-        public string Second_Language { get; set; }
-        public string Third_Language { get; set; }
         public string Medium { get; set; }
         public int? Blood_Group_id { get; set; }
         public int? App_User_id { get; set; }
