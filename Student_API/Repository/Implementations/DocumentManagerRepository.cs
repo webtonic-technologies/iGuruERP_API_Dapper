@@ -1,8 +1,10 @@
 ﻿using Dapper;
 using Student_API.DTOs;
 using Student_API.DTOs.ServiceResponse;
+using Student_API.Models;
 using Student_API.Repository.Interfaces;
 using System.Data;
+using System.Reflection.Metadata;
 
 namespace Student_API.Repository.Implementations
 {
@@ -48,7 +50,7 @@ namespace Student_API.Repository.Implementations
                 CONCAT(s.first_name, ' ', s.last_name) AS Student_Name,
                 s.Admission_Number,
                 c.Class_Name,
-                sec.Section_name ,
+                sec.Section_Name ,
                 doc.Student_Document_id,
                 doc.Student_Document_Name,
                 CASE WHEN dm.document_id IS NOT NULL THEN 1 ELSE 0 END AS IsSubmitted
@@ -165,17 +167,19 @@ namespace Student_API.Repository.Implementations
                         if (update.IsSubmitted)
                         {
                             // Insert or update record
+
+                        //    IF EXISTS(SELECT 1 FROM tbl_DocManager WHERE student_id = @StudentId AND document_id = @DocumentId)
+                        //BEGIN
+                        //    UPDATE tbl_DocManager
+                        //    SET class_id = @ClassId, section_id = @SectionId
+                        //    WHERE student_id = @StudentId AND document_id = @DocumentId
+                        //END
+                        //ELSE
                             string insertOrUpdateQuery = @"
-                        IF EXISTS (SELECT 1 FROM tbl_DocManager WHERE student_id = @StudentId AND document_id = @DocumentId)
+                       IF NOT EXISTS(SELECT 1 FROM tbl_DocManager WHERE student_id = @StudentId AND document_id = @DocumentId)
                         BEGIN
-                            UPDATE tbl_DocManager
-                            SET class_id = @ClassId, section_id = @SectionId
-                            WHERE student_id = @StudentId AND document_id = @DocumentId
-                        END
-                        ELSE
-                        BEGIN
-                            INSERT INTO tbl_DocManager (student_id, document_id, class_id, section_id,Institute_id)
-                            VALUES (@StudentId, @DocumentId, @ClassId, @SectionId,@Institute_id)
+                            INSERT INTO tbl_DocManager (student_id, document_id, class_id, section_id)
+                            VALUES (@StudentId, @DocumentId, @ClassId, @SectionId)
                         END";
 
                             await _connection.ExecuteAsync(insertOrUpdateQuery, new
@@ -184,7 +188,7 @@ namespace Student_API.Repository.Implementations
                                 update.DocumentId,
                                 ClassId = update.ClassId,
                                 SectionId = update.SectionId,
-                                Institute_id = update.Institute_id
+                                //Institute_id = update.Institute_id
                             }, transaction);
                         }
                         else

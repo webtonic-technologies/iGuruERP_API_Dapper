@@ -169,7 +169,7 @@ namespace Student_API.Controllers
         }
 
         [HttpGet]
-        [Route("ParentTypes/GetAllStates")]
+        [Route("States/GetAllStates")]
         public async Task<IActionResult> GetAllStates()
         {
             try
@@ -184,7 +184,7 @@ namespace Student_API.Controllers
         }
 
         [HttpGet]
-        [Route("ParentTypes/GetAllCities/{StateId}")]
+        [Route("Cities/GetAllCities/{StateId}")]
         public async Task<IActionResult> GetAllCities(int StateId)
         {
             try

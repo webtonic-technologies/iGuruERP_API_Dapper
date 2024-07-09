@@ -77,9 +77,12 @@ namespace Student_API.Repository.Implementations
                     var statusCounts = multi.Read<StatusWiseStudentCountDTO>().ToList();
                     var studentTypeCounts = multi.Read<StudentTypeWiseCountDTO>().ToList();
 
+                    GenderWiseStudentDTO genderWiseStudentDTO = new GenderWiseStudentDTO();
+                    genderWiseStudentDTO.genderWiseStudentCounts = genderCounts;
+                    genderWiseStudentDTO.TotalStudentCount = genderCounts.Sum(g => g.Count);
                     var studentStatistics = new StudentStatisticsDTO
                     {
-                        GenderCounts = genderCounts,
+                        GenderCounts = genderWiseStudentDTO,
                         StatusCounts = statusCounts,
                         StudentTypeCounts = studentTypeCounts
                     };

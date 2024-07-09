@@ -26,9 +26,6 @@
         public string Mother_Tongue_Name { get; set; }
         public int? Caste_id { get; set; }
         public string caste_type {  get; set; } 
-        public string First_Language { get; set; }
-        public string Second_Language { get; set; }
-        public string Third_Language { get; set; }
         public string Medium { get; set; }
         public int? Blood_Group_id { get; set; }
         public string Blood_Group_Type { get; set; }    
