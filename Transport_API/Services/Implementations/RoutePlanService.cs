@@ -1,6 +1,6 @@
 ﻿using Transport_API.DTOs.Requests;
+using Transport_API.DTOs.Response;
 using Transport_API.DTOs.ServiceResponse;
-using Transport_API.Models;
 using Transport_API.Repository.Interfaces;
 using Transport_API.Services.Interfaces;
 
@@ -15,17 +15,17 @@ namespace Transport_API.Services.Implementations
             _routePlanRepository = routePlanRepository;
         }
 
-        public async Task<ServiceResponse<string>> AddUpdateRoutePlan(RoutePlan routePlan)
+        public async Task<ServiceResponse<string>> AddUpdateRoutePlan(RoutePlanRequestDTO routePlan)
         {
             return await _routePlanRepository.AddUpdateRoutePlan(routePlan);
         }
 
-        public async Task<ServiceResponse<IEnumerable<RoutePlan>>> GetAllRoutePlans(GetAllRoutePlanRequest request)
+        public async Task<ServiceResponse<IEnumerable<RoutePlanResponseDTO>>> GetAllRoutePlans(GetAllRoutePlanRequest request)
         {
             return await _routePlanRepository.GetAllRoutePlans(request);
         }
 
-        public async Task<ServiceResponse<RoutePlan>> GetRoutePlanById(int routePlanId)
+        public async Task<ServiceResponse<RoutePlanResponseDTO>> GetRoutePlanById(int routePlanId)
         {
             return await _routePlanRepository.GetRoutePlanById(routePlanId);
         }

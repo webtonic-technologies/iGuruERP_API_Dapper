@@ -16,7 +16,7 @@ namespace Transport_API.Controllers
         }
 
         [HttpPost("AddUpdateRoutePlan")]
-        public async Task<IActionResult> AddUpdateRoutePlan(Models.RoutePlan request)
+        public async Task<IActionResult> AddUpdateRoutePlan(RoutePlanRequestDTO request)
         {
             try
             {
@@ -57,7 +57,7 @@ namespace Transport_API.Controllers
             }
         }
 
-        [HttpPut("Status/{RoutePlanId}")]
+        [HttpDelete("Status/{RoutePlanId}")]
         public async Task<IActionResult> UpdateRoutePlanStatus(int RoutePlanId)
         {
             try
