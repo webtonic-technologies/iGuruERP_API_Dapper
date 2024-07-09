@@ -12,7 +12,7 @@ namespace Institute_API.Services.Implementations
         {
             _academicConfigRepository = academicConfigRepository;
         }
-        public async Task<ServiceResponse<string>> AddUpdateAcademicConfig(CourseClassDTO request)
+        public async Task<ServiceResponse<string>> AddUpdateAcademicConfig(Class request)
         {
             try
             {
@@ -24,11 +24,11 @@ namespace Institute_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<string>> DeleteAcademicConfig(int CourseClass_id)
+        public async Task<ServiceResponse<string>> DeleteAcademicConfig(int ClassId)
         {
             try
             {
-                return await _academicConfigRepository.DeleteAcademicConfig(CourseClass_id);
+                return await _academicConfigRepository.DeleteAcademicConfig(ClassId);
             }
             catch (Exception ex)
             {
@@ -36,19 +36,19 @@ namespace Institute_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<CourseClassDTO>> GetAcademicConfigById(int CourseClass_id)
+        public async Task<ServiceResponse<Class>> GetAcademicConfigById(int ClassId)
         {
             try
             {
-                return await _academicConfigRepository.GetAcademicConfigById(CourseClass_id);
+                return await _academicConfigRepository.GetAcademicConfigById(ClassId);
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<CourseClassDTO>(false, ex.Message, new CourseClassDTO(), 500);
+                return new ServiceResponse<Class>(false, ex.Message, new Class(), 500);
             }
         }
 
-        public async Task<ServiceResponse<List<CourseClassDTO>>> GetAcademicConfigList(GetAllCourseClassRequest request)
+        public async Task<ServiceResponse<List<Class>>> GetAcademicConfigList(GetAllCourseClassRequest request)
         {
             try
             {
@@ -56,7 +56,7 @@ namespace Institute_API.Services.Implementations
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<List<CourseClassDTO>>(false, ex.Message, [], 500);
+                return new ServiceResponse<List<Class>>(false, ex.Message, [], 500);
             }
         }
     }
