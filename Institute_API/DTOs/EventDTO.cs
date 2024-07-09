@@ -12,6 +12,8 @@
         public string Time { get; set; }
         public string? AttachmentFile { get; set; }
         public int Institute_id { get; set; }
+        public int Academic_year_id { get; set; }
+        public string YearName { get; set; }
 
         public List<EventEmployeeMapping> EmployeeMappings { get; set; }
         public List<EventClassSessionMapping> ClassSessionMappings { get; set; }

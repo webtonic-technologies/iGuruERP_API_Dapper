@@ -70,8 +70,8 @@ namespace Student_API.DTOs
         [MaxLength(30)]
         public string Identification_Mark_2 { get; set; }
         public DateTime? Admission_Date { get; set; }
-        public int? Student_House_id { get; set; }
-        public string? HouseName { get; set; }
+        //public int? Student_House_id { get; set; }
+        //public string? HouseName { get; set; }
         public DateTime? Register_Date { get; set; }
         [MaxLength(30)]
         public string Register_Number { get; set; }

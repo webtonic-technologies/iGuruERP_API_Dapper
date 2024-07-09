@@ -10,6 +10,8 @@
         public bool IsApproved { get; set; }
         public int? ApprovedBy { get; set; }
         public int Institute_id { get; set; }
+        public int Academic_year_id { get; set; }
+        public string YearName { get; set; }
         public List<HolidayClassSessionMappingDTO> ClassSessionMappings { get; set; }
     }
 
