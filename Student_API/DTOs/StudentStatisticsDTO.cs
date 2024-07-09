@@ -2,9 +2,14 @@
 {
     public class StudentStatisticsDTO
     {
-        public List<GenderWiseStudentCountDTO> GenderCounts { get; set; }
+        public GenderWiseStudentDTO GenderCounts { get; set; }
         public List<StatusWiseStudentCountDTO> StatusCounts { get; set; }
         public List<StudentTypeWiseCountDTO> StudentTypeCounts { get; set; }
+    }
+    public class GenderWiseStudentDTO
+    {
+        public int TotalStudentCount { get; set; }
+        public List<GenderWiseStudentCountDTO> genderWiseStudentCounts { get; set; } 
     }
     public class GenderWiseStudentCountDTO
     {

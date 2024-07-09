@@ -68,8 +68,8 @@ namespace Student_API.Repository.Implementations
             {
                 string sql = @"
                     SELECT  tbl_StudentMaster.student_id, tbl_StudentMaster.First_Name, tbl_StudentMaster.Middle_Name, tbl_StudentMaster.Last_Name, tbl_StudentMaster.gender_id, Gender_Type,tbl_Class.[class_id], class_name AS class_course,tbl_section.[section_id], section_name AS Section,[Admission_Number], [Roll_Number],
-                    [Date_of_Joining], Academic_year_id, tbl_AcademicYear.YearName,tbl_StudentMaster.Nationality_id, Nationality_Type,tbl_Religion.Religion_id,Religion_Type, tbl_StudentMaster.Date_of_Birth, tbl_StudentMaster.Mother_Tongue_id, Mother_Tongue_Name,tbl_StudentMaster.Caste_id,caste_type, [First_Language],
-                    [Second_Language], [Third_Language], [Medium], tbl_StudentMaster.Blood_Group_id,Blood_Group_Type, [App_User_id], [Aadhar_Number], [NEP], [QR_code], [IsPhysicallyChallenged],
+                    [Date_of_Joining], Academic_year_id, tbl_AcademicYear.YearName,tbl_StudentMaster.Nationality_id, Nationality_Type,tbl_Religion.Religion_id,Religion_Type, tbl_StudentMaster.Date_of_Birth, tbl_StudentMaster.Mother_Tongue_id, Mother_Tongue_Name,tbl_StudentMaster.Caste_id,caste_type,
+                    [Medium], tbl_StudentMaster.Blood_Group_id,Blood_Group_Type, [App_User_id], [Aadhar_Number], [NEP], [QR_code], [IsPhysicallyChallenged],
                     [IsSports], [IsAided], [IsNCC], [IsNSS], [IsScout], tbl_StudentMaster.File_Name, [isActive] 
                     ,tbl_Gender.Gender_Type,Religion_Type , Gender_Type,tbl_StudentMaster.Institute_id,Institute_name 
                     FROM tbl_StudentMaster 
@@ -85,7 +85,7 @@ namespace Student_API.Repository.Implementations
                     LEFT JOIN tbl_AcademicYear ON tbl_AcademicYear.Id = tbl_StudentMaster.Academic_year_id
                     WHERE tbl_StudentMaster.student_id = @studentId;
 
-                    SELECT [Student_Other_Info_id], [student_id], [StudentType_id], [email_id], [Hall_Ticket_Number], [Identification_Mark_1],
+                    SELECT [Student_Other_Info_id], [student_id], [StudentType_id], [email_id],  [Identification_Mark_1],
                     [Identification_Mark_2], [Admission_Date], tbl_StudentOtherInfo.Student_House_id, [Register_Date], [Register_Number], [samagra_ID], [Place_of_Birth], [comments], 
                     [language_known]  ,tbl_InstituteHouse.HouseName ,tbl_StudentOtherInfo.StudentType_id , Student_Type_Name
                     FROM [dbo].[tbl_StudentOtherInfo] 
@@ -96,7 +96,7 @@ namespace Student_API.Repository.Implementations
                     SELECT [Student_Parent_Info_id], [Student_id], tbl_StudentParentsInfo.Parent_Type_id, [First_Name], [Middle_Name], [Last_Name], [Contact_Number],
                     [Bank_Account_no], [Bank_IFSC_Code], [Family_Ration_Card_Type], [Family_Ration_Card_no], [Mobile_Number], [Date_of_Birth], [Aadhar_no], 
                     [PAN_card_no], [Residential_Address], tbl_StudentParentsInfo.Occupation_id, [Designation], [Name_of_the_Employer], [Office_no], [Email_id], [Annual_Income], 
-                    [File_Name],tbl_Occupation.Occupation_Type
+                    [File_Name],tbl_Occupation.Occupation_Type,tbl_ParentType.parent_type
                     FROM [dbo].[tbl_StudentParentsInfo]
                     INNER JOIN tbl_Occupation ON tbl_Occupation.Occupation_id = tbl_StudentParentsInfo.Occupation_id
                     INNER JOIN tbl_ParentType ON tbl_ParentType.Parent_Type_id = tbl_StudentParentsInfo.Parent_Type_id
@@ -178,16 +178,14 @@ INNER JOIN tbl_City ON tbl_City.city_id = tbl_StudentParentsOfficeInfo.city_id W
                             First_Name, Middle_Name, Last_Name, gender_id, class_id,
                             section_id, Admission_Number, Roll_Number, Date_of_Joining,
                             Academic_year_id, Nationality_id, Religion_id, Date_of_Birth,
-                            Mother_Tongue_id, Caste_id, First_Language, Second_Language,
-                            Third_Language, Medium, Blood_Group_id, App_User_id, Aadhar_Number,
+                            Mother_Tongue_id, Caste_id, Medium, Blood_Group_id, App_User_id, Aadhar_Number,
                             NEP, QR_code, IsPhysicallyChallenged, IsSports, IsAided,
                             IsNCC, IsNSS, IsScout, File_Name, Institute_id)
                         VALUES (
                             @First_Name, @Middle_Name, @Last_Name, @gender_id, @class_id,
                             @section_id, @Admission_Number, @Roll_Number, @Date_of_Joining,
                             @Academic_year_id, @Nationality_id, @Religion_id, @Date_of_Birth,
-                            @Mother_Tongue_id, @Caste_id, @First_Language, @Second_Language,
-                            @Third_Language, @Medium, @Blood_Group_id, @App_User_id, @Aadhar_Number,
+                            @Mother_Tongue_id, @Caste_id,  @Medium, @Blood_Group_id, @App_User_id, @Aadhar_Number,
                             @NEP, @QR_code, @IsPhysicallyChallenged, @IsSports, @IsAided,
                             @IsNCC, @IsNSS, @IsScout, @File_Name, @Institute_id);
                         SELECT CAST(SCOPE_IDENTITY() as int);";
@@ -221,9 +219,6 @@ INNER JOIN tbl_City ON tbl_City.city_id = tbl_StudentParentsOfficeInfo.city_id W
                             Date_of_Birth = @Date_of_Birth,
                             Mother_Tongue_id = @Mother_Tongue_id,
                             Caste_id = @Caste_id,
-                            First_Language = @First_Language,
-                            Second_Language = @Second_Language,
-                            Third_Language = @Third_Language,
                             Medium = @Medium,
                             Blood_Group_id = @Blood_Group_id,
                             App_User_id = @App_User_id,
@@ -255,8 +250,8 @@ INNER JOIN tbl_City ON tbl_City.city_id = tbl_StudentParentsOfficeInfo.city_id W
                             if (request.StudentOtherInfos.Student_Other_Info_id == 0)
                             {
                                 string insertOtherInfoSql = @"
-                               INSERT INTO [dbo].[tbl_StudentOtherInfo] (student_id, StudentType_id, email_id, Hall_Ticket_Number, Identification_Mark_1, Identification_Mark_2, Admission_Date, Student_House_id, Register_Date, Register_Number, samagra_ID, Place_of_Birth, comments, language_known)
-                               VALUES (@student_id, @StudentType_id, @email_id, @Hall_Ticket_Number, @Identification_Mark_1, @Identification_Mark_2, @Admission_Date, @Student_House_id, @Register_Date, @Register_Number, @samagra_ID, @Place_of_Birth, @comments, @language_known);
+                               INSERT INTO [dbo].[tbl_StudentOtherInfo] (student_id, StudentType_id, email_id,  Identification_Mark_1, Identification_Mark_2, Admission_Date, Student_House_id, Register_Date, Register_Number, samagra_ID, Place_of_Birth, comments, language_known)
+                               VALUES (@student_id, @StudentType_id, @email_id, @Identification_Mark_1, @Identification_Mark_2, @Admission_Date, @Student_House_id, @Register_Date, @Register_Number, @samagra_ID, @Place_of_Birth, @comments, @language_known);
                                SELECT CAST(SCOPE_IDENTITY() as int)";
 
                                 int otherInfoId = await _connection.ExecuteScalarAsync<int>(insertOtherInfoSql, request.StudentOtherInfos, transaction);
@@ -273,7 +268,6 @@ INNER JOIN tbl_City ON tbl_City.city_id = tbl_StudentParentsOfficeInfo.city_id W
                             SET 
                                 StudentType_id = @StudentType_id,
                                 email_id = @email_id,
-                                Hall_Ticket_Number = @Hall_Ticket_Number,
                                 Identification_Mark_1 = @Identification_Mark_1,
                                 Identification_Mark_2 = @Identification_Mark_2,
                                 Admission_Date = @Admission_Date,
@@ -1169,7 +1163,7 @@ INNER JOIN tbl_City ON tbl_City.city_id = tbl_StudentParentsOfficeInfo.city_id W
                 #TempStudentDetails
             FROM 
                 [dbo].[tbl_StudentMaster]
-            INNER JOIN 
+            LEFT JOIN 
                 tbl_StudentOtherInfo ON tbl_StudentOtherInfo.Student_id = tbl_StudentMaster.Student_id
             LEFT JOIN 
                 tbl_Class ON tbl_StudentMaster.class_id = tbl_Class.Class_id

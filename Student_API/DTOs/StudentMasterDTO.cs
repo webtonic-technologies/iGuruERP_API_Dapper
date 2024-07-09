@@ -64,7 +64,7 @@ namespace Student_API.DTOs
         public string? Student_Type_Name { get; set; }
         [MaxLength(50)]
         public string email_id { get; set; }
-        public string Hall_Ticket_Number { get; set; }
+        
         [MaxLength(30)]
         public string Identification_Mark_1 { get; set; }
         [MaxLength(30)]
@@ -90,6 +90,7 @@ namespace Student_API.DTOs
         public int Student_Parent_Info_id { get; set; }
         public int Student_id { get; set; }
         public int Parent_Type_id { get; set; }
+        public string parent_type {  get; set; }    
         [MaxLength(30)]
         public string First_Name { get; set; }
         [MaxLength(30)]
