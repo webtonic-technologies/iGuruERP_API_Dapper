@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Institute_API.Controllers
 {
-    [Route("iGuru/INSTIT/[controller]")]
+    [Route("iGuru/Institute/[controller]")]
     [ApiController]
     public class AcademicConfigController : ControllerBase
     {
@@ -16,7 +16,7 @@ namespace Institute_API.Controllers
         }
 
         [HttpPost("AddCourseClass")]
-        public async Task<IActionResult> AddUpdateAcademicConfig([FromBody] CourseClassDTO request)
+        public async Task<IActionResult> AddUpdateAcademicConfig([FromBody] Class request)
         {
             try
             {
