@@ -1,13 +1,15 @@
-﻿namespace VisitorManagement_API.Models
+﻿namespace VisitorManagement_API.DTOs.Responses
 {
-    public class VisitorLog
+    public class Visitorlogresponse
     {
         public int VisitorID { get; set; }
         public string VisitorCodeID { get; set; }
         public string VisitorName { get; set; }
         public string Photo { get; set; }
         public int SourceID { get; set; }
+        public string Sourcename { get; set; }
         public int PurposeID { get; set; }
+        public string Purposename { get; set; }
         public string MobileNo { get; set; }
         public string EmailID { get; set; }
         public string Address { get; set; }
