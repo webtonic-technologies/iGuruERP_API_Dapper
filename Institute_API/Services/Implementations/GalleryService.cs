@@ -56,11 +56,11 @@ namespace Institute_API.Services.Implementations
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
-        public async Task<ServiceResponse<List<GalleryEventDTO>>> GetApprovedImagesByEvent(int Institute_id)
+        public async Task<ServiceResponse<List<GalleryEventDTO>>> GetApprovedImagesByEvent(GetGalleryRequestModel model)
         {
             try
             {
-                var response = await _galleryRepository.GetApprovedImagesByEvent(Institute_id);
+                var response = await _galleryRepository.GetApprovedImagesByEvent(model.Institute_id, model.pageSize, model.pageNumber);
                 if (response.Success)
                 {
                     foreach (var galleryEvent in response.Data)
@@ -111,11 +111,11 @@ namespace Institute_API.Services.Implementations
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
-        public async Task<ServiceResponse<List<GalleryEventDTO>>> GetAllGalleryImagesByEvent(int Institute_id)
+        public async Task<ServiceResponse<List<GalleryEventDTO>>> GetAllGalleryImagesByEvent(GetGalleryRequestModel model)
         {
             try
             {
-                var response = await _galleryRepository.GetAllGalleryImagesByEvent(Institute_id);
+                var response = await _galleryRepository.GetAllGalleryImagesByEvent(model.Institute_id, model.pageSize, model.pageNumber);
 
                 if (response.Success)
                 {
@@ -142,6 +142,19 @@ namespace Institute_API.Services.Implementations
             catch (Exception ex)
             {
                 return new ServiceResponse<List<GalleryEventDTO>>(false, ex.Message, null, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<bool>> DeleteGalleryImage(int Gallery_id)
+        {
+            try
+            {
+                var data = await _galleryRepository.DeleteGalleryImage(Gallery_id);
+                return data;
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
     }

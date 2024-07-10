@@ -48,6 +48,7 @@ namespace Student_API.DTOs.RequestDTO
         public bool IsScout { get; set; }
         public string? File_Name { get; set; }
         public int Institute_id { get; set; }
+        public int Student_House_id { get; set; }
         public StudentOtherInfos StudentOtherInfos { get; set; }
         public List<StudentParentInfo> studentParentInfos { get; set; } 
         public List<StudentSibling> studentSiblings { get; set; } 

@@ -71,7 +71,7 @@ namespace Student_API.Repository.Implementations
                     [Date_of_Joining], Academic_year_id, tbl_AcademicYear.YearName,tbl_StudentMaster.Nationality_id, Nationality_Type,tbl_Religion.Religion_id,Religion_Type, tbl_StudentMaster.Date_of_Birth, tbl_StudentMaster.Mother_Tongue_id, Mother_Tongue_Name,tbl_StudentMaster.Caste_id,caste_type,
                     [Medium], tbl_StudentMaster.Blood_Group_id,Blood_Group_Type, [App_User_id], [Aadhar_Number], [NEP], [QR_code], [IsPhysicallyChallenged],
                     [IsSports], [IsAided], [IsNCC], [IsNSS], [IsScout], tbl_StudentMaster.File_Name, [isActive] 
-                    ,tbl_Gender.Gender_Type,Religion_Type , Gender_Type,tbl_StudentMaster.Institute_id,Institute_name 
+                    ,tbl_Gender.Gender_Type,Religion_Type , Gender_Type,tbl_StudentMaster.Institute_id,Institute_name ,tbl_InstituteHouse.Institute_House_id AS Student_House_id,tbl_InstituteHouse.HouseName AS Student_House_Name
                     FROM tbl_StudentMaster 
                     LEFT JOIN tbl_Class ON tbl_StudentMaster.class_id = tbl_Class.class_id
                     LEFT JOIN tbl_Section on tbl_StudentMaster.section_id =  tbl_Section.section_id
@@ -83,13 +83,13 @@ namespace Student_API.Repository.Implementations
                     LEFT JOIN tbl_CasteMaster ON tbl_CasteMaster.caste_id = tbl_StudentMaster.Caste_id
                     LEFT JOIN tbl_InstituteDetails ON tbl_InstituteDetails.Institute_id = tbl_StudentMaster.Institute_id
                     LEFT JOIN tbl_AcademicYear ON tbl_AcademicYear.Id = tbl_StudentMaster.Academic_year_id
+                    LEFT JOIN tbl_InstituteHouse ON tbl_InstituteHouse.Institute_House_id = tbl_StudentMaster.Student_House_id
                     WHERE tbl_StudentMaster.student_id = @studentId;
 
                     SELECT [Student_Other_Info_id], [student_id], [StudentType_id], [email_id],  [Identification_Mark_1],
                     [Identification_Mark_2], [Admission_Date], tbl_StudentOtherInfo.Student_House_id, [Register_Date], [Register_Number], [samagra_ID], [Place_of_Birth], [comments], 
-                    [language_known]  ,tbl_InstituteHouse.HouseName ,tbl_StudentOtherInfo.StudentType_id , Student_Type_Name
+                    [language_known]  ,tbl_StudentOtherInfo.StudentType_id , Student_Type_Name
                     FROM [dbo].[tbl_StudentOtherInfo] 
-                    LEFT JOIN tbl_InstituteHouse ON tbl_InstituteHouse.Institute_House_id = tbl_StudentOtherInfo.Student_House_id
                     INNER JOIN tbl_StudentType ON tbl_StudentType.Student_Type_id = tbl_StudentOtherInfo.StudentType_id
                     WHERE student_id = @studentId;
 
@@ -180,14 +180,14 @@ INNER JOIN tbl_City ON tbl_City.city_id = tbl_StudentParentsOfficeInfo.city_id W
                             Academic_year_id, Nationality_id, Religion_id, Date_of_Birth,
                             Mother_Tongue_id, Caste_id, Medium, Blood_Group_id, App_User_id, Aadhar_Number,
                             NEP, QR_code, IsPhysicallyChallenged, IsSports, IsAided,
-                            IsNCC, IsNSS, IsScout, File_Name, Institute_id)
+                            IsNCC, IsNSS, IsScout, File_Name, Institute_id,Institute_house_id)
                         VALUES (
                             @First_Name, @Middle_Name, @Last_Name, @gender_id, @class_id,
                             @section_id, @Admission_Number, @Roll_Number, @Date_of_Joining,
                             @Academic_year_id, @Nationality_id, @Religion_id, @Date_of_Birth,
                             @Mother_Tongue_id, @Caste_id,  @Medium, @Blood_Group_id, @App_User_id, @Aadhar_Number,
                             @NEP, @QR_code, @IsPhysicallyChallenged, @IsSports, @IsAided,
-                            @IsNCC, @IsNSS, @IsScout, @File_Name, @Institute_id);
+                            @IsNCC, @IsNSS, @IsScout, @File_Name, @Institute_id,@Student_House_id);
                         SELECT CAST(SCOPE_IDENTITY() as int);";
 
                             studentId = await _connection.ExecuteScalarAsync<int>(insertStudentSql, request, transaction);
@@ -232,7 +232,8 @@ INNER JOIN tbl_City ON tbl_City.city_id = tbl_StudentParentsOfficeInfo.city_id W
                             IsNSS = @IsNSS,
                             IsScout = @IsScout,
                             File_Name = @File_Name,
-                            Institute_id = @Institute_id
+                            Institute_id = @Institute_id,
+                            Institute_house_id = @Student_House_id
                         WHERE student_id = @student_id";
 
                             int affectedRows = await _connection.ExecuteAsync(updateStudentSql, request, transaction);
@@ -250,8 +251,8 @@ INNER JOIN tbl_City ON tbl_City.city_id = tbl_StudentParentsOfficeInfo.city_id W
                             if (request.StudentOtherInfos.Student_Other_Info_id == 0)
                             {
                                 string insertOtherInfoSql = @"
-                               INSERT INTO [dbo].[tbl_StudentOtherInfo] (student_id, StudentType_id, email_id,  Identification_Mark_1, Identification_Mark_2, Admission_Date, Student_House_id, Register_Date, Register_Number, samagra_ID, Place_of_Birth, comments, language_known)
-                               VALUES (@student_id, @StudentType_id, @email_id, @Identification_Mark_1, @Identification_Mark_2, @Admission_Date, @Student_House_id, @Register_Date, @Register_Number, @samagra_ID, @Place_of_Birth, @comments, @language_known);
+                               INSERT INTO [dbo].[tbl_StudentOtherInfo] (student_id, StudentType_id, email_id,  Identification_Mark_1, Identification_Mark_2, Admission_Date,  Register_Date, Register_Number, samagra_ID, Place_of_Birth, comments, language_known)
+                               VALUES (@student_id, @StudentType_id, @email_id, @Identification_Mark_1, @Identification_Mark_2, @Admission_Date,  @Register_Date, @Register_Number, @samagra_ID, @Place_of_Birth, @comments, @language_known);
                                SELECT CAST(SCOPE_IDENTITY() as int)";
 
                                 int otherInfoId = await _connection.ExecuteScalarAsync<int>(insertOtherInfoSql, request.StudentOtherInfos, transaction);

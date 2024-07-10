@@ -33,12 +33,12 @@ namespace Institute_API.Controllers
             }
         }
 
-        [HttpGet("GetApprovedEvents/{Institute_id}")]
-        public async Task<IActionResult> GetApprovedEvents(int Institute_id)
+        [HttpPost("GetApprovedEvents")]
+        public async Task<IActionResult> GetApprovedEvents(CommonRequestDTO commonRequest)
         {
             try
             {
-                var data = await _eventService.GetApprovedEvents(Institute_id);
+                var data = await _eventService.GetApprovedEvents(commonRequest);
                 return Ok(data);
             }
             catch (Exception ex)
@@ -47,12 +47,12 @@ namespace Institute_API.Controllers
             }
         }
 
-        [HttpGet("GetAllEvents/{Institute_id}")]
-        public async Task<IActionResult> GetAllEvents(int Institute_id)
+        [HttpPost("GetAllEvents")]
+        public async Task<IActionResult> GetAllEvents(CommonRequestDTO commonRequest)
         {
             try
             {
-                var data = await _eventService.GetAllEvents(Institute_id);
+                var data = await _eventService.GetAllEvents(commonRequest);
                 return Ok(data);
             }
             catch (Exception ex)

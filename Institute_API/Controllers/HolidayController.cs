@@ -36,19 +36,19 @@ namespace Institute_API.Controllers
             {
                 var response = await _holidayService.GetHolidayById(holidayId);
                 return StatusCode(response.StatusCode, response);
-            }
+            } 
             catch (Exception ex)
             {
                 return BadRequest(ex.Message);
             }
         }
 
-        [HttpGet("GetAllHolidays/{Institute_id}")]
-        public async Task<IActionResult> GetAllHolidays(int Institute_id)
+        [HttpPost("GetAllHolidays")]
+        public async Task<IActionResult> GetAllHolidays(CommonRequestDTO commonRequest)
         {
             try
             {
-                var response = await _holidayService.GetAllHolidays(Institute_id);
+                var response = await _holidayService.GetAllHolidays(commonRequest);
                 return StatusCode(response.StatusCode, response);
             }
             catch (Exception ex)
@@ -57,12 +57,12 @@ namespace Institute_API.Controllers
             }
         }
 
-        [HttpGet("GetApprovedHolidays/{Institute_id}")]
-        public async Task<IActionResult> GetApprovedHolidays(int Institute_id)
+        [HttpPost("GetApprovedHolidays")]
+        public async Task<IActionResult> GetApprovedHolidays(CommonRequestDTO commonRequest)
         {
             try
             {
-                var response = await _holidayService.GetApprovedHolidays(Institute_id);
+                var response = await _holidayService.GetApprovedHolidays(commonRequest);
                 return StatusCode(response.StatusCode, response);
             }
             catch (Exception ex)
