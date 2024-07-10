@@ -121,7 +121,7 @@ namespace Institute_API.Repository.Implementations
                 string query = @"
             SELECT Event_id, FileName, isApproved
             FROM [dbo].[tbl_Gallery]
-            WHERE Institute_id = @Institute_id AND isApproved = 1
+            WHERE Institute_id = @Institute_id AND isApproved = 1 AND isDelete = 0
             ORDER BY Event_id";
 
                 if (pageSize.HasValue && pageNumber.HasValue)
@@ -160,7 +160,7 @@ namespace Institute_API.Repository.Implementations
                 string query = @"
             SELECT Event_id, FileName, isApproved
             FROM [dbo].[tbl_Gallery]
-            WHERE Institute_id = @Institute_id
+            WHERE Institute_id = @Institute_id  AND isDelete = 0
             ORDER BY Event_id";
 
                 if (pageSize.HasValue && pageNumber.HasValue)

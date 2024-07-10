@@ -36,8 +36,8 @@ namespace Institute_API.Repository.Implementations
                             EndDate = @EndDate,
                             Description = @Description,
                             Location = @Location,
-                            ScheduleTime = @ScheduleTime,
-                            Time = @Time,
+                            ScheduleTime = @ScheduleDate,
+                            Time = @ScheduleTime,
                             Institute_id=@Institute_id,
                             AttachmentFile = @AttachmentFile,
                             Academic_year_id = @Academic_year_id
@@ -47,7 +47,7 @@ namespace Institute_API.Repository.Implementations
                         {
                             eventQuery = @"
                         INSERT INTO [dbo].[tbl_CreateEvent] (EventName, StartDate, EndDate, Description, Location, ScheduleTime, Time, AttachmentFile,Institute_id,Academic_year_id)
-                        VALUES (@EventName, @StartDate, @EndDate, @Description, @Location, @ScheduleTime, @Time, @AttachmentFile,@Institute_id,@Academic_year_id);
+                        VALUES (@EventName, @StartDate, @EndDate, @Description, @Location, @ScheduleDate, @ScheduleTime, @AttachmentFile,@Institute_id,@Academic_year_id);
                         SELECT SCOPE_IDENTITY();"
                             ; // Retrieve the inserted id
                         }
@@ -184,7 +184,7 @@ namespace Institute_API.Repository.Implementations
             {
                 // Get event details from tbl_CreateEvent
                 string eventQuery = @"
-            SELECT Event_id,EventName,StartDate,EndDate,Description,Location,ScheduleTime,Time,AttachmentFile,isApproved,approvedBy,Academic_year_id,YearName
+            SELECT Event_id,EventName,StartDate,EndDate,Description,Location,ScheduleTime AS ScheduleDate,Time AS ScheduleTime,AttachmentFile,isApproved,approvedBy,Academic_year_id,YearName
             FROM tbl_CreateEvent
             WHERE Event_id = @EventId";
 
