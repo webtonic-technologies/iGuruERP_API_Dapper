@@ -73,7 +73,7 @@ namespace VisitorManagement_API.Repository.Implementations
                 foreach (var data in visitorLogs)
                 {
                     data.Photo = GetImage(data.Photo);
-                    data.Document = GetImage(data.Document);
+                    data.Document = GetPDF(data.Document);
                 }
 
                 var paginatedVisitorLogs = visitorLogs.Skip((request.PageNumber - 1) * request.PageSize).Take(request.PageSize);
@@ -99,7 +99,7 @@ namespace VisitorManagement_API.Repository.Implementations
                 if (visitorLog != null)
                 {
                     visitorLog.Photo = GetImage(visitorLog.Photo);
-                    visitorLog.Document = GetImage(visitorLog.Document);
+                    visitorLog.Document = GetPDF(visitorLog.Document);
                     return new ServiceResponse<Visitorlogresponse>(true, "Visitor Log Retrieved Successfully", visitorLog, 200);
                 }
 
