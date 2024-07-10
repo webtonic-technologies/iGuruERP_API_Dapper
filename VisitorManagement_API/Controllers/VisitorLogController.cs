@@ -50,7 +50,7 @@ namespace VisitorManagement_API.Controllers
             return BadRequest(response);
         }
 
-        [HttpPut("VisitorLogs/Status/{visitorId}")]
+        [HttpDelete("VisitorLogs/Status/{visitorId}")]
         public async Task<IActionResult> UpdateVisitorLogStatus(int visitorId)
         {
             var response = await _visitorLogService.UpdateVisitorLogStatus(visitorId);

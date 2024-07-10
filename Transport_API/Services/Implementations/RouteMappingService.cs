@@ -16,9 +16,9 @@ namespace Transport_API.Services.Implementations
             _routeMappingRepository = routeMappingRepository;
         }
 
-        public Task<ServiceResponse<string>> AddUpdateEmployeeStopMapping(List<EmployeeStopMapping> request)
+        public async Task<ServiceResponse<string>> AddUpdateEmployeeStopMapping(List<EmployeeStopMapping> request)
         {
-            throw new NotImplementedException();
+            return await _routeMappingRepository.AddUpdateEmployeeStopMapping(request);
         }
 
         public async Task<ServiceResponse<string>> AddUpdateRouteMapping(RouteMapping routeMapping)
@@ -26,9 +26,9 @@ namespace Transport_API.Services.Implementations
             return await _routeMappingRepository.AddUpdateRouteMapping(routeMapping);
         }
 
-        public Task<ServiceResponse<string>> AddUpdateStudentStopMapping(List<StudentStopMapping> request)
+        public async Task<ServiceResponse<string>> AddUpdateStudentStopMapping(List<StudentStopMapping> request)
         {
-            throw new NotImplementedException();
+            return await _routeMappingRepository.AddUpdateStudentStopMapping(request);
         }
 
         public async Task<ServiceResponse<IEnumerable<RouteMappingResponse>>> GetAllRouteMappings(GetAllRouteMappingRequest request)
@@ -36,9 +36,9 @@ namespace Transport_API.Services.Implementations
             return await _routeMappingRepository.GetAllRouteMappings(request);
         }
 
-        public Task<ServiceResponse<List<EmployeeStopMappingResponse>>> GetEmployeeStopMappings(int RoutePlanId)
+        public async Task<ServiceResponse<List<EmployeeStopMappingResponse>>> GetEmployeeStopMappings(int RoutePlanId)
         {
-            throw new NotImplementedException();
+            return await _routeMappingRepository.GetEmployeeStopMappings(RoutePlanId);
         }
 
         public async Task<ServiceResponse<RouteMappingResponse>> GetRouteMappingById(int routeMappingId)
@@ -46,19 +46,19 @@ namespace Transport_API.Services.Implementations
             return await _routeMappingRepository.GetRouteMappingById(routeMappingId);
         }
 
-        public Task<ServiceResponse<List<StudentStopMappingResponse>>> GetStudentStopMappings(int RoutePlanId)
+        public async Task<ServiceResponse<List<StudentStopMappingResponse>>> GetStudentStopMappings(int RoutePlanId)
         {
-            throw new NotImplementedException();
+            return await _routeMappingRepository.GetStudentStopMappings(RoutePlanId);
         }
 
-        public Task<ServiceResponse<string>> RemoveEmployeeStopMapping(List<EmployeeStopMapping> request)
+        public async Task<ServiceResponse<string>> RemoveEmployeeStopMapping(List<EmployeeStopMapping> request)
         {
-            throw new NotImplementedException();
+            return await _routeMappingRepository.RemoveEmployeeStopMapping(request);
         }
 
-        public Task<ServiceResponse<string>> RemoveStudentStopMapping(List<StudentStopMapping> request)
+        public async Task<ServiceResponse<string>> RemoveStudentStopMapping(List<StudentStopMapping> request)
         {
-            throw new NotImplementedException();
+            return await _routeMappingRepository.RemoveStudentStopMapping(request);
         }
 
         public async Task<ServiceResponse<bool>> UpdateRouteMappingStatus(int routeMappingId)
