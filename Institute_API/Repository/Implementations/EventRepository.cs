@@ -36,17 +36,18 @@ namespace Institute_API.Repository.Implementations
                             EndDate = @EndDate,
                             Description = @Description,
                             Location = @Location,
-                            ScheduleTime = @ScheduleTime,
-                            Time = @Time,
+                            ScheduleTime = @ScheduleDate,
+                            Time = @ScheduleTime,
                             Institute_id=@Institute_id,
-                            AttachmentFile = @AttachmentFile
+                            AttachmentFile = @AttachmentFile,
+                            Academic_year_id = @Academic_year_id
                         WHERE Event_id = @Event_id";
                         }
                         else
                         {
                             eventQuery = @"
-                        INSERT INTO [dbo].[tbl_CreateEvent] (EventName, StartDate, EndDate, Description, Location, ScheduleTime, Time, AttachmentFile,Institute_id)
-                        VALUES (@EventName, @StartDate, @EndDate, @Description, @Location, @ScheduleTime, @Time, @AttachmentFile,@Institute_id);
+                        INSERT INTO [dbo].[tbl_CreateEvent] (EventName, StartDate, EndDate, Description, Location, ScheduleTime, Time, AttachmentFile,Institute_id,Academic_year_id)
+                        VALUES (@EventName, @StartDate, @EndDate, @Description, @Location, @ScheduleDate, @ScheduleTime, @AttachmentFile,@Institute_id,@Academic_year_id);
                         SELECT SCOPE_IDENTITY();"
                             ; // Retrieve the inserted id
                         }
@@ -183,7 +184,7 @@ namespace Institute_API.Repository.Implementations
             {
                 // Get event details from tbl_CreateEvent
                 string eventQuery = @"
-            SELECT Event_id,EventName,StartDate,EndDate,Description,Location,ScheduleTime,Time,AttachmentFile,isApproved,approvedBy
+            SELECT Event_id,EventName,StartDate,EndDate,Description,Location,ScheduleTime AS ScheduleDate,Time AS ScheduleTime,AttachmentFile,isApproved,approvedBy,Academic_year_id,YearName
             FROM tbl_CreateEvent
             WHERE Event_id = @EventId";
 
@@ -251,31 +252,82 @@ namespace Institute_API.Repository.Implementations
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
-        public async Task<ServiceResponse<List<EventDTO>>> GetApprovedEvents(int Institute_id)
+        public async Task<ServiceResponse<List<EventDTO>>> GetApprovedEvents(int Institute_id, int Academic_year_id, string sortColumn, string sortDirection, int? pageSize = null, int? pageNumber = null)
         {
             try
             {
-                string query = @"
-            SELECT Event_id,
-                   EventName,
-                   StartDate,
-                   EndDate,
-                   Description,
-                   Location,
-                   AttachmentFile
-            FROM tbl_CreateEvent
-            WHERE isApproved = 1 AND isDelete = 0 AND Institute_id =@Institute_id";
+                // List of valid sortable columns
+                var validSortColumns = new Dictionary<string, string>
+{
+    { "EventName", "EventName" },
+    { "StartDate", "StartDate" },
+    { "EndDate", "EndDate" }
+};
 
-                var events = await _connection.QueryAsync<EventDTO>(query, new{ Institute_id });
-                if (events.Count() >0)
+                // Ensure the sort column is valid, default to "EventName" if not
+                if (!validSortColumns.ContainsKey(sortColumn))
                 {
-                    return new ServiceResponse<List<EventDTO>>(true, "Approved events retrieved successfully", events.ToList(), 200);
+                    sortColumn = "EventName";
                 }
                 else
                 {
-                    return new ServiceResponse<List<EventDTO>>(false, "Approved events Not Found", events.ToList(), 404);
+                    sortColumn = validSortColumns[sortColumn];
                 }
-               
+
+                // Ensure sort direction is valid, default to "ASC" if not
+                sortDirection = sortDirection.ToUpper() == "DESC" ? "DESC" : "ASC";
+
+                // SQL queries
+                string queryAll = @"
+    SELECT Event_id,
+           EventName,
+           StartDate,
+           EndDate,
+           Description,
+           Location,
+           AttachmentFile
+    FROM tbl_CreateEvent 
+    WHERE  isApproved = 1 AND  isDelete = 0 AND Institute_id = @Institute_id AND (@Academic_year_id = 0 OR Academic_year_id=@Academic_year_id)";
+
+                string queryCount = @"
+    SELECT COUNT(*)
+    FROM tbl_CreateEvent 
+    WHERE  isApproved = 1 AND isDelete = 0 AND Institute_id = @Institute_id AND (@Academic_year_id = 0 OR Academic_year_id=@Academic_year_id)";
+
+                List<EventDTO> events;
+                int totalRecords = 0;
+
+                if (pageSize.HasValue && pageNumber.HasValue)
+                {
+                    int offset = (pageNumber.Value - 1) * pageSize.Value;
+
+                    // Build the paginated query with dynamic sorting
+                    string queryPaginated = $@"
+        {queryAll}
+        ORDER BY {sortColumn} {sortDirection}
+        OFFSET @Offset ROWS
+        FETCH NEXT @PageSize ROWS ONLY;
+
+        {queryCount}";
+
+                    using (var multi = await _connection.QueryMultipleAsync(queryPaginated, new { Offset = offset, PageSize = pageSize, Institute_id= Institute_id, Academic_year_id= Academic_year_id }))
+                    {
+                        events = multi.Read<EventDTO>().ToList();
+                        totalRecords = multi.ReadSingle<int>();
+                    }
+
+                    return new ServiceResponse<List<EventDTO>>(true, "Approved events retrieved successfully", events, 200, totalRecords);
+                }
+                else
+                {
+                    // No pagination, return all records with sorting
+                    string querySorted = $@"
+        {queryAll}
+        ORDER BY {sortColumn} {sortDirection}";
+
+                    events = (await _connection.QueryAsync<EventDTO>(querySorted, new { Institute_id })).ToList();
+                    return new ServiceResponse<List<EventDTO>>(true, "All approved events retrieved successfully", events, 200);
+                }
             }
             catch (Exception ex)
             {
@@ -283,11 +335,33 @@ namespace Institute_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<EventDTO>>> GetAllEvents(int Institute_id)
+        public async Task<ServiceResponse<List<EventDTO>>> GetAllEvents(int Institute_id, int Academic_year_id, string sortColumn, string sortDirection, int? pageSize = null, int? pageNumber = null)
         {
             try
             {
-                string query = @"
+                // List of valid sortable columns
+                var validSortColumns = new Dictionary<string, string>
+        {
+            { "EventName", "EventName" },
+            { "StartDate", "StartDate" },
+            { "EndDate", "EndDate" }
+        };
+
+                // Ensure the sort column is valid, default to "EventName" if not
+                if (!validSortColumns.ContainsKey(sortColumn))
+                {
+                    sortColumn = "EventName";
+                }
+                else
+                {
+                    sortColumn = validSortColumns[sortColumn];
+                }
+
+                // Ensure sort direction is valid, default to "ASC" if not
+                sortDirection = sortDirection.ToUpper() == "DESC" ? "DESC" : "ASC";
+
+                // SQL queries
+                string queryAll = @"
             SELECT Event_id,
                    EventName,
                    StartDate,
@@ -295,17 +369,47 @@ namespace Institute_API.Repository.Implementations
                    Description,
                    Location,
                    AttachmentFile
-            FROM tbl_CreateEvent where isDelete = 0 AND Institute_id = @Institute_id";
+            FROM tbl_CreateEvent 
+            WHERE isDelete = 0 AND Institute_id = @Institute_id AND (@Academic_year_id = 0 OR Academic_year_id=@Academic_year_id)";
 
-                var events = await _connection.QueryAsync<EventDTO>(query, new { Institute_id });
+                string queryCount = @"
+            SELECT COUNT(*)
+            FROM tbl_CreateEvent 
+            WHERE isDelete = 0 AND Institute_id = @Institute_id AND (@Academic_year_id = 0 OR Academic_year_id=@Academic_year_id)";
 
-                if (events.Count() > 0)
+                List<EventDTO> events;
+                int totalRecords = 0;
+
+                if (pageSize.HasValue && pageNumber.HasValue)
                 {
-                    return new ServiceResponse<List<EventDTO>>(true, "Approved events retrieved successfully", events.ToList(), 200);
+                    int offset = (pageNumber.Value - 1) * pageSize.Value;
+
+                    // Build the paginated query with dynamic sorting
+                    string queryPaginated = $@"
+                {queryAll}
+                ORDER BY {sortColumn} {sortDirection}
+                OFFSET @Offset ROWS
+                FETCH NEXT @PageSize ROWS ONLY;
+
+                {queryCount}";
+
+                    using (var multi = await _connection.QueryMultipleAsync(queryPaginated, new { Offset = offset, PageSize = pageSize, Institute_id = Institute_id, Academic_year_id = Academic_year_id }))
+                    {
+                        events = multi.Read<EventDTO>().ToList();
+                        totalRecords = multi.ReadSingle<int>();
+                    }
+
+                    return new ServiceResponse<List<EventDTO>>(true, "Approved events retrieved successfully", events, 200, totalRecords);
                 }
                 else
                 {
-                    return new ServiceResponse<List<EventDTO>>(false, "Approved events Not Found", events.ToList(), 404);
+                    // No pagination, return all records with sorting
+                    string querySorted = $@"
+                {queryAll}
+                ORDER BY {sortColumn} {sortDirection}";
+
+                    events = (await _connection.QueryAsync<EventDTO>(querySorted, new { Institute_id })).ToList();
+                    return new ServiceResponse<List<EventDTO>>(true, "All approved events retrieved successfully", events, 200);
                 }
             }
             catch (Exception ex)
