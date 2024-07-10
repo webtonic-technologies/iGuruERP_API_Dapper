@@ -101,11 +101,24 @@ namespace Student_API.Services.Implementations
             {
                 return ".gif";
             }
+            else if (IsPdf(imageData))
+            {
+                return ".pdf";
+            }
             else
             {
                 // Default to an empty string or handle unrecognized formats as needed
                 return string.Empty;
             }
+        }
+        private bool IsPdf(byte[] imageData)
+        {
+            // PDF signature: "%PDF"
+            return imageData.Length >= 4 &&
+                   imageData[0] == 0x25 &&
+                   imageData[1] == 0x50 &&
+                   imageData[2] == 0x44 &&
+                   imageData[3] == 0x46;
         }
 
         private bool IsJpeg(byte[] imageData)

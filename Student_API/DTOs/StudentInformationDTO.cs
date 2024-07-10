@@ -43,6 +43,8 @@
         public string Father_Name { get; set; }
         public int Institute_id { get; set; }
         public string? Institute_name { get; set; }
+        public int? Student_House_id { get; set; }
+        public string? Student_House_Name { get; set; }
         public StudentOtherInfoDTO studentOtherInfoDTO { get; set; }
         public List<StudentParentInfoDTO> studentParentInfos { get; set; }
         public StudentSiblings studentSiblings { get; set; }

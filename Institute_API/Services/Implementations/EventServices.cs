@@ -62,11 +62,11 @@ namespace Institute_API.Services.Implementations
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
-        public async Task<ServiceResponse<List<EventDTO>>> GetApprovedEvents(int Institute_id)
+        public async Task<ServiceResponse<List<EventDTO>>> GetApprovedEvents(CommonRequestDTO commonRequest)
         {
             try
             {
-                var data = await _eventRepository.GetApprovedEvents(Institute_id);
+                var data = await _eventRepository.GetApprovedEvents(commonRequest.Institute_id, commonRequest.Academic_year_id, commonRequest.sortColumn, commonRequest.sortDirection, commonRequest.pageSize, commonRequest.pageNumber);
                 foreach (var eventDto in data.Data)
                 {
                     if (eventDto != null && eventDto.AttachmentFile != null && eventDto.AttachmentFile != "")
@@ -83,11 +83,11 @@ namespace Institute_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<EventDTO>>> GetAllEvents(int Institute_id)
+        public async Task<ServiceResponse<List<EventDTO>>> GetAllEvents(CommonRequestDTO commonRequest)
         {
             try
             {
-                var data = await _eventRepository.GetAllEvents(Institute_id);
+                var data = await _eventRepository.GetAllEvents(commonRequest.Institute_id, commonRequest.Academic_year_id, commonRequest.sortColumn, commonRequest.sortDirection, commonRequest.pageSize, commonRequest.pageNumber);
                 foreach (var eventDto in data.Data)
                 {
                     if (eventDto != null && eventDto.AttachmentFile != null && eventDto.AttachmentFile != "")
