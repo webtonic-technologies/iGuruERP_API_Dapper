@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using VisitorManagement_API.DTOs.Requests;
+using VisitorManagement_API.DTOs.Responses;
 using VisitorManagement_API.DTOs.ServiceResponse;
 using VisitorManagement_API.Models;
 using VisitorManagement_API.Repository.Interfaces;
@@ -22,12 +23,12 @@ namespace VisitorManagement_API.Services.Implementations
             return await _visitorLogRepository.AddUpdateVisitorLog(visitorLog);
         }
 
-        public async Task<ServiceResponse<IEnumerable<VisitorLog>>> GetAllVisitorLogs(GetAllVisitorLogsRequest request)
+        public async Task<ServiceResponse<IEnumerable<Visitorlogresponse>>> GetAllVisitorLogs(GetAllVisitorLogsRequest request)
         {
             return await _visitorLogRepository.GetAllVisitorLogs(request);
         }
 
-        public async Task<ServiceResponse<VisitorLog>> GetVisitorLogById(int visitorId)
+        public async Task<ServiceResponse<Visitorlogresponse>> GetVisitorLogById(int visitorId)
         {
             return await _visitorLogRepository.GetVisitorLogById(visitorId);
         }

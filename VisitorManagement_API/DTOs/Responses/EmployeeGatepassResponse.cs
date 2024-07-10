@@ -1,9 +1,13 @@
-﻿namespace VisitorManagement_API.Models
+﻿namespace VisitorManagement_API.DTOs.Responses
 {
-    public class EmployeeGatePass
+    public class EmployeeGatepassResponse
     {
         public int GatePassID { get; set; }
         public int EmployeeID { get; set; }
+        public int Departmentid { get; set; }
+        public string Departmentname { get; set; } = string.Empty;
+        public string Designationname { get; set; } = string.Empty;
+        public int Designationid { get; set; }
         public string PassNo { get; set; }
         public string VisitorFor { get; set; }
         public DateTime CheckOutTime { get; set; }

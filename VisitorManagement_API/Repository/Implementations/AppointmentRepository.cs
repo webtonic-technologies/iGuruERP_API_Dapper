@@ -29,8 +29,8 @@ namespace VisitorManagement_API.Repository.Implementations
                 if (appointment.AppointmentID == 0)
                 {
                     // Insert new appointment
-                    string query = @"INSERT INTO tblAppointment (Appointee, OrganizationName, MobileNo, EmailID, PurposeID, EmployeeID, CheckInTime, CheckOutTime, Description, NoOfVisitors, Status)
-                                     VALUES (@Appointee, @OrganizationName, @MobileNo, @EmailID, @PurposeID, @EmployeeID, @CheckInTime, @CheckOutTime, @Description, @NoOfVisitors, @Status)";
+                    string query = @"INSERT INTO tblAppointment (Appointee, OrganizationName, MobileNo, EmailID, PurposeID, EmployeeID, CheckInTime, CheckOutTime, Description, NoOfVisitors, Status, InstituteId)
+                                     VALUES (@Appointee, @OrganizationName, @MobileNo, @EmailID, @PurposeID, @EmployeeID, @CheckInTime, @CheckOutTime, @Description, @NoOfVisitors, @Status, @InstituteId)";
                     int insertedValue = await _dbConnection.ExecuteAsync(query, appointment);
                     if (insertedValue > 0)
                     {
@@ -41,7 +41,7 @@ namespace VisitorManagement_API.Repository.Implementations
                 else
                 {
                     // Update existing appointment
-                    string query = @"UPDATE tblAppointment SET Appointee = @Appointee, OrganizationName = @OrganizationName, MobileNo = @MobileNo, EmailID = @EmailID, PurposeID = @PurposeID, EmployeeID = @EmployeeID, CheckInTime = @CheckInTime, CheckOutTime = @CheckOutTime, Description = @Description, NoOfVisitors = @NoOfVisitors, Status = @Status
+                    string query = @"UPDATE tblAppointment SET Appointee = @Appointee, OrganizationName = @OrganizationName, MobileNo = @MobileNo, EmailID = @EmailID, PurposeID = @PurposeID, EmployeeID = @EmployeeID, CheckInTime = @CheckInTime, CheckOutTime = @CheckOutTime, Description = @Description, NoOfVisitors = @NoOfVisitors, Status = @Status, InstituteId = @InstituteId
                                      WHERE AppointmentID = @AppointmentID";
                     int rowsAffected = await _dbConnection.ExecuteAsync(query, appointment);
                     if (rowsAffected > 0)
@@ -61,8 +61,8 @@ namespace VisitorManagement_API.Repository.Implementations
         {
             try
             {
-                string query = "SELECT * FROM tblAppointment";
-                var appointments = await _dbConnection.QueryAsync<Appointment>(query);
+                string query = "SELECT * FROM tblAppointment where InstituteId = @InstituteId";
+                var appointments = await _dbConnection.QueryAsync<Appointment>(query, new { request.InstituteId });
                 var paginatedAppointments = appointments.Skip((request.PageNumber - 1) * request.PageSize).Take(request.PageSize);
                 return new ServiceResponse<IEnumerable<Appointment>>(true, "Appointments Retrieved Successfully", paginatedAppointments, 200, appointments.Count());
             }
