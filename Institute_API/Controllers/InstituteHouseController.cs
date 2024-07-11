@@ -37,13 +37,38 @@ namespace Institute_API.Controllers
             }
 
         }
-
-        [HttpGet("GetInstituteHouseById/{id}")]
-        public async Task<IActionResult> GetInstituteHouseList(int id)
+        [HttpGet("GetInstituteHouse/{id}")]
+        public async Task<IActionResult> GetInstituteHouseList(int id, [FromQuery] string searchText)
         {
             try
             {
-                var data = await _instituteHouseServices.GetInstituteHouseList(id);
+                var data = await _instituteHouseServices.GetInstituteHouseList(id, searchText);
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+        [HttpGet("GetInstituteHouseById/{instituteHouseId}")]
+        public async Task<IActionResult> GetInstituteHouseById(int instituteHouseId)
+        {
+            try
+            {
+                var data = await _instituteHouseServices.GetInstituteHouseById(instituteHouseId);
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+        [HttpDelete("DeleteInstituteHouse/{instituteHouseId}")]
+        public async Task<IActionResult> DeleteInstituteHouse(int instituteHouseId)
+        {
+            try
+            {
+                var data = await _instituteHouseServices.SoftDeleteInstituteHouse(instituteHouseId);
                 return Ok(data);
             }
             catch (Exception ex)

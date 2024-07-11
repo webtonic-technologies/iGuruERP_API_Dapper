@@ -167,8 +167,14 @@ namespace Institute_API.Repository.Implementations
                        FROM [dbo].[tbl_Class]
                        WHERE Institute_id = @Institute_id AND IsDeleted = 0";
 
+                // Add search filter if SearchText is provided
+                if (!string.IsNullOrEmpty(request.SearchText))
+                {
+                    sql += " AND class_name LIKE @SearchText";
+                }
+
                 // Execute the query and retrieve the classes
-                var data = await _connection.QueryAsync<Class>(sql, new { request.Institute_id });
+                var data = await _connection.QueryAsync<Class>(sql, new { request.Institute_id, SearchText = $"%{request.SearchText}%" });
                 if (data != null)
                 {
                     foreach (var item in data)
@@ -190,6 +196,7 @@ namespace Institute_API.Repository.Implementations
                         response.Add(record);
                     }
 
+                    // Pagination
                     var paginatedList = response.Skip((request.PageNumber - 1) * request.PageSize)
                                                 .Take(request.PageSize)
                                                 .ToList();

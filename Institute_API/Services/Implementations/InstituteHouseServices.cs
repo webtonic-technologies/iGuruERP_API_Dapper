@@ -28,15 +28,39 @@ namespace Institute_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<InstituteHouseDTO>> GetInstituteHouseList(int Id)
+        public async Task<ServiceResponse<InstituteHouseDTO>> GetInstituteHouseById(int instituteHouseId)
         {
             try
             {
-                return await _instituteHouseRepository.GetInstituteHouseList(Id);
+                return await _instituteHouseRepository.GetInstituteHouseById(instituteHouseId);
             }
             catch (Exception ex)
             {
                 return new ServiceResponse<InstituteHouseDTO>(false, ex.Message, new InstituteHouseDTO(), 500);
+            }
+        }
+
+        public async Task<ServiceResponse<InstituteHouseDTO>> GetInstituteHouseList(int Id, string searchText)
+        {
+            try
+            {
+                return await _instituteHouseRepository.GetInstituteHouseList(Id, searchText);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<InstituteHouseDTO>(false, ex.Message, new InstituteHouseDTO(), 500);
+            }
+        }
+
+        public async Task<ServiceResponse<bool>> SoftDeleteInstituteHouse(int instituteHouseId)
+        {
+            try
+            {
+                return await _instituteHouseRepository.SoftDeleteInstituteHouse(instituteHouseId);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
     }

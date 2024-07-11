@@ -47,12 +47,13 @@ namespace Institute_API.Repository.Implementations
                                 HouseColor = data.HouseColor,
                                 HouseName = data.HouseName,
                                 Institute_id = request.Institute_id,
-                                en_date = data.en_date
+                                en_date = data.en_date,
+                                IsDeleted = false
                             };
                             houses.Add(newHouse);
                         }
-                        string insertQuery = @"INSERT INTO [dbo].[tbl_InstituteHouse] (Institute_id, HouseName, HouseColor, FileName, en_date)
-                       VALUES (@Institute_id, @HouseName, @HouseColor, @FileName, @en_date);
+                        string insertQuery = @"INSERT INTO [dbo].[tbl_InstituteHouse] (Institute_id, HouseName, HouseColor, FileName, en_date, IsDeleted)
+                       VALUES (@Institute_id, @HouseName, @HouseColor, @FileName, @en_date, @IsDeleted);
                         SELECT SCOPE_IDENTITY();";
                         // Execute the query with multiple parameterized sets of values
                         addedRecords = await _connection.ExecuteAsync(insertQuery, houses);
@@ -69,12 +70,13 @@ namespace Institute_API.Repository.Implementations
                             HouseColor = data.HouseColor,
                             HouseName = data.HouseName,
                             Institute_id = request.Institute_id,
-                            en_date = data.en_date
+                            en_date = data.en_date,
+                            IsDeleted = false
                         };
                         houses.Add(newHouse);
                     }
-                    string insertQuery = @"INSERT INTO [dbo].[tbl_InstituteHouse] (Institute_id, HouseName, HouseColor, FileName, en_date)
-                       VALUES (@Institute_id, @HouseName, @HouseColor, @FileName, @en_date);
+                    string insertQuery = @"INSERT INTO [dbo].[tbl_InstituteHouse] (Institute_id, HouseName, HouseColor, FileName, en_date, IsDeleted)
+                       VALUES (@Institute_id, @HouseName, @HouseColor, @FileName, @en_date, @IsDeleted);
                          SELECT SCOPE_IDENTITY();";
                     // Execute the query with multiple parameterized sets of values
                     addedRecords = await _connection.ExecuteAsync(insertQuery, houses);
@@ -93,33 +95,93 @@ namespace Institute_API.Repository.Implementations
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
-        public async Task<ServiceResponse<InstituteHouseDTO>> GetInstituteHouseList(int Id)
+        public async Task<ServiceResponse<InstituteHouseDTO>> GetInstituteHouseList(int Id, string searchText)
+        {
+            try
+            {
+                var response = new InstituteHouseDTO();
+                string sql = @"SELECT Institute_house_id, Institute_id, HouseName, HouseColor, en_date, FileName, IsDeleted
+                       FROM [dbo].[tbl_InstituteHouse]
+                       WHERE Institute_id = @Id AND IsDeleted = 0";
+
+                // Add search conditions if searchText is provided
+                if (!string.IsNullOrEmpty(searchText))
+                {
+                    sql += " AND (HouseName LIKE @SearchText OR HouseColor LIKE @SearchText)";
+                }
+
+                var instituteHouses = await _connection.QueryAsync<InstituteHouses>(sql, new { Id, SearchText = $"%{searchText}%" });
+
+                if (instituteHouses != null && instituteHouses.Any())
+                {
+                    foreach (var house in instituteHouses)
+                    {
+                        house.FileName = GetImage(house.FileName);
+                    }
+                    response.Institute_id = Id;
+                    response.InstituteHouses = instituteHouses.AsList();
+                    return new ServiceResponse<InstituteHouseDTO>(true, "Records found", response, 200);
+                }
+                else
+                {
+                    return new ServiceResponse<InstituteHouseDTO>(false, "No records found", new InstituteHouseDTO(), 404);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<InstituteHouseDTO>(false, ex.Message, new InstituteHouseDTO(), 500);
+            }
+        }
+        public async Task<ServiceResponse<InstituteHouseDTO>> GetInstituteHouseById(int instituteHouseId)
         {
             try
             {
                 var response = new InstituteHouseDTO();
                 string sql = @"SELECT Institute_house_id, Institute_id, HouseName, HouseColor, en_date, FileName
                        FROM [dbo].[tbl_InstituteHouse]
-                       WHERE Institute_id = @Id";
-                var instituteHouse = await _connection.QueryAsync<InstituteHouses>(sql, new { Id });
+                       WHERE Institute_house_id = @InstituteHouseId";
+
+                var instituteHouse = await _connection.QueryFirstOrDefaultAsync<InstituteHouses>(sql, new { InstituteHouseId = instituteHouseId });
+
                 if (instituteHouse != null)
                 {
-                    foreach(var data in instituteHouse)
-                    {
-                        data.FileName = GetImage(data.FileName);
-                    }
-                    response.Institute_id = Id;
-                    response.InstituteHouses = instituteHouse.AsList();
-                    return new ServiceResponse<InstituteHouseDTO>(true, "record found", response, 200);
+                    instituteHouse.FileName = GetImage(instituteHouse.FileName);
+                    response.Institute_id = instituteHouse.Institute_id;
+                    response.InstituteHouses = new List<InstituteHouses> { instituteHouse };
+                    return new ServiceResponse<InstituteHouseDTO>(true, "Record found", response, 200);
                 }
                 else
                 {
-                    return new ServiceResponse<InstituteHouseDTO>(false, "record not found", new InstituteHouseDTO(), 500);
+                    return new ServiceResponse<InstituteHouseDTO>(false, "Record not found", new InstituteHouseDTO(), 404);
                 }
             }
             catch (Exception ex)
             {
                 return new ServiceResponse<InstituteHouseDTO>(false, ex.Message, new InstituteHouseDTO(), 500);
+            }
+        }
+        public async Task<ServiceResponse<bool>> SoftDeleteInstituteHouse(int instituteHouseId)
+        {
+            try
+            {
+                string sql = @"UPDATE [dbo].[tbl_InstituteHouse]
+                       SET IsDeleted = 1
+                       WHERE Institute_house_id = @InstituteHouseId";
+
+                int rowsAffected = await _connection.ExecuteAsync(sql, new { InstituteHouseId = instituteHouseId });
+
+                if (rowsAffected > 0)
+                {
+                    return new ServiceResponse<bool>(true, "Record soft deleted successfully", true, 200);
+                }
+                else
+                {
+                    return new ServiceResponse<bool>(false, "Record not found or already deleted", false, 404);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
         private string ImageUpload(string image)
