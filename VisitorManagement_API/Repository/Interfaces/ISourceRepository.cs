@@ -8,9 +8,9 @@ namespace VisitorManagement_API.Repository.Interfaces
 {
     public interface ISourceRepository
     {
-        Task<ServiceResponse<string>> AddUpdateSource(Source source);
-        Task<ServiceResponse<IEnumerable<Source>>> GetAllSources(GetAllSourcesRequest request);
-        Task<ServiceResponse<Source>> GetSourceById(int sourceId);
+        Task<ServiceResponse<string>> AddUpdateSource(Sources source);
+        Task<ServiceResponse<IEnumerable<Sources>>> GetAllSources(GetAllSourcesRequest request);
+        Task<ServiceResponse<Sources>> GetSourceById(int sourceId);
         Task<ServiceResponse<bool>> UpdateSourceStatus(int sourceId);
     }
 }

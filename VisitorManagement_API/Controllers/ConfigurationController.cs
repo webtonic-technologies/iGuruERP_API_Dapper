@@ -21,7 +21,7 @@ namespace VisitorManagement_API.Controllers
 
         // Source Endpoints
         [HttpPost("Sources/AddUpdateSources")]
-        public async Task<IActionResult> AddUpdateSource(Source source)
+        public async Task<IActionResult> AddUpdateSource(Sources source)
         {
             var response = await _sourceService.AddUpdateSource(source);
             if (response.Success)

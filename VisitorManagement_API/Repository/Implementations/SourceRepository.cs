@@ -22,15 +22,16 @@ namespace VisitorManagement_API.Repository.Implementations
             _dbConnection = new SqlConnection(configuration.GetConnectionString("DefaultConnection"));
         }
 
-        public async Task<ServiceResponse<string>> AddUpdateSource(Source source)
+        public async Task<ServiceResponse<string>> AddUpdateSource(Sources source)
         {
             try
             {
                 if (source.SourceID == 0)
                 {
                     // Insert new source
-                    string query = @"INSERT INTO tblSources (Source, Description) VALUES (@SourceName, @Description)";
-                    int insertedValue = await _dbConnection.ExecuteAsync(query, new { source.SourceName, source.Description });
+                    string query = @"INSERT INTO tblSources (Source, Description, Status) VALUES (@Source, @Description, @Status)";
+                    source.Status = true;
+                    int insertedValue = await _dbConnection.ExecuteAsync(query, new { source.Source, source.Description, source.Status });
                     if (insertedValue > 0)
                     {
                         return new ServiceResponse<string>(true, "Source Added Successfully", "Success", 201);
@@ -40,8 +41,8 @@ namespace VisitorManagement_API.Repository.Implementations
                 else
                 {
                     // Update existing source
-                    string query = @"UPDATE tblSources SET SourceName = @Source, Description = @Description WHERE SourceID = @SourceID";
-                    int rowsAffected = await _dbConnection.ExecuteAsync(query, new { source.SourceName, source.Description, source.SourceID });
+                    string query = @"UPDATE tblSources SET Source = @Source, Description = @Description, Status = @Status WHERE SourceID = @SourceID";
+                    int rowsAffected = await _dbConnection.ExecuteAsync(query, new { source.Source, source.Description, source.SourceID });
                     if (rowsAffected > 0)
                     {
                         return new ServiceResponse<string>(true, "Source Updated Successfully", "Success", 200);
@@ -55,36 +56,36 @@ namespace VisitorManagement_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<IEnumerable<Source>>> GetAllSources(GetAllSourcesRequest request)
+        public async Task<ServiceResponse<IEnumerable<Sources>>> GetAllSources(GetAllSourcesRequest request)
         {
             try
             {
                 string query = "SELECT * FROM tblSources";
-                var sources = await _dbConnection.QueryAsync<Source>(query);
+                var sources = await _dbConnection.QueryAsync<Sources>(query);
                 var paginatedSources = sources.Skip((request.PageNumber - 1) * request.PageSize).Take(request.PageSize);
-                return new ServiceResponse<IEnumerable<Source>>(true, "Sources Retrieved Successfully", paginatedSources, 200, sources.Count());
+                return new ServiceResponse<IEnumerable<Sources>>(true, "Sources Retrieved Successfully", paginatedSources, 200, sources.Count());
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<IEnumerable<Source>>(false, ex.Message, null, 500);
+                return new ServiceResponse<IEnumerable<Sources>>(false, ex.Message, null, 500);
             }
         }
 
-        public async Task<ServiceResponse<Source>> GetSourceById(int sourceId)
+        public async Task<ServiceResponse<Sources>> GetSourceById(int sourceId)
         {
             try
             {
                 string query = "SELECT * FROM tblSources WHERE SourceID = @SourceID";
-                var source = await _dbConnection.QueryFirstOrDefaultAsync<Source>(query, new { SourceID = sourceId });
+                var source = await _dbConnection.QueryFirstOrDefaultAsync<Sources>(query, new { SourceID = sourceId });
                 if (source != null)
                 {
-                    return new ServiceResponse<Source>(true, "Source Retrieved Successfully", source, 200);
+                    return new ServiceResponse<Sources>(true, "Source Retrieved Successfully", source, 200);
                 }
-                return new ServiceResponse<Source>(false, "Source Not Found", null, 404);
+                return new ServiceResponse<Sources>(false, "Source Not Found", null, 404);
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<Source>(false, ex.Message, null, 500);
+                return new ServiceResponse<Sources>(false, ex.Message, null, 500);
             }
         }
 
