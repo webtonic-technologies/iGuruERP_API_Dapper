@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Dapper;
 using System.Data;
 using System.Data.SqlClient;
-using System.Linq;
-using System.Threading.Tasks;
-using Dapper;
-using Microsoft.Extensions.Configuration;
 using VisitorManagement_API.DTOs.Requests;
 using VisitorManagement_API.DTOs.ServiceResponse;
 using VisitorManagement_API.Models;
@@ -29,7 +24,8 @@ namespace VisitorManagement_API.Repository.Implementations
                 if (purposeType.PurposeID == 0)
                 {
                     // Insert new purpose type
-                    string query = @"INSERT INTO tblPurposeType (Purpose, Description) VALUES (@Purpose, @Description)";
+                    string query = @"INSERT INTO tblPurposeType (Purpose, Description, Status) VALUES (@Purpose, @Description, @Status)";
+                    purposeType.Status = true;
                     int insertedValue = await _dbConnection.ExecuteAsync(query, new { purposeType.Purpose, purposeType.Description });
                     if (insertedValue > 0)
                     {
@@ -40,8 +36,8 @@ namespace VisitorManagement_API.Repository.Implementations
                 else
                 {
                     // Update existing purpose type
-                    string query = @"UPDATE tblPurposeType SET Purpose = @Purpose, Description = @Description WHERE PurposeID = @PurposeID";
-                    int rowsAffected = await _dbConnection.ExecuteAsync(query, new { purposeType.Purpose, purposeType.Description, purposeType.PurposeID });
+                    string query = @"UPDATE tblPurposeType SET Purpose = @Purpose, Description = @Description, Status = @Status WHERE PurposeID = @PurposeID";
+                    int rowsAffected = await _dbConnection.ExecuteAsync(query, new { purposeType.Purpose, purposeType.Description, purposeType.PurposeID, purposeType.Status });
                     if (rowsAffected > 0)
                     {
                         return new ServiceResponse<string>(true, "Purpose Type Updated Successfully", "Success", 200);
