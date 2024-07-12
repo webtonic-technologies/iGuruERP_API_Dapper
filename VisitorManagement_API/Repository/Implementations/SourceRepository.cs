@@ -42,7 +42,7 @@ namespace VisitorManagement_API.Repository.Implementations
                 {
                     // Update existing source
                     string query = @"UPDATE tblSources SET Source = @Source, Description = @Description, Status = @Status WHERE SourceID = @SourceID";
-                    int rowsAffected = await _dbConnection.ExecuteAsync(query, new { source.Source, source.Description, source.SourceID });
+                    int rowsAffected = await _dbConnection.ExecuteAsync(query, new { source.Source, source.Description, source.SourceID, source.Status });
                     if (rowsAffected > 0)
                     {
                         return new ServiceResponse<string>(true, "Source Updated Successfully", "Success", 200);
