@@ -43,4 +43,10 @@ namespace Institute_API.DTOs
         public int InstituteId { get; set; }
         public string InstitutePrinSign { get; set; } = string.Empty;
     }
+    public class DeleteImageRequest
+    {
+        public string ImageName { get; set; } = string.Empty;
+        public int ImageId { get; set; }
+        public int InstituteId { get; set; }
+    }
 }

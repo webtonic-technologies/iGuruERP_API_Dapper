@@ -4,7 +4,6 @@ using Institute_API.DTOs.ServiceResponse;
 using Institute_API.Models;
 using Institute_API.Repository.Interfaces;
 using System.Data;
-using System.Data.Common;
 
 namespace Institute_API.Repository.Implementations
 {
@@ -208,6 +207,65 @@ namespace Institute_API.Repository.Implementations
             catch (Exception ex)
             {
                 return new ServiceResponse<InstituteDetailsDTO>(false, ex.Message, new InstituteDetailsDTO(), 500);
+            }
+        }
+        public async Task<ServiceResponse<bool>> DeleteImage(DeleteImageRequest request)
+        {
+            try
+            {
+                string deleteQuery = string.Empty;
+                string imagePath = string.Empty;
+
+                // Determine the query and file path based on the ImageName
+                switch (request.ImageName)
+                {
+                    case "Logo":
+                        deleteQuery = "DELETE FROM tbl_InstituteLogo WHERE InstituteLogoId = @ImageId AND InstituteId = @InstituteId";
+                        imagePath = await _connection.QuerySingleOrDefaultAsync<string>(
+                            "SELECT InstituteLogo FROM tbl_InstituteLogo WHERE InstituteLogoId = @ImageId AND InstituteId = @InstituteId",
+                            new { request.ImageId, request.InstituteId });
+                        break;
+                    case "DigStamp":
+                        deleteQuery = "DELETE FROM tbl_InstituteDigitalStamp WHERE InstituteDigitalStampId = @ImageId AND InstituteId = @InstituteId";
+                        imagePath = await _connection.QuerySingleOrDefaultAsync<string>(
+                            "SELECT DigitalStamp FROM tbl_InstituteDigitalStamp WHERE InstituteDigitalStampId = @ImageId AND InstituteId = @InstituteId",
+                            new { request.ImageId, request.InstituteId });
+                        break;
+                    case "DigSign":
+                        deleteQuery = "DELETE FROM tbl_InstituteDigitalSign WHERE InstituteDigitalSignId = @ImageId AND InstituteId = @InstituteId";
+                        imagePath = await _connection.QuerySingleOrDefaultAsync<string>(
+                            "SELECT DigitalSign FROM tbl_InstituteDigitalSign WHERE InstituteDigitalSignId = @ImageId AND InstituteId = @InstituteId",
+                            new { request.ImageId, request.InstituteId });
+                        break;
+                    case "PrincSign":
+                        deleteQuery = "DELETE FROM tbl_InstitutePrinSign WHERE InstitutePrinSignId = @ImageId AND InstituteId = @InstituteId";
+                        imagePath = await _connection.QuerySingleOrDefaultAsync<string>(
+                            "SELECT InstitutePrinSign FROM tbl_InstitutePrinSign WHERE InstitutePrinSignId = @ImageId AND InstituteId = @InstituteId",
+                            new { request.ImageId, request.InstituteId });
+                        break;
+                    default:
+                        return new ServiceResponse<bool>(false, "Invalid ImageName", false, 400);
+                }
+
+                // Delete the record from the database
+                int rowsAffected = await _connection.ExecuteAsync(deleteQuery, new { request.ImageId, request.InstituteId });
+                if (rowsAffected > 0)
+                {
+                    // Delete the file from the folder
+                    if (!string.IsNullOrEmpty(imagePath) && File.Exists(imagePath))
+                    {
+                        File.Delete(imagePath);
+                    }
+                    return new ServiceResponse<bool>(true, "Image deleted successfully", true, 200);
+                }
+                else
+                {
+                    return new ServiceResponse<bool>(false, "Image not found or delete failed", false, 404);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
         private async Task<int> AddUpdateInstituteAddress(List<InstituteAddress> request, int InstitutionId)

@@ -7,5 +7,6 @@ namespace Institute_API.Services.Interfaces
     {
         Task<ServiceResponse<int>> AddUpdateInstititeDetails(InstituteDetailsDTO request);
         Task<ServiceResponse<InstituteDetailsDTO>> GetInstituteDetailsById(int Id);
+        Task<ServiceResponse<bool>> DeleteImage(DeleteImageRequest request);
     }
 }

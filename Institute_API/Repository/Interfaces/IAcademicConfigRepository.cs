@@ -1,6 +1,5 @@
 ﻿using Institute_API.DTOs;
 using Institute_API.DTOs.ServiceResponse;
-using Institute_API.Models;
 
 namespace Institute_API.Repository.Interfaces
 {

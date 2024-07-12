@@ -24,6 +24,19 @@ namespace Institute_API.Services.Implementations
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
+
+        public async Task<ServiceResponse<bool>> DeleteImage(DeleteImageRequest request)
+        {
+            try
+            {
+                return await _instituteDetailsRepository.DeleteImage(request);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<bool>(false, ex.Message, false, 500);
+            }
+        }
+
         public async Task<ServiceResponse<InstituteDetailsDTO>> GetInstituteDetailsById(int Id)
         {
             try

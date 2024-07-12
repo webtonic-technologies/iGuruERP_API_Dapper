@@ -51,6 +51,18 @@ namespace Institute_API.Controllers
                 return BadRequest(ex.Message);
             }
         }
-    
+        [HttpPost("DeleteImage")]
+        public async Task<IActionResult> DeleteImage(DeleteImageRequest request)
+        {
+            try
+            {
+                var data = await _instituteDetailsServices.DeleteImage(request);
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
     }
 }

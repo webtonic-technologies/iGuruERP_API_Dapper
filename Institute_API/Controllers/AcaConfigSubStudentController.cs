@@ -1,26 +1,27 @@
 using Institute_API.DTOs;
 using Institute_API.Repository.Interfaces;
+using Institute_API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Institute_API.Controllers
 {
     [Route("iGuru/Institute/[controller]")]
     [ApiController]
-    public class AcademicConfigController : ControllerBase
+    public class AcaConfigSubStudentController : ControllerBase
     {
-        private readonly IAcademicConfigServices _academicConfigServices;
+        private readonly IAcaConfigSubStudentServices _acaConfigSubStudentServices;
 
-        public AcademicConfigController(IAcademicConfigServices academicConfigServices)
+        public AcaConfigSubStudentController(IAcaConfigSubStudentServices acaConfigSubStudentServices)
         {
-            _academicConfigServices = academicConfigServices;
+            _acaConfigSubStudentServices = acaConfigSubStudentServices;
         }
 
-        [HttpPost("AddCourseClass")]
-        public async Task<IActionResult> AddUpdateAcademicConfig([FromBody] Class request)
+        [HttpPost("AddUpdateSubjectStudentMapping")]
+        public async Task<IActionResult> AddUpdateSubjectStudentMapping(AcaConfigSubStudentRequest request)
         {
             try
             {
-                var data = await _academicConfigServices.AddUpdateAcademicConfig(request);
+                var data = await _acaConfigSubStudentServices.AddUpdateSubjectStudentMapping(request);
                 if (data != null)
                 {
                     return Ok(data);
@@ -38,12 +39,12 @@ namespace Institute_API.Controllers
 
         }
 
-        [HttpGet("AcademicConfigCourseClass/{id}")]
-        public async Task<IActionResult> GetAcademicConfigById(int id)
+        [HttpPost("GetSubjectStudentMappingList")]
+        public async Task<IActionResult> GetSubjectStudentMappingList(MappingListRequest request)
         {
             try
             {
-                var data = await _academicConfigServices.GetAcademicConfigById(id);
+                var data = await _acaConfigSubStudentServices.GetSubjectStudentMappingList(request);
                 return Ok(data);
             }
             catch (Exception ex)
@@ -52,12 +53,12 @@ namespace Institute_API.Controllers
             }
         }
 
-        [HttpPost("GetAllCourseClassList")]
-        public async Task<IActionResult> GetAcademicConfigList(GetAllCourseClassRequest request)
+        [HttpPost("GetInstituteStudentsList")]
+        public async Task<IActionResult> GetInstituteStudentsList(StudentListRequest request)
         {
             try
             {
-                var data = await _academicConfigServices.GetAcademicConfigList(request);
+                var data = await _acaConfigSubStudentServices.GetInstituteStudentsList(request);
                 return Ok(data);
             }
             catch (Exception ex)
@@ -66,12 +67,12 @@ namespace Institute_API.Controllers
             }
         }
 
-        [HttpDelete("DeleteCourseClass/{id}")]
-        public async Task<IActionResult> DeleteAcademicConfig(int id)
+        [HttpGet("GetInstituteSubjectsList/{SubjectType}")]
+        public async Task<IActionResult> GetInstituteSubjectsList(int SubjectType)
         {
             try
             {
-                var data = await _academicConfigServices.DeleteAcademicConfig(id);
+                var data = await _acaConfigSubStudentServices.GetInstituteSubjectsList(SubjectType);
                 if (data != null)
                 {
                     return Ok(data);
