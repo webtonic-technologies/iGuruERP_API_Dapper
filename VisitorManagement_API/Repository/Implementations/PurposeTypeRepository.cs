@@ -26,7 +26,7 @@ namespace VisitorManagement_API.Repository.Implementations
                     // Insert new purpose type
                     string query = @"INSERT INTO tblPurposeType (Purpose, Description, Status) VALUES (@Purpose, @Description, @Status)";
                     purposeType.Status = true;
-                    int insertedValue = await _dbConnection.ExecuteAsync(query, new { purposeType.Purpose, purposeType.Description });
+                    int insertedValue = await _dbConnection.ExecuteAsync(query, new { purposeType.Purpose, purposeType.Description, purposeType.Status });
                     if (insertedValue > 0)
                     {
                         return new ServiceResponse<string>(true, "Purpose Type Added Successfully", "Success", 201);
