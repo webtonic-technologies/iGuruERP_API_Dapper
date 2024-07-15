@@ -1,8 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System.Threading.Tasks;
-using VisitorManagement_API.Models;
-using VisitorManagement_API.Services.Interfaces;
 using VisitorManagement_API.DTOs.Requests;
+using VisitorManagement_API.Services.Interfaces;
 
 namespace VisitorManagement_API.Controllers
 {
@@ -18,7 +16,7 @@ namespace VisitorManagement_API.Controllers
         }
 
         [HttpPost("VisitorLogs/AddUpdateVisitorLogs")]
-        public async Task<IActionResult> AddUpdateVisitorLog(VisitorLog visitorLog)
+        public async Task<IActionResult> AddUpdateVisitorLog(VisitorRequestDTO visitorLog)
         {
             var response = await _visitorLogService.AddUpdateVisitorLog(visitorLog);
             if (response.Success)

@@ -6,7 +6,7 @@ namespace Institute_API.Repository.Interfaces
     public interface IInstituteDetailsRepository
     {
         Task<ServiceResponse<int>> AddUpdateInstititeDetails(InstituteDetailsDTO request);
-        Task<ServiceResponse<InstituteDetailsDTO>> GetInstituteDetailsById(int Id);
+        Task<ServiceResponse<InstituteDetailsResponseDTO>> GetInstituteDetailsById(int Id);
         Task<ServiceResponse<bool>> DeleteImage(DeleteImageRequest request);
     }
 }
