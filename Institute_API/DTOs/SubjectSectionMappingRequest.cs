@@ -17,6 +17,7 @@
         public int SubjectId { get; set; }
         public int class_id { get; set; }
         public string section_id { get; set; } = string.Empty;
+        public bool IsDeleted { get; set; }
     }
     public class SubjectSectionMappingResponse
     {

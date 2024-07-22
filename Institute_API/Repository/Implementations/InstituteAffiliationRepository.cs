@@ -123,7 +123,7 @@ namespace Institute_API.Repository.Implementations
                        WHERE Affiliation_id = @AffiliationId";
 
                     // Execute the query and retrieve the result
-                    var accreditations = await _connection.QueryAsync<Accreditation>(selectQuery, new { AffiliationId = Id });
+                    var accreditations = await _connection.QueryAsync<Accreditation>(selectQuery, new { AffiliationId = affiliation.Affiliation_info_id });
                     response.Affiliation_info_id = affiliation.Affiliation_info_id;
                     response.AffiliationNumber = affiliation.AffiliationNumber;
                     response.AffiliationCertificateNumber = affiliation.AffiliationCertificateNumber;
@@ -197,7 +197,10 @@ namespace Institute_API.Repository.Implementations
             string fileExtension = IsJpeg(imageData) == true ? ".jpg" : IsPng(imageData) == true ? ".png" : IsGif(imageData) == true ? ".gif" : string.Empty;
             string fileName = Guid.NewGuid().ToString() + fileExtension;
             string filePath = Path.Combine(directoryPath, fileName);
-
+            if (string.IsNullOrEmpty(fileExtension))
+            {
+                throw new InvalidOperationException("Incorrect file uploaded");
+            }
             // Write the byte array to the image file
             File.WriteAllBytes(filePath, imageData);
             return filePath;

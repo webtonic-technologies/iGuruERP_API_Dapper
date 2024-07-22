@@ -64,5 +64,18 @@ namespace Institute_API.Controllers
                 return BadRequest(ex.Message);
             }
         }
+        [HttpGet("GetInstituteDetails")]
+        public async Task<IActionResult> GetInstituteDetails()
+        {
+            try
+            {
+                var data = await _instituteDetailsServices.GetAllInstituteDetailsList();
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
     }
 }

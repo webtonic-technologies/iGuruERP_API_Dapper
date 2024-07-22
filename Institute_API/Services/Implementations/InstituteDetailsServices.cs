@@ -37,7 +37,19 @@ namespace Institute_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<InstituteDetailsDTO>> GetInstituteDetailsById(int Id)
+        public async Task<ServiceResponse<List<InstituteDetailsResponseDTO>>> GetAllInstituteDetailsList()
+        {
+            try
+            {
+                return await _instituteDetailsRepository.GetAllInstituteDetailsList();
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<InstituteDetailsResponseDTO>>(false, ex.Message, [], 500);
+            }
+        }
+
+        public async Task<ServiceResponse<InstituteDetailsResponseDTO>> GetInstituteDetailsById(int Id)
         {
             try
             {
@@ -45,7 +57,7 @@ namespace Institute_API.Services.Implementations
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<InstituteDetailsDTO>(false, ex.Message, new InstituteDetailsDTO(), 500);
+                return new ServiceResponse<InstituteDetailsResponseDTO>(false, ex.Message, new InstituteDetailsResponseDTO(), 500);
             }
         }
     }

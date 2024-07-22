@@ -37,12 +37,12 @@ namespace Institute_API.Controllers
             }
 
         }
-        [HttpGet("GetInstituteHouse/{id}")]
-        public async Task<IActionResult> GetInstituteHouseList(int id, [FromQuery] string searchText)
+        [HttpPost("GetInstituteHouse")]
+        public async Task<IActionResult> GetInstituteHouseList(GetInstituteHouseList request)
         {
             try
             {
-                var data = await _instituteHouseServices.GetInstituteHouseList(id, searchText);
+                var data = await _instituteHouseServices.GetInstituteHouseList(request);
                 return Ok(data);
             }
             catch (Exception ex)
@@ -69,6 +69,19 @@ namespace Institute_API.Controllers
             try
             {
                 var data = await _instituteHouseServices.SoftDeleteInstituteHouse(instituteHouseId);
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+        [HttpDelete("DeleteInstituteHouseImage/{instituteHouseId}")]
+        public async Task<IActionResult> DeleteInstituteHouseImage(int instituteHouseId)
+        {
+            try
+            {
+                var data = await _instituteHouseServices.DeleteInstituteHouseImage(instituteHouseId);
                 return Ok(data);
             }
             catch (Exception ex)

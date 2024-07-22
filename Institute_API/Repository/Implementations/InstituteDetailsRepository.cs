@@ -156,6 +156,52 @@ namespace Institute_API.Repository.Implementations
                 return new ServiceResponse<InstituteDetailsResponseDTO>(false, ex.Message, new InstituteDetailsResponseDTO(), 500);
             }
         }
+        public async Task<ServiceResponse<List<InstituteDetailsResponseDTO>>> GetAllInstituteDetailsList()
+        {
+            try
+            {
+                string queryInstitutes = @"
+            SELECT 
+                i.Institute_id, 
+                i.Institute_name, 
+                i.Institute_Alias, 
+                i.en_date
+            FROM tbl_InstituteDetails i";
+
+                var institutes = await _connection.QueryAsync<InstituteDetails>(queryInstitutes);
+
+                var responseList = new List<InstituteDetailsResponseDTO>();
+
+                foreach (var institute in institutes)
+                {
+                    var response = new InstituteDetailsResponseDTO
+                    {
+                        Institute_id = institute.Institute_id,
+                        Institute_name = institute.Institute_name,
+                        Institute_Alias = institute.Institute_Alias,
+                        en_date = institute.en_date,
+                        InstituteLogos = await GetInstituteLogos(institute.Institute_id),
+                        InstituteDigitalStamps = await GetInstituteDigitalStamps(institute.Institute_id),
+                        InstituteDigitalSigns = await GetInstituteDigitalSigns(institute.Institute_id),
+                        InstitutePrinSigns = await GetInstitutePrinSigns(institute.Institute_id),
+                        InstituteAddresses = await GetInstituteAddresses(institute.Institute_id),
+                        InstituteDescription = await GetInstituteDescription(institute.Institute_id),
+                        InstituteSMMappings = await GetInstituteSMMappings(institute.Institute_id),
+                        SchoolContacts = await GetSchoolContacts(institute.Institute_id),
+                        AcademicInfos = await GetAcademicInfos(institute.Institute_id),
+                        SemesterInfo = await GetSemesterInfo(institute.Institute_id)
+                    };
+
+                    responseList.Add(response);
+                }
+
+                return new ServiceResponse<List<InstituteDetailsResponseDTO>>(true, "Records found", responseList, 200, responseList.Count);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<InstituteDetailsResponseDTO>>(false, ex.Message, new List<InstituteDetailsResponseDTO>(), 500);
+            }
+        }
 
         private async Task<List<InstituteLogosResponse>> GetInstituteLogos(int instituteId)
         {
@@ -216,11 +262,11 @@ namespace Institute_API.Repository.Implementations
         {
             string query = @"
     SELECT 
-        ia.Institute_address_id, ia.country_id, c.CountryName,
-        ia.state_id, s.StateName, ia.city_id, ci.CityName,
-        ia.house, ia.pincode, ia.district_id, d.DistrictName,
+        ia.Institute_address_id, ia.country_id, c.country_name AS CountryName,
+        ia.state_id, s.state_name AS StateName, ia.city_id, ci.city_name AS CityName,
+        ia.house, ia.pincode, ia.district_id, d.district_name AS DistrictName,
         ia.Locality, ia.Landmark, ia.Mobile_number, ia.Email,
-        ia.AddressType_id, at.Address_Type AS AddressTypeName
+        ia.AddressType_id, at.Address_Type AS AddressTypeName, ia.en_date
     FROM tbl_InstituteAddress ia
     LEFT JOIN tbl_Country c ON ia.country_id = c.Country_id
     LEFT JOIN tbl_State s ON ia.state_id = s.State_id
@@ -267,7 +313,7 @@ namespace Institute_API.Repository.Implementations
         private async Task<List<SchoolContactResponse>> GetSchoolContacts(int instituteId)
         {
             string query = @"
-        SELECT sc.School_Contact_id, sc.ContactType_id, ct.ContactType AS ContactTypeName, 
+        SELECT sc.School_Contact_id, sc.ContactType_id, ct.ContactType AS ContactType_Name, 
                sc.Institute_id, sc.Contact_Person_name, sc.Telephone_number, sc.Email_ID, sc.Mobile_number, sc.isPrimary, sc.en_date 
         FROM tbl_SchoolContact sc 
         LEFT JOIN tbl_ContactType ct ON sc.ContactType_id = ct.ContactType_id 

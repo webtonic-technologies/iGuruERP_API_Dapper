@@ -28,6 +28,18 @@ namespace Institute_API.Services.Implementations
             }
         }
 
+        public async Task<ServiceResponse<bool>> DeleteInstituteHouseImage(int instituteHouseId)
+        {
+            try
+            {
+                return await _instituteHouseRepository.DeleteInstituteHouseImage(instituteHouseId);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<bool>(false, ex.Message, false, 500);
+            }
+        }
+
         public async Task<ServiceResponse<InstituteHouseDTO>> GetInstituteHouseById(int instituteHouseId)
         {
             try
@@ -40,11 +52,11 @@ namespace Institute_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<InstituteHouseDTO>> GetInstituteHouseList(int Id, string searchText)
+        public async Task<ServiceResponse<InstituteHouseDTO>> GetInstituteHouseList(GetInstituteHouseList request)
         {
             try
             {
-                return await _instituteHouseRepository.GetInstituteHouseList(Id, searchText);
+                return await _instituteHouseRepository.GetInstituteHouseList(request);
             }
             catch (Exception ex)
             {

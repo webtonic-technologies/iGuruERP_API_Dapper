@@ -56,7 +56,7 @@ namespace Institute_API.Repository.Implementations
                         if (rowsInserted >= 0)
                         {
                             transaction.Commit();
-                            return new ServiceResponse<string>(true, "Subject and mappings saved successfully.", string.Empty, 200);
+                            return new ServiceResponse<string>(true, "Subject and mappings saved successfully.", "operation successful", 200);
                         }
                         else
                         {
@@ -135,7 +135,7 @@ namespace Institute_API.Repository.Implementations
             {
                 // SQL to retrieve subject details
                 string subjectSql = @"
-            SELECT s.SubjectId, s.InstituteId, s.SubjectName, s.SubjectCode, s.subject_type_id, st.subject_type
+            SELECT s.SubjectId, s.InstituteId, s.SubjectName, s.SubjectCode, s.subject_type_id, st.subject_type AS subject_type_name
             FROM tbl_Subjects s
             LEFT JOIN tbl_SubjectTypeMaster st ON s.subject_type_id = st.subject_type_id
             WHERE s.SubjectId = @SubjectId AND s.IsDeleted = 0";
@@ -189,30 +189,51 @@ namespace Institute_API.Repository.Implementations
             {
                 // Base SQL query to retrieve subjects
                 string sql = @"
-            SELECT s.SubjectId, s.InstituteId, s.SubjectName, s.SubjectCode, s.subject_type_id, st.subject_type
-            FROM tbl_Subjects s
-            LEFT JOIN tbl_SubjectTypeMaster st ON s.subject_type_id = st.subject_type_id
-            WHERE s.InstituteId = @Institute_id AND s.IsDeleted = 0
-            AND (@SearchText = '' OR s.SubjectName LIKE '%' + @SearchText + '%')
-            AND (@ClassId = 0 OR EXISTS (
-                SELECT * FROM tbl_ClassSectionSubjectMapping csm
+        SELECT s.SubjectId, s.InstituteId, s.SubjectName, s.SubjectCode, s.subject_type_id, 
+               st.subject_type AS subject_type_name
+        FROM tbl_Subjects s
+        LEFT JOIN tbl_SubjectTypeMaster st ON s.subject_type_id = st.subject_type_id
+        WHERE s.IsDeleted = 0";
+
+                // Add filters based on request
+                if (request.Institute_id > 0)
+                {
+                    sql += " AND s.InstituteId = @Institute_id";
+                }
+
+                if (!string.IsNullOrEmpty(request.SearchText))
+                {
+                    sql += " AND s.SubjectName LIKE '%' + @SearchText + '%'";
+                }
+
+                if (request.ClassId > 0)
+                {
+                    sql += @" AND EXISTS (
+                        SELECT 1 FROM tbl_ClassSectionSubjectMapping csm
                 WHERE csm.SubjectId = s.SubjectId AND csm.class_id = @ClassId AND csm.IsDeleted = 0
-            ))
-            AND (@SectionId = 0 OR EXISTS (
-                SELECT * FROM tbl_ClassSectionSubjectMapping csm
-                WHERE csm.SubjectId = s.SubjectId AND csm.section_id = @SectionId AND csm.IsDeleted = 0
-            ))
-            ORDER BY s.SubjectName
-            OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+                    )";
+                }
+
+                // Check if SectionId is provided
+                if (request.SectionId > 0)
+                {
+                    sql += @" AND EXISTS (
+                        SELECT 1 FROM tbl_ClassSectionSubjectMapping csm
+                WHERE csm.SubjectId = s.SubjectId
+                        AND csm.section_id LIKE '%' + CAST(@SectionId AS VARCHAR) + '%'
+                        AND csm.IsDeleted = 0
+                    )";
+                }
 
                 // Calculate offset for pagination
                 int offset = (request.PageNumber - 1) * request.PageSize;
+                sql += " ORDER BY s.SubjectName OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 
                 // Execute the query and retrieve the subjects
                 var subjects = await _connection.QueryAsync<SubjectResponse>(sql, new
                 {
                     Institute_id = request.Institute_id,
-                    SearchText = request.SearchText,
+                    SearchText = request.SearchText ?? string.Empty,
                     ClassId = request.ClassId,
                     SectionId = request.SectionId,
                     Offset = offset,
@@ -227,11 +248,11 @@ namespace Institute_API.Repository.Implementations
 
                 // SQL query to retrieve class and section mappings for the subjects
                 string mappingsSql = @"
-            SELECT csm.CSSMappingId, csm.SubjectId, csm.class_id, c.class_name, sec.section_id, sec.section_name
-            FROM tbl_ClassSectionSubjectMapping csm
-            INNER JOIN tbl_Class c ON csm.class_id = c.class_id
-            LEFT JOIN tbl_Section sec ON csm.section_id = sec.section_id
-            WHERE csm.SubjectId IN @SubjectIds AND csm.IsDeleted = 0 AND c.IsDeleted = 0 AND sec.IsDeleted = 0";
+        SELECT csm.CSSMappingId, csm.SubjectId, csm.class_id, c.class_name, sec.section_id, sec.section_name
+        FROM tbl_ClassSectionSubjectMapping csm
+        INNER JOIN tbl_Class c ON csm.class_id = c.class_id
+        LEFT JOIN tbl_Section sec ON csm.section_id = sec.section_id
+        WHERE csm.SubjectId IN @SubjectIds AND csm.IsDeleted = 0 AND c.IsDeleted = 0 AND sec.IsDeleted = 0";
 
                 // Get the subject IDs to retrieve mappings
                 var subjectIds = subjects.Select(s => s.SubjectId).ToList();
@@ -239,9 +260,10 @@ namespace Institute_API.Repository.Implementations
                 // Execute the query and retrieve the mappings
                 var mappings = await _connection.QueryAsync<dynamic>(mappingsSql, new { SubjectIds = subjectIds });
 
-                // Group the mappings by subject ID and populate the response
+                // Group the mappings by subject ID
                 var groupedMappings = mappings.GroupBy(m => m.SubjectId).ToDictionary(g => g.Key, g => g.ToList());
 
+                // Populate the subject mappings
                 foreach (var subject in subjects)
                 {
                     if (groupedMappings.ContainsKey(subject.SubjectId))
@@ -272,7 +294,7 @@ namespace Institute_API.Repository.Implementations
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<List<SubjectResponse>>(false, ex.Message, [], 500);
+                return new ServiceResponse<List<SubjectResponse>>(false, ex.Message, new List<SubjectResponse>(), 500);
             }
         }
         private async Task<int> HandleSubjectMappings(List<SubjectSectionMappingRequest>? mappings, int subjectId, IDbTransaction transaction)
@@ -285,15 +307,16 @@ namespace Institute_API.Repository.Implementations
 
             // Insert new mappings
             string insertMappingSql = @"
-        INSERT INTO tbl_ClassSectionSubjectMapping (SubjectId, class_id, section_id)
-        VALUES (@SubjectId, @class_id, @section_id);
+        INSERT INTO tbl_ClassSectionSubjectMapping (SubjectId, class_id, section_id, IsDeleted)
+        VALUES (@SubjectId, @class_id, @section_id, @IsDeleted);
     ";
 
             var mappingParams = mappings.Select(mapping => new
             {
                 SubjectId = subjectId,
                 mapping.class_id,
-                mapping.section_id
+                mapping.section_id,
+                mapping.IsDeleted
             }).ToList();
 
             int rowsInserted = await _connection.ExecuteAsync(insertMappingSql, mappingParams, transaction);

@@ -95,7 +95,7 @@ namespace Institute_API.Repository.Implementations
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
-        public async Task<ServiceResponse<InstituteHouseDTO>> GetInstituteHouseList(int Id, string searchText)
+        public async Task<ServiceResponse<InstituteHouseDTO>> GetInstituteHouseList(GetInstituteHouseList request)
         {
             try
             {
@@ -105,12 +105,12 @@ namespace Institute_API.Repository.Implementations
                        WHERE Institute_id = @Id AND IsDeleted = 0";
 
                 // Add search conditions if searchText is provided
-                if (!string.IsNullOrEmpty(searchText))
+                if (!string.IsNullOrEmpty(request.SearchText))
                 {
                     sql += " AND (HouseName LIKE @SearchText OR HouseColor LIKE @SearchText)";
                 }
 
-                var instituteHouses = await _connection.QueryAsync<InstituteHouses>(sql, new { Id, SearchText = $"%{searchText}%" });
+                var instituteHouses = await _connection.QueryAsync<InstituteHouses>(sql, new { Id = request.InstituteID, SearchText = $"%{request.SearchText}%" });
 
                 if (instituteHouses != null && instituteHouses.Any())
                 {
@@ -118,7 +118,7 @@ namespace Institute_API.Repository.Implementations
                     {
                         house.FileName = GetImage(house.FileName);
                     }
-                    response.Institute_id = Id;
+                    response.Institute_id = request.InstituteID;
                     response.InstituteHouses = instituteHouses.AsList();
                     return new ServiceResponse<InstituteHouseDTO>(true, "Records found", response, 200);
                 }
@@ -184,6 +184,43 @@ namespace Institute_API.Repository.Implementations
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
+        public async Task<ServiceResponse<bool>> DeleteInstituteHouseImage(int instituteHouseId)
+        {
+            try
+            {
+                // Query to get the image path based on the instituteHouseId
+                string imagePath = await _connection.QuerySingleOrDefaultAsync<string>(
+                    "SELECT FileName FROM tbl_InstituteHouse WHERE Institute_house_id = @InstituteHouseId",
+                    new { InstituteHouseId = instituteHouseId });
+
+                if (string.IsNullOrEmpty(imagePath))
+                {
+                    return new ServiceResponse<bool>(false, "Image not found", false, 404);
+                }
+
+                // Update the FileName column to null or empty string
+                string updateQuery = "UPDATE tbl_InstituteHouse SET FileName = NULL WHERE Institute_house_id = @InstituteHouseId";
+                int rowsAffected = await _connection.ExecuteAsync(updateQuery, new { InstituteHouseId = instituteHouseId });
+
+                if (rowsAffected > 0)
+                {
+                    // Delete the file from the folder
+                    if (File.Exists(imagePath))
+                    {
+                        File.Delete(imagePath);
+                    }
+                    return new ServiceResponse<bool>(true, "Image deleted successfully", true, 200);
+                }
+                else
+                {
+                    return new ServiceResponse<bool>(false, "Image not found or delete failed", false, 404);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<bool>(false, ex.Message, false, 500);
+            }
+        }
         private string ImageUpload(string image)
         {
             if (string.IsNullOrEmpty(image) || image == "string")
@@ -200,7 +237,10 @@ namespace Institute_API.Repository.Implementations
             string fileExtension = IsJpeg(imageData) == true ? ".jpg" : IsPng(imageData) == true ? ".png" : IsGif(imageData) == true ? ".gif" : string.Empty;
             string fileName = Guid.NewGuid().ToString() + fileExtension;
             string filePath = Path.Combine(directoryPath, fileName);
-
+            if (string.IsNullOrEmpty(fileExtension))
+            {
+                throw new InvalidOperationException("Incorrect file uploaded");
+            }
             // Write the byte array to the image file
             File.WriteAllBytes(filePath, imageData);
             return filePath;
