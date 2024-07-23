@@ -25,6 +25,8 @@ builder.Services.AddScoped<IGeoFencingService, GeoFencingService>();
 builder.Services.AddScoped<IGeoFencingRepository, GeoFencingRepository>();
 builder.Services.AddScoped<IShiftTimingRepository, ShiftTimingRepository>();
 builder.Services.AddScoped<IShiftTimingService, ShiftTimingService>();
+builder.Services.AddScoped<IStudentAttendanceReportService, StudentAttendanceReportService>();
+builder.Services.AddScoped<IStudentAttendanceReportRepository, StudentAttendanceReportRepository>();
 
 
 builder.Services.AddControllers();
@@ -45,7 +47,7 @@ app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
-app.UseExceptionMiddleware(); 
+app.UseExceptionMiddleware();
 
 app.MapControllers();
 
