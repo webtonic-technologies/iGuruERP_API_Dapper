@@ -19,7 +19,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Admission_API", "Admission_
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VisitorManagement_API", "VisitorManagement_API\VisitorManagement_API.csproj", "{5E043128-1E4E-42E0-BDD5-365D0EAAF5B8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LibraryManagement_API", "LibraryManagement_API\LibraryManagement_API.csproj", "{0CE60279-7F13-4FEA-A83D-75E0B1CB9C97}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraryManagement_API", "LibraryManagement_API\LibraryManagement_API.csproj", "{0CE60279-7F13-4FEA-A83D-75E0B1CB9C97}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HostelManagement_API", "HostelManagement_API\HostelManagement_API.csproj", "{3F08380E-60BD-49E7-A5F8-E59A3164DB65}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -63,6 +65,10 @@ Global
 		{0CE60279-7F13-4FEA-A83D-75E0B1CB9C97}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0CE60279-7F13-4FEA-A83D-75E0B1CB9C97}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0CE60279-7F13-4FEA-A83D-75E0B1CB9C97}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3F08380E-60BD-49E7-A5F8-E59A3164DB65}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3F08380E-60BD-49E7-A5F8-E59A3164DB65}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3F08380E-60BD-49E7-A5F8-E59A3164DB65}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3F08380E-60BD-49E7-A5F8-E59A3164DB65}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
