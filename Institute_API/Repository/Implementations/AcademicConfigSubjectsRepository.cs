@@ -135,10 +135,10 @@ namespace Institute_API.Repository.Implementations
             {
                 // SQL to retrieve subject details
                 string subjectSql = @"
-            SELECT s.SubjectId, s.InstituteId, s.SubjectName, s.SubjectCode, s.subject_type_id, st.subject_type AS subject_type_name
-            FROM tbl_Subjects s
-            LEFT JOIN tbl_SubjectTypeMaster st ON s.subject_type_id = st.subject_type_id
-            WHERE s.SubjectId = @SubjectId AND s.IsDeleted = 0";
+        SELECT s.SubjectId, s.InstituteId, s.SubjectName, s.SubjectCode, s.subject_type_id, st.subject_type AS subject_type_name
+        FROM tbl_Subjects s
+        LEFT JOIN tbl_SubjectTypeMaster st ON s.subject_type_id = st.subject_type_id
+        WHERE s.SubjectId = @SubjectId AND s.IsDeleted = 0";
 
                 var subject = await _connection.QueryFirstOrDefaultAsync<SubjectResponse>(subjectSql, new { SubjectId });
 
@@ -149,11 +149,15 @@ namespace Institute_API.Repository.Implementations
 
                 // SQL to retrieve class and section mappings for the subject
                 string mappingsSql = @"
-            SELECT csm.CSSMappingId, csm.SubjectId, s.SubjectName, csm.class_id, c.class_name, sec.section_id, sec.section_name
-            FROM tbl_ClassSectionSubjectMapping csm
-            INNER JOIN tbl_Class c ON csm.class_id = c.class_id
-            LEFT JOIN tbl_Section sec ON csm.section_id = sec.section_id
-            WHERE csm.SubjectId = @SubjectId AND csm.IsDeleted = 0 AND c.IsDeleted = 0 AND sec.IsDeleted = 0";
+        SELECT csm.CSSMappingId, csm.SubjectId, sub.SubjectName, c.class_id, c.class_name, sec.section_id, sec.section_name
+        FROM tbl_ClassSectionSubjectMapping csm
+        INNER JOIN tbl_Class c ON csm.class_id = c.class_id
+        LEFT JOIN (
+            SELECT section_id, section_name FROM tbl_Section 
+            WHERE IsDeleted = 0
+        ) sec ON CHARINDEX(CONVERT(varchar, sec.section_id), csm.section_id) > 0
+        INNER JOIN tbl_Subjects sub ON csm.SubjectId = sub.SubjectId
+        WHERE csm.SubjectId = @SubjectId AND csm.IsDeleted = 0";
 
                 var mappings = await _connection.QueryAsync<dynamic>(mappingsSql, new { SubjectId });
 
@@ -209,20 +213,20 @@ namespace Institute_API.Repository.Implementations
                 if (request.ClassId > 0)
                 {
                     sql += @" AND EXISTS (
-                        SELECT 1 FROM tbl_ClassSectionSubjectMapping csm
+                SELECT 1 FROM tbl_ClassSectionSubjectMapping csm
                 WHERE csm.SubjectId = s.SubjectId AND csm.class_id = @ClassId AND csm.IsDeleted = 0
-                    )";
+            )";
                 }
 
                 // Check if SectionId is provided
                 if (request.SectionId > 0)
                 {
                     sql += @" AND EXISTS (
-                        SELECT 1 FROM tbl_ClassSectionSubjectMapping csm
+                SELECT 1 FROM tbl_ClassSectionSubjectMapping csm
                 WHERE csm.SubjectId = s.SubjectId
-                        AND csm.section_id LIKE '%' + CAST(@SectionId AS VARCHAR) + '%'
-                        AND csm.IsDeleted = 0
-                    )";
+                AND CHARINDEX(CONVERT(varchar, @SectionId), csm.section_id) > 0
+                AND csm.IsDeleted = 0
+            )";
                 }
 
                 // Calculate offset for pagination
@@ -248,11 +252,11 @@ namespace Institute_API.Repository.Implementations
 
                 // SQL query to retrieve class and section mappings for the subjects
                 string mappingsSql = @"
-        SELECT csm.CSSMappingId, csm.SubjectId, csm.class_id, c.class_name, sec.section_id, sec.section_name
+        SELECT csm.CSSMappingId, csm.SubjectId, c.class_id, c.class_name, sec.section_id, sec.section_name
         FROM tbl_ClassSectionSubjectMapping csm
         INNER JOIN tbl_Class c ON csm.class_id = c.class_id
-        LEFT JOIN tbl_Section sec ON csm.section_id = sec.section_id
-        WHERE csm.SubjectId IN @SubjectIds AND csm.IsDeleted = 0 AND c.IsDeleted = 0 AND sec.IsDeleted = 0";
+        LEFT JOIN tbl_Section sec ON CHARINDEX(CONVERT(varchar, sec.section_id), csm.section_id) > 0
+        WHERE csm.SubjectId IN @SubjectIds AND csm.IsDeleted = 0 AND c.IsDeleted = 0 AND (sec.IsDeleted = 0 OR sec.IsDeleted IS NULL)";
 
                 // Get the subject IDs to retrieve mappings
                 var subjectIds = subjects.Select(s => s.SubjectId).ToList();
@@ -316,7 +320,7 @@ namespace Institute_API.Repository.Implementations
                 SubjectId = subjectId,
                 mapping.class_id,
                 mapping.section_id,
-                mapping.IsDeleted
+                IsDeleted = false
             }).ToList();
 
             int rowsInserted = await _connection.ExecuteAsync(insertMappingSql, mappingParams, transaction);

@@ -16,6 +16,10 @@ namespace Institute_API.Repository.Implementations
         }
         public async Task<ServiceResponse<string>> AddUpdateSubjectStudentMapping(AcaConfigSubStudentRequest request)
         {
+            if (_connection.State != ConnectionState.Open)
+            {
+                _connection.Open();
+            }
             using (var transaction = _connection.BeginTransaction())
             {
                 try
@@ -28,6 +32,7 @@ namespace Institute_API.Repository.Implementations
 
                     foreach (var mapping in request.SubStudentMappingReqs)
                     {
+                        mapping.InstituteId = request.InstituteId;
                         string insertOrUpdateMappingSql = @"
                     IF EXISTS (SELECT * FROM tbl_StudentSubjectMapping WHERE SSMappingId = @SSMappingId)
                     BEGIN
@@ -59,6 +64,10 @@ namespace Institute_API.Repository.Implementations
                     transaction.Rollback();
                     return new ServiceResponse<string>(false, ex.Message, "Failed", 500);
                 }
+                finally
+                {
+                    _connection.Close();
+                }
             }
         }
         public async Task<ServiceResponse<List<StudentListResponse>>> GetInstituteStudentsList(StudentListRequest request)
@@ -71,6 +80,7 @@ namespace Institute_API.Repository.Implementations
                    Admission_Number AS AdmissionNumber
             FROM tbl_StudentMaster
             WHERE (class_id = @ClassId OR @ClassId = 0)
+              AND (Institute_id = @Institute_id)
               AND (section_id = @SectionId OR @SectionId = 0)
               AND (First_Name + ' ' + Middle_Name + ' ' + Last_Name LIKE '%' + @SearchText + '%' OR @SearchText = '')
               AND isActive = 1
@@ -80,7 +90,8 @@ namespace Institute_API.Repository.Implementations
                 {
                     request.ClassId,
                     request.SectionId,
-                    request.SearchText
+                    request.SearchText,
+                    request.Institute_id
                 });
 
                 if (students != null && students.Any())
@@ -133,38 +144,76 @@ namespace Institute_API.Repository.Implementations
         {
             try
             {
+                // Base SQL query to get mappings
                 var sql = @"
-            SELECT ssm.SSMappingId,
-                   ssm.InstituteId,
-                   ssm.StudentId,
-                   ssm.SubjectId
-            FROM tbl_StudentSubjectMapping ssm
-            INNER JOIN tbl_ClassSectionSubjectMapping cssm ON ssm.SubjectId = cssm.SubjectId
-            INNER JOIN tbl_Subjects s ON s.SubjectId = ssm.SubjectId
-            WHERE ssm.InstituteId = @InstituteId
-              AND s.subject_type_id = @SubjectTypeId
-              AND cssm.class_id = @ClassId
-              AND cssm.section_id = @SectionId
-              AND s.IsDeleted = 0
-              AND cssm.IsDeleted = 0
-        ";
+        SELECT ssm.SSMappingId,
+               ssm.InstituteId,
+               ssm.StudentId,
+               ssm.SubjectId
+        FROM tbl_StudentSubjectMapping ssm
+        INNER JOIN tbl_ClassSectionSubjectMapping cssm ON ssm.SubjectId = cssm.SubjectId
+        INNER JOIN tbl_Subjects s ON s.SubjectId = ssm.SubjectId
+        WHERE ssm.InstituteId = @InstituteId
+          AND s.IsDeleted = 0
+          AND cssm.IsDeleted = 0";
 
-                var mappings = await _connection.QueryAsync<SubStudentMappingReq>(sql, new
+                // Initialize parameters
+                var parameters = new DynamicParameters();
+                parameters.Add("InstituteId", request.InstituteId);
+
+                // Conditionally apply filters
+                if (request.SubjectTypeId > 0)
                 {
-                    request.InstituteId,
-                    request.SubjectTypeId,
-                    request.ClassId,
-                    request.SectionId
-                });
+                    sql += " AND s.subject_type_id = @SubjectTypeId";
+                    parameters.Add("SubjectTypeId", request.SubjectTypeId);
+                }
 
+                // Execute the query to get mappings
+                var mappings = await _connection.QueryAsync<SubStudentMappingReq>(sql, parameters);
+
+                // Check if mappings are found
                 if (mappings != null && mappings.Any())
                 {
+                    // Get unique student IDs from the mappings
+                    var studentIds = mappings.Select(m => m.StudentId).Distinct().ToList();
+
+                    // Fetch class and section IDs for the students
+                    var studentClassSectionSql = @"
+            SELECT student_id, class_id, section_id
+            FROM tbl_StudentMaster
+            WHERE student_id IN @StudentIds";
+
+                    var studentClassSections = await _connection.QueryAsync<dynamic>(studentClassSectionSql, new { StudentIds = studentIds });
+
+                    // Create a dictionary for quick lookup of class and section by student ID
+                    var studentClassSectionDict = studentClassSections.ToDictionary(s => s.student_id, s => new
+                    {
+                        ClassId = s.class_id,
+                        SectionId = s.section_id
+                    });
+
+                    // Filter mappings based on request ClassId and SectionId
+                    var filteredMappings = mappings
+                        .Where(mapping =>
+                            studentClassSectionDict.TryGetValue(mapping.StudentId, out var classSection) &&
+                            classSection.ClassId == request.ClassId &&
+                            classSection.SectionId == request.SectionId
+                        ).ToList();
+
                     var response = new AcaConfigSubStudentRequest
                     {
                         InstituteId = request.InstituteId,
-                        SubStudentMappingReqs = mappings.ToList()
+                        SubStudentMappingReqs = filteredMappings
                     };
-                    return new ServiceResponse<AcaConfigSubStudentRequest>(true, "Records found", response, 200);
+
+                    if (filteredMappings.Any())
+                    {
+                        return new ServiceResponse<AcaConfigSubStudentRequest>(true, "Records found", response, 200);
+                    }
+                    else
+                    {
+                        return new ServiceResponse<AcaConfigSubStudentRequest>(false, "No records found", response, 204);
+                    }
                 }
                 else
                 {

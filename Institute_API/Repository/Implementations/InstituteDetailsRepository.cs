@@ -27,7 +27,7 @@ namespace Institute_API.Repository.Implementations
                     {
                         Institute_name = request.Institute_name,
                         Institute_Alias = request.Institute_Alias,
-                        en_date = request.en_date
+                        en_date = DateTime.Now
                     };
                     string query = @"INSERT INTO [tbl_InstituteDetails] (Institute_name, Institute_Alias, en_date)
                              VALUES (@Institute_name, @Institute_Alias, @en_date)
@@ -74,7 +74,7 @@ namespace Institute_API.Repository.Implementations
                         Institute_id = request.Institute_id,
                         Institute_name = request.Institute_name,
                         Institute_Alias = request.Institute_Alias,
-                        en_date = request.en_date
+                        en_date = DateTime.Now
                     };
                     int rowsAffected = await _connection.ExecuteAsync(updateQuery, newInstitution);
                     if (rowsAffected > 0)

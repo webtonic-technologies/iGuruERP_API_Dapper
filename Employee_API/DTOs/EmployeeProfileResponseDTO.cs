@@ -9,17 +9,24 @@ namespace Employee_API.DTOs
         public string Middle_Name { get; set; } = string.Empty;
         public string Last_Name { get; set; } = string.Empty;
         public int Gender_id { get; set; }
+        public string GenderName {  get; set; } = string.Empty;
         public int Department_id { get; set; }
+        public string DepartmentName { get; set; } = string.Empty;
         public int Designation_id { get; set; }
+        public string DesignationName { get; set; } = string.Empty;
         public string mobile_number { get; set; } = string.Empty;
         public DateTime? Date_of_Joining { get; set; }
         public int Nationality_id { get; set; }
+        public string NationalityName { get; set; } = string.Empty;
         public int Religion_id { get; set; }
+        public string ReligionName { get; set; } = string.Empty;
         public DateTime? Date_of_Birth { get; set; }
         public string EmailID { get; set; } = string.Empty;
         public string Employee_code_id { get; set; } = string.Empty;
         public int marrital_status_id { get; set; }
+        public string MaritalStatusName { get; set; } = string.Empty;
         public int Blood_Group_id { get; set; }
+        public string BloodGroupName { get; set; } = string.Empty;
         public string aadhar_no { get; set; } = string.Empty;
         public string pan_no { get; set; } = string.Empty;
         public string EPF_no { get; set; } = string.Empty;

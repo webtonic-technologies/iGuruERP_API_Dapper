@@ -7,7 +7,7 @@ namespace Institute_API.DTOs
         public int Institute_id { get; set; }
         public string Institute_name { get; set; } = string.Empty;
         public string Institute_Alias { get; set; } = string.Empty;
-        public DateTime? en_date { get; set; }
+       // public DateTime? en_date { get; set; }
         public List<InstituteLogos>? InstituteLogos { get; set; }
         public List<InstituteDigitalStamps>? InstituteDigitalStamps { get; set; }
         public List<InstituteDigitalSigns>? InstituteDigitalSigns { get; set; }

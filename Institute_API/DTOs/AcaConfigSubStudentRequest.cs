@@ -26,6 +26,7 @@
         public int ClassId { get; set; }
         public int SectionId {  get; set; }
         public string SearchText { get; set; } = string.Empty;
+        public int Institute_id {  get; set; }
     }
     public class StudentListResponse
     {

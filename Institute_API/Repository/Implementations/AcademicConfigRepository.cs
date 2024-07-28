@@ -222,26 +222,36 @@ namespace Institute_API.Repository.Implementations
         private async Task<int> AddUpdateSections(List<Section> sections, int classId)
         {
             int result = 0;
+
+            // Fetch existing sections for the given classId
+            var existingSections = await GetExistingSections(classId);
+
+            // Create a dictionary for easy look-up of existing section IDs
+            var existingSectionsDict = existingSections.ToDictionary(s => s.section_id);
+
+            // Check for sections to delete
+            foreach (var existingSection in existingSections)
+            {
+                // If the existing section is not in the incoming sections, delete it
+                if (!sections.Any(s => s.section_id == existingSection.section_id))
+                {
+                    string deleteSectionSql = @"DELETE FROM [dbo].[tbl_Section] 
+                                         WHERE section_id = @SectionId";
+                    result += await _connection.ExecuteAsync(deleteSectionSql, new { SectionId = existingSection.section_id });
+                }
+            }
+
+            // Now, process the incoming sections for updates or inserts
             foreach (var section in sections)
             {
-                if (section.section_id == 0)
+                if (existingSectionsDict.ContainsKey(section.section_id))
                 {
-                    string insertSectionSql = @"INSERT INTO [dbo].[tbl_Section] (section_name, class_id, IsDeleted)
-                                        VALUES (@SectionName, @ClassId, @IsDeleted)";
-                    result += await _connection.ExecuteAsync(insertSectionSql, new
-                    {
-                        SectionName = section.section_name,
-                        ClassId = classId,
-                        IsDeleted = false
-                    });
-                }
-                else
-                {
+                    // Update existing section
                     string updateSectionSql = @"UPDATE [dbo].[tbl_Section]
-                                        SET section_name = @SectionName,
-                                            class_id = @ClassId,
-                                            IsDeleted = @IsDeleted
-                                        WHERE section_id = @SectionId";
+                                         SET section_name = @SectionName,
+                                             class_id = @ClassId,
+                                             IsDeleted = @IsDeleted
+                                         WHERE section_id = @SectionId";
                     result += await _connection.ExecuteAsync(updateSectionSql, new
                     {
                         SectionName = section.section_name,
@@ -250,8 +260,27 @@ namespace Institute_API.Repository.Implementations
                         IsDeleted = false
                     });
                 }
+                else
+                {
+                    // Insert new section
+                    string insertSectionSql = @"INSERT INTO [dbo].[tbl_Section] (section_name, class_id, IsDeleted)
+                                         VALUES (@SectionName, @ClassId, @IsDeleted)";
+                    result += await _connection.ExecuteAsync(insertSectionSql, new
+                    {
+                        SectionName = section.section_name,
+                        ClassId = classId,
+                        IsDeleted = false
+                    });
+                }
             }
+
             return result;
+        }
+        private async Task<List<Section>> GetExistingSections(int classId)
+        {
+            string query = "SELECT * FROM [dbo].[tbl_Section] WHERE class_id = @ClassId";
+            var sections = await _connection.QueryAsync<Section>(query, new { ClassId = classId });
+            return sections.ToList();
         }
 
     }

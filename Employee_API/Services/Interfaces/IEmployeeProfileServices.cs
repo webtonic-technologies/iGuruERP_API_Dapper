@@ -8,11 +8,11 @@ namespace Employee_API.Services.Interfaces
     {
         Task<ServiceResponse<int>> AddUpdateEmployeeProfile(EmployeeProfile request);
         Task<ServiceResponse<int>> AddUpdateEmployeeFamily(EmployeeFamily request);
-        Task<ServiceResponse<string>> AddUpdateEmployeeDocuments(List<EmployeeDocument> request, int employeeId);
+        Task<ServiceResponse<int>> AddUpdateEmployeeDocuments(List<EmployeeDocument> request, int employeeId);
         Task<ServiceResponse<int>> AddUpdateEmployeeQualification(List<EmployeeQualification>? request, int employeeId);
         Task<ServiceResponse<int>> AddUpdateEmployeeWorkExp(List<EmployeeWorkExperience>? request, int employeeId);
         Task<ServiceResponse<int>> AddUpdateEmployeeBankDetails(List<EmployeeBankDetails>? request, int employeeId);
-        Task<ServiceResponse<List<EmployeeProfile>>> GetEmployeeProfileList(GetAllEmployeeListRequest request);
+        Task<ServiceResponse<List<EmployeeProfileResponseDTO>>> GetEmployeeProfileList(GetAllEmployeeListRequest request);
         Task<ServiceResponse<EmployeeProfileResponseDTO>> GetEmployeeProfileById(int employeeId);
         Task<ServiceResponse<List<EmployeeDocument>>> GetEmployeeDocuments(int employeeId);
         Task<ServiceResponse<EmployeeFamily>> GetEmployeeFamilyDetailsById(int employeeId);
