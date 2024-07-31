@@ -137,7 +137,7 @@ namespace Institute_API.Repository.Implementations
                         InstituteDigitalSigns = await GetInstituteDigitalSigns(Id),
                         InstitutePrinSigns = await GetInstitutePrinSigns(Id),
                         InstituteDescription = await GetInstituteDescription(Id),
-                        InstituteAddresses = await GetInstituteAddresses(Id),
+                        AddressResponse = await GetInstituteAddresses(Id),
                         InstituteSMMappings = await GetInstituteSMMappings(Id),
                         SchoolContacts = await GetSchoolContacts(Id),
                         AcademicInfos = await GetAcademicInfos(Id),
@@ -184,7 +184,7 @@ namespace Institute_API.Repository.Implementations
                         InstituteDigitalStamps = await GetInstituteDigitalStamps(institute.Institute_id),
                         InstituteDigitalSigns = await GetInstituteDigitalSigns(institute.Institute_id),
                         InstitutePrinSigns = await GetInstitutePrinSigns(institute.Institute_id),
-                        InstituteAddresses = await GetInstituteAddresses(institute.Institute_id),
+                        AddressResponse = await GetInstituteAddresses(institute.Institute_id),
                         InstituteDescription = await GetInstituteDescription(institute.Institute_id),
                         InstituteSMMappings = await GetInstituteSMMappings(institute.Institute_id),
                         SchoolContacts = await GetSchoolContacts(institute.Institute_id),
@@ -202,7 +202,30 @@ namespace Institute_API.Repository.Implementations
                 return new ServiceResponse<List<InstituteDetailsResponseDTO>>(false, ex.Message, new List<InstituteDetailsResponseDTO>(), 500);
             }
         }
-
+        public async Task<ServiceResponse<List<Country>>> GetCountriesAsync()
+        {
+            string query = "SELECT * FROM tbl_Country";
+            var data = await _connection.QueryAsync<Country>(query);
+            return new ServiceResponse<List<Country>>(true, "Records found", data.ToList(), 200);
+        }
+        public async Task<ServiceResponse<List<State>>> GetStatesByCountryIdAsync(int countryId)
+        {
+            string query = "SELECT * FROM tbl_State WHERE Country_id = @Country_id";
+            var data = await _connection.QueryAsync<State>(query, new { Country_id = countryId });
+            return new ServiceResponse<List<State>>(true, "Records found", data.ToList(), 200);
+        }
+        public async Task<ServiceResponse<List<City>>> GetCitiesByStateIdAsync(int stateId)
+        {
+            string query = "SELECT * FROM tbl_City WHERE State_id = @State_id";
+            var data = await _connection.QueryAsync<City>(query, new { State_id = stateId });
+            return new ServiceResponse<List<City>>(true, "Records found", data.ToList(), 200);
+        }
+        public async Task<ServiceResponse<List<District>>> GetDistrictsByCityIdAsync(int cityId)
+        {
+            string query = "SELECT * FROM tbl_District WHERE City_id = @City_id";
+            var data = await _connection.QueryAsync<District>(query, new { City_id = cityId });
+            return new ServiceResponse<List<District>>(true, "Records found", data.ToList(), 200);
+        }
         private async Task<List<InstituteLogosResponse>> GetInstituteLogos(int instituteId)
         {
             string query = "SELECT InstituteLogoId, InstituteId, InstituteLogo FROM tbl_InstituteLogo WHERE InstituteId = @InstituteId";
@@ -214,7 +237,6 @@ namespace Institute_API.Repository.Implementations
                 InstituteLogo = GetImage(l.InstituteLogo)
             }).ToList();
         }
-
         private async Task<List<InstituteDigitalStampsResponse>> GetInstituteDigitalStamps(int instituteId)
         {
             string query = "SELECT InstituteDigitalStampId, InstituteId, DigitalStamp FROM tbl_InstituteDigitalStamp WHERE InstituteId = @InstituteId";
@@ -226,7 +248,6 @@ namespace Institute_API.Repository.Implementations
                 DigitalStamp = GetImage(s.DigitalStamp)
             }).ToList();
         }
-
         private async Task<List<InstituteDigitalSignsResponse>> GetInstituteDigitalSigns(int instituteId)
         {
             string query = "SELECT InstituteDigitalSignId, InstituteId, DigitalSign FROM tbl_InstituteDigitalSign WHERE InstituteId = @InstituteId";
@@ -238,7 +259,6 @@ namespace Institute_API.Repository.Implementations
                 DigitalSign = GetImage(s.DigitalSign)
             }).ToList();
         }
-
         private async Task<List<InstitutePrinSignsResponse>> GetInstitutePrinSigns(int instituteId)
         {
             string query = "SELECT InstitutePrinSignId, InstituteId, InstitutePrinSign FROM tbl_InstitutePrinSign WHERE InstituteId = @InstituteId";
@@ -250,15 +270,13 @@ namespace Institute_API.Repository.Implementations
                 InstitutePrinSign = GetImage(p.InstitutePrinSign)
             }).ToList();
         }
-
         private async Task<InstituteDescription> GetInstituteDescription(int instituteId)
         {
             string query = "SELECT * FROM tbl_InstitueDescription WHERE Institute_id = @Institute_id";
             var description = await _connection.QueryFirstOrDefaultAsync<InstituteDescription>(query, new { Institute_id = instituteId });
             return description ?? new InstituteDescription();
         }
-
-        private async Task<List<InstituteAddressResponse>> GetInstituteAddresses(int instituteId)
+        private async Task<InstituteAddressResponse> GetInstituteAddresses(int instituteId)
         {
             string query = @"
     SELECT 
@@ -266,7 +284,7 @@ namespace Institute_API.Repository.Implementations
         ia.state_id, s.state_name AS StateName, ia.city_id, ci.city_name AS CityName,
         ia.house, ia.pincode, ia.district_id, d.district_name AS DistrictName,
         ia.Locality, ia.Landmark, ia.Mobile_number, ia.Email,
-        ia.AddressType_id, at.Address_Type AS AddressTypeName, ia.en_date
+        ia.AddressType_id, at.Address_Type AS AddressTypeName, ia.en_date, ia.Institute_id
     FROM tbl_InstituteAddress ia
     LEFT JOIN tbl_Country c ON ia.country_id = c.Country_id
     LEFT JOIN tbl_State s ON ia.state_id = s.State_id
@@ -277,39 +295,58 @@ namespace Institute_API.Repository.Implementations
 
             var addresses = await _connection.QueryAsync(query, new { Institute_id = instituteId });
 
-            // Map to InstituteAddressResponse
-            var addressResponses = addresses.Select(ia => new InstituteAddressResponse
+            // Initialize the response
+            var addressResponse = new InstituteAddressResponse
             {
-                Institute_address_id = ia.Institute_address_id,
-                country_id = ia.country_id,
-                CountryName = ia.CountryName,
-                state_id = ia.state_id,
-                StateName = ia.StateName,
-                city_id = ia.city_id,
-                CityName = ia.CityName,
-                house = ia.house,
-                pincode = ia.pincode,
-                district_id = ia.district_id,
-                DistrictName = ia.DistrictName,
-                Locality = ia.Locality,
-                Landmark = ia.Landmark,
-                Mobile_number = ia.Mobile_number,
-                Email = ia.Email,
-                AddressType_id = ia.AddressType_id,
-                AddressTypeName = ia.AddressTypeName,
-                en_date = ia.en_date
-            }).ToList();
+                BillingAddress = new List<AddressResponse>(),
+                MailingAddress = new List<AddressResponse>()
+            };
 
-            return addressResponses;
+            // Map addresses to AddressResponse and categorize them
+            foreach (var ia in addresses)
+            {
+                var address = new AddressResponse
+                {
+                    Institute_address_id = ia.Institute_address_id,
+                    Institute_id = ia.Institute_id,
+                    country_id = ia.country_id,
+                    CountryName = ia.CountryName,
+                    state_id = ia.state_id,
+                    StateName = ia.StateName,
+                    city_id = ia.city_id,
+                    CityName = ia.CityName,
+                    house = ia.house,
+                    pincode = ia.pincode,
+                    district_id = ia.district_id,
+                    DistrictName = ia.DistrictName,
+                    Locality = ia.Locality,
+                    Landmark = ia.Landmark,
+                    Mobile_number = ia.Mobile_number,
+                    Email = ia.Email,
+                    AddressType_id = ia.AddressType_id,
+                    AddressTypeName = ia.AddressTypeName,
+                    en_date = ia.en_date
+                };
+
+                // Categorize based on AddressType_id
+                if (ia.AddressType_id == 3) // Billing Address
+                {
+                    addressResponse.BillingAddress.Add(address);
+                }
+                else if (ia.AddressType_id == 4) // Mailing Address
+                {
+                    addressResponse.MailingAddress.Add(address);
+                }
+            }
+
+            return addressResponse;
         }
-
         private async Task<List<InstituteSMMapping>> GetInstituteSMMappings(int instituteId)
         {
             string query = "SELECT * FROM tbl_InstitueSMMapping WHERE Institute_id = @Institute_id";
             var smMappings = await _connection.QueryAsync<InstituteSMMapping>(query, new { Institute_id = instituteId });
             return smMappings.ToList();
         }
-
         private async Task<List<SchoolContactResponse>> GetSchoolContacts(int instituteId)
         {
             string query = @"
@@ -322,21 +359,18 @@ namespace Institute_API.Repository.Implementations
             var schoolContacts = await _connection.QueryAsync<SchoolContactResponse>(query, new { Institute_id = instituteId });
             return schoolContacts.ToList();
         }
-
         private async Task<List<AcademicInfo>> GetAcademicInfos(int instituteId)
         {
             string query = "SELECT * FROM tbl_AcademicInfo WHERE Institute_id = @Institute_id";
             var academicInfos = await _connection.QueryAsync<AcademicInfo>(query, new { Institute_id = instituteId });
             return academicInfos.ToList();
         }
-
         private async Task<SemesterInfo> GetSemesterInfo(int instituteId)
         {
             string query = "SELECT * FROM tbl_SemesterInfo WHERE Institute_id = @Institute_id";
             var semesterInfo = await _connection.QueryFirstOrDefaultAsync<SemesterInfo>(query, new { Institute_id = instituteId });
             return semesterInfo ?? new SemesterInfo();
         }
-
         public async Task<ServiceResponse<bool>> DeleteImage(DeleteImageRequest request)
         {
             try

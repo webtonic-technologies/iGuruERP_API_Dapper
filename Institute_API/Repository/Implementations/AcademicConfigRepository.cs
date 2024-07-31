@@ -93,10 +93,25 @@ namespace Institute_API.Repository.Implementations
         {
             try
             {
+                // Check if there are any mappings in tbl_ClassSectionSubjectMapping for the given classId
+                string checkMappingSql = @"
+            SELECT COUNT(*) 
+            FROM tbl_ClassSectionSubjectMapping csm
+            LEFT JOIN tbl_Section sec ON CHARINDEX(CONVERT(varchar, sec.section_id), csm.section_id) > 0
+            WHERE sec.class_id = @ClassId OR csm.class_id = @ClassId AND csm.IsDeleted = 0";
+
+                int mappingCount = await _connection.ExecuteScalarAsync<int>(checkMappingSql, new { ClassId = classId });
+
+                if (mappingCount > 0)
+                {
+                    throw new InvalidOperationException("Cannot delete class or sections as they are in use in ClassSectionSubjectMapping.");
+                }
+
                 // Soft delete the class by setting IsDeleted to true
-                string updateClassSql = @"UPDATE [dbo].[tbl_Class]
-                                  SET IsDeleted = 1
-                                  WHERE class_id = @ClassId";
+                string updateClassSql = @"
+            UPDATE [dbo].[tbl_Class]
+            SET IsDeleted = 1
+            WHERE class_id = @ClassId";
 
                 // Execute the query and retrieve the number of affected rows
                 int affectedRows = await _connection.ExecuteAsync(updateClassSql, new { ClassId = classId });
@@ -104,9 +119,10 @@ namespace Institute_API.Repository.Implementations
                 if (affectedRows > 0)
                 {
                     // Soft delete the sections related to this class
-                    string updateSectionSql = @"UPDATE [dbo].[tbl_Section]
-                                        SET IsDeleted = 1
-                                        WHERE class_id = @ClassId";
+                    string updateSectionSql = @"
+                UPDATE [dbo].[tbl_Section]
+                SET IsDeleted = 1
+                WHERE class_id = @ClassId";
 
                     int sectionAffectedRows = await _connection.ExecuteAsync(updateSectionSql, new { ClassId = classId });
 

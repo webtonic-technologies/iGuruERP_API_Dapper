@@ -49,6 +49,45 @@ namespace Institute_API.Services.Implementations
             }
         }
 
+        public async Task<ServiceResponse<List<City>>> GetCitiesByStateIdAsync(int stateId)
+        {
+
+            try
+            {
+                return await _instituteDetailsRepository.GetCitiesByStateIdAsync(stateId);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<City>>(false, ex.Message, [], 500);
+            }
+        }
+
+        public async Task<ServiceResponse<List<Country>>> GetCountriesAsync()
+        {
+
+            try
+            {
+                return await _instituteDetailsRepository.GetCountriesAsync();
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<Country>>(false, ex.Message, [], 500);
+            }
+        }
+
+        public async Task<ServiceResponse<List<District>>> GetDistrictsByCityIdAsync(int cityId)
+        {
+
+            try
+            {
+                return await _instituteDetailsRepository.GetDistrictsByCityIdAsync(cityId);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<District>>(false, ex.Message, [], 500);
+            }
+        }
+
         public async Task<ServiceResponse<InstituteDetailsResponseDTO>> GetInstituteDetailsById(int Id)
         {
             try
@@ -58,6 +97,18 @@ namespace Institute_API.Services.Implementations
             catch (Exception ex)
             {
                 return new ServiceResponse<InstituteDetailsResponseDTO>(false, ex.Message, new InstituteDetailsResponseDTO(), 500);
+            }
+        }
+
+        public async Task<ServiceResponse<List<State>>> GetStatesByCountryIdAsync(int countryId)
+        {
+            try
+            {
+                return await _instituteDetailsRepository.GetStatesByCountryIdAsync(countryId);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<State>>(false, ex.Message, [], 500);
             }
         }
     }

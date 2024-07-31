@@ -139,7 +139,7 @@ namespace Institute_API.Repository.Implementations
                 var response = new InstituteHouseDTO();
                 string sql = @"SELECT Institute_house_id, Institute_id, HouseName, HouseColor, en_date, FileName
                        FROM [dbo].[tbl_InstituteHouse]
-                       WHERE Institute_house_id = @InstituteHouseId";
+                       WHERE Institute_house_id = @InstituteHouseId AND IsDeleted = 0";
 
                 var instituteHouse = await _connection.QueryFirstOrDefaultAsync<InstituteHouses>(sql, new { InstituteHouseId = instituteHouseId });
 

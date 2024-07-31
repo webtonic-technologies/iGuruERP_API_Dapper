@@ -13,7 +13,7 @@ namespace Institute_API.DTOs
         public List<InstituteDigitalStampsResponse>? InstituteDigitalStamps { get; set; }
         public List<InstituteDigitalSignsResponse>? InstituteDigitalSigns { get; set; }
         public List<InstitutePrinSignsResponse>? InstitutePrinSigns { get; set; }
-        public List<InstituteAddressResponse>? InstituteAddresses { get; set; }
+        public InstituteAddressResponse? AddressResponse { get; set; }
         public List<SchoolContactResponse>? SchoolContacts { get; set; }
         public List<InstituteSMMapping>? InstituteSMMappings { get; set; }
         public InstituteDescription? InstituteDescription { get; set; }
@@ -44,7 +44,7 @@ namespace Institute_API.DTOs
         public int InstituteId { get; set; }
         public string InstitutePrinSign { get; set; } = string.Empty;
     }
-    public class InstituteAddressResponse
+    public class AddressResponse
     {
         public int Institute_address_id { get; set; }
         public int Institute_id { get; set; }
@@ -65,6 +65,11 @@ namespace Institute_API.DTOs
         public int? AddressType_id { get; set; }
         public string AddressTypeName { get; set; } = string.Empty;
         public DateTime? en_date { get; set; }
+    }
+    public class InstituteAddressResponse
+    {
+        public List<AddressResponse>? BillingAddress { get; set; }
+        public List<AddressResponse>? MailingAddress {  get; set; }
     }
     public class SchoolContactResponse
     {

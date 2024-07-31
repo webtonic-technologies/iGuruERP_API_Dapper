@@ -77,5 +77,57 @@ namespace Institute_API.Controllers
                 return BadRequest(ex.Message);
             }
         }
+        [HttpGet("GetCountryList")]
+        public async Task<IActionResult> GetCountriesAsync()
+        {
+            try
+            {
+                var data = await _instituteDetailsServices.GetCountriesAsync();
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+        [HttpGet("GetStatesByCountryId/{countryId}")]
+        public async Task<IActionResult> GetStatesByCountryIdAsync(int countryId)
+        {
+            try
+            {
+                var data = await _instituteDetailsServices.GetStatesByCountryIdAsync(countryId);
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+        [HttpGet("GetCitiesByStateId/{stateId}")]
+        public async Task<IActionResult> GetCitiesByStateIdAsync(int stateId)
+        {
+            try
+            {
+                var data = await _instituteDetailsServices.GetCitiesByStateIdAsync(stateId);
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+        [HttpGet("GetDistrictsByCityId/{cityId}")]
+        public async Task<IActionResult> GetDistrictsByCityIdAsync(int cityId)
+        {
+            try
+            {
+                var data = await _instituteDetailsServices.GetDistrictsByCityIdAsync(cityId);
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
     }
 }

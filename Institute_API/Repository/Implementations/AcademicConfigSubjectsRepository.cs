@@ -20,34 +20,52 @@ namespace Institute_API.Repository.Implementations
             {
                 _connection.Open();
             }
+
             using (var connection = _connection)
             {
                 using (var transaction = connection.BeginTransaction())
                 {
                     try
                     {
-                        // Insert or update the subject
+                        // SQL query to insert or update the subject and retrieve SubjectId
                         string upsertSubjectSql = @"
-                    IF EXISTS (SELECT 1 FROM tbl_Subjects WHERE SubjectId = @SubjectId)
-                    BEGIN
-                        UPDATE tbl_Subjects
-                        SET SubjectName = @SubjectName,
-                            SubjectCode = @SubjectCode,
-                            subject_type_id = @subject_type_id,
-                            IsDeleted = @IsDeleted
-                        WHERE SubjectId = @SubjectId
-                    END
-                    ELSE
-                    BEGIN
-                        INSERT INTO tbl_Subjects (InstituteId, SubjectName, SubjectCode, subject_type_id, IsDeleted)
-                        VALUES (@InstituteId, @SubjectName, @SubjectCode, @subject_type_id, @IsDeleted)
-                        SELECT CAST(SCOPE_IDENTITY() as int)
-                    END
+                DECLARE @OutputSubjectId INT;
+
+                IF EXISTS (SELECT 1 FROM tbl_Subjects WHERE SubjectId = @SubjectId)
+                BEGIN
+                    UPDATE tbl_Subjects
+                    SET SubjectName = @SubjectName,
+                        SubjectCode = @SubjectCode,
+                        subject_type_id = @subject_type_id,
+                        IsDeleted = @IsDeleted
+                    WHERE SubjectId = @SubjectId;
+
+                    -- Get the updated SubjectId
+                    SET @OutputSubjectId = @SubjectId;
+                END
+                ELSE
+                BEGIN
+                    INSERT INTO tbl_Subjects (InstituteId, SubjectName, SubjectCode, subject_type_id, IsDeleted)
+                    VALUES (@InstituteId, @SubjectName, @SubjectCode, @subject_type_id, @IsDeleted);
+                    
+                    -- Get the new SubjectId
+                    SET @OutputSubjectId = CAST(SCOPE_IDENTITY() AS INT);
+                END
+
+                SELECT @OutputSubjectId; -- Return the SubjectId
                 ";
+
                         request.IsDeleted = false;
-                        var subjectId = request.SubjectId > 0
-                            ? await connection.ExecuteAsync(upsertSubjectSql, request, transaction)
-                            : await connection.QuerySingleAsync<int>(upsertSubjectSql, request, transaction);
+                        if (request.SubjectId > 0)
+                        {
+                            foreach (var data in request.SubjectSectionMappingRequests)
+                            {
+                                data.SubjectId = request.SubjectId;
+                            }
+                        }
+
+                        // Execute the upsert and retrieve the SubjectId
+                        var subjectId = await connection.QuerySingleAsync<int>(upsertSubjectSql, request, transaction);
 
                         // Handle subject section mappings
                         int rowsInserted = await HandleSubjectMappings(request.SubjectSectionMappingRequests, subjectId, transaction);
@@ -56,7 +74,7 @@ namespace Institute_API.Repository.Implementations
                         if (rowsInserted >= 0)
                         {
                             transaction.Commit();
-                            return new ServiceResponse<string>(true, "Subject and mappings saved successfully.", "operation successful", 200);
+                            return new ServiceResponse<string>(true, "Subject and mappings saved successfully.", "Operation successful", 200); // Return the SubjectId
                         }
                         else
                         {
@@ -76,6 +94,77 @@ namespace Institute_API.Repository.Implementations
                 }
             }
         }
+
+
+        //public async Task<ServiceResponse<string>> AddUpdateAcademicConfigSubject(SubjectRequest request)
+        //{
+        //    if (_connection.State != ConnectionState.Open)
+        //    {
+        //        _connection.Open();
+        //    }
+        //    using (var connection = _connection)
+        //    {
+        //        using (var transaction = connection.BeginTransaction())
+        //        {
+        //            try
+        //            {
+        //                // Insert or update the subject
+        //                string upsertSubjectSql = @"
+        //            IF EXISTS (SELECT 1 FROM tbl_Subjects WHERE SubjectId = @SubjectId)
+        //            BEGIN
+        //                UPDATE tbl_Subjects
+        //                SET SubjectName = @SubjectName,
+        //                    SubjectCode = @SubjectCode,
+        //                    subject_type_id = @subject_type_id,
+        //                    IsDeleted = @IsDeleted
+        //                WHERE SubjectId = @SubjectId
+        //            END
+        //            ELSE
+        //            BEGIN
+        //                INSERT INTO tbl_Subjects (InstituteId, SubjectName, SubjectCode, subject_type_id, IsDeleted)
+        //                VALUES (@InstituteId, @SubjectName, @SubjectCode, @subject_type_id, @IsDeleted)
+        //                SELECT CAST(SCOPE_IDENTITY() as int)
+        //            END
+        //        ";
+        //                request.IsDeleted = false;
+        //                if (request.SubjectId > 0)
+        //                {
+        //                    foreach (var data in request.SubjectSectionMappingRequests)
+        //                    {
+        //                        data.SubjectId = request.SubjectId;
+        //                    }
+        //                }
+        //                var subjectId = request.SubjectId > 0
+        //                    ? await connection.ExecuteAsync(upsertSubjectSql, request, transaction)
+        //                    : await connection.QuerySingleAsync<int>(upsertSubjectSql, request, transaction);
+
+        //                // Handle subject section mappings
+        //                int rowsInserted = await HandleSubjectMappings(request.SubjectSectionMappingRequests, subjectId, transaction);
+
+        //                // Commit transaction if all operations were successful
+        //                if (rowsInserted >= 0)
+        //                {
+        //                    transaction.Commit();
+        //                    return new ServiceResponse<string>(true, "Subject and mappings saved successfully.", "operation successful", 200);
+        //                }
+        //                else
+        //                {
+        //                    transaction.Rollback();
+        //                    return new ServiceResponse<string>(false, "Failed to save subject mappings.", string.Empty, 500);
+        //                }
+        //            }
+        //            catch (Exception ex)
+        //            {
+        //                transaction.Rollback();
+        //                return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
+        //            }
+        //            finally
+        //            {
+        //                connection.Close();
+        //            }
+        //        }
+        //    }
+        //}
         public async Task<ServiceResponse<string>> DeleteAcademicConfigSubject(int SubjectId)
         {
             if (_connection.State != ConnectionState.Open)
@@ -193,11 +282,11 @@ namespace Institute_API.Repository.Implementations
             {
                 // Base SQL query to retrieve subjects
                 string sql = @"
-        SELECT s.SubjectId, s.InstituteId, s.SubjectName, s.SubjectCode, s.subject_type_id, 
-               st.subject_type AS subject_type_name
-        FROM tbl_Subjects s
-        LEFT JOIN tbl_SubjectTypeMaster st ON s.subject_type_id = st.subject_type_id
-        WHERE s.IsDeleted = 0";
+            SELECT s.SubjectId, s.InstituteId, s.SubjectName, s.SubjectCode, s.subject_type_id, 
+                   st.subject_type AS subject_type_name
+            FROM tbl_Subjects s
+            LEFT JOIN tbl_SubjectTypeMaster st ON s.subject_type_id = st.subject_type_id
+            WHERE s.IsDeleted = 0";
 
                 // Add filters based on request
                 if (request.Institute_id > 0)
@@ -252,17 +341,34 @@ namespace Institute_API.Repository.Implementations
 
                 // SQL query to retrieve class and section mappings for the subjects
                 string mappingsSql = @"
-        SELECT csm.CSSMappingId, csm.SubjectId, c.class_id, c.class_name, sec.section_id, sec.section_name
-        FROM tbl_ClassSectionSubjectMapping csm
-        INNER JOIN tbl_Class c ON csm.class_id = c.class_id
-        LEFT JOIN tbl_Section sec ON CHARINDEX(CONVERT(varchar, sec.section_id), csm.section_id) > 0
-        WHERE csm.SubjectId IN @SubjectIds AND csm.IsDeleted = 0 AND c.IsDeleted = 0 AND (sec.IsDeleted = 0 OR sec.IsDeleted IS NULL)";
+            SELECT csm.CSSMappingId, csm.SubjectId, c.class_id, c.class_name, sec.section_id, sec.section_name
+            FROM tbl_ClassSectionSubjectMapping csm
+            INNER JOIN tbl_Class c ON csm.class_id = c.class_id
+            LEFT JOIN tbl_Section sec ON CHARINDEX(CONVERT(varchar, sec.section_id), csm.section_id) > 0
+            WHERE csm.SubjectId IN @SubjectIds AND csm.IsDeleted = 0 AND c.IsDeleted = 0 
+            AND (sec.IsDeleted = 0 OR sec.IsDeleted IS NULL)";
+
+                // Add filters for class and section IDs
+                if (request.ClassId > 0)
+                {
+                    mappingsSql += " AND c.class_id = @ClassId";
+                }
+
+                if (request.SectionId > 0)
+                {
+                    mappingsSql += " AND CHARINDEX(CONVERT(varchar, @SectionId), csm.section_id) > 0";
+                }
 
                 // Get the subject IDs to retrieve mappings
                 var subjectIds = subjects.Select(s => s.SubjectId).ToList();
 
                 // Execute the query and retrieve the mappings
-                var mappings = await _connection.QueryAsync<dynamic>(mappingsSql, new { SubjectIds = subjectIds });
+                var mappings = await _connection.QueryAsync<dynamic>(mappingsSql, new
+                {
+                    SubjectIds = subjectIds,
+                    ClassId = request.ClassId,
+                    SectionId = request.SectionId
+                });
 
                 // Group the mappings by subject ID
                 var groupedMappings = mappings.GroupBy(m => m.SubjectId).ToDictionary(g => g.Key, g => g.ToList());
