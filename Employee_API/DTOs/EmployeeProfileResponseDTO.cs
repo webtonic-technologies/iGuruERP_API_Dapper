@@ -40,5 +40,22 @@ namespace Employee_API.DTOs
         public List<EmployeeWorkExperience>? EmployeeWorkExperiences { get; set; }
         public List<EmployeeBankDetails>? EmployeeBankDetails { get; set; }
         public EmployeeFamily? Family { get; set; }
+        public EmployeeAddressDetailsResponse? EmployeeAddressDetails { get; set; }
+    }
+    public class EmployeeAddressDetailsResponse
+    {
+        public int Employee_Present_Address_id { get; set; }
+        public string Address { get; set; } = string.Empty;
+        public int Country_id { get; set; }
+        public string CountryName { get; set; } = string.Empty;
+        public int State_id { get; set; }
+        public string StateName {  get; set; } = string.Empty;
+        public int City_id { get; set; }
+        public string CityName { get; set; } = string.Empty;
+        public int District_id { get; set; }
+        public string DistrictName {  get; set; } = string.Empty;
+        public string Pin_code { get; set; } = string.Empty;
+        public int AddressTypeId { get; set; }
+        public int Employee_id { get; set; }
     }
 }

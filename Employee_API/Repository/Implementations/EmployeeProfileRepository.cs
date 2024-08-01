@@ -67,6 +67,7 @@ namespace Employee_API.Repository.Implementations
                         var empQua = await AddUpdateEmployeeQualification(request.EmployeeQualifications ??= [], employeeId);
                         var empwork = await AddUpdateEmployeeWorkExp(request.EmployeeWorkExperiences ??= [], employeeId);
                         var empbank = await AddUpdateEmployeeBankDetails(request.EmployeeBankDetails ??= [], employeeId);
+                        var empadd = await AddUpdateEmployeeAddressDetails(request.EmployeeAddressDetails, employeeId);
                         return new ServiceResponse<int>(true, "operation successful", employeeId, 200);
                     }
                     else
@@ -138,6 +139,7 @@ namespace Employee_API.Repository.Implementations
                         var empQua = await AddUpdateEmployeeQualification(request.EmployeeQualifications ??= [], request.Employee_id);
                         var empwork = await AddUpdateEmployeeWorkExp(request.EmployeeWorkExperiences ??= [], request.Employee_id);
                         var empbank = await AddUpdateEmployeeBankDetails(request.EmployeeBankDetails ??= [], request.Employee_id);
+                        var empadd = await AddUpdateEmployeeAddressDetails(request.EmployeeAddressDetails, request.Employee_id);
                         return new ServiceResponse<int>(true, "operation successful", request.Employee_id, 200);
                     }
                     else
@@ -240,9 +242,9 @@ namespace Employee_API.Repository.Implementations
                     if (rowsAffected > 0)
                     {
                         string insertQuery = @"INSERT INTO [dbo].[tbl_DocumentsMaster] 
-                    (employee_id, Document_Name, file_name, file_path) 
+                    (employee_id, Document_Name, file_path) 
                     VALUES 
-                    (@employee_id, @Document_Name, @file_name, @file_path);";
+                    (@employee_id, @Document_Name, @file_path);";
 
                         foreach (EmployeeDocument document in request)
                         {
@@ -261,9 +263,9 @@ namespace Employee_API.Repository.Implementations
                 {
                     // If no records exist, insert new documents
                     string insertQuery = @"INSERT INTO [dbo].[tbl_DocumentsMaster] 
-                (employee_id, Document_Name, file_name, file_path) 
+                (employee_id, Document_Name, file_path) 
                 VALUES 
-                (@employee_id, @Document_Name, @file_name, @file_path);";
+                (@employee_id, @Document_Name, @file_path);";
 
                     foreach (EmployeeDocument document in request)
                     {
@@ -464,6 +466,70 @@ namespace Employee_API.Repository.Implementations
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
+        public async Task<ServiceResponse<int>> AddUpdateEmployeeAddressDetails(EmployeeAddressDetails? request, int employeeId)
+        {
+            if (request == null)
+            {
+                return new ServiceResponse<int>(false, "Request cannot be null.", 0, 400);
+            }
+
+            if (_connection.State != ConnectionState.Open)
+            {
+                _connection.Open();
+            }
+
+            using (var connection = _connection)
+            {
+                using (var transaction = connection.BeginTransaction())
+                {
+                    try
+                    {
+                        // SQL query to insert or update employee address
+                        string upsertAddressSql = @"
+                IF EXISTS (SELECT 1 FROM tbl_EmployeePresentAddress WHERE Employee_id = @EmployeeId)
+                BEGIN
+                    UPDATE tbl_EmployeePresentAddress
+                    SET Address = @Address,
+                        Country_id = @Country_id,
+                        State_id = @State_id,
+                        City_id = @City_id,
+                        District_id = @District_id,
+                        Pin_code = @Pin_code,
+                        AddressTypeId = @AddressTypeId
+                    WHERE Employee_id = @EmployeeId;
+                END
+                ELSE
+                BEGIN
+                    INSERT INTO tbl_EmployeePresentAddress (Address, Country_id, State_id, City_id, District_id, Pin_code, AddressTypeId, Employee_id)
+                    VALUES (@Address, @Country_id, @State_id, @City_id, @District_id, @Pin_code, @AddressTypeId, @EmployeeId);
+                END;
+
+                -- Return the employee address ID
+                SELECT CAST(SCOPE_IDENTITY() AS INT);";
+
+                        // Set EmployeeId in the request
+                        request.Employee_id = employeeId;
+
+                        // Execute the upsert operation
+                        var addressId = await connection.QuerySingleAsync<int>(upsertAddressSql, request, transaction);
+
+                        // Commit the transaction
+                        transaction.Commit();
+
+                        return new ServiceResponse<int>(true, "Address saved successfully.", addressId, 200);
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        return new ServiceResponse<int>(false, ex.Message, 0, 500);
+                    }
+                    finally
+                    {
+                        connection.Close();
+                    }
+                }
+            }
+        }
         public async Task<ServiceResponse<EmployeeProfileResponseDTO>> GetEmployeeProfileById(int employeeId)
         {
             try
@@ -606,7 +672,8 @@ namespace Employee_API.Repository.Implementations
                     {
                         response.EmployeeWorkExperiences = workExperiences.AsList();
                     }
-
+                    var data = await GetEmployeeAddressDetailsById(employeeId);
+                    response.EmployeeAddressDetails = data.Data;
                     return new ServiceResponse<EmployeeProfileResponseDTO>(true, "Records found", response, 200);
                 }
                 else
@@ -855,6 +922,48 @@ namespace Employee_API.Repository.Implementations
             catch (Exception ex)
             {
                 return new ServiceResponse<List<EmployeeBankDetails>>(false, ex.Message, [], 500);
+            }
+        }
+        public async Task<ServiceResponse<EmployeeAddressDetailsResponse>> GetEmployeeAddressDetailsById(int employeeId)
+        {
+            try
+            {
+                // SQL query to retrieve employee address details along with country, state, city, and district names
+                string sql = @"
+        SELECT 
+            e.Employee_Present_Address_id,
+            e.Address,
+            e.Country_id,
+            c.CountryName,
+            e.State_id,
+            s.StateName,
+            e.City_id,
+            ci.CityName,
+            e.District_id,
+            d.DistrictName,
+            e.Pin_code,
+            e.AddressTypeId,
+            e.Employee_id
+        FROM tbl_EmployeePresentAddress e
+        LEFT JOIN tbl_Country c ON e.Country_id = c.Country_id
+        LEFT JOIN tbl_State s ON e.State_id = s.State_id
+        LEFT JOIN tbl_City ci ON e.City_id = ci.City_id
+        LEFT JOIN tbl_District d ON e.District_id = d.District_id
+        WHERE e.Employee_id = @EmployeeId AND e.IsDeleted = 0"; // Assuming IsDeleted is a column to check if the address is active
+
+                // Execute the query and retrieve the address details
+                var addressDetails = await _connection.QuerySingleOrDefaultAsync<EmployeeAddressDetailsResponse>(sql, new { EmployeeId = employeeId });
+
+                if (addressDetails == null)
+                {
+                    return new ServiceResponse<EmployeeAddressDetailsResponse>(false, "No address details found for the given employee.", null, 204);
+                }
+
+                return new ServiceResponse<EmployeeAddressDetailsResponse>(true, "Address details retrieved successfully.", addressDetails, 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<EmployeeAddressDetailsResponse>(false, ex.Message, null, 500);
             }
         }
         public async Task<ServiceResponse<bool>> StatusActiveInactive(int employeeId)
