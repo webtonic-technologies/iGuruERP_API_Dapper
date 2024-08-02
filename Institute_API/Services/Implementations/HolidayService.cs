@@ -14,7 +14,7 @@ namespace Institute_API.Services.Implementations
             _holidayRepository = holidayRepository;
         }
 
-        public async Task<ServiceResponse<int>> AddUpdateHoliday(HolidayDTO holidayDTO)
+        public async Task<ServiceResponse<int>> AddUpdateHoliday(HolidayRequestDTO holidayDTO)
         {
             try
             {
@@ -38,11 +38,11 @@ namespace Institute_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<HolidayDTO>>> GetAllHolidays()
+        public async Task<ServiceResponse<List<HolidayDTO>>> GetAllHolidays(CommonRequestDTO commonRequest)
         {
             try
             {
-                return await _holidayRepository.GetAllHolidays();
+                return await _holidayRepository.GetAllHolidays(commonRequest.Institute_id, commonRequest.Academic_year_id, commonRequest.sortColumn, commonRequest.sortDirection, commonRequest.pageSize, commonRequest.pageNumber);
             }
             catch (Exception ex)
             {
@@ -50,11 +50,11 @@ namespace Institute_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<HolidayDTO>>> GetApprovedHolidays()
+        public async Task<ServiceResponse<List<HolidayDTO>>> GetApprovedHolidays(CommonRequestDTO commonRequest)
         {
             try
             {
-                return await _holidayRepository.GetApprovedHolidays();
+                return await _holidayRepository.GetApprovedHolidays(commonRequest.Institute_id, commonRequest.Academic_year_id, commonRequest.sortColumn, commonRequest.sortDirection, commonRequest.pageSize, commonRequest.pageNumber);
             }
             catch (Exception ex)
             {

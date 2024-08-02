@@ -38,12 +38,12 @@ namespace Institute_API.Controllers
 
         }
 
-        [HttpGet("GetInstituteAffiliationById/{id}")]
-        public async Task<IActionResult> GetInstituteAffiliationById(int id)
+        [HttpGet("GetInstituteAffiliationById/{Instituteid}")]
+        public async Task<IActionResult> GetInstituteAffiliationById(int Instituteid)
         {
             try
             {
-                var data = await _instituteAffiliationServices.GetAffiliationInfoById(id);
+                var data = await _instituteAffiliationServices.GetAffiliationInfoById(Instituteid);
                 return Ok(data);
             }
             catch (Exception ex)

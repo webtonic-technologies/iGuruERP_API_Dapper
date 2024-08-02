@@ -1,6 +1,8 @@
 ﻿using Institute_API.DTOs;
+using Institute_API.Services.Implementations;
 using Institute_API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using System.Reflection;
 
 namespace Institute_API.Controllers
 {
@@ -30,11 +32,11 @@ namespace Institute_API.Controllers
         }
 
         [HttpGet("GetApprovedImagesByEvent")]
-        public async Task<IActionResult> GetApprovedImagesByEvent()
+        public async Task<IActionResult> GetApprovedImagesByEvent(GetGalleryRequestModel model)
         {
             try
             {
-                var response = await _galleryService.GetApprovedImagesByEvent();
+                var response = await _galleryService.GetApprovedImagesByEvent(model);
                 return StatusCode(response.StatusCode, response);
             }
             catch (Exception ex)
@@ -58,16 +60,38 @@ namespace Institute_API.Controllers
         }
 
         [HttpGet("GetAllGalleryImagesByEvent")]
-        public async Task<IActionResult> GetAllGalleryImagesByEvent()
+        public async Task<IActionResult> GetAllGalleryImagesByEvent(GetGalleryRequestModel model)
         {
             try
             {
-                var response = await _galleryService.GetAllGalleryImagesByEvent();
+                var response = await _galleryService.GetAllGalleryImagesByEvent(model);
                 return StatusCode(response.StatusCode, response);
             }
             catch (Exception ex)
             {
                 return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpDelete("DeleteGalleryImage/{Gallery_id}")]
+        public async Task<IActionResult> DeleteGalleryImage(int Gallery_id)
+        {
+            try
+            {
+                var data = await _galleryService.DeleteGalleryImage(Gallery_id);
+                if (data != null)
+                {
+                    return Ok(data);
+                }
+                else
+                {
+                    return BadRequest("Bad Request");
+                }
+
+            }
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
             }
         }
     }

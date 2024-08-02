@@ -18,16 +18,19 @@ namespace Student_API.Services.Implementations
             _imageService = imageService;
         }
 
-        public async Task<ServiceResponse<List<StudentQRDTO>>> GetAllStudentQR(int section_id, int class_id, int? pageNumber = null, int? pageSize = null)
+        public async Task<ServiceResponse<List<StudentQRDTO>>> GetAllStudentQR(int sectionId, int classId, string sortField, string sortDirection, int? pageNumber = null, int? pageSize = null)
         {
             try
             {
-                var data = await _studentORRepository.GetAllStudentQR(section_id, class_id, pageNumber, pageSize);
+                var data = await _studentORRepository.GetAllStudentQR(sectionId, classId, sortField, sortDirection, pageNumber, pageSize);
                 if (data.Success)
                 {
-                    foreach (var item in data.Data)
+                    if (data.Data != null)
                     {
-                        item.QR_code = _imageService.GetImageAsBase64(item.QR_code);
+                        foreach (var item in data.Data)
+                        {
+                            item.QR_code = _imageService.GetImageAsBase64(item.QR_code);
+                        }
                     }
                 }
 

@@ -1,12 +1,10 @@
 using Institute_API.DTOs;
-using Institute_API.Models;
 using Institute_API.Repository.Interfaces;
-using Institute_API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Institute_API.Controllers
 {
-    [Route("iGuru/[controller]")]
+    [Route("iGuru/Institute/[controller]")]
     [ApiController]
     public class AcademicConfigController : ControllerBase
     {
@@ -18,7 +16,7 @@ namespace Institute_API.Controllers
         }
 
         [HttpPost("AddCourseClass")]
-        public async Task<IActionResult> AddUpdateAcademicConfig([FromBody] CourseClassDTO request)
+        public async Task<IActionResult> AddUpdateAcademicConfig([FromBody] Class request)
         {
             try
             {
@@ -68,7 +66,7 @@ namespace Institute_API.Controllers
             }
         }
 
-        [HttpDelete("DeleteCourseClass")]
+        [HttpDelete("DeleteCourseClass/{id}")]
         public async Task<IActionResult> DeleteAcademicConfig(int id)
         {
             try

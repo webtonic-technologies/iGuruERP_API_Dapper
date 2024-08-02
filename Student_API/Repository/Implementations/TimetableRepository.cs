@@ -120,7 +120,7 @@ namespace Student_API.Repository.Implementations
                         WHERE TimetableClassMapping_id = @TimetableClassMappingId";
                         }
                         result = await _connection.ExecuteAsync(query, timetableClassMapping, transaction);
-                        timetableClassMappingsSuccess =  result > 0 ? true : false;
+                        timetableClassMappingsSuccess = result > 0 ? true : false;
                     }
 
                     bool success = timetableGroupSuccess && periodsSuccess && periodBreaksSuccess && timetableClassMappingsSuccess;
@@ -183,7 +183,7 @@ namespace Student_API.Repository.Implementations
                 {
                     timetableGroup.periodDTOs = await GetPeriodsForTimeTableGroup(timetableGroupId);
                     timetableGroup.periodBreakDTOs = await GetPeriodBreaksForTimeTableGroup(timetableGroupId);
-                    timetableGroup.timetableClassMappings = await GetTimetableClassMappingsForTimeTableGroup(timetableGroupId); 
+                    timetableGroup.timetableClassMappings = await GetTimetableClassMappingsForTimeTableGroup(timetableGroupId);
                     return new ServiceResponse<TimeTableGroupDTO>(true, "Operation successful", timetableGroup, 200);
                 }
                 else
@@ -217,6 +217,8 @@ namespace Student_API.Repository.Implementations
 
         public async Task<ServiceResponse<bool>> DeleteTimetableGroup(int timetableGroupId)
         {
+            if (_connection.State != ConnectionState.Open)
+                _connection.Open();
             using (var transaction = _connection.BeginTransaction())
             {
                 try
@@ -259,44 +261,115 @@ namespace Student_API.Repository.Implementations
             }
         }
 
-
-        public async Task<ServiceResponse<int>> AddTimeTableDaysPlan(DaysSetupDTO daysSetupDTO)
+        public async Task<ServiceResponse<int>> AddOrUpdateTimeTableDaysPlan(DaysSetupDTO daysSetupDTO)
         {
             try
             {
                 if (_connection.State != ConnectionState.Open)
                     _connection.Open();
+
                 using (var transaction = _connection.BeginTransaction())
                 {
                     try
                     {
+                        int daysSetupId;
 
-                        string addDaysSetupQuery = @"
-                    INSERT INTO [dbo].[tbl_DaysSetup] (PlanName, WorkingDays) 
-                    VALUES (@PlanName, @WorkingDays);
-                    SELECT CAST(SCOPE_IDENTITY() as int)";
-                        int daysSetupId = await _connection.ExecuteScalarAsync<int>(addDaysSetupQuery, daysSetupDTO, transaction);
-
-
-                        if (daysSetupDTO.TimetableGroupIds != null && daysSetupDTO.TimetableGroupIds.Any())
+                        if (daysSetupDTO.DaysSetupId > 0)
                         {
+                            // Update existing record
+                            daysSetupId = daysSetupDTO.DaysSetupId;
+
+                            string updateDaysSetupQuery = @"
+                        UPDATE [dbo].[tbl_DaysSetup]
+                        SET PlanName = @PlanName, WorkingDays = @WorkingDays
+                        WHERE DaysSetup_id = @DaysSetupId";
+
+                            await _connection.ExecuteAsync(updateDaysSetupQuery, new
+                            {
+                                PlanName = daysSetupDTO.PlanName,
+                                WorkingDays = daysSetupDTO.WorkingDays,
+                                DaysSetupId = daysSetupId
+                            }, transaction);
+
+                            // Retrieve existing mappings
+                            string selectExistingMappingsQuery = @"
+                        SELECT TimetableGroup_id
+                        FROM [dbo].[tbl_DaysGroupMapping]
+                        WHERE DaysSetup_id = @DaysSetupId";
+
+                            var existingMappings = await _connection.QueryAsync<int>(selectExistingMappingsQuery, new { DaysSetupId = daysSetupId }, transaction);
+
+                            // Convert existing mappings to HashSet for quick lookup
+                            var existingMappingsSet = new HashSet<int>(existingMappings);
+
+                            // Determine new mappings to add
+                            var newMappingsToAdd = daysSetupDTO.TimetableGroupIds.Except(existingMappingsSet);
+
+                            // Insert new mappings
                             string addDaysGroupMappingQuery = @"
                         INSERT INTO [dbo].[tbl_DaysGroupMapping] (DaysSetup_id, TimetableGroup_id) 
                         VALUES (@DaysSetupId, @TimetableGroupId)";
+
+                            foreach (var timetableGroupId in newMappingsToAdd)
+                            {
+                                await _connection.ExecuteAsync(addDaysGroupMappingQuery, new
+                                {
+                                    DaysSetupId = daysSetupId,
+                                    TimetableGroupId = timetableGroupId
+                                }, transaction);
+                            }
+
+                            // Determine mappings to remove (if any)
+                            var mappingsToRemove = existingMappingsSet.Except(daysSetupDTO.TimetableGroupIds);
+
+                            // Remove mappings that are no longer needed
+                            if (mappingsToRemove.Any())
+                            {
+                                string deleteMappingsQuery = @"
+                            DELETE FROM [dbo].[tbl_DaysGroupMapping]
+                            WHERE DaysSetup_id = @DaysSetupId AND TimetableGroup_id IN @TimetableGroupIds";
+
+                                await _connection.ExecuteAsync(deleteMappingsQuery, new
+                                {
+                                    DaysSetupId = daysSetupId,
+                                    TimetableGroupIds = mappingsToRemove.ToList()
+                                }, transaction);
+                            }
+                        }
+                        else
+                        {
+                            // Insert new record
+                            string addDaysSetupQuery = @"
+                        INSERT INTO [dbo].[tbl_DaysSetup] (PlanName, WorkingDays) 
+                        VALUES (@PlanName, @WorkingDays);
+                        SELECT CAST(SCOPE_IDENTITY() as int)";
+
+                            daysSetupId = await _connection.ExecuteScalarAsync<int>(addDaysSetupQuery, new
+                            {
+                                PlanName = daysSetupDTO.PlanName,
+                                WorkingDays = daysSetupDTO.WorkingDays
+                            }, transaction);
+
+                            // Insert mappings for the new record
+                            string addDaysGroupMappingQuery = @"
+                        INSERT INTO [dbo].[tbl_DaysGroupMapping] (DaysSetup_id, TimetableGroup_id) 
+                        VALUES (@DaysSetupId, @TimetableGroupId)";
+
                             foreach (var timetableGroupId in daysSetupDTO.TimetableGroupIds)
                             {
-                                await _connection.ExecuteAsync(addDaysGroupMappingQuery, new { DaysSetupId = daysSetupId, TimetableGroupId = timetableGroupId }, transaction);
+                                await _connection.ExecuteAsync(addDaysGroupMappingQuery, new
+                                {
+                                    DaysSetupId = daysSetupId,
+                                    TimetableGroupId = timetableGroupId
+                                }, transaction);
                             }
                         }
 
-
                         transaction.Commit();
-
-                        return new ServiceResponse<int>(true, "Days plan added successfully", daysSetupId, 200);
+                        return new ServiceResponse<int>(true, "Days plan added or updated successfully", daysSetupId, 200);
                     }
                     catch (Exception ex)
                     {
-
                         transaction.Rollback();
                         return new ServiceResponse<int>(false, ex.Message, 0, 500);
                     }
@@ -305,6 +378,58 @@ namespace Student_API.Repository.Implementations
             catch (Exception ex)
             {
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
+            }
+        }
+        public async Task<ServiceResponse<DaysSetupDTO>> GetDaysSetupById(int daysSetupId)
+        {
+            try
+            {
+                if (_connection.State != ConnectionState.Open)
+                    _connection.Open();
+
+                // Query to fetch DaysSetup details and WorkingDays
+                string query = @"
+            SELECT DaysSetup_id, PlanName, WorkingDays
+            FROM [dbo].[tbl_DaysSetup]
+            WHERE DaysSetup_id = @DaysSetupId;
+
+            SELECT TimetableGroup_id
+            FROM [dbo].[tbl_DaysGroupMapping]
+            WHERE DaysSetup_id = @DaysSetupId";
+
+                using (var multi = await _connection.QueryMultipleAsync(query, new { DaysSetupId = daysSetupId }))
+                {
+                    // Read DaysSetup details
+                    var daysSetup = await multi.ReadSingleOrDefaultAsync<DaysSetupDTO>();
+
+                    if (daysSetup == null)
+                    {
+                        return new ServiceResponse<DaysSetupDTO>(false, "Days setup not found", null, 404);
+                    }
+
+                    // Read TimetableGroup mappings
+                    var timetableGroupIds = await multi.ReadAsync<int>();
+
+                    //if (!string.IsNullOrEmpty(daysSetup.WorkingDays))
+                    //{
+                    //    var workingDaysArray = daysSetup.WorkingDays.Split(',').Select(int.Parse).ToList();
+                    //    daysSetup.WorkingDaysList = workingDaysArray;
+                    //}
+                    //else
+                    //{
+                    //    daysSetup.WorkingDaysList = new List<int>();
+                    //}
+
+
+                    // Assign TimetableGroup_ids to the DTO
+                    daysSetup.TimetableGroupIds = timetableGroupIds.ToList();
+
+                    return new ServiceResponse<DaysSetupDTO>(true, "Days setup retrieved successfully", daysSetup, 200);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<DaysSetupDTO>(false, ex.Message, null, 500);
             }
         }
 
@@ -338,7 +463,7 @@ namespace Student_API.Repository.Implementations
             }
         }
         public async Task<ServiceResponse<int>> AddOrUpdateTimetable(Timetable timetable)
-        {   
+        {
             try
             {
                 string addOrUpdateQuery = @"
@@ -412,8 +537,78 @@ namespace Student_API.Repository.Implementations
             }
         }
 
+        public async Task<List<ClassTimetableData>> GetClassTimetableData(int dayId, string academicYear)
+        {
 
+            string query = @"
+            SELECT 
+                t.Class_id AS ClassId,
+                c.Class_Name AS ClassName,
+                COUNT(DISTINCT t.Period_id) AS Sessions,
+                COUNT(DISTINCT t.Subject_id) AS Subjects
+            FROM [dbo].[tbl_Timetable] t
+            JOIN [dbo].[tbl_Class] c ON t.Class_id = c.Class_id
+            WHERE t.Day_Id = @DayId
+              AND t.AcademicYear = @AcademicYear
+            GROUP BY t.Class_id, c.Class_Name
+            ORDER BY t.Class_id";
 
+            var classTimetableData = await _connection.QueryAsync<ClassTimetableData>(
+                query,
+                new { DayId = dayId, AcademicYear = academicYear }
+            );
 
+            return classTimetableData.ToList();
+
+        }
+        public async Task<ServiceResponse<ClassDayWiseDTO>> GetClassDayWiseData(int classId, int sectionId, string academicYear)
+        {
+            try
+            {
+                string query = @"SELECT 
+                    t.Day_Id AS DayId,
+                    d.Day_Name AS DayName,
+                    t.Period_id AS PeriodId,
+                    p.PeriodName,
+                    t.Subject_id AS SubjectId,
+                    s.SubjectName,
+                    t.Employee_id AS EmployeeId,
+                    e.First_Name AS EmployeeName
+                FROM [dbo].[tbl_Timetable] t
+                JOIN [dbo].[tbl_Day] d ON t.Day_Id = d.Day_Id
+                JOIN [dbo].[tbl_Period] p ON t.Period_id = p.Period_id
+                JOIN [dbo].[tbl_Subject] s ON t.Subject_id = s.Subject_id
+                JOIN [dbo].[tbl_EmployeeProfileMaster] e ON t.Employee_id = e.Employee_id
+                WHERE t.Class_id = @ClassId
+                  AND t.Section_id = @SectionId
+                  AND t.AcademicYear = @AcademicYear
+                ORDER BY t.Day_Id, p.StartTime";
+                var classDayWiseData = await _connection.QueryAsync<ClassDayWiseDetailDTO>(query,
+                    new { ClassId = classId, SectionId = sectionId, AcademicYear = academicYear });
+                var sessionsPerWeek = classDayWiseData.GroupBy(d => d.DayId).Count();
+                var subjectsPerWeek = classDayWiseData.GroupBy(d => d.SubjectId)
+                                                      .Select(g => new SubjectCountDTO
+                                                      {
+                                                          SubjectId = g.Key,
+                                                          SubjectName = g.First().SubjectName,
+                                                          Count = g.Count()
+                                                      }).ToList();
+
+                var result = new ClassDayWiseDTO
+                {
+                    ClassId = classId,
+                    SectionId = sectionId,
+                    AcademicYear = academicYear,
+                    SessionsPerWeek = sessionsPerWeek,
+                    SubjectsPerWeek = subjectsPerWeek,
+                    DayWiseDetails = classDayWiseData.ToList()
+                };
+                return new ServiceResponse<ClassDayWiseDTO>(true, "Operation successful", result, 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<ClassDayWiseDTO>(false, ex.Message, null, 500);
+            }
+        }
     }
 }

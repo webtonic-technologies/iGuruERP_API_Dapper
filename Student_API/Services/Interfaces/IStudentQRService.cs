@@ -5,6 +5,6 @@ namespace Student_API.Services.Interfaces
 {
     public interface IStudentQRService
     {
-        Task<ServiceResponse<List<StudentQRDTO>>> GetAllStudentQR(int section_id, int class_id, int? pageNumber = null, int? pageSize = null);
+        Task<ServiceResponse<List<StudentQRDTO>>> GetAllStudentQR(int sectionId, int classId, string sortField, string sortDirection, int? pageNumber = null, int? pageSize = null);
     }
 }

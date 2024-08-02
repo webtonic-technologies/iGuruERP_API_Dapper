@@ -15,7 +15,8 @@
         public string Admission_Number { get; set; }
         public string Roll_Number { get; set; }
         public DateTime? Date_of_Joining { get; set; }
-        public DateTime? Academic_Year { get; set; }
+        public int Academic_year_id { get; set; }
+        public string YearName { get; set; }
         public int? Nationality_id { get; set; }
         public string Nationality_Type {  get; set; }   
         public string Religion_id { get; set; }
@@ -25,9 +26,6 @@
         public string Mother_Tongue_Name { get; set; }
         public int? Caste_id { get; set; }
         public string caste_type {  get; set; } 
-        public string First_Language { get; set; }
-        public string Second_Language { get; set; }
-        public string Third_Language { get; set; }
         public string Medium { get; set; }
         public int? Blood_Group_id { get; set; }
         public string Blood_Group_Type { get; set; }    
@@ -45,6 +43,8 @@
         public string Father_Name { get; set; }
         public int Institute_id { get; set; }
         public string? Institute_name { get; set; }
+        public int? Student_House_id { get; set; }
+        public string? Student_House_Name { get; set; }
         public StudentOtherInfoDTO studentOtherInfoDTO { get; set; }
         public List<StudentParentInfoDTO> studentParentInfos { get; set; }
         public StudentSiblings studentSiblings { get; set; }

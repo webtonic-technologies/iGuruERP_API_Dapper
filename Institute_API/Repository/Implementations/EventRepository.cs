@@ -16,7 +16,7 @@ namespace Institute_API.Repository.Implementations
         {
             _connection = connection;
         }
-        public async Task<ServiceResponse<int>> AddUpdateEvent(EventDTO eventDto)
+        public async Task<ServiceResponse<int>> AddUpdateEvent(EventRequestDTO eventDto)
         {
             try
             {
@@ -36,16 +36,18 @@ namespace Institute_API.Repository.Implementations
                             EndDate = @EndDate,
                             Description = @Description,
                             Location = @Location,
-                            ScheduleTime = @ScheduleTime,
-                            Time = @Time,
-                            AttachmentFile = @AttachmentFile
+                            ScheduleTime = @ScheduleDate,
+                            Time = @ScheduleTime,
+                            Institute_id=@Institute_id,
+                            AttachmentFile = @AttachmentFile,
+                            Academic_year_id = @Academic_year_id
                         WHERE Event_id = @Event_id";
                         }
                         else
                         {
                             eventQuery = @"
-                        INSERT INTO [dbo].[tbl_CreateEvent] (EventName, StartDate, EndDate, Description, Location, ScheduleTime, Time, AttachmentFile)
-                        VALUES (@EventName, @StartDate, @EndDate, @Description, @Location, @ScheduleTime, @Time, @AttachmentFile);
+                        INSERT INTO [dbo].[tbl_CreateEvent] (EventName, StartDate, EndDate, Description, Location, ScheduleTime, Time, AttachmentFile,Institute_id,Academic_year_id)
+                        VALUES (@EventName, @StartDate, @EndDate, @Description, @Location, @ScheduleDate, @ScheduleTime, @AttachmentFile,@Institute_id,@Academic_year_id);
                         SELECT SCOPE_IDENTITY();"
                             ; // Retrieve the inserted id
                         }
@@ -138,21 +140,23 @@ namespace Institute_API.Repository.Implementations
                     try
                     {
                         // Delete EventEmployeeMappings
-                        string deleteEmployeeMappingsQuery = @"
-                    DELETE FROM [dbo].[tbl_EventEmployeeMapping]
-                    WHERE Event_id = @eventId";
-                        await _connection.ExecuteAsync(deleteEmployeeMappingsQuery, new { eventId }, transaction);
+                        //    string deleteEmployeeMappingsQuery = @"
+                        //DELETE FROM [dbo].[tbl_EventEmployeeMapping]
+                        //WHERE Event_id = @eventId";
+                        //    await _connection.ExecuteAsync(deleteEmployeeMappingsQuery, new { eventId }, transaction);
 
-                        // Delete EventClassSessionMappings
-                        string deleteClassSessionMappingsQuery = @"
-                    DELETE FROM [dbo].[tbl_EventClassSessionMapping]
-                    WHERE Event_id = @eventId";
-                        await _connection.ExecuteAsync(deleteClassSessionMappingsQuery, new { eventId }, transaction);
+                        //    // Delete EventClassSessionMappings
+                        //    string deleteClassSessionMappingsQuery = @"
+                        //DELETE FROM [dbo].[tbl_EventClassSessionMapping]
+                        //WHERE Event_id = @eventId";
+                        //    await _connection.ExecuteAsync(deleteClassSessionMappingsQuery, new { eventId }, transaction);
 
-                        // Delete the event
-                        string deleteEventQuery = @"
-                    DELETE FROM [dbo].[tbl_CreateEvent]
-                    WHERE Event_id = @eventId";
+                        //    // Delete the event
+                        //    string deleteEventQuery = @"
+                        //DELETE FROM [dbo].[tbl_CreateEvent]
+                        //WHERE Event_id = @eventId";
+
+                        string deleteEventQuery = @"UPDATE tbl_CreateEvent SET isDelete = 1 WHERE Event_id = @eventId";
                         await _connection.ExecuteAsync(deleteEventQuery, new { eventId }, transaction);
 
                         // Commit the transaction if all delete operations succeed
@@ -180,7 +184,7 @@ namespace Institute_API.Repository.Implementations
             {
                 // Get event details from tbl_CreateEvent
                 string eventQuery = @"
-            SELECT Event_id,EventName,StartDate,EndDate,Description,Location,ScheduleTime,Time,AttachmentFile,isApproved,approvedBy
+            SELECT Event_id,EventName,StartDate,EndDate,Description,Location,ScheduleTime AS ScheduleDate,Time AS ScheduleTime,AttachmentFile,isApproved,approvedBy,Academic_year_id,YearName
             FROM tbl_CreateEvent
             WHERE Event_id = @EventId";
 
@@ -195,7 +199,7 @@ namespace Institute_API.Repository.Implementations
                 string employeeMappingsQuery = @"
             SELECT EventEmployeeMapping_id,
                    Event_id,
-                   Employee_id,
+                   tbl_EventEmployeeMapping.Employee_id,
                    CONCAT(tbl_EmployeeProfileMaster.First_Name, ' ', tbl_EmployeeProfileMaster.Last_Name) AS Employee_Name 
             FROM tbl_EventEmployeeMapping
             INNER JOIN tbl_EmployeeProfileMaster ON tbl_EmployeeProfileMaster.Employee_id = tbl_EventEmployeeMapping.Employee_id
@@ -205,10 +209,10 @@ namespace Institute_API.Repository.Implementations
 
                 // Get EventClassSessionMappings
                 string classSessionMappingsQuery = @"
-            SELECT EventClassSessionMapping_id,Event_id,Class_id,Section_id,class_course,Section
+            SELECT EventClassSessionMapping_id,Event_id,tbl_Class.Class_id,tbl_Section.Section_id,class_name,section_name
             FROM tbl_EventClassSessionMapping
-            INNER JOIN tbl_CourseClass ON tbl_CourseClass.CourseClass_id = Class_id
-            INNER JOIN tbl_CourseClassSection ON tbl_CourseClassSection.CourseClassSection_id = Section_id
+            INNER JOIN tbl_Class ON tbl_Class.class_id = tbl_EventClassSessionMapping.class_id
+            INNER JOIN tbl_Section ON tbl_Section.section_id = tbl_EventClassSessionMapping.section_id
             WHERE Event_id = @EventId";
 
                 var classSessionMappings = await _connection.QueryAsync<EventClassSessionMapping>(classSessionMappingsQuery, new { EventId = eventId });
@@ -248,11 +252,116 @@ namespace Institute_API.Repository.Implementations
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
-        public async Task<ServiceResponse<List<EventDTO>>> GetApprovedEvents()
+        public async Task<ServiceResponse<List<EventDTO>>> GetApprovedEvents(int Institute_id, int Academic_year_id, string sortColumn, string sortDirection, int? pageSize = null, int? pageNumber = null)
         {
             try
             {
-                string query = @"
+                // List of valid sortable columns
+                var validSortColumns = new Dictionary<string, string>
+{
+    { "EventName", "EventName" },
+    { "StartDate", "StartDate" },
+    { "EndDate", "EndDate" }
+};
+
+                // Ensure the sort column is valid, default to "EventName" if not
+                if (!validSortColumns.ContainsKey(sortColumn))
+                {
+                    sortColumn = "EventName";
+                }
+                else
+                {
+                    sortColumn = validSortColumns[sortColumn];
+                }
+
+                // Ensure sort direction is valid, default to "ASC" if not
+                sortDirection = sortDirection.ToUpper() == "DESC" ? "DESC" : "ASC";
+
+                // SQL queries
+                string queryAll = @"
+    SELECT Event_id,
+           EventName,
+           StartDate,
+           EndDate,
+           Description,
+           Location,
+           AttachmentFile
+    FROM tbl_CreateEvent 
+    WHERE  isApproved = 1 AND  isDelete = 0 AND Institute_id = @Institute_id AND (@Academic_year_id = 0 OR Academic_year_id=@Academic_year_id)";
+
+                string queryCount = @"
+    SELECT COUNT(*)
+    FROM tbl_CreateEvent 
+    WHERE  isApproved = 1 AND isDelete = 0 AND Institute_id = @Institute_id AND (@Academic_year_id = 0 OR Academic_year_id=@Academic_year_id)";
+
+                List<EventDTO> events;
+                int totalRecords = 0;
+
+                if (pageSize.HasValue && pageNumber.HasValue)
+                {
+                    int offset = (pageNumber.Value - 1) * pageSize.Value;
+
+                    // Build the paginated query with dynamic sorting
+                    string queryPaginated = $@"
+        {queryAll}
+        ORDER BY {sortColumn} {sortDirection}
+        OFFSET @Offset ROWS
+        FETCH NEXT @PageSize ROWS ONLY;
+
+        {queryCount}";
+
+                    using (var multi = await _connection.QueryMultipleAsync(queryPaginated, new { Offset = offset, PageSize = pageSize, Institute_id= Institute_id, Academic_year_id= Academic_year_id }))
+                    {
+                        events = multi.Read<EventDTO>().ToList();
+                        totalRecords = multi.ReadSingle<int>();
+                    }
+
+                    return new ServiceResponse<List<EventDTO>>(true, "Approved events retrieved successfully", events, 200, totalRecords);
+                }
+                else
+                {
+                    // No pagination, return all records with sorting
+                    string querySorted = $@"
+        {queryAll}
+        ORDER BY {sortColumn} {sortDirection}";
+
+                    events = (await _connection.QueryAsync<EventDTO>(querySorted, new { Institute_id })).ToList();
+                    return new ServiceResponse<List<EventDTO>>(true, "All approved events retrieved successfully", events, 200);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<EventDTO>>(false, ex.Message, null, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<List<EventDTO>>> GetAllEvents(int Institute_id, int Academic_year_id, string sortColumn, string sortDirection, int? pageSize = null, int? pageNumber = null)
+        {
+            try
+            {
+                // List of valid sortable columns
+                var validSortColumns = new Dictionary<string, string>
+        {
+            { "EventName", "EventName" },
+            { "StartDate", "StartDate" },
+            { "EndDate", "EndDate" }
+        };
+
+                // Ensure the sort column is valid, default to "EventName" if not
+                if (!validSortColumns.ContainsKey(sortColumn))
+                {
+                    sortColumn = "EventName";
+                }
+                else
+                {
+                    sortColumn = validSortColumns[sortColumn];
+                }
+
+                // Ensure sort direction is valid, default to "ASC" if not
+                sortDirection = sortDirection.ToUpper() == "DESC" ? "DESC" : "ASC";
+
+                // SQL queries
+                string queryAll = @"
             SELECT Event_id,
                    EventName,
                    StartDate,
@@ -260,12 +369,48 @@ namespace Institute_API.Repository.Implementations
                    Description,
                    Location,
                    AttachmentFile
-            FROM tbl_CreateEvent
-            WHERE isApproved = 1";
+            FROM tbl_CreateEvent 
+            WHERE isDelete = 0 AND Institute_id = @Institute_id AND (@Academic_year_id = 0 OR Academic_year_id=@Academic_year_id)";
 
-                var events = await _connection.QueryAsync<EventDTO>(query);
+                string queryCount = @"
+            SELECT COUNT(*)
+            FROM tbl_CreateEvent 
+            WHERE isDelete = 0 AND Institute_id = @Institute_id AND (@Academic_year_id = 0 OR Academic_year_id=@Academic_year_id)";
 
-                return new ServiceResponse<List<EventDTO>>(true, "Approved events retrieved successfully", events.ToList(), 200);
+                List<EventDTO> events;
+                int totalRecords = 0;
+
+                if (pageSize.HasValue && pageNumber.HasValue)
+                {
+                    int offset = (pageNumber.Value - 1) * pageSize.Value;
+
+                    // Build the paginated query with dynamic sorting
+                    string queryPaginated = $@"
+                {queryAll}
+                ORDER BY {sortColumn} {sortDirection}
+                OFFSET @Offset ROWS
+                FETCH NEXT @PageSize ROWS ONLY;
+
+                {queryCount}";
+
+                    using (var multi = await _connection.QueryMultipleAsync(queryPaginated, new { Offset = offset, PageSize = pageSize, Institute_id = Institute_id, Academic_year_id = Academic_year_id }))
+                    {
+                        events = multi.Read<EventDTO>().ToList();
+                        totalRecords = multi.ReadSingle<int>();
+                    }
+
+                    return new ServiceResponse<List<EventDTO>>(true, "Approved events retrieved successfully", events, 200, totalRecords);
+                }
+                else
+                {
+                    // No pagination, return all records with sorting
+                    string querySorted = $@"
+                {queryAll}
+                ORDER BY {sortColumn} {sortDirection}";
+
+                    events = (await _connection.QueryAsync<EventDTO>(querySorted, new { Institute_id })).ToList();
+                    return new ServiceResponse<List<EventDTO>>(true, "All approved events retrieved successfully", events, 200);
+                }
             }
             catch (Exception ex)
             {

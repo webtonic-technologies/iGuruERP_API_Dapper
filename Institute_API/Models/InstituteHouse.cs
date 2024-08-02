@@ -9,5 +9,6 @@ namespace Institute_API.Models
         public string HouseColor { get; set; } = string.Empty;
         public string FileName { get; set; } = string.Empty;
         public DateTime? en_date {  get; set; }
+        public bool IsDeleted {  get; set; }
     }
 }

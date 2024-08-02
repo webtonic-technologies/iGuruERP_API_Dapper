@@ -1,10 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Student_API.DTOs;
+using Student_API.DTOs.RequestDTO;
 using Student_API.Services.Interfaces;
 
 namespace Student_API.Controllers
 {
-    [Route("iGuru/[controller]")]
+    [Route("iGuru/UpdateStudentDocument/[controller]")]
     [ApiController]
     public class DocumentConfigController : ControllerBase
     {
@@ -14,8 +16,8 @@ namespace Student_API.Controllers
             _documentConfigService = documentConfigService;
         }
 
-        [HttpPost]
-        public async Task<IActionResult> AddUpdateStudentDocument(StudentDocumentConfigDTO studentDocumentDto)
+        [HttpPost("AddUpdateDocument")]
+        public async Task<IActionResult> AddUpdateStudentDocument(List<StudentDocumentConfigDTO> studentDocumentDto)
         {
             try
             {
@@ -28,7 +30,7 @@ namespace Student_API.Controllers
             }
         }
 
-        [HttpGet("{documentConfigId}")]
+        [HttpGet("GetByIDStudentDocument/{documentConfigId}")]
         public async Task<IActionResult> GetStudentDocumentConfigById(int documentConfigId)
         {
             try
@@ -42,7 +44,7 @@ namespace Student_API.Controllers
             }
         }
 
-        [HttpDelete("{studentDocumentId}")]
+        [HttpDelete("DeleteByIDStudentDocument/{studentDocumentId}")]
         public async Task<IActionResult> DeleteStudentDocument(int studentDocumentId)
         {
             try
@@ -56,12 +58,14 @@ namespace Student_API.Controllers
             }
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAllStudentDocuments([FromQuery] int? pageSize = null, [FromQuery] int? pageNumber = null)
+        [HttpPost("GetAllStudentDocumentList")]
+        public async Task<IActionResult> GetAllStudentDocuments(GetCommonRequestPageListModel obj )
         {
             try
             {
-                var response = await _documentConfigService.GetAllStudentDocuments(pageSize, pageNumber);
+                obj.sortField = obj.sortField?? "Document_Name";
+                obj.sortDirection = obj.sortDirection ?? "ASC";
+                var response = await _documentConfigService.GetAllStudentDocuments(obj.Institute_id,obj.sortField, obj.sortDirection, obj.pageSize, obj.pageNumber);
                 return StatusCode(response.StatusCode, response);
             }
             catch (Exception e)

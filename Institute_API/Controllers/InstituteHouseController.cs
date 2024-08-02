@@ -37,13 +37,51 @@ namespace Institute_API.Controllers
             }
 
         }
-
-        [HttpGet("GetInstituteHouseById/{id}")]
-        public async Task<IActionResult> GetInstituteHouseList(int id)
+        [HttpPost("GetInstituteHouse")]
+        public async Task<IActionResult> GetInstituteHouseList(GetInstituteHouseList request)
         {
             try
             {
-                var data = await _instituteHouseServices.GetInstituteHouseList(id);
+                var data = await _instituteHouseServices.GetInstituteHouseList(request);
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+        [HttpGet("GetInstituteHouseById/{instituteHouseId}")]
+        public async Task<IActionResult> GetInstituteHouseById(int instituteHouseId)
+        {
+            try
+            {
+                var data = await _instituteHouseServices.GetInstituteHouseById(instituteHouseId);
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+        [HttpDelete("DeleteInstituteHouse/{instituteHouseId}")]
+        public async Task<IActionResult> DeleteInstituteHouse(int instituteHouseId)
+        {
+            try
+            {
+                var data = await _instituteHouseServices.SoftDeleteInstituteHouse(instituteHouseId);
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+        [HttpDelete("DeleteInstituteHouseImage/{instituteHouseId}")]
+        public async Task<IActionResult> DeleteInstituteHouseImage(int instituteHouseId)
+        {
+            try
+            {
+                var data = await _instituteHouseServices.DeleteInstituteHouseImage(instituteHouseId);
                 return Ok(data);
             }
             catch (Exception ex)

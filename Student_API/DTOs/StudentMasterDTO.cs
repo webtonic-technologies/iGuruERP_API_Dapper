@@ -31,7 +31,7 @@ namespace Student_API.DTOs
         public DateTime? Date_of_Birth { get; set; }
         [Required]
         public int? Mother_Tongue_id { get; set; }
-        [MaxLength(20)]
+
         public int? Caste_id { get; set; }
         public string First_Language { get; set; }
         public string Second_Language { get; set; }
@@ -43,15 +43,15 @@ namespace Student_API.DTOs
         public string Aadhar_Number { get; set; }
         public string NEP { get; set; }
         public string QR_code { get; set; }
-        public bool IsPhysicallyChallenged {  get; set; }   
-        public bool IsSports {  get; set; }   
-        public bool IsAided {  get; set; }   
-        public bool IsNCC {  get; set; }   
-        public bool IsNSS {  get; set; }   
-        public bool IsScout {  get; set; }   
-        public string? File_Name {  get; set; }   
-        public int Institute_id {  get; set; }      
-      
+        public bool IsPhysicallyChallenged { get; set; }
+        public bool IsSports { get; set; }
+        public bool IsAided { get; set; }
+        public bool IsNCC { get; set; }
+        public bool IsNSS { get; set; }
+        public bool IsScout { get; set; }
+        public string? File_Name { get; set; }
+        public int Institute_id { get; set; }
+
         //public string Base64File { get; set; }    
 
     }
@@ -61,19 +61,17 @@ namespace Student_API.DTOs
         public int Student_Other_Info_id { get; set; }
         public int student_id { get; set; }
         public int? StudentType_id { get; set; }
-        public string? Student_Type_Name {  get; set; }
+        public string? Student_Type_Name { get; set; }
         [MaxLength(50)]
         public string email_id { get; set; }
-        public string Hall_Ticket_Number { get; set; }
-        public int? Exam_Board_id { get; set; }
-        public string? Exam_Board_Type { get; set; }
+        
         [MaxLength(30)]
         public string Identification_Mark_1 { get; set; }
         [MaxLength(30)]
         public string Identification_Mark_2 { get; set; }
         public DateTime? Admission_Date { get; set; }
-        public int? Student_Group_id { get; set; }
-        public string? Student_Group_Type { get; set; }
+        //public int? Student_House_id { get; set; }
+        //public string? HouseName { get; set; }
         public DateTime? Register_Date { get; set; }
         [MaxLength(30)]
         public string Register_Number { get; set; }
@@ -85,13 +83,14 @@ namespace Student_API.DTOs
         public string comments { get; set; }
         [MaxLength(30)]
         public string language_known { get; set; }
-       
+
     }
     public class StudentParentInfoDTO
     {
         public int Student_Parent_Info_id { get; set; }
         public int Student_id { get; set; }
         public int Parent_Type_id { get; set; }
+        public string parent_type {  get; set; }    
         [MaxLength(30)]
         public string First_Name { get; set; }
         [MaxLength(30)]
@@ -108,15 +107,13 @@ namespace Student_API.DTOs
         public string Family_Ration_Card_Type { get; set; }
         [MaxLength(30)]
         public string Family_Ration_Card_no { get; set; }
-        [MaxLength(20)]
-        public string Mobile_Number { get; set; }
         public DateTime Date_of_Birth { get; set; }
         [MaxLength(20)]
         public string Aadhar_no { get; set; }
         [MaxLength(30)]
         public string PAN_card_no { get; set; }
         [MaxLength(30)]
-        public string Residential_Address { get; set; } 
+        public string Residential_Address { get; set; }
         public int Occupation_id { get; set; }
         [MaxLength(30)]
         public string Designation { get; set; }
@@ -126,13 +123,13 @@ namespace Student_API.DTOs
         public string Office_no { get; set; }
         [MaxLength(30)]
         public string Email_id { get; set; }
-        [MaxLength(30)]
+
         public decimal Annual_Income { get; set; }
         public string File_Name { get; set; }
 
         [MaxLength(30)]
-        public string? Occupation_Type {  get; set; }    
-        public StudentParentOfficeInfo studentParentOfficeInfo { get; set; }    
+        public string? Occupation_Type { get; set; }
+        public StudentParentOfficeInfo studentParentOfficeInfo { get; set; }
     }
 
     public class StudentParentOfficeInfo
@@ -146,10 +143,12 @@ namespace Student_API.DTOs
         public string Street { get; set; }
         [MaxLength(30)]
         public string Area { get; set; }
-        [MaxLength(30)]
-        public string City { get; set; }
-        [MaxLength(30)]
-        public string State { get; set; }
+
+        public int City_id { get; set; }
+        public string city_name { get; set; }
+
+        public int State_id { get; set; }
+        public string state_name { get; set; }
         [MaxLength(30)]
         public string Pincode { get; set; }
     }
@@ -207,9 +206,9 @@ namespace Student_API.DTOs
         public string Doctor_Name { get; set; }
         [MaxLength(50)]
         public string Doctor_Phone_no { get; set; }
-        [MaxLength(50)]
+
         public float height { get; set; }
-        [MaxLength(50)]
+
         public float weight { get; set; }
         [MaxLength(50)]
         public string Government_ID { get; set; }
@@ -242,7 +241,7 @@ namespace Student_API.DTOs
         public string History_Majorillness { get; set; }
         [MaxLength(50)]
         public string History_Accident { get; set; }
-        [MaxLength(50)]
+
         public decimal? Vision { get; set; }
         [MaxLength(50)]
         public string Hearing { get; set; }
@@ -256,7 +255,6 @@ namespace Student_API.DTOs
         public string Student_Name { get; set; }
         [Range(0, 99)]
         public int Student_Age { get; set; }
-        [MaxLength(5)]
-        public int Admission_Status { get; set; }
+
     }
 }
