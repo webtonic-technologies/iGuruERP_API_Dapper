@@ -94,8 +94,103 @@ namespace Institute_API.Repository.Implementations
                 }
             }
         }
+        public async Task<ServiceResponse<List<SubjectType>>> GetSubjectTypeList()
+        {
+            try
+            {
+                string sql = "SELECT subject_type_id, subject_type FROM tbl_SubjectTypeMaster";
 
+                // Execute the query and retrieve the subject types
+                var subjectTypes = await _connection.QueryAsync<SubjectType>(sql);
 
+                // Check if any subject types were found
+                if (!subjectTypes.Any())
+                {
+                    return new ServiceResponse<List<SubjectType>>(false, "No subject types found", new List<SubjectType>(), 204);
+                }
+
+                return new ServiceResponse<List<SubjectType>>(true, "Subject types retrieved successfully", subjectTypes.ToList(), 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<SubjectType>>(false, ex.Message, new List<SubjectType>(), 500);
+            }
+        }
+        public async Task<ServiceResponse<SubjectType>> GetSubjectTypeById(int subjectTypeId)
+        {
+            try
+            {
+                string sql = "SELECT subject_type_id, subject_type FROM tbl_SubjectTypeMaster WHERE subject_type_id = @SubjectTypeId";
+
+                // Execute the query and retrieve the subject type
+                var subjectType = await _connection.QuerySingleOrDefaultAsync<SubjectType>(sql, new { SubjectTypeId = subjectTypeId });
+
+                // Check if the subject type was found
+                if (subjectType == null)
+                {
+                    return new ServiceResponse<SubjectType>(false, "Subject type not found", null, 404);
+                }
+
+                return new ServiceResponse<SubjectType>(true, "Subject type retrieved successfully", subjectType, 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<SubjectType>(false, ex.Message, null, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<string>> AddUpdateSubjectType(SubjectType request)
+        {
+            if (_connection.State != ConnectionState.Open)
+            {
+                 _connection.Open();
+            }
+            using (var connection = _connection)
+            {
+                using (var transaction = connection.BeginTransaction())
+                {
+                    try
+                    {
+                        // Check if the subject type already exists
+                        string upsertSubjectTypeSql = @"
+                IF EXISTS (SELECT 1 FROM tbl_SubjectTypeMaster WHERE subject_type_id = @SubjectTypeId)
+                BEGIN
+                    UPDATE tbl_SubjectTypeMaster
+                    SET subject_type = @subject_type
+                    WHERE subject_type_id = @SubjectTypeId
+                END
+                ELSE
+                BEGIN
+                    INSERT INTO tbl_SubjectTypeMaster (subject_type)
+                    VALUES (@subject_type);
+                END";
+
+                        // Prepare parameters
+                        var parameters = new
+                        {
+                            SubjectTypeId = request.subject_type_id > 0 ? request.subject_type_id : (int?)null,
+                            subject_type = request.subject_type
+                        };
+
+                        // Execute the upsert query
+                        await connection.ExecuteAsync(upsertSubjectTypeSql, parameters, transaction);
+
+                        // Commit transaction
+                        transaction.Commit();
+                        return new ServiceResponse<string>(true, "Subject type added/updated successfully.", "Operation successful", 200);
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
+                    }
+                    finally
+                    {
+                        connection.Close();
+                    }
+                }
+            }
+        }
         //public async Task<ServiceResponse<string>> AddUpdateAcademicConfigSubject(SubjectRequest request)
         //{
         //    if (_connection.State != ConnectionState.Open)

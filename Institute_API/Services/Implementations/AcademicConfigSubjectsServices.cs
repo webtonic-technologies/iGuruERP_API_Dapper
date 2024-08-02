@@ -26,6 +26,18 @@ namespace Institute_API.Services.Implementations
             }
         }
 
+        public async Task<ServiceResponse<string>> AddUpdateSubjectType(SubjectType request)
+        {
+            try
+            {
+                return await _academicConfigSubjectsRepository.AddUpdateSubjectType(request);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
+            }
+        }
+
         public async Task<ServiceResponse<string>> DeleteAcademicConfigSubject(int SubjectId)
         {
             try
@@ -59,6 +71,30 @@ namespace Institute_API.Services.Implementations
             catch (Exception ex)
             {
                 return new ServiceResponse<List<SubjectResponse>>(false, ex.Message, [], 500);
+            }
+        }
+
+        public async Task<ServiceResponse<SubjectType>> GetSubjectTypeById(int subjectTypeId)
+        {
+            try
+            {
+                return await _academicConfigSubjectsRepository.GetSubjectTypeById(subjectTypeId);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<SubjectType>(false, ex.Message, new SubjectType(), 500);
+            }
+        }
+
+        public async Task<ServiceResponse<List<SubjectType>>> GetSubjectTypeList()
+        {
+            try
+            {
+                return await _academicConfigSubjectsRepository.GetSubjectTypeList();
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<SubjectType>>(false, ex.Message, [], 500);
             }
         }
     }

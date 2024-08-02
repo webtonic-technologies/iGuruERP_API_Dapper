@@ -55,4 +55,9 @@
         public int ClassId {  get; set; }
         public int SectionId {  get; set; }
     }
+    public class SubjectType
+    {
+        public int subject_type_id { get; set; }
+        public string subject_type { get; set; } = string.Empty;
+    }
 }

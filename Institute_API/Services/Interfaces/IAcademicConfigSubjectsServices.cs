@@ -9,5 +9,8 @@ namespace Institute_API.Services.Interfaces
         Task<ServiceResponse<string>> DeleteAcademicConfigSubject(int SubjectId);
         Task<ServiceResponse<SubjectResponse>> GetAcademicConfigSubjectById(int SubjectId);
         Task<ServiceResponse<List<SubjectResponse>>> GetAcademicConfigSubjectList(GetAllSubjectRequest request);
+        Task<ServiceResponse<string>> AddUpdateSubjectType(SubjectType request);
+        Task<ServiceResponse<List<SubjectType>>> GetSubjectTypeList();
+        Task<ServiceResponse<SubjectType>> GetSubjectTypeById(int subjectTypeId);
     }
 }
