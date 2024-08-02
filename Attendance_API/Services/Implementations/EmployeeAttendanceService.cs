@@ -34,5 +34,9 @@ namespace Attendance_API.Services.Implementations
         {
             return await _employeeAttendanceRepository.DeleteEmployeeAttendanceMaster(employeeAttendanceId);
         }
+        public async Task<ServiceResponse<dynamic>> GetEmployeeAttendanceReport(EmployeeAttendanceReportRequestDTO request)
+        {
+            return await _employeeAttendanceRepository.GetEmployeeAttendanceReport(request);
+        }
     }
 }
