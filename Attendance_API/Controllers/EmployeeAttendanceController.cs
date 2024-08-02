@@ -38,5 +38,12 @@ namespace Attendance_API.Controllers
             var res = await _employeeAttendanceService.DeleteEmployeeAttendanceMaster(employeeAttendanceId);
             return Ok(res);
         }
+
+        [HttpPost("GetEmployeeAttendanceReport")]
+        public async Task<IActionResult> GetEmployeeAttendanceReport(EmployeeAttendanceReportRequestDTO request)
+        {
+            var res = await _employeeAttendanceService.GetEmployeeAttendanceReport(request);
+            return Ok(res);
+        }
     }
 }

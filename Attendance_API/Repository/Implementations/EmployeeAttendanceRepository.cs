@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Attendance_API.DTOs;
 using Attendance_API.DTOs.ServiceResponse;
@@ -44,7 +45,7 @@ namespace Attendance_API.Repository.Implementations
                          $"where epm.Department_id = {request.Department_id}";
             var countRes = await _connection.QueryAsync<long>(sql);
             var count = countRes.FirstOrDefault();
-            return new ServiceResponse<EmployeeAttendanceMasterResponseDTO>(true, "Operation successful", new EmployeeAttendanceMasterResponseDTO{ Data = result.ToList(), Total = count }, 200);
+            return new ServiceResponse<EmployeeAttendanceMasterResponseDTO>(true, "Operation successful", new EmployeeAttendanceMasterResponseDTO { Data = result.ToList(), Total = count }, 200);
         }
 
         public async Task<ServiceResponse<EmployeeAttendanceMasterDTO>> InsertOrUpdateEmployeeAttendanceMaster(EmployeeAttendanceMasterDTO employeeAttendanceMaster)
@@ -84,6 +85,106 @@ namespace Attendance_API.Repository.Implementations
             await _connection.ExecuteAsync(deleteSql, new { Employee_Attendance_Master_id = employeeAttendanceId });
 
             return new ServiceResponse<bool>(true, "Operation successful", true, 200);
+        }
+        public async Task<ServiceResponse<dynamic>> GetEmployeeAttendanceReport(EmployeeAttendanceReportRequestDTO request)
+        {
+            try
+            {
+                var query = @"DECLARE @cols AS NVARCHAR(MAX);
+DECLARE @query AS NVARCHAR(MAX);
+
+-- Generate a list of all dates between StartDate and EndDate
+WITH DateList AS (
+    SELECT @StartDate AS Date
+    UNION ALL
+    SELECT DATEADD(DAY, 1, Date)
+    FROM DateList
+    WHERE Date < @EndDate
+)
+SELECT @cols = STRING_AGG(QUOTENAME(CONVERT(VARCHAR, Date, 23)), ', ')
+FROM DateList;
+
+SET @query = '
+DECLARE @TotalDays INT;
+
+SET @TotalDays = DATEDIFF(DAY, @StartDate, @EndDate);
+WITH DateList AS (
+    SELECT @StartDate AS Date
+    UNION ALL
+    SELECT DATEADD(DAY, 1, Date)
+    FROM DateList
+    WHERE Date < @EndDate
+),
+AttendanceData AS (
+    SELECT 
+        e.Employee_id,
+        e.First_Name + '' '' + e.Last_Name AS Employee_Name,
+        e.mobile_number,
+        d.Date,
+        ISNULL(
+            CASE 
+                WHEN a.isHoliday = 1 THEN ''H'' 
+                ELSE ast.Short_Name 
+            END, 
+            ''-''
+        ) AS Status,
+        @TotalDays - SUM(CASE WHEN a.isHoliday = 1 THEN 1 ELSE 0 END) OVER (PARTITION BY e.Employee_id) AS WorkingDays,
+        SUM(CASE WHEN a.isHoliday = 0 AND ast.Short_Name = ''P'' THEN 1 ELSE 0 END) OVER (PARTITION BY e.Employee_id) AS Present,
+        SUM(CASE WHEN a.isHoliday = 0 AND ast.Short_Name = ''A'' THEN 1 ELSE 0 END) OVER (PARTITION BY e.Employee_id) AS Absent,
+		  ROUND(CAST(SUM(CASE 
+                WHEN a.isHoliday = 0 AND ast.Short_Name = ''P'' THEN ts.[value]
+                ELSE 0 
+            END) OVER (PARTITION BY e.Employee_id) AS FLOAT) 
+              / NULLIF(COUNT(*) OVER (PARTITION BY e.Employee_id) - SUM(CASE WHEN a.isHoliday = 1 THEN 1 ELSE 0 END) OVER (PARTITION BY e.Employee_id), 0) * 100, 2) AS AttendancePercentage
+       
+    FROM 
+        DateList d
+    LEFT JOIN 
+        tbl_EmployeeAttendanceMaster a ON d.Date = a.Date
+    LEFT JOIN 
+        tbl_EmployeeProfileMaster e ON a.Employee_id = e.Employee_id
+    LEFT JOIN 
+        tbl_EmployeeAttendanceStatusMaster ast ON a.Employee_Attendance_Status_id = ast.Employee_Attendance_Status_id
+	LEFT JOIN
+        tbl_timeslot ts ON a.TimeSlot_id = ts.id
+    WHERE 
+        d.Date BETWEEN @StartDate AND @EndDate
+)
+SELECT 
+    Employee_id,
+    Employee_Name,
+    mobile_number,
+    WorkingDays,
+    Present,
+    Absent,
+    AttendancePercentage,
+    ' + @cols + '
+FROM 
+    AttendanceData
+PIVOT (
+    MAX(Status) 
+    FOR Date IN (' + @cols + ')
+) AS PivotTable
+WHERE Employee_id IS NOT NULL
+ORDER BY 
+    Employee_Name;
+';
+
+EXEC sp_executesql @query, N'@StartDate DATE, @EndDate DATE', @StartDate, @EndDate;";
+
+                var parameters = new { StartDate = request.StartDate, EndDate = request.EndDate };
+
+                // Execute the query and fetch the result
+                var result = await _connection.QueryAsync<dynamic>(query, parameters);
+                //var resultJson = JsonSerializer.Deserialize<dynamic>(result);
+
+
+                return new ServiceResponse<dynamic>(true, "Operation successful", result, 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<dynamic>(false, $"Error: {ex.Message}", null, 500);
+            }
         }
     }
 }
