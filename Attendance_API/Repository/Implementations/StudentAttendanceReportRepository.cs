@@ -73,7 +73,7 @@ namespace Attendance_API.Repository.Implementations
         LEFT JOIN 
             tbl_StudentAttendanceStatus ast ON a.Student_Attendance_Status_id = ast.Student_Attendance_Status_id
         WHERE 
-            isDatewise = 1 AND d.Date BETWEEN @StartDate AND @EndDate AND (@class_id = 0 OR s.class_id = @class_id) AND  (@section_id = 0 OR s.section_id = @section_id)
+            isDatewise = 1 AND d.Date BETWEEN @StartDate AND @EndDate AND (@class_id = 0 OR s.class_id = @class_id) AND  (@section_id = 0 OR s.section_id = @section_id) AND (@institute_id = 0 OR s.institute_id = @institute_id)
     )
    
             SELECT 
@@ -96,10 +96,10 @@ namespace Attendance_API.Repository.Implementations
             ORDER BY 
                 Roll_Number;'; 
 
-    EXEC sp_executesql @query,   N'@StartDate DATE, @EndDate DATE, @class_id INT, @section_id INT', 
-    @StartDate, @EndDate, @class_id, @section_id;";
+    EXEC sp_executesql @query,   N'@StartDate DATE, @EndDate DATE, @class_id INT, @section_id INT, @institute_id INT', 
+    @StartDate, @EndDate, @class_id, @section_id, @institute_id;";
                     // Parameters for the query
-                    var parameters = new { StartDate = request.StartDate, EndDate = request.EndDate , section_id  = request.section_id , class_id  = request.class_id};
+                    var parameters = new { StartDate = request.StartDate, EndDate = request.EndDate , section_id  = request.section_id , class_id  = request.class_id, institute_id = request.instituteId};
 
                     // Execute the query and fetch the result
                     var result = await _connection.QueryAsync<dynamic>(query, parameters);

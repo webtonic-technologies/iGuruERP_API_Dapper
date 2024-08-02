@@ -14,7 +14,7 @@ namespace Attendance_API.Repository.Implementations
         {
             _connection = connection;
         }
-        public async Task<ServiceResponse<AttendanceStatisticsDTO>> GetAttendanceStatistics(int academicYearId, int classId, int sectionId, int subjectId)
+        public async Task<ServiceResponse<AttendanceStatisticsDTO>> GetAttendanceStatistics(int academicYearId, int classId, int sectionId, int subjectId, int instituteId)
         {
             try
             {
@@ -44,7 +44,8 @@ namespace Attendance_API.Repository.Implementations
                                     AND (SELECT Enddate FROM tbl_AcademicYear WHERE Id = @AcademicYearId)
                     AND(@ClassId = 0 OR  sm.class_id = @ClassId)
                     AND (@SectionId = 0 OR sm.section_id = @SectionId)
-                    AND (@subjectId = 0 OR sa.Subject_id = @subjectId);
+                    AND (@subjectId = 0 OR sa.Subject_id = @subjectId)
+                    AND (@instituteId = 0 OR sm.institute_id = @instituteId);
                 
                 -- Calculate TotalWorkingDays
                 SELECT @TotalWorkingDays = COUNT(DISTINCT Date)
@@ -95,7 +96,8 @@ namespace Attendance_API.Repository.Implementations
                     AcademicYearId = academicYearId,
                     ClassId = classId,
                     SectionId = sectionId,
-                    subjectId = subjectId
+                    subjectId = subjectId,
+                    instituteId = instituteId
                 };
 
                 // Execute the query and retrieve the result
@@ -116,7 +118,7 @@ namespace Attendance_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<MonthlyAttendanceAnalysisDTO>>> GetMonthlyAttendanceAnalysis(int academicYearId, int classId, int sectionId,int subjectId)
+        public async Task<ServiceResponse<List<MonthlyAttendanceAnalysisDTO>>> GetMonthlyAttendanceAnalysis(int academicYearId, int classId, int sectionId,int subjectId, int instituteId)
         {
             try
             {
@@ -136,7 +138,7 @@ namespace Attendance_API.Repository.Implementations
                 ORDER BY YEAR(sa.Date), MONTH(sa.Date)  AND (@subjectId = 0 OR sa.Subject_id = @subjectId);";
 
                 // Parameters for the query
-                var parameters = new { AcademicYearId = academicYearId, ClassId = classId, SectionId = sectionId , subjectId = subjectId };
+                var parameters = new { AcademicYearId = academicYearId, ClassId = classId, SectionId = sectionId , subjectId = subjectId, instituteId = instituteId };
 
                 // Execute the query and fetch the result
                 var result = await _connection.QueryAsync<MonthlyAttendanceAnalysisDTO>(query, parameters);
@@ -149,7 +151,7 @@ namespace Attendance_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<MonthlyAttendanceAnalysisDTO>>> GetAttendanceRangeAnalysis(int academicYearId, int classId, int sectionId,int subjectId)
+        public async Task<ServiceResponse<List<MonthlyAttendanceAnalysisDTO>>> GetAttendanceRangeAnalysis(int academicYearId, int classId, int sectionId,int subjectId, int instituteId)
         {
             try
             {
@@ -181,13 +183,14 @@ namespace Attendance_API.Repository.Implementations
                         AND (@subjectId = 0 OR sa.Subject_id = @subjectId)
                         AND sa.Date BETWEEN (SELECT Startdate FROM tbl_AcademicYear WHERE Id = @AcademicYearId)
                                         AND (SELECT Enddate FROM tbl_AcademicYear WHERE Id = @AcademicYearId)
+                        AND (@instituteId = 0 OR s.institute_id = @instituteId)
                     GROUP BY sa.Student_id
                 ) AS ad ON ad.AttendancePercentage >= ar.MinPercentage AND ad.AttendancePercentage <= ar.MaxPercentage
                 GROUP BY ar.AttendanceRange
                 ORDER BY ar.AttendanceRange DESC";
 
                 // Parameters for the query
-                var parameters = new { AcademicYearId = academicYearId, ClassId = classId, SectionId = sectionId, subjectId= subjectId };
+                var parameters = new { AcademicYearId = academicYearId, ClassId = classId, SectionId = sectionId, subjectId= subjectId, instituteId = instituteId };
 
                 // Execute the query and fetch the result
                 var result = await _connection.QueryAsync<MonthlyAttendanceAnalysisDTO>(query, parameters);
@@ -200,7 +203,7 @@ namespace Attendance_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<StudentAttendanceAnalysisDTO>>> GetStudentAttendanceAnalysis(int academicYearId, int classId, int sectionId, int subjectId)
+        public async Task<ServiceResponse<List<StudentAttendanceAnalysisDTO>>> GetStudentAttendanceAnalysis(int academicYearId, int classId, int sectionId, int subjectId, int instituteId)
         {
             try
             {
@@ -237,12 +240,13 @@ WHERE
     a.Date BETWEEN @StartDate AND @EndDate  AND ISNULL(isDatewise ,0) = 0
 	AND (@class_id = 0 OR s.class_id = @class_id) 
     AND (@section_id = 0 OR s.section_id = @section_id)   AND (@subjectId = 0 OR sa.Subject_id = @subjectId)
+    AND (@instituteId = 0 OR s.institute_id = @instituteId)
 GROUP BY 
     s.Admission_Number,
     s.First_Name;";
 
                 // Parameters for the query
-                var parameters = new { AcademicYearId = academicYearId, class_id = classId, section_id = sectionId, subjectId= subjectId };
+                var parameters = new { AcademicYearId = academicYearId, class_id = classId, section_id = sectionId, subjectId= subjectId, instituteId = instituteId };
 
                 // Execute the query and fetch the result
                 var result = await _connection.QueryAsync<StudentAttendanceAnalysisDTO>(query, parameters);
@@ -255,7 +259,7 @@ GROUP BY
             }
         }
 
-        public async Task<ServiceResponse<List<StudentDayWiseAttendanceDTO>>> GetStudentDayWiseAttendanceAnalysis(int academicYearId, int classId, int sectionId, int subjectId)
+        public async Task<ServiceResponse<List<StudentDayWiseAttendanceDTO>>> GetStudentDayWiseAttendanceAnalysis(int academicYearId, int classId, int sectionId, int subjectId, int instituteId)
         {
             try
             {
@@ -297,6 +301,7 @@ SELECT
               AND ast.Short_Name = 'P' -- Filter for present status
               AND (@class_id = 0 OR s.class_id = @class_id)
               AND (@section_id = 0 OR s.section_id = @section_id)   AND (@subjectId = 0 OR sa.Subject_id = @subjectId)
+              AND (@instituteId = 0 OR s.institute_id = @instituteId)
         ), 
         0
     ) AS PresentCount
@@ -307,7 +312,7 @@ ORDER BY
 ";
 
                 // Parameters for the query
-                var parameters = new { AcademicYearId = academicYearId, class_id = classId, section_id = sectionId , subjectId = subjectId };
+                var parameters = new { AcademicYearId = academicYearId, class_id = classId, section_id = sectionId , subjectId = subjectId, instituteId = instituteId };
 
                 // Execute the query and fetch the result
                 var result = await _connection.QueryAsync<StudentDayWiseAttendanceDTO>(query, parameters);

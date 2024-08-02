@@ -149,6 +149,7 @@ AttendanceData AS (
         tbl_timeslot ts ON a.TimeSlot_id = ts.id
     WHERE 
         d.Date BETWEEN @StartDate AND @EndDate
+ AND (@InstituteId = 0 OR e.institute_id = @InstituteId)
 )
 SELECT 
     Employee_id,
@@ -170,9 +171,9 @@ ORDER BY
     Employee_Name;
 ';
 
-EXEC sp_executesql @query, N'@StartDate DATE, @EndDate DATE', @StartDate, @EndDate;";
+EXEC sp_executesql @query, N'@StartDate DATE, @EndDate DATE , @InstituteId', @StartDate, @EndDate,@InstituteId;";
 
-                var parameters = new { StartDate = request.StartDate, EndDate = request.EndDate };
+                var parameters = new { StartDate = request.StartDate, EndDate = request.EndDate, InstituteId = request.instituteId };
 
                 // Execute the query and fetch the result
                 var result = await _connection.QueryAsync<dynamic>(query, parameters);

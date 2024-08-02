@@ -1,9 +1,9 @@
 ﻿using Attendance_API.DTOs;
 using Attendance_API.DTOs.ServiceResponse;
 
-namespace Attendance_API.Repository.Interfaces
+namespace Attendance_API.Services.Interfaces
 {
-    public interface ISubjectAttendanceAnalysisRepo
+    public interface ISubjectAttendanceAnalysisService
     {
         Task<ServiceResponse<AttendanceStatisticsDTO>> GetAttendanceStatistics(int academicYearId, int classId, int sectionId, int subjectId, int instituteId);
         Task<ServiceResponse<List<MonthlyAttendanceAnalysisDTO>>> GetMonthlyAttendanceAnalysis(int academicYearId, int classId, int sectionId, int subjectId, int instituteId);
