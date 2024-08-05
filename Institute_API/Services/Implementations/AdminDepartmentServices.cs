@@ -1,4 +1,5 @@
-﻿using Institute_API.DTOs.ServiceResponse;
+﻿using Institute_API.DTOs;
+using Institute_API.DTOs.ServiceResponse;
 using Institute_API.Models;
 using Institute_API.Repository.Implementations;
 using Institute_API.Repository.Interfaces;
@@ -50,11 +51,11 @@ namespace Institute_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<AdminDepartment>>> GetAdminDepartmentList(int Institute_id)
+        public async Task<ServiceResponse<List<AdminDepartment>>> GetAdminDepartmentList(GetListRequest request)
         {
             try
             {
-                return await _adminDepartmentRepository.GetAdminDepartmentList(Institute_id);
+                return await _adminDepartmentRepository.GetAdminDepartmentList(request);
             }
             catch (Exception ex)
             {

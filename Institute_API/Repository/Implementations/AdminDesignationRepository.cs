@@ -3,6 +3,7 @@ using Institute_API.Models;
 using Institute_API.Repository.Interfaces;
 using System.Data;
 using Dapper;
+using Institute_API.DTOs;
 
 namespace Institute_API.Repository.Implementations
 {
@@ -20,10 +21,10 @@ namespace Institute_API.Repository.Implementations
             {
                 if (request.Designation_id == 0)
                 {
-                    string sql = @"INSERT INTO [dbo].[tbl_Designation] (Institute_id, DesignationName, Department_id)
-                       VALUES (@Institute_id, @DesignationName, @Department_id);
+                    string sql = @"INSERT INTO [dbo].[tbl_Designation] (Institute_id, DesignationName, Department_id, IsDeleted)
+                       VALUES (@Institute_id, @DesignationName, @Department_id, @IsDeleted);
                        SELECT SCOPE_IDENTITY();"; // Retrieve the inserted id
-
+                    request.IsDeleted = false;
                     // Execute the query and retrieve the inserted id
                     int insertedId = await _connection.ExecuteScalarAsync<int>(sql, request);
                     if (insertedId > 0)
@@ -57,9 +58,10 @@ namespace Institute_API.Repository.Implementations
                     string sql = @"UPDATE [dbo].[tbl_Designation]
                        SET Institute_id = @Institute_id,
                            DesignationName = @DesignationName,
-                           Department_id = @Department_id
+                           Department_id = @Department_id,
+                           IsDeleted = @IsDeleted,
                        WHERE Designation_id = @Designation_id";
-
+                    request.IsDeleted = false;
                     // Execute the query and retrieve the number of affected rows
                     int affectedRows = await _connection.ExecuteAsync(sql, request);
                     if (affectedRows > 0)
@@ -116,11 +118,11 @@ namespace Institute_API.Repository.Implementations
         {
             try
             {
-                string sql = @"DELETE FROM [dbo].[tbl_Designation]
-                       WHERE Designation_id = @Designation_id";
+                string sql = "UPDATE tbl_Designation SET IsDeleted = @IsDeleted WHERE Designation_id = @Designation_id";
 
                 // Execute the query and retrieve the number of affected rows
-                int affectedRows = await _connection.ExecuteAsync(sql, new { Designation_id });
+                int affectedRows = await _connection.ExecuteAsync(sql, new { IsDeleted = true, Designation_id });
+ 
                 if (affectedRows > 0)
                 {
                     return new ServiceResponse<string>(true, "Operation successful", "Designation deleted successfully", 200);
@@ -142,7 +144,7 @@ namespace Institute_API.Repository.Implementations
             {
                 string sql = @"SELECT *
                        FROM [dbo].[tbl_Designation]
-                       WHERE Designation_id = @Designation_id";
+                       WHERE Designation_id = @Designation_id AND IsDeleted = 0";
 
                 // Execute the query and retrieve the department
                 var designation = await _connection.QueryFirstOrDefaultAsync<AdminDesignation>(sql, new { Designation_id = Designationid });
@@ -161,28 +163,51 @@ namespace Institute_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<AdminDesignation>>> GetAdminDesignationList(int Institute_id)
+        public async Task<ServiceResponse<List<AdminDesignation>>> GetAdminDesignationList(GetListRequest request)
         {
             try
             {
                 string sql = @"SELECT *
                        FROM [dbo].[tbl_Designation]
-                       WHERE Institute_id = @Institute_id";
+                       WHERE Institute_id = @Institute_id AND IsDeleted = 0";
 
-                // Execute the query and retrieve the departments
-                var designations = await _connection.QueryAsync<AdminDesignation>(sql, new { Institute_id });
-                if (designations != null)
+                // Add search text filter if provided
+                if (!string.IsNullOrEmpty(request.SearchText))
                 {
-                    return new ServiceResponse<List<AdminDesignation>>(true, "Record found", designations.AsList(), 200);
+                    sql += " AND (DesignationName LIKE @SearchText OR Description LIKE @SearchText)";
+                }
+
+                // Add sorting
+                string sortColumn = "DesignationName"; // Default sort column
+                string sortOrder = request.SortDirection.ToUpper() == "DESC" ? "DESC" : "ASC"; // Validate sort direction
+
+                sql += $" ORDER BY {sortColumn} {sortOrder}";
+
+                // Execute the query and retrieve the designations
+                var designations = await _connection.QueryAsync<AdminDesignation>(sql, new
+                {
+                    Institute_id = request.Institute_id,
+                    SearchText = "%" + request.SearchText + "%"
+                });
+
+                if (designations != null && designations.Any())
+                {
+                    // Apply pagination
+                    var paginatedDesignations = designations
+                        .Skip((request.PageNumber - 1) * request.PageSize)
+                        .Take(request.PageSize)
+                        .ToList();
+
+                    return new ServiceResponse<List<AdminDesignation>>(true, "Records found", paginatedDesignations, 200, designations.Count());
                 }
                 else
                 {
-                    return new ServiceResponse<List<AdminDesignation>>(false, "record not found", [], 500);
+                    return new ServiceResponse<List<AdminDesignation>>(false, "Records not found", new List<AdminDesignation>(), 204);
                 }
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<List<AdminDesignation>>(false, ex.Message, [], 500);
+                return new ServiceResponse<List<AdminDesignation>>(false, ex.Message, new List<AdminDesignation>(), 500);
             }
         }
     }

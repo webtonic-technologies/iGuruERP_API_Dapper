@@ -14,7 +14,7 @@ namespace Institute_API.Services.Implementations
             _eventRepository = eventRepository;
             _imageService = imageService;
         }
-        public async Task<ServiceResponse<int>> AddUpdateEvent(EventDTO eventDto)
+        public async Task<ServiceResponse<int>> AddUpdateEvent(EventRequestDTO eventDto)
         {
             try
             {
@@ -62,11 +62,32 @@ namespace Institute_API.Services.Implementations
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
-        public async Task<ServiceResponse<List<EventDTO>>> GetApprovedEvents()
+        public async Task<ServiceResponse<List<EventDTO>>> GetApprovedEvents(CommonRequestDTO commonRequest)
         {
             try
             {
-                var data = await _eventRepository.GetApprovedEvents();
+                var data = await _eventRepository.GetApprovedEvents(commonRequest.Institute_id, commonRequest.Academic_year_id, commonRequest.sortColumn, commonRequest.sortDirection, commonRequest.pageSize, commonRequest.pageNumber);
+                foreach (var eventDto in data.Data)
+                {
+                    if (eventDto != null && eventDto.AttachmentFile != null && eventDto.AttachmentFile != "")
+                    {
+                        eventDto.AttachmentFile = _imageService.GetImageAsBase64(eventDto.AttachmentFile);
+                    }
+                }
+
+                return data;
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<EventDTO>>(false, ex.Message, null, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<List<EventDTO>>> GetAllEvents(CommonRequestDTO commonRequest)
+        {
+            try
+            {
+                var data = await _eventRepository.GetAllEvents(commonRequest.Institute_id, commonRequest.Academic_year_id, commonRequest.sortColumn, commonRequest.sortDirection, commonRequest.pageSize, commonRequest.pageNumber);
                 foreach (var eventDto in data.Data)
                 {
                     if (eventDto != null && eventDto.AttachmentFile != null && eventDto.AttachmentFile != "")

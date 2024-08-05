@@ -4,6 +4,7 @@ using Institute_API.Repository.Interfaces;
 using System.Data;
 using Dapper;
 using Institute_API.Models;
+using System.Text;
 
 namespace Institute_API.Repository.Implementations
 {
@@ -20,28 +21,73 @@ namespace Institute_API.Repository.Implementations
         {
             try
             {
-                string query = @"
-                INSERT INTO [dbo].[tbl_Gallery] (Event_id, FileName)
-                VALUES (@EventId, @FileName);
-                SELECT SCOPE_IDENTITY();";
-
-                int galleryId = await _connection.ExecuteScalarAsync<int>(query, new { galleryDTO.EventId, galleryDTO.FileName });
-
-                if (galleryId > 0)
+                // Validate the galleryDTO and its FileName list
+                if (galleryDTO == null || galleryDTO.FileName == null || galleryDTO.FileName.Count == 0)
                 {
-                    return new ServiceResponse<int>(true, "Gallery image added successfully", galleryId, 200);
+                    return new ServiceResponse<int>(false, "No gallery images to add", 0, 400);
+                }
+                // Prepare a batch insert query
+                string query = "INSERT INTO [dbo].[tbl_Gallery] (Event_id, Institute_id, FileName) VALUES ";
+                var parameters = new DynamicParameters();
+
+                // Iterate through each filename and build the query dynamically
+                for (int i = 0; i < galleryDTO.FileName.Count; i++)
+                {
+                    string paramEventId = $"@EventId{i}";
+                    string paramInstituteId = $"@InstituteId{i}";
+                    string paramFileName = $"@FileName{i}";
+
+                    query += $"({paramEventId}, {paramInstituteId}, {paramFileName}),";
+
+                    parameters.Add(paramEventId, galleryDTO.EventId);
+                    parameters.Add(paramInstituteId, galleryDTO.Institute_id);
+                    parameters.Add(paramFileName, galleryDTO.FileName[i]);
+                }
+
+                // Remove the last comma and add a semicolon to end the query
+                query = query.TrimEnd(',') + ";";
+
+                // Execute the batch insert query
+                int rowsAffected = await _connection.ExecuteAsync(query, parameters);
+
+                // Check if the records were inserted successfully
+                if (rowsAffected > 0)
+                {
+                    return new ServiceResponse<int>(true, "Gallery images added successfully", rowsAffected, 200);
                 }
                 else
                 {
-                    return new ServiceResponse<int>(false, "Gallery image not added", 0, 500);
+                    return new ServiceResponse<int>(false, "Gallery images not added", 0, 500);
                 }
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<int>(false, ex.Message, 0, 500);
+                return new ServiceResponse<int>(false, $"Error: {ex.Message}", 0, 500);
             }
+            //try
+            //{
+            //    string query = @"
+            //    INSERT INTO [dbo].[tbl_Gallery] (Event_id, FileName)
+            //    VALUES (@EventId, @FileName);
+            //    SELECT SCOPE_IDENTITY();";
+
+            //    int galleryId = await _connection.ExecuteScalarAsync<int>(query, new { galleryDTO.EventId, galleryDTO.FileName });
+
+            //    if (galleryId > 0)
+            //    {
+            //        return new ServiceResponse<int>(true, "Gallery image added successfully", galleryId, 200);
+            //    }
+            //    else
+            //    {
+            //        return new ServiceResponse<int>(false, "Gallery image not added", 0, 500);
+            //    }
+            //}
+            //catch (Exception ex)
+            //{
+            //    return new ServiceResponse<int>(false, ex.Message, 0, 500);
+            //}
         }
-        public async Task<ServiceResponse<bool>> UpdateGalleryImageApprovalStatus(int galleryId, bool isApproved , int userId)
+        public async Task<ServiceResponse<bool>> UpdateGalleryImageApprovalStatus(int galleryId, bool isApproved, int userId)
         {
             try
             {
@@ -50,7 +96,7 @@ namespace Institute_API.Repository.Implementations
                 SET isApproved = @IsApproved , approvedBy = @UserId
                 WHERE Gallery_id = @GalleryId";
 
-                int rowsAffected = await _connection.ExecuteAsync(query, new { IsApproved = isApproved, GalleryId = galleryId , UserId = userId });
+                int rowsAffected = await _connection.ExecuteAsync(query, new { IsApproved = isApproved, GalleryId = galleryId, UserId = userId });
 
                 if (rowsAffected > 0)
                 {
@@ -67,18 +113,29 @@ namespace Institute_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<GalleryEventDTO>>> GetApprovedImagesByEvent()
+        public async Task<ServiceResponse<List<GalleryEventDTO>>> GetApprovedImagesByEvent(int Institute_id, int? pageSize = null, int? pageNumber = null)
         {
+
             try
             {
                 string query = @"
-        SELECT Event_id, FileName , isApproved
-        FROM [dbo].[tbl_Gallery]
-        WHERE isApproved = 1";
+            SELECT Event_id, FileName, isApproved
+            FROM [dbo].[tbl_Gallery]
+            WHERE Institute_id = @Institute_id AND isApproved = 1 AND isDelete = 0
+            ORDER BY Event_id";
 
-                var images = await _connection.QueryAsync<Gallery>(query);
+                if (pageSize.HasValue && pageNumber.HasValue)
+                {
+                    int offset = (pageNumber.Value - 1) * pageSize.Value;
 
-                var result = images.GroupBy(x => x.EventId)
+                    query += $@"
+                OFFSET @Offset ROWS
+                FETCH NEXT @PageSize ROWS ONLY;";
+                }
+
+                var images = await _connection.QueryAsync<Gallery>(query, new { Institute_id, Offset = (pageNumber - 1) * pageSize, PageSize = pageSize });
+
+                var result = images.GroupBy(x => x.Event_id)
                                    .Select(g => new GalleryEventDTO
                                    {
                                        Event_id = g.Key,
@@ -95,17 +152,29 @@ namespace Institute_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<GalleryEventDTO>>> GetAllGalleryImagesByEvent()
+
+        public async Task<ServiceResponse<List<GalleryEventDTO>>> GetAllGalleryImagesByEvent(int Institute_id, int? pageSize = null, int? pageNumber = null)
         {
             try
             {
                 string query = @"
-        SELECT Event_id, FileName, isApproved
-        FROM [dbo].[tbl_Gallery]";
+            SELECT Event_id, FileName, isApproved
+            FROM [dbo].[tbl_Gallery]
+            WHERE Institute_id = @Institute_id  AND isDelete = 0
+            ORDER BY Event_id";
 
-                var images = await _connection.QueryAsync<Gallery>(query);
+                if (pageSize.HasValue && pageNumber.HasValue)
+                {
+                    int offset = (pageNumber.Value - 1) * pageSize.Value;
 
-                var result = images.GroupBy(x => x.EventId)
+                    query += $@"
+                OFFSET @Offset ROWS
+                FETCH NEXT @PageSize ROWS ONLY;";
+                }
+
+                var images = await _connection.QueryAsync<Gallery>(query, new { Institute_id, Offset = (pageNumber - 1) * pageSize, PageSize = pageSize });
+
+                var result = images.GroupBy(x => x.Event_id)
                                    .Select(g => new GalleryEventDTO
                                    {
                                        Event_id = g.Key,
@@ -119,6 +188,31 @@ namespace Institute_API.Repository.Implementations
             catch (Exception ex)
             {
                 return new ServiceResponse<List<GalleryEventDTO>>(false, ex.Message, null, 500);
+            }
+        }
+        public async Task<ServiceResponse<bool>> DeleteGalleryImage(int Gallery_id)
+        {
+            try
+            {
+                string query = @"
+                UPDATE [dbo].[tbl_Gallery]
+                SET isDelete = 1
+                WHERE Gallery_id = @Gallery_id";
+
+                int rowsAffected = await _connection.ExecuteAsync(query, new { Gallery_id = Gallery_id });
+
+                if (rowsAffected > 0)
+                {
+                    return new ServiceResponse<bool>(true, "Gallery image Deleted successfully", true, 200);
+                }
+                else
+                {
+                    return new ServiceResponse<bool>(false, "Issue Found while delete the image", false, 404);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
 

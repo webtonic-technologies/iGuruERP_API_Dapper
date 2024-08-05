@@ -9,11 +9,13 @@ namespace Student_API.Services.Interfaces
         Task<ServiceResponse<int>> AddUpdateTimeTableGroup(TimeTableGroupDTO request);
         Task<ServiceResponse<List<ResponseTimeTableGroupDTO>>> GetTimeTableGroup();
         Task<ServiceResponse<TimeTableGroupDTO>> GetTimeTableGroupById(int timetableGroupId);
-        Task<ServiceResponse<int>> AddTimeTableDaysPlan(DaysSetupDTO daysSetupDTO);
+        Task<ServiceResponse<int>> AddOrUpdateTimeTableDaysPlan(DaysSetupDTO daysSetupDTO);
         Task<ServiceResponse<List<TimeTableDaysPlanDTO>>> GetTimeTableDaysPlan();
         Task<ServiceResponse<List<Timetable>>> GetTimetablesByTimetableGroupId(int timetableGroupId);
         Task<ServiceResponse<int>> AddOrUpdateTimetable(Timetable timetable);
         Task<ServiceResponse<bool>> DeleteTimetableGroup(int timetableGroupId);
         Task<ServiceResponse<List<Timetable>>> GetTimetablesByCriteria(TimetableParam timetableParam);
+        Task<ServiceResponse<DaysSetupDTO>> GetDaysSetupById(int daysSetupId);
+        Task<ServiceResponse<List<ClassTimetableResponse>>> GetClassTimetableDataForDayAsync(int dayId);
     }
 }

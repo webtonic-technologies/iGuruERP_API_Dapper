@@ -1,5 +1,6 @@
 ﻿using QRCoder;
 using Student_API.DTOs;
+using Student_API.DTOs.RequestDTO;
 using Student_API.DTOs.ServiceResponse;
 using Student_API.Repository.Interfaces;
 using Student_API.Services.Interfaces;
@@ -22,8 +23,89 @@ namespace Student_API.Services.Implementations
             _imageService = imageService;
         }
 
+        public async Task<ServiceResponse<int>> AddUpdateStudent(StudentDTO request)
+        {
+            try
+            {
 
-        public async Task<ServiceResponse<int>> AddUpdateStudentInformation(StudentMasterDTO request)
+                if (request.File_Name != null && request.File_Name != "")
+                {
+                    var file = await _imageService.SaveImageAsync(request.File_Name, "StudentsInfoFile");
+                    if (request.student_id != 0)
+                    {
+                        var ImageName = await _studentInformationRepository.GetStudentInfoImageById(request.student_id);
+                        if (ImageName.Data != null & ImageName.Data != "")
+                        {
+                            _imageService.DeleteFile(ImageName.Data);
+                        }
+                    }
+                    request.File_Name = file.relativePath;
+                }
+                if (request.student_id == 0)
+                {
+                    QRCodeGenerator qrGenerator = new QRCodeGenerator();
+                    QRCodeData qrCodeData = qrGenerator.CreateQrCode(request.First_Name + "  " + request.Last_Name, QRCodeGenerator.ECCLevel.Q);
+                    QRCode qrCodeImage = new QRCode(qrCodeData);
+
+                    using (Bitmap bitmap = qrCodeImage.GetGraphic(60))
+                    {
+                        string base64String;
+                        using (MemoryStream ms = new MemoryStream())
+                        {
+                            bitmap.Save(ms, ImageFormat.Png);
+                            byte[] byteImage = ms.ToArray();
+                            base64String = Convert.ToBase64String(byteImage);
+                        }
+
+                        var result = await _imageService.SaveImageAsync(base64String, "Insititute_" + request.Institute_id + "/QrCodes");
+                        request.QR_code = result.relativePath;
+                    }
+                }
+                foreach (var item in request.studentParentInfos)
+                {
+                    if (item.File_Name != null && item.File_Name != "")
+                    {
+                        var file = await _imageService.SaveImageAsync(item.File_Name, "StudentsInfoFile");
+                        if (item.Student_Parent_Info_id != 0)
+                        {
+                            var ImageName = await _studentInformationRepository.GetStudentparentImageById(item.Student_Parent_Info_id);
+                            if (ImageName.Data != null & ImageName.Data != "")
+                            {
+                                _imageService.DeleteFile(ImageName.Data);
+                            }
+                        }
+                        item.File_Name = file.relativePath;
+                    }
+                }
+                List<StudentDocumentListDTO> studentDocuments = new();
+                foreach (var item in request.studentDocuments.File_Name)
+                {
+                    if (item != null && item != "")
+                    {
+                        StudentDocumentListDTO listDTO = new StudentDocumentListDTO();
+
+                        var doc = await _imageService.SaveImageAsync(item, "StudentsDoc");
+
+                        listDTO.File_Name = doc.relativePath;
+                        listDTO.File_Path = doc.absolutePath;
+                        listDTO.Document_Name = doc.fileName;
+
+                        studentDocuments.Add(listDTO);
+                    }
+                }
+
+
+                var data = await _studentInformationRepository.AddUpdateStudent(request, studentDocuments);
+                return data;
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(false, ex.Message, 0, 500);
+            }
+        }
+
+
+        public async Task<ServiceResponse<int>> AddUpdateStudentInformation(StudentMasters request)
         {
             try
             {
@@ -76,28 +158,31 @@ namespace Student_API.Services.Implementations
             try
             {
                 var data = await _studentInformationRepository.GetStudentDetailsById(studentId);
-                if (data.Data != null && data.Data.File_Name != null && data.Data.File_Name != "")
+                if (data.Data != null)
                 {
-                    data.Data.File_Name = _imageService.GetImageAsBase64(data.Data.File_Name);
-                }
-
-                if (data.Data.studentParentInfos != null)
-                {
-                    foreach (var studentParentInfos in data.Data.studentParentInfos)
+                    if (data.Data != null && data.Data.File_Name != null && data.Data.File_Name != "")
                     {
-                        if (!string.IsNullOrEmpty(studentParentInfos.File_Name) && File.Exists(studentParentInfos.File_Name))
+                        data.Data.File_Name = _imageService.GetImageAsBase64(data.Data.File_Name);
+                    }
+
+                    if (data.Data.studentParentInfos != null)
+                    {
+                        foreach (var studentParentInfos in data.Data.studentParentInfos)
                         {
-                            studentParentInfos.File_Name = _imageService.GetImageAsBase64(studentParentInfos.File_Name);
+                            if (!string.IsNullOrEmpty(studentParentInfos.File_Name) && File.Exists(studentParentInfos.File_Name))
+                            {
+                                studentParentInfos.File_Name = _imageService.GetImageAsBase64(studentParentInfos.File_Name);
+                            }
                         }
                     }
-                }
-                if (data.Data != null && data.Data.studentDocumentListDTOs != null)
-                {
-                    foreach (var document in data.Data.studentDocumentListDTOs)
+                    if (data.Data != null && data.Data.studentDocumentListDTOs != null)
                     {
-                        if (!string.IsNullOrEmpty(document.File_Name) && File.Exists(document.File_Name))
+                        foreach (var document in data.Data.studentDocumentListDTOs)
                         {
-                            document.Document = _imageService.GetImageAsBase64(document.File_Name);
+                            if (!string.IsNullOrEmpty(document.File_Name) && File.Exists(document.File_Name))
+                            {
+                                document.Document = _imageService.GetImageAsBase64(document.File_Name);
+                            }
                         }
                     }
                 }
@@ -108,12 +193,12 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<StudentInformationDTO>(false, ex.Message, null, 500);
             }
         }
-        public async Task<ServiceResponse<List<StudentDetailsDTO>>> GetAllStudentDetails(int Institute_id, int? pageNumber = null, int? pageSize = null)
+        public async Task<ServiceResponse<List<StudentDetailsDTO>>> GetAllStudentDetails(GetStudentRequestModel obj)
         {
 
             try
             {
-                return await _studentInformationRepository.GetAllStudentDetails(Institute_id,pageNumber,pageSize);
+                return await _studentInformationRepository.GetAllStudentDetails(obj);
             }
             catch (Exception ex)
             {
@@ -132,7 +217,7 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
-        public async Task<ServiceResponse<int>> AddUpdateStudentOtherInfo(StudentOtherInfoDTO request)
+        public async Task<ServiceResponse<int>> AddUpdateStudentOtherInfo(StudentOtherInfos request)
         {
             try
             {
@@ -144,7 +229,7 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
-        public async Task<ServiceResponse<int>> AddUpdateStudentParentInfo(StudentParentInfoDTO request)
+        public async Task<ServiceResponse<int>> AddUpdateStudentParentInfo(StudentParentInfo request)
         {
             try
             {
@@ -169,7 +254,7 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
-        public async Task<ServiceResponse<int>> AddOrUpdateStudentSiblings(StudentSiblings sibling)
+        public async Task<ServiceResponse<int>> AddOrUpdateStudentSiblings(StudentSibling sibling)
         {
             try
             {
@@ -181,7 +266,7 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
-        public async Task<ServiceResponse<int>> AddOrUpdateStudentPreviousSchool(StudentPreviousSchool previousSchool)
+        public async Task<ServiceResponse<int>> AddOrUpdateStudentPreviousSchool(StudentPreviousSchools previousSchool)
         {
             try
             {
@@ -193,7 +278,7 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
-        public async Task<ServiceResponse<int>> AddOrUpdateStudentHealthInfo(StudentHealthInfo healthInfo)
+        public async Task<ServiceResponse<int>> AddOrUpdateStudentHealthInfo(StudentHealthInfos healthInfo)
         {
             try
             {
@@ -246,6 +331,20 @@ namespace Student_API.Services.Implementations
                     await _studentInformationRepository.AddUpdateStudentDocuments(listDTO, request.Student_id);
                 }
                 return new ServiceResponse<int>(true, "Operation successful", 1, 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(false, ex.Message, 0, 500);
+            }
+
+        }
+
+        public async Task<ServiceResponse<int>> DeleteStudentDocument(int Student_Documents_id)
+        {
+            try
+            {
+                var data = await _studentInformationRepository.DeleteStudentDocument(Student_Documents_id);
+                return data;
             }
             catch (Exception ex)
             {

@@ -12,7 +12,7 @@ namespace Student_API.Services.Implementations
         {
             _studentDocumentRepository = documentConfigRepository;
         }
-        public async Task<ServiceResponse<int>> AddUpdateStudentDocument(StudentDocumentConfigDTO studentDocumentDto)
+        public async Task<ServiceResponse<int>> AddUpdateStudentDocument(List<StudentDocumentConfigDTO> studentDocumentDto)
         {
             try
             {
@@ -57,11 +57,11 @@ namespace Student_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<StudentDocumentConfigDTO>>> GetAllStudentDocuments(int? pageSize = null, int? pageNumber = null)
+        public async Task<ServiceResponse<List<StudentDocumentConfigDTO>>> GetAllStudentDocuments(int Institute_id ,string sortColumn, string sortDirection, int? pageSize = null, int? pageNumber = null)
         {
             try
             {
-                var data = await _studentDocumentRepository.GetAllStudentDocuments(pageSize, pageNumber);
+                var data = await _studentDocumentRepository.GetAllStudentDocuments(Institute_id,sortColumn, sortDirection,pageSize, pageNumber);
                 return new ServiceResponse<List<StudentDocumentConfigDTO>>(true, "Student documents retrieved successfully", data.Data, 200, data.TotalCount);
 
                 //if (pageSize.HasValue && pageNumber.HasValue)

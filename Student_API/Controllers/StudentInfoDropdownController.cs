@@ -14,7 +14,7 @@ namespace Student_API.Controllers
             _studentInfoDropdownService = studentInfoDropdownService;
         }
         [HttpGet]
-        [Route("GetAllGenders")]
+        [Route("Gender/GetAllGenders")]
         public async Task<IActionResult> GetAllGenders()
         {
             try
@@ -28,12 +28,12 @@ namespace Student_API.Controllers
             }
         }
         [HttpGet]
-        [Route("GetAllSections")]
-        public async Task<IActionResult> GetAllSections()
+        [Route("Sections/GetAllSections/{Class_Id}")]
+        public async Task<IActionResult> GetAllSections(int Class_Id)
         {
             try
             {
-                var data = await _studentInfoDropdownService.GetAllSections();
+                var data = await _studentInfoDropdownService.GetAllSections(Class_Id);
 				return Ok(data);
 			}
             catch (Exception e)
@@ -42,7 +42,21 @@ namespace Student_API.Controllers
             }
         }
         [HttpGet]
-        [Route("GetAllReligions")]
+        [Route("Sections/GetAllClass/{institute_id}")]
+        public async Task<IActionResult> GetAllClass(int institute_id)
+        {
+            try
+            {
+                var data = await _studentInfoDropdownService.GetAllClass(institute_id);
+                return Ok(data);
+            }
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
+        }
+        [HttpGet]
+        [Route("Religions/GetAllReligions")]
         public async Task<IActionResult> GetAllReligions()
         {
             try
@@ -56,7 +70,7 @@ namespace Student_API.Controllers
             }
         }
         [HttpGet]
-        [Route("GetAllNationalities")]
+        [Route("Nationalities/GetAllNationalities")]
         public async Task<IActionResult> GetAllNationalities()
         {
             try
@@ -70,7 +84,7 @@ namespace Student_API.Controllers
             }
         }
         [HttpGet]
-        [Route("GetAllMotherTongues")]
+        [Route("MotherTongues/GetAllMotherTongues")]
         public async Task<IActionResult> GetAllMotherTongues()
         {
             try
@@ -84,7 +98,7 @@ namespace Student_API.Controllers
             }
         }
         [HttpGet]
-        [Route("GetAllBloodGroups")]
+        [Route("BloodGroups/GetAllBloodGroups")]
         public async Task<IActionResult> GetAllBloodGroups()
         {
             try
@@ -98,7 +112,7 @@ namespace Student_API.Controllers
             }
         }
         [HttpGet]
-        [Route("GetAllStudentTypes")]
+        [Route("StudentTypes/GetAllStudentTypes")]
         public async Task<IActionResult> GetAllStudentTypes()
         {
             try
@@ -112,7 +126,7 @@ namespace Student_API.Controllers
             }
         }
         [HttpGet]
-        [Route("GetAllStudentGroups")]
+        [Route("StudentGroups/GetAllStudentGroups")]
         public async Task<IActionResult> GetAllStudentGroups()
         {
             try
@@ -126,7 +140,7 @@ namespace Student_API.Controllers
             }
         }
         [HttpGet]
-        [Route("GetAllOccupations")]
+        [Route("Occupations/GetAllOccupations")]
         public async Task<IActionResult> GetAllOccupations()
         {
             try
@@ -140,7 +154,7 @@ namespace Student_API.Controllers
             }
         }
         [HttpGet]
-        [Route("GetAllParentTypes")]
+        [Route("ParentTypes/GetAllParentTypes")]
         public async Task<IActionResult> GetAllParentTypes()
         {
             try
@@ -148,6 +162,50 @@ namespace Student_API.Controllers
                 var data = await _studentInfoDropdownService.GetAllParentTypes();
 				return Ok(data);
 			}
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
+        }
+
+        [HttpGet]
+        [Route("States/GetAllStates")]
+        public async Task<IActionResult> GetAllStates()
+        {
+            try
+            {
+                var data = await _studentInfoDropdownService.GetAllStates();
+                return Ok(data);
+            }
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
+        }
+
+        [HttpGet]
+        [Route("Cities/GetAllCities/{StateId}")]
+        public async Task<IActionResult> GetAllCities(int StateId)
+        {
+            try
+            {
+                var data = await _studentInfoDropdownService.GetAllCities(StateId);
+                return Ok(data);
+            }
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
+        }
+        [HttpGet]
+        [Route("AcademicYear/GetAllAcademicYear")]
+        public async Task<IActionResult> GetAllAcademic()
+        {
+            try
+            {
+                var data = await _studentInfoDropdownService.GetAllAcademic();
+                return Ok(data);
+            }
             catch (Exception e)
             {
                 return this.BadRequest(e.Message);

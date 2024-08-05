@@ -8,7 +8,7 @@ namespace Student_API.Repository.Interfaces
     public interface IStudentInfoDropdownRepository
     {
         Task<ServiceResponse<List<Gender>>> GetAllGenders();
-        Task<ServiceResponse<List<Sections>>> GetAllSections();
+        Task<ServiceResponse<List<Sections>>> GetAllSections(int Class_Id);
         Task<ServiceResponse<List<Religion>>> GetAllReligions();
         Task<ServiceResponse<List<Nationality>>> GetAllNationalities();
         Task<ServiceResponse<List<MotherTongue>>> GetAllMotherTongues();
@@ -17,5 +17,9 @@ namespace Student_API.Repository.Interfaces
         Task<ServiceResponse<List<StudentGroup>>> GetAllStudentGroups();
         Task<ServiceResponse<List<Occupation>>> GetAllOccupations();
         Task<ServiceResponse<List<ParentType>>> GetAllParentTypes();
+        Task<ServiceResponse<List<Class>>> GetAllClass(int institute_id);
+        Task<ServiceResponse<List<City>>> GetAllCities(int stateId);
+        Task<ServiceResponse<List<State>>> GetAllStates();
+        Task<ServiceResponse<List<Academic>>> GetAllAcademic();
     }
 }

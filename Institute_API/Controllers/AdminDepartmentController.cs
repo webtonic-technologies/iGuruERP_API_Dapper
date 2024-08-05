@@ -53,12 +53,12 @@ namespace Institute_API.Controllers
             }
         }
 
-        [HttpGet("GetAllAdminDepartmentList")]
-        public async Task<IActionResult> GetAdminDepartmentList(int Instituteid)
+        [HttpPost("GetAllAdminDepartmentList")]
+        public async Task<IActionResult> GetAdminDepartmentList(GetListRequest request)
         {
             try
             {
-                var data = await _adminDepartmentServices.GetAdminDepartmentList(Instituteid);
+                var data = await _adminDepartmentServices.GetAdminDepartmentList(request);
                 return Ok(data);
             }
             catch (Exception ex)
