@@ -30,6 +30,8 @@ builder.Services.AddScoped<IStudentAttendanceReportRepository, StudentAttendance
 builder.Services.AddScoped<IClassAttendanceAnalysisRepo, ClassAttendanceAnalysisRepo>();
 builder.Services.AddScoped<ISubjectAttendanceAnalysisRepo, SubjectAttendanceAnalysisRepo>();
 builder.Services.AddScoped<IClassAttendanceAnalysisService, ClassAttendanceAnalysisService>();
+builder.Services.AddScoped<IStudentAttendanceDashboardService, StudentAttendanceDashboardService>();
+builder.Services.AddScoped<IStudentAttendanceDashboardRepo, StudentAttendanceDashboardRepo>();
 
 
 builder.Services.AddControllers();

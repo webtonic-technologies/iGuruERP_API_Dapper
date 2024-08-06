@@ -16,5 +16,10 @@ namespace Attendance_API.Services.Implementations
         {
             return await _studentAttendanceReportRepository.GetStudentAttendanceDatewiseReport(request);
         }
+
+        public async Task<ServiceResponse<dynamic>> GetStudentSubjectwiseReport(SubjectwiseAttendanceReportRequest request)
+        {
+            return await _studentAttendanceReportRepository.GetStudentSubjectwiseReport(request);
+        }
     }
 }

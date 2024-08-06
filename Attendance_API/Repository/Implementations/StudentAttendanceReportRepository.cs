@@ -16,11 +16,11 @@ namespace Attendance_API.Repository.Implementations
             _connection = connection;
         }
 
-            public async Task<ServiceResponse<dynamic>> GetStudentAttendanceDatewiseReport(StudentAttendanceDatewiseReportRequestDTO request)
+        public async Task<ServiceResponse<dynamic>> GetStudentAttendanceDatewiseReport(StudentAttendanceDatewiseReportRequestDTO request)
+        {
+            try
             {
-                try
-                {
-                    var query = @"
+                var query = @"
     DECLARE @cols AS NVARCHAR(MAX);
     DECLARE @query AS NVARCHAR(MAX);
 
@@ -98,21 +98,119 @@ namespace Attendance_API.Repository.Implementations
 
     EXEC sp_executesql @query,   N'@StartDate DATE, @EndDate DATE, @class_id INT, @section_id INT, @institute_id INT', 
     @StartDate, @EndDate, @class_id, @section_id, @institute_id;";
-                    // Parameters for the query
-                    var parameters = new { StartDate = request.StartDate, EndDate = request.EndDate , section_id  = request.section_id , class_id  = request.class_id, institute_id = request.instituteId};
+                // Parameters for the query
+                var parameters = new { StartDate = request.StartDate, EndDate = request.EndDate, section_id = request.section_id, class_id = request.class_id, institute_id = request.instituteId };
 
-                    // Execute the query and fetch the result
-                    var result = await _connection.QueryAsync<dynamic>(query, parameters);
-                    //var resultJson = JsonSerializer.Deserialize<dynamic>(result);
+                // Execute the query and fetch the result
+                var result = await _connection.QueryAsync<dynamic>(query, parameters);
+                //var resultJson = JsonSerializer.Deserialize<dynamic>(result);
 
 
-                    return new ServiceResponse<dynamic>(true, "Operation successful", result, 200);
-                }
-                catch (Exception ex)
-                {
-                    return new ServiceResponse<dynamic>(false, $"Error: {ex.Message}", null, 500);
-                }
+                return new ServiceResponse<dynamic>(true, "Operation successful", result, 200);
             }
-
+            catch (Exception ex)
+            {
+                return new ServiceResponse<dynamic>(false, $"Error: {ex.Message}", null, 500);
+            }
         }
+
+        public async Task<ServiceResponse<dynamic>> GetStudentSubjectwiseReport(SubjectwiseAttendanceReportRequest request)
+        {
+            try
+            {
+                var query = @"
+DECLARE @cols AS NVARCHAR(MAX);
+DECLARE @query AS NVARCHAR(MAX);
+
+-- Generate a list of all subjects
+WITH SubjectList AS (
+    SELECT DISTINCT 
+        sub.Subject_Name
+    FROM tbl_ClassSectionSubjectMapping s
+    INNER JOIN tbl_Subject sub ON s.SubjectId = sub.Subject_id
+    WHERE 
+        s.class_id = @class_id AND 
+        s.section_id = @section_id
+)
+SELECT @cols = STRING_AGG(QUOTENAME(Subject_Name), ', ')
+FROM SubjectList;
+
+SET @query = '
+    DECLARE @TotalDays INT;
+
+    -- Calculate total days
+    SET @TotalDays = (SELECT COUNT(DISTINCT a.Date) 
+                      FROM tbl_StudentAttendanceMaster a 
+                       WHERE CAST(a.Date AS DATE) = CAST(@Date AS DATE));
+
+    WITH AttendanceData AS (
+        SELECT DISTINCT
+		s.Student_id,
+            s.Admission_Number,
+            s.First_Name,
+            s.Roll_Number,
+            sub.Subject_Name,
+				a.Date,
+            ISNULL(
+                CASE 
+                    WHEN a.isHoliday = 1 THEN ''H'' 
+                    ELSE ast.Short_Name 
+                END, 
+                ''-''
+            ) AS Status
+        FROM 
+            tbl_StudentAttendanceMaster a
+        INNER JOIN 
+            tbl_studentmaster s ON a.Student_id = s.Student_id
+        INNER JOIN 
+            tbl_StudentAttendanceStatus ast ON a.Student_Attendance_Status_id = ast.Student_Attendance_Status_id
+        INNER JOIN 
+            tbl_ClassSectionSubjectMapping subMap ON a.Subject_id = subMap.SubjectId
+        INNER JOIN 
+            tbl_Subject sub ON subMap.SubjectId = sub.Subject_id
+        WHERE 
+            isDatewise = 0 
+        AND CAST(a.Date AS DATE) = CAST(@Date AS DATE)
+            AND (@class_id = 0 OR s.class_id = @class_id) 
+            AND (@section_id = 0 OR s.section_id = @section_id) 
+            AND (@institute_id = 0 OR s.institute_id = @institute_id)
+    )
+
+
+    SELECT 
+	Student_id,
+        Admission_Number,
+        First_Name,
+        Roll_Number,
+			Date,
+        ' + @cols + '
+    FROM 
+        AttendanceData
+    PIVOT (
+        MAX(Status) 
+        FOR Subject_Name IN (' + @cols + ')
+    ) AS PivotTable
+    WHERE 
+        Admission_Number IS NOT NULL AND First_Name IS NOT NULL AND Roll_Number IS NOT NULL
+    ORDER BY 
+        Roll_Number;'; 
+
+EXEC sp_executesql @query, 
+    N'@Date DATE,@class_id INT, @section_id INT, @institute_id INT', 
+    @Date, @class_id, @section_id, @institute_id;";
+
+                var parameters = new { Date = request.Date, section_id = request.section_id, class_id = request.class_id, institute_id = request.Institute_Id };
+
+                var result = await _connection.QueryAsync<dynamic>(query, parameters);
+
+                return new ServiceResponse<dynamic>(true, "Operation successful", result, 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<dynamic>(false, $"Error: {ex.Message}", null, 500);
+            }
+        }
+
+
     }
+}

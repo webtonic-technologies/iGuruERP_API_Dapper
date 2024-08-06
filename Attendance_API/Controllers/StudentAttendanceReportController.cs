@@ -12,13 +12,20 @@ namespace Attendance_API.Controllers
         private readonly IStudentAttendanceReportService _studentAttendanceReportService;
         public StudentAttendanceReportController(IStudentAttendanceReportService studentAttendanceReportService)
         {
-            _studentAttendanceReportService = studentAttendanceReportService;   
+            _studentAttendanceReportService = studentAttendanceReportService;
         }
 
-        [HttpPost]
+        [HttpPost("GetStudentAttendanceDatewiseReport")]
         public async Task<IActionResult> GetStudentAttendanceDatewiseReport(StudentAttendanceDatewiseReportRequestDTO request)
         {
             var data = await _studentAttendanceReportService.GetStudentAttendanceDatewiseReport(request);
+            return Ok(data);
+        }
+
+        [HttpPost("GetStudentSubjectwiseReport")]
+        public async Task<IActionResult> GetStudentSubjectwiseReport(SubjectwiseAttendanceReportRequest request)
+        {
+            var data = await _studentAttendanceReportService.GetStudentSubjectwiseReport(request);
             return Ok(data);
         }
     }
