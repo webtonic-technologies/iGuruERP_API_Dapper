@@ -241,7 +241,7 @@ WHERE
     AND (@InstituteId = 0 OR s.institute_id = @InstituteId)
 GROUP BY 
     s.Admission_Number,
-    s.First_Name,s.student_id;";
+    s.First_Name,s.student_id,s.Last_Name;";
 
                 // Parameters for the query
                 var parameters = new { AcademicYearId = academicYearId, class_id = classId, section_id = sectionId, InstituteId = instituteId };
