@@ -150,7 +150,7 @@ namespace Attendance_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<MonthlyAttendanceAnalysisDTO>>> GetAttendanceRangeAnalysis(int academicYearId, int classId, int sectionId, int instituteId)
+        public async Task<ServiceResponse<List<AttendanceRangeDTO>>> GetAttendanceRangeAnalysis(int academicYearId, int classId, int sectionId, int instituteId)
         {
             try
             {
@@ -191,13 +191,13 @@ namespace Attendance_API.Repository.Implementations
                 var parameters = new { AcademicYearId = academicYearId, ClassId = classId, SectionId = sectionId, InstituteId = instituteId };
 
                 // Execute the query and fetch the result
-                var result = await _connection.QueryAsync<MonthlyAttendanceAnalysisDTO>(query, parameters);
+                var result = await _connection.QueryAsync<AttendanceRangeDTO>(query, parameters);
 
-                return new ServiceResponse<List<MonthlyAttendanceAnalysisDTO>>(true, "Monthly attendance analysis retrieved successfully", result.AsList(), 200);
+                return new ServiceResponse<List<AttendanceRangeDTO>>(true, "Monthly attendance analysis retrieved successfully", result.AsList(), 200);
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<List<MonthlyAttendanceAnalysisDTO>>(false, $"Error: {ex.Message}", null, 500);
+                return new ServiceResponse<List<AttendanceRangeDTO>>(false, $"Error: {ex.Message}", null, 500);
             }
         }
 
