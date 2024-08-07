@@ -68,22 +68,30 @@ namespace Institute_API.Repository.Implementations
                 return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
             }
         }
-
-        public async Task<ServiceResponse<string>> DeleteAdminDepartment(int Department_id)
+        public async Task<ServiceResponse<string>> DeleteAdminDepartment(int departmentId)
         {
             try
             {
-                string sql = "UPDATE tbl_Department SET IsDeleted = @IsDeleted WHERE Department_id = @Department_id";
+                // Check if the department is mapped to any employees
+                string checkMappingSql = @"SELECT COUNT(*) FROM [iGuruERP].[dbo].[tbl_EmployeeProfileMaster] WHERE Department_id = @DepartmentId AND Status = 1"; // Assuming Status = 1 means active
+                int employeeCount = await _connection.ExecuteScalarAsync<int>(checkMappingSql, new { DepartmentId = departmentId });
 
-                // Execute the query and retrieve the number of affected rows
-                int affectedRows = await _connection.ExecuteAsync(sql, new { IsDeleted = true, Department_id });
+                if (employeeCount > 0)
+                {
+                    return new ServiceResponse<string>(false, "Cannot delete the department; it is mapped to active employees.", string.Empty, 400);
+                }
+
+                // Proceed with the soft delete
+                string sql = "UPDATE tbl_Department SET IsDeleted = @IsDeleted WHERE Department_id = @DepartmentId";
+
+                int affectedRows = await _connection.ExecuteAsync(sql, new { IsDeleted = true, DepartmentId = departmentId });
                 if (affectedRows > 0)
                 {
                     return new ServiceResponse<string>(true, "Operation successful", "Department deleted successfully", 200);
                 }
                 else
                 {
-                    return new ServiceResponse<string>(false, "operation failed", string.Empty, 500);
+                    return new ServiceResponse<string>(false, "Operation failed", string.Empty, 404);
                 }
             }
             catch (Exception ex)
@@ -91,7 +99,6 @@ namespace Institute_API.Repository.Implementations
                 return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
             }
         }
-
         public async Task<ServiceResponse<AdminDepartment>> GetAdminDepartmentById(int Department_id)
         {
             try

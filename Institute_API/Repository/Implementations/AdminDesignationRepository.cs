@@ -114,22 +114,30 @@ namespace Institute_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<string>> DeleteAdminDesignation(int Designation_id)
+        public async Task<ServiceResponse<string>> DeleteAdminDesignation(int designationId)
         {
             try
             {
-                string sql = "UPDATE tbl_Designation SET IsDeleted = @IsDeleted WHERE Designation_id = @Designation_id";
+                // Check if the designation is mapped to any employees
+                string checkMappingSql = @"SELECT COUNT(*) FROM [iGuruERP].[dbo].[tbl_EmployeeProfileMaster] WHERE Designation_id = @DesignationId AND Status = 1"; // Assuming Status = 1 means active
+                int employeeCount = await _connection.ExecuteScalarAsync<int>(checkMappingSql, new { DesignationId = designationId });
 
-                // Execute the query and retrieve the number of affected rows
-                int affectedRows = await _connection.ExecuteAsync(sql, new { IsDeleted = true, Designation_id });
- 
+                if (employeeCount > 0)
+                {
+                    return new ServiceResponse<string>(false, "Cannot delete the designation; it is mapped to active employees.", string.Empty, 400);
+                }
+
+                // Proceed with the soft delete
+                string sql = "UPDATE tbl_Designation SET IsDeleted = @IsDeleted WHERE Designation_id = @DesignationId";
+
+                int affectedRows = await _connection.ExecuteAsync(sql, new { IsDeleted = true, DesignationId = designationId });
                 if (affectedRows > 0)
                 {
                     return new ServiceResponse<string>(true, "Operation successful", "Designation deleted successfully", 200);
                 }
                 else
                 {
-                    return new ServiceResponse<string>(false, "operation failed", string.Empty, 500);
+                    return new ServiceResponse<string>(false, "Operation failed", string.Empty, 404);
                 }
             }
             catch (Exception ex)
