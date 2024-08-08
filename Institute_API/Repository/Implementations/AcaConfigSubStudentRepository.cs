@@ -96,7 +96,7 @@ namespace Institute_API.Repository.Implementations
 
                 if (students != null && students.Any())
                 {
-                    return new ServiceResponse<List<StudentListResponse>>(true, "Records found", students.ToList(), 200);
+                    return new ServiceResponse<List<StudentListResponse>>(true, "Records found", students.ToList(), 200, students.Count());
                 }
                 else
                 {
