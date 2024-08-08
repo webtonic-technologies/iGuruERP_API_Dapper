@@ -151,7 +151,7 @@ namespace Institute_API.Repository.Implementations
             try
             {
                 string sql = @"
-            SELECT d.Department_id, d.Institute_id, d.DepartmentName, 
+            SELECT d.Department_id, d.Institute_id, d.DepartmentName as Department_name, 
                    des.Designation_id, des.DesignationName, des.IsDeleted 
             FROM [dbo].[tbl_Designation] des
             JOIN [dbo].[tbl_Department] d ON des.Department_id = d.Department_id
@@ -180,7 +180,7 @@ namespace Institute_API.Repository.Implementations
             try
             {
                 string sql = @"
-            SELECT d.Department_id, d.Institute_id, d.DepartmentName, 
+            SELECT d.Department_id, d.Institute_id, d.DepartmentName as Department_name, 
                    des.Designation_id, des.DesignationName, des.IsDeleted 
             FROM [dbo].[tbl_Designation] des
             JOIN [dbo].[tbl_Department] d ON des.Department_id = d.Department_id

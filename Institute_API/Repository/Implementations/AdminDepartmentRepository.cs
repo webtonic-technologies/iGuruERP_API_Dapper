@@ -73,7 +73,7 @@ namespace Institute_API.Repository.Implementations
             try
             {
                 // Check if the department is mapped to any employees
-                string checkMappingSql = @"SELECT COUNT(*) FROM [iGuruERP].[dbo].[tbl_EmployeeProfileMaster] WHERE Department_id = @DepartmentId AND Status = 1"; // Assuming Status = 1 means active
+                string checkMappingSql = @"SELECT COUNT(*) FROM [tbl_EmployeeProfileMaster] WHERE Department_id = @DepartmentId AND Status = 1"; // Assuming Status = 1 means active
                 int employeeCount = await _connection.ExecuteScalarAsync<int>(checkMappingSql, new { DepartmentId = departmentId });
 
                 if (employeeCount > 0)
