@@ -495,7 +495,7 @@ namespace Institute_API.Repository.Implementations
                     }
                 }
 
-                return new ServiceResponse<List<SubjectResponse>>(true, "Subjects retrieved successfully", subjects.ToList(), 200, subjects.Count());
+                return new ServiceResponse<List<SubjectResponse>>(true, "Subjects retrieved successfully", subjects.ToList(), 200, subjectIds.Count());
             }
             catch (Exception ex)
             {

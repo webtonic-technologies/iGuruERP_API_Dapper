@@ -8,7 +8,7 @@ namespace Institute_API.Services.Interfaces
     {
         Task<ServiceResponse<string>> AddUpdateAdminDesignation(AdminDesignation request);
         Task<ServiceResponse<string>> DeleteAdminDesignation(int Designationid);
-        Task<ServiceResponse<AdminDesignation>> GetAdminDesignationById(int Designationid);
-        Task<ServiceResponse<List<AdminDesignation>>> GetAdminDesignationList(GetListRequest request);
+        Task<ServiceResponse<AdminDesignationResponse>> GetAdminDesignationById(int Designationid);
+        Task<ServiceResponse<List<AdminDesignationResponse>>> GetAdminDesignationList(GetListRequest request);
     }
 }
