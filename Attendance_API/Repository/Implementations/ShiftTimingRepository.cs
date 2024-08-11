@@ -8,6 +8,8 @@ using System.Data;
 using System.Data.Common;
 using System.Linq;
 using System.Threading.Tasks;
+using Attendance_API.DTOs.ServiceResponse;
+
 
 namespace Attendance_API.Repository.Implementations
 {
@@ -20,7 +22,7 @@ namespace Attendance_API.Repository.Implementations
             _connection = connection;
         }
 
-        public async Task<bool> AddShiftTimingAndDesignations(ShiftTimingRequestDTO request)
+        public async Task<ServiceResponse<string>> AddShiftTimingAndDesignations(ShiftTimingRequestDTO request)
         {
             _connection.Open();
             using (var transaction = _connection.BeginTransaction())
@@ -57,57 +59,72 @@ namespace Attendance_API.Repository.Implementations
 
                         transaction.Commit();
                         _connection.Close();
-                        return true;
+                        return new ServiceResponse<string>(true, "Operation successful", "Data processed successfully", 200);
                     }
                     else
                     {
                         transaction.Rollback();
                         _connection.Close();
-                        return false;
+                        return new ServiceResponse<string>(false, "Operation failed", string.Empty, 500);
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
                     transaction.Rollback();
                     _connection.Close();
-                    throw;
+                    return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
                 }
             }
         }
 
-        public async Task<ShiftTimingResponse> GetShiftTimingById(int id)
+        public async Task<ServiceResponse<ShiftTimingResponse>> GetShiftTimingById(int id)
         {
-            var query = @"
-                SELECT st.Shift_Timing_id, st.Clock_In, st.Clock_Out, st.Late_Coming, st.Applicable_Date, d.Designation_id, d.DesignationName
-                FROM tbl_ShiftTimingMaster st
-                JOIN tbl_ShiftTimingDesignationMapping stm ON st.Shift_Timing_id = stm.Shift_Timing_id
-                JOIN tbl_Designation d ON stm.Designation_id = d.Designation_id
-                WHERE st.Shift_Timing_id = @Id;";
+            try
+            {
+                var query = @"
+                    SELECT st.Shift_Timing_id, st.Clock_In, st.Clock_Out, st.Late_Coming, st.Applicable_Date, d.Designation_id, d.DesignationName
+                    FROM tbl_ShiftTimingMaster st
+                    JOIN tbl_ShiftTimingDesignationMapping stm ON st.Shift_Timing_id = stm.Shift_Timing_id
+                    JOIN tbl_Designation d ON stm.Designation_id = d.Designation_id
+                    WHERE st.Shift_Timing_id = @Id;";
 
-            var shiftTimingDictionary = new Dictionary<int, ShiftTimingResponse>();
+                var shiftTimingDictionary = new Dictionary<int, ShiftTimingResponse>();
 
-            var result = await _connection.QueryAsync<ShiftTimingResponse, ShiftTimingDesignations, ShiftTimingResponse>(
-                query,
-                (shiftTiming, designation) =>
-                {
-                    if (!shiftTimingDictionary.TryGetValue(shiftTiming.Shift_Timing_id, out var shiftTimingEntry))
+                var result = await _connection.QueryAsync<ShiftTimingResponse, ShiftTimingDesignations, ShiftTimingResponse>(
+                    query,
+                    (shiftTiming, designation) =>
                     {
-                        shiftTimingEntry = shiftTiming;
-                        shiftTimingEntry.Designations = new List<ShiftTimingDesignations>();
-                        shiftTimingDictionary.Add(shiftTimingEntry.Shift_Timing_id, shiftTimingEntry);
-                    }
+                        if (!shiftTimingDictionary.TryGetValue(shiftTiming.Shift_Timing_id, out var shiftTimingEntry))
+                        {
+                            shiftTimingEntry = shiftTiming;
+                            shiftTimingEntry.Designations = new List<ShiftTimingDesignations>();
+                            shiftTimingDictionary.Add(shiftTimingEntry.Shift_Timing_id, shiftTimingEntry);
+                        }
 
-                    shiftTimingEntry.Designations.Add(designation);
-                    return shiftTimingEntry;
-                },
-                new { Id = id },
-                splitOn: "Designation_id"
-            );
+                        shiftTimingEntry.Designations.Add(designation);
+                        return shiftTimingEntry;
+                    },
+                    new { Id = id },
+                    splitOn: "Designation_id"
+                );
 
-            return shiftTimingDictionary.Values.FirstOrDefault();
+                var shiftTiming = shiftTimingDictionary.Values.FirstOrDefault();
+                if (shiftTiming != null)
+                {
+                    return new ServiceResponse<ShiftTimingResponse>(true, "Record found", shiftTiming, 200);
+                }
+                else
+                {
+                    return new ServiceResponse<ShiftTimingResponse>(false, "Record not found", null, 500);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<ShiftTimingResponse>(false, ex.Message, null, 500);
+            }
         }
 
-        public async Task<bool> EditShiftTimingAndDesignations(ShiftTimingRequestDTO request)
+        public async Task<ServiceResponse<string>> EditShiftTimingAndDesignations(ShiftTimingRequestDTO request)
         {
             _connection.Open();
             using (var transaction = _connection.BeginTransaction())
@@ -148,25 +165,25 @@ namespace Attendance_API.Repository.Implementations
 
                         transaction.Commit();
                         _connection.Close();
-                        return true;
+                        return new ServiceResponse<string>(true, "Operation successful", "Data processed successfully", 200);
                     }
                     else
                     {
                         transaction.Rollback();
                         _connection.Close();
-                        return false;
+                        return new ServiceResponse<string>(false, "Operation failed", string.Empty, 500);
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
                     transaction.Rollback();
                     _connection.Close();
-                    throw;
+                    return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
                 }
             }
         }
 
-        public async Task<bool> DeleteShiftTiming(int id)
+        public async Task<ServiceResponse<string>> DeleteShiftTiming(int id)
         {
             _connection.Open();
             using (var transaction = _connection.BeginTransaction())
@@ -183,65 +200,72 @@ namespace Attendance_API.Repository.Implementations
                     {
                         transaction.Commit();
                         _connection.Close();
-                        return true;
+                        return new ServiceResponse<string>(true, "Operation successful", "Data deleted successfully", 200);
                     }
                     else
                     {
                         transaction.Rollback();
                         _connection.Close();
-                        return false;
+                        return new ServiceResponse<string>(false, "Operation failed", string.Empty, 500);
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
                     transaction.Rollback();
                     _connection.Close();
-                    throw;
+                    return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
                 }
             }
         }
 
-        public async Task<ShiftTimingResponseDTO> GetAllShiftTimings(ShiftTimingFilterDTO request)
+        public async Task<ServiceResponse<ShiftTimingResponseDTO>> GetAllShiftTimings(ShiftTimingFilterDTO request)
         {
-            var query = @"
-                SELECT st.Shift_Timing_id, st.Clock_In, st.Clock_Out, st.Late_Coming, st.Applicable_Date, d.Designation_id, d.DesignationName
-                FROM tbl_ShiftTimingMaster st
-                JOIN tbl_ShiftTimingDesignationMapping stm ON st.Shift_Timing_id = stm.Shift_Timing_id
-                JOIN tbl_Designation d ON stm.Designation_id = d.Designation_id;";
-
-            if (request.pageNumber != null && request.pageSize != null)
+            try
             {
-                query += $" Order by 1 OFFSET {(request.pageNumber - 1) * request.pageSize} ROWS FETCH NEXT {request.pageSize} ROWS ONLY;";
-            }
+                var query = @"
+                    SELECT st.Shift_Timing_id, st.Clock_In, st.Clock_Out, st.Late_Coming, st.Applicable_Date, d.Designation_id, d.DesignationName
+                    FROM tbl_ShiftTimingMaster st
+                    JOIN tbl_ShiftTimingDesignationMapping stm ON st.Shift_Timing_id = stm.Shift_Timing_id
+                    JOIN tbl_Designation d ON stm.Designation_id = d.Designation_id;";
 
-            var shiftTimingDictionary = new Dictionary<int, ShiftTimingResponse>();
-
-            var result = await _connection.QueryAsync<ShiftTimingResponse, ShiftTimingDesignations, ShiftTimingResponse>(
-                query,
-                (shiftTiming, designation) =>
+                if (request.pageNumber != null && request.pageSize != null)
                 {
-                    if (!shiftTimingDictionary.TryGetValue(shiftTiming.Shift_Timing_id, out var shiftTimingEntry))
+                    query += $" Order by 1 OFFSET {(request.pageNumber - 1) * request.pageSize} ROWS FETCH NEXT {request.pageSize} ROWS ONLY;";
+                }
+
+                var shiftTimingDictionary = new Dictionary<int, ShiftTimingResponse>();
+
+                var result = await _connection.QueryAsync<ShiftTimingResponse, ShiftTimingDesignations, ShiftTimingResponse>(
+                    query,
+                    (shiftTiming, designation) =>
                     {
-                        shiftTimingEntry = shiftTiming;
-                        shiftTimingEntry.Designations = new List<ShiftTimingDesignations>();
-                        shiftTimingDictionary.Add(shiftTimingEntry.Shift_Timing_id, shiftTimingEntry);
-                    }
+                        if (!shiftTimingDictionary.TryGetValue(shiftTiming.Shift_Timing_id, out var shiftTimingEntry))
+                        {
+                            shiftTimingEntry = shiftTiming;
+                            shiftTimingEntry.Designations = new List<ShiftTimingDesignations>();
+                            shiftTimingDictionary.Add(shiftTimingEntry.Shift_Timing_id, shiftTimingEntry);
+                        }
 
-                    shiftTimingEntry.Designations.Add(designation);
-                    return shiftTimingEntry;
-                },
-                splitOn: "Designation_id"
-            );
-            query = @"
-                SELECT COUNT(*)
-                FROM tbl_ShiftTimingMaster st
-                JOIN tbl_ShiftTimingDesignationMapping stm ON st.Shift_Timing_id = stm.Shift_Timing_id
-                JOIN tbl_Designation d ON stm.Designation_id = d.Designation_id;"
-            ;
+                        shiftTimingEntry.Designations.Add(designation);
+                        return shiftTimingEntry;
+                    },
+                    splitOn: "Designation_id"
+                );
 
-            var countRes = await _connection.QueryAsync<long>(query);
-            var count = countRes.FirstOrDefault();
-            return new ShiftTimingResponseDTO { Data = shiftTimingDictionary.Values.ToList(), Total = count};
+                query = @"
+                    SELECT COUNT(*)
+                    FROM tbl_ShiftTimingMaster st
+                    JOIN tbl_ShiftTimingDesignationMapping stm ON st.Shift_Timing_id = stm.Shift_Timing_id
+                    JOIN tbl_Designation d ON stm.Designation_id = d.Designation_id;";
+
+                var countRes = await _connection.QueryAsync<long>(query);
+                var count = countRes.FirstOrDefault();
+                return new ServiceResponse<ShiftTimingResponseDTO>(true, "Operation successful", new ShiftTimingResponseDTO { Data = shiftTimingDictionary.Values.ToList(), Total = count }, 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<ShiftTimingResponseDTO>(false, ex.Message, null, 500);
+            }
         }
     }
 }

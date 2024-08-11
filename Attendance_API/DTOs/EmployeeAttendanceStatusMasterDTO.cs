@@ -9,5 +9,6 @@ namespace Attendance_API.DTOs
         public string Employee_Attendance_Status_Type { get; set; }
         [MaxLength(15)]
         public string Short_Name { get; set; }
+        public int InstituteId { get; set; }
     }
 }

@@ -18,11 +18,11 @@ namespace Attendance_API.Services.Implementations
             _employeeAttendanceStatusMasterRepository = employeeAttendanceStatusMasterRepository;
         }
 
-        public async Task<ServiceResponse<List<EmployeeAttendanceStatusMasterDTO>>> GetEmployeeAttendanceStatusMasterList()
+        public async Task<ServiceResponse<List<EmployeeAttendanceStatusMasterDTO>>> GetEmployeeAttendanceStatusMasterList(int InstituteId)
         {
             try
             {
-                return await _employeeAttendanceStatusMasterRepository.GetEmployeeAttendanceStatusMasterList();
+                return await _employeeAttendanceStatusMasterRepository.GetEmployeeAttendanceStatusMasterList(InstituteId);
             }
             catch (Exception ex)
             {
@@ -42,23 +42,11 @@ namespace Attendance_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<string>> AddEmployeeAttendanceStatusMaster(EmployeeAttendanceStatusMasterDTO request)
+        public async Task<ServiceResponse<string>> SaveEmployeeAttendanceStatusMaster(List<EmployeeAttendanceStatusMasterDTO> request)
         {
             try
             {
-                return await _employeeAttendanceStatusMasterRepository.AddEmployeeAttendanceStatusMaster(request);
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
-            }
-        }
-
-        public async Task<ServiceResponse<string>> UpdateEmployeeAttendanceStatusMaster(EmployeeAttendanceStatusMasterDTO request)
-        {
-            try
-            {
-                return await _employeeAttendanceStatusMasterRepository.UpdateEmployeeAttendanceStatusMaster(request);
+                return await _employeeAttendanceStatusMasterRepository.SaveEmployeeAttendanceStatusMaster(request);
             }
             catch (Exception ex)
             {

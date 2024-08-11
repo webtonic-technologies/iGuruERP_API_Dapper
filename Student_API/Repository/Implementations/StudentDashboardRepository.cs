@@ -163,16 +163,18 @@ namespace Student_API.Repository.Implementations
             string sql = @"
             SELECT 
                 c.class_name AS ClassName,
-                g.Gender_Type AS Gender,
-                COUNT(s.student_id) AS Count
+                SUM(CASE WHEN g.Gender_id = 1 THEN 1 ELSE 0 END) AS BoysCount,
+                SUM(CASE WHEN g.Gender_id = 2 THEN 1 ELSE 0 END) AS GirlsCount
             FROM tbl_StudentMaster s
             JOIN tbl_Class c ON s.class_id = c.Class_id
             JOIN tbl_Gender g ON s.gender_id = g.Gender_Id
-            GROUP BY c.class_name, g.Gender_Type;";
+            WHERE s.Institute_id = @Institute_id
+            GROUP BY c.class_name;";
 
             try
             {
-                var classWiseGenderCounts = (await _dbConnection.QueryAsync<ClassWiseGenderCountDTO>(sql)).ToList();
+                var parameters = new { Institute_id = Institute_id };
+                var classWiseGenderCounts = (await _dbConnection.QueryAsync<ClassWiseGenderCountDTO>(sql, parameters)).ToList();
 
                 return new ServiceResponse<List<ClassWiseGenderCountDTO>>(true, "Operation successful", classWiseGenderCounts, 200, classWiseGenderCounts.Count);
             }

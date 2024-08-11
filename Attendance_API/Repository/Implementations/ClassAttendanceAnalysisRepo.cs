@@ -123,7 +123,7 @@ namespace Attendance_API.Repository.Implementations
                 var query = @"
                 SELECT 
                     CONCAT(LEFT(DATENAME(MONTH, sa.Date), 3), ' ', YEAR(sa.Date)) AS MonthYear,
-                    AVG(CAST(CASE WHEN ast.Short_Name = 'P'  THEN 1 ELSE 0 END AS FLOAT)) * 100 AS AverageAttendancePercentag
+                    AVG(CAST(CASE WHEN ast.Short_Name = 'P'  THEN 1 ELSE 0 END AS FLOAT)) * 100 AS AverageAttendancePercentage
                 FROM tbl_StudentAttendanceMaster sa
                 INNER JOIN tbl_studentmaster s ON sa.Student_id = s.student_id
                 LEFT JOIN tbl_StudentAttendanceStatus ast ON sa.Student_Attendance_Status_id = ast.Student_Attendance_Status_id
