@@ -4,6 +4,7 @@ using Employee_API.DTOs.ServiceResponse;
 using Employee_API.Models;
 using Employee_API.Repository.Interfaces;
 using System.Data;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Employee_API.Repository.Implementations
 {
@@ -230,7 +231,7 @@ namespace Employee_API.Repository.Implementations
         {
             try
             {
-                foreach(var data in request)
+                foreach (var data in request)
                 {
                     data.employee_id = employee_id;
                 }
@@ -994,7 +995,7 @@ namespace Employee_API.Repository.Implementations
 
                     string sql = "UPDATE tbl_EmployeeProfileMaster SET Status = @Status WHERE Employee_id = @Employee_id";
 
-                    int rowsAffected = await _connection.ExecuteAsync(sql, new { Status , Employee_id = employeeId });
+                    int rowsAffected = await _connection.ExecuteAsync(sql, new { Status, Employee_id = employeeId });
                     if (rowsAffected > 0)
                     {
                         return new ServiceResponse<bool>(true, "Operation Successful", true, 200);
@@ -1012,6 +1013,115 @@ namespace Employee_API.Repository.Implementations
             catch (Exception ex)
             {
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
+            }
+        }
+        public async Task<ServiceResponse<List<MaritalStatus>>> GetMaritalStatusList()
+        {
+            try
+            {
+                string sql = @"
+        SELECT statusId, statusName 
+        FROM [tbl_MaritalStatus]";
+
+                var data = await _connection.QueryAsync<MaritalStatus>(sql);
+
+                if (data != null && data.Any())
+                {
+                    return new ServiceResponse<List<MaritalStatus>>(true, "Marital status list retrieved successfully", data.ToList(), 200);
+                }
+                else
+                {
+                    return new ServiceResponse<List<MaritalStatus>>(false, "No marital statuses found", new List<MaritalStatus>(), 404);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<MaritalStatus>>(false, ex.Message, new List<MaritalStatus>(), 500);
+            }
+        }
+        public async Task<ServiceResponse<List<BloodGroup>>> GetBloodGroupList()
+        {
+            try
+            {
+                string sql = @"
+        SELECT [Blood_Group_id], [Blood_Group_Type]
+        FROM [tbl_BloodGroup]";
+
+                var data = await _connection.QueryAsync<BloodGroup>(sql);
+
+                if (data != null && data.Any())
+                {
+                    return new ServiceResponse<List<BloodGroup>>(true, "Blood group list retrieved successfully", data.ToList(), 200);
+                }
+                else
+                {
+                    return new ServiceResponse<List<BloodGroup>>(false, "No blood groups found", new List<BloodGroup>(), 404);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<BloodGroup>>(false, ex.Message, new List<BloodGroup>(), 500);
+            }
+        }
+        public async Task<ServiceResponse<List<Designation>>> GetDesignationList(int DepartmentId)
+        {
+            try
+            {
+                string sql = @"
+        SELECT [Designation_id], 
+               [Institute_id], 
+               [DesignationName], 
+               [Department_id], 
+               [IsDeleted]
+        FROM [tbl_Designation]
+        WHERE Department_id = @DepartmentId AND IsDeleted = 0"; // Only fetch non-deleted designations
+
+                var parameters = new { DepartmentId };
+
+                var data = await _connection.QueryAsync<Designation>(sql, parameters);
+
+                if (data != null && data.Any())
+                {
+                    return new ServiceResponse<List<Designation>>(true, "Designation list retrieved successfully", data.ToList(), 200);
+                }
+                else
+                {
+                    return new ServiceResponse<List<Designation>>(false, "No designations found for the specified department", new List<Designation>(), 404);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<Designation>>(false, ex.Message, new List<Designation>(), 500);
+            }
+        }
+        public async Task<ServiceResponse<List<Department>>> GetDepartmentList(int InstituteId)
+        {
+            try
+            {
+                string sql = @"
+        SELECT [Department_id], 
+               [Institute_id], 
+               [DepartmentName], 
+               [IsDeleted]
+        FROM [tbl_Department]
+        WHERE Institute_id = @InstituteId AND IsDeleted = 0"; // Only fetch non-deleted departments
+
+                var parameters = new { InstituteId };
+
+                var data = await _connection.QueryAsync<Department>(sql, parameters);
+
+                if (data != null && data.Any())
+                {
+                    return new ServiceResponse<List<Department>>(true, "Department list retrieved successfully", data.ToList(), 200);
+                }
+                else
+                {
+                    return new ServiceResponse<List<Department>>(false, "No departments found for the specified institute", new List<Department>(), 404);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<Department>>(false, ex.Message, new List<Department>(), 500);
             }
         }
         private string ImageUpload(string image)
