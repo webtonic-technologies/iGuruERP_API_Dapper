@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Attendance_API.Services.Interfaces;
 using Attendance_API.DTOs;
 using System.Threading.Tasks;
+using Attendance_API.DTOs.ServiceResponse;
 
 namespace Attendance_API.Controllers
 {
@@ -18,7 +19,7 @@ namespace Attendance_API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllGeoFencings([FromQuery]GeoFencingQueryParams request)
+        public async Task<IActionResult> GetAllGeoFencings([FromQuery] GeoFencingQueryParams request)
         {
             var response = await _geoFencingService.GetAllGeoFencings(request);
             if (response.Success)
@@ -40,25 +41,16 @@ namespace Attendance_API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddGeoFencing(GeoFencingDTO geoFencing)
+        public async Task<IActionResult> AddOrUpdateGeoFencing(List<GeoFencingDTO> geoFencings)
         {
-            var response = await _geoFencingService.AddGeoFencing(geoFencing);
-            if (response.Success)
-            {
-                return Ok(response);
-            }
-            return StatusCode(response.StatusCode, response);
-        }
 
-        [HttpPut]
-        public async Task<IActionResult> UpdateGeoFencing(GeoFencingDTO geoFencing)
-        {
-            var response = await _geoFencingService.UpdateGeoFencing(geoFencing);
-            if (response.Success)
+            var response = await _geoFencingService.AddOrUpdateGeoFencing(geoFencings);
+            if (!response.Success)
             {
-                return Ok(response);
+                return StatusCode(response.StatusCode, response);
             }
-            return StatusCode(response.StatusCode, response);
+
+            return Ok(new ServiceResponse<bool>(true, "All GeoFencings processed successfully", true, 200));
         }
 
         [HttpDelete("{id}")]
@@ -73,5 +65,4 @@ namespace Attendance_API.Controllers
         }
     }
 }
-
 

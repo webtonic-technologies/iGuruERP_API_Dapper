@@ -18,13 +18,14 @@ namespace Attendance_API.Repository.Implementations
             _connection = connection;
         }
 
-        public async Task<ServiceResponse<List<EmployeeAttendanceStatusMasterDTO>>> GetEmployeeAttendanceStatusMasterList()
+        public async Task<ServiceResponse<List<EmployeeAttendanceStatusMasterDTO>>> GetEmployeeAttendanceStatusMasterList(int InstituteId)
         {
             var response = new List<EmployeeAttendanceStatusMasterDTO>();
             string sql = @"SELECT *
-                       FROM [dbo].[tbl_EmployeeAttendanceStatusMaster]";
+                       FROM [dbo].[tbl_EmployeeAttendanceStatusMaster]
+                       WHERE isDelete = 0 AND InstituteId = @InstituteId";
 
-            var data = await _connection.QueryAsync<EmployeeAttendanceStatusMaster>(sql);
+            var data = await _connection.QueryAsync<EmployeeAttendanceStatusMaster>(sql, new { InstituteId });
             if (data != null)
             {
                 foreach (var item in data)
@@ -50,7 +51,7 @@ namespace Attendance_API.Repository.Implementations
             var response = new EmployeeAttendanceStatusMasterDTO();
             string sql = @"SELECT *
                        FROM [dbo].[tbl_EmployeeAttendanceStatusMaster]
-                       WHERE Employee_Attendance_Status_id = @Employee_Attendance_Status_id";
+                       WHERE Employee_Attendance_Status_id = @Employee_Attendance_Status_id AND isDelete = 0";
 
             var data = await _connection.QueryFirstOrDefaultAsync<EmployeeAttendanceStatusMaster>(sql, new { Employee_Attendance_Status_id });
             if (data != null)
@@ -66,54 +67,53 @@ namespace Attendance_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<string>> AddEmployeeAttendanceStatusMaster(EmployeeAttendanceStatusMasterDTO request)
+        public async Task<ServiceResponse<string>> SaveEmployeeAttendanceStatusMaster(List<EmployeeAttendanceStatusMasterDTO> request)
         {
-            string sql = @"INSERT INTO [dbo].[tbl_EmployeeAttendanceStatusMaster] (Employee_Attendance_Status_Type, Short_Name)
-                       VALUES (@Employee_Attendance_Status_Type, @Short_Name);
-                       SELECT SCOPE_IDENTITY();";
+            try
+            {
+                string insertSql = @"INSERT INTO [dbo].[tbl_EmployeeAttendanceStatusMaster] (Employee_Attendance_Status_Type, Short_Name, InstituteId)
+                                     VALUES (@Employee_Attendance_Status_Type, @Short_Name, @InstituteId);";
+                
+                string updateSql = @"UPDATE [dbo].[tbl_EmployeeAttendanceStatusMaster]
+                                     SET Employee_Attendance_Status_Type = @Employee_Attendance_Status_Type,
+                                         Short_Name = @Short_Name
+                                     WHERE Employee_Attendance_Status_id = @Employee_Attendance_Status_id;";
 
-            int insertedId = await _connection.ExecuteScalarAsync<int>(sql, new
-            {
-                Employee_Attendance_Status_Type = request.Employee_Attendance_Status_Type,
-                Short_Name = request.Short_Name
-            });
-            if (insertedId > 0)
-            {
-                return new ServiceResponse<string>(true, "Operation successful", "Data added successfully", 200);
-            }
-            else
-            {
-                return new ServiceResponse<string>(false, "Some error occured", string.Empty, 500);
-            }
-        }
+                foreach (var item in request)
+                {
+                    if (item.Employee_Attendance_Status_id == 0)
+                    {
+                        await _connection.ExecuteAsync(insertSql, new
+                        {
+                            Employee_Attendance_Status_Type = item.Employee_Attendance_Status_Type,
+                            Short_Name = item.Short_Name,
+                            InstituteId = item.InstituteId
+                        });
+                    }
+                    else
+                    {
+                        await _connection.ExecuteAsync(updateSql, new
+                        {
+                            Employee_Attendance_Status_Type = item.Employee_Attendance_Status_Type,
+                            Short_Name = item.Short_Name,
+                            Employee_Attendance_Status_id = item.Employee_Attendance_Status_id
+                        });
+                    }
+                }
 
-        public async Task<ServiceResponse<string>> UpdateEmployeeAttendanceStatusMaster(EmployeeAttendanceStatusMasterDTO request)
-        {
-            string sql = @"UPDATE [dbo].[tbl_EmployeeAttendanceStatusMaster]
-                       SET Employee_Attendance_Status_Type = @Employee_Attendance_Status_Type,
-                           Short_Name = @Short_Name
-                       WHERE Employee_Attendance_Status_id = @Employee_Attendance_Status_id";
-
-            int affectedRows = await _connection.ExecuteAsync(sql, new
-            {
-                Employee_Attendance_Status_Type = request.Employee_Attendance_Status_Type,
-                Short_Name = request.Short_Name,
-                Employee_Attendance_Status_id = request.Employee_Attendance_Status_id
-            });
-            if (affectedRows > 0)
-            {
-                return new ServiceResponse<string>(true, "Operation successful", "Data updated successfully", 200);
+                return new ServiceResponse<string>(true, "Operation successful", "Data processed successfully", 200);
             }
-            else
+            catch (Exception ex)
             {
-                return new ServiceResponse<string>(false, "Some error occured", string.Empty, 500);
+                return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
             }
         }
 
         public async Task<ServiceResponse<string>> DeleteEmployeeAttendanceStatusMaster(int Employee_Attendance_Status_id)
         {
-            string sql = @"DELETE FROM [dbo].[tbl_EmployeeAttendanceStatusMaster]
-                       WHERE Employee_Attendance_Status_id = @Employee_Attendance_Status_id";
+            string sql = @"UPDATE [dbo].[tbl_EmployeeAttendanceStatusMaster]
+                           SET isDelete = 1
+                           WHERE Employee_Attendance_Status_id = @Employee_Attendance_Status_id";
 
             int affectedRows = await _connection.ExecuteAsync(sql, new { Employee_Attendance_Status_id });
             if (affectedRows > 0)

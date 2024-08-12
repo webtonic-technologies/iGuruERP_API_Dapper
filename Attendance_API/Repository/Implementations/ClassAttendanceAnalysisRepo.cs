@@ -123,7 +123,7 @@ namespace Attendance_API.Repository.Implementations
                 var query = @"
                 SELECT 
                     CONCAT(LEFT(DATENAME(MONTH, sa.Date), 3), ' ', YEAR(sa.Date)) AS MonthYear,
-                    AVG(CAST(CASE WHEN ast.Short_Name = 'P'  THEN 1 ELSE 0 END AS FLOAT)) * 100 AS AverageAttendancePercentag
+                    AVG(CAST(CASE WHEN ast.Short_Name = 'P'  THEN 1 ELSE 0 END AS FLOAT)) * 100 AS AverageAttendancePercentage
                 FROM tbl_StudentAttendanceMaster sa
                 INNER JOIN tbl_studentmaster s ON sa.Student_id = s.student_id
                 LEFT JOIN tbl_StudentAttendanceStatus ast ON sa.Student_Attendance_Status_id = ast.Student_Attendance_Status_id
@@ -150,7 +150,7 @@ namespace Attendance_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<MonthlyAttendanceAnalysisDTO>>> GetAttendanceRangeAnalysis(int academicYearId, int classId, int sectionId, int instituteId)
+        public async Task<ServiceResponse<List<AttendanceRangeDTO>>> GetAttendanceRangeAnalysis(int academicYearId, int classId, int sectionId, int instituteId)
         {
             try
             {
@@ -191,13 +191,13 @@ namespace Attendance_API.Repository.Implementations
                 var parameters = new { AcademicYearId = academicYearId, ClassId = classId, SectionId = sectionId, InstituteId = instituteId };
 
                 // Execute the query and fetch the result
-                var result = await _connection.QueryAsync<MonthlyAttendanceAnalysisDTO>(query, parameters);
+                var result = await _connection.QueryAsync<AttendanceRangeDTO>(query, parameters);
 
-                return new ServiceResponse<List<MonthlyAttendanceAnalysisDTO>>(true, "Monthly attendance analysis retrieved successfully", result.AsList(), 200);
+                return new ServiceResponse<List<AttendanceRangeDTO>>(true, "Monthly attendance analysis retrieved successfully", result.AsList(), 200);
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<List<MonthlyAttendanceAnalysisDTO>>(false, $"Error: {ex.Message}", null, 500);
+                return new ServiceResponse<List<AttendanceRangeDTO>>(false, $"Error: {ex.Message}", null, 500);
             }
         }
 
@@ -241,7 +241,7 @@ WHERE
     AND (@InstituteId = 0 OR s.institute_id = @InstituteId)
 GROUP BY 
     s.Admission_Number,
-    s.First_Name,s.student_id;";
+    s.First_Name,s.student_id,s.Last_Name;";
 
                 // Parameters for the query
                 var parameters = new { AcademicYearId = academicYearId, class_id = classId, section_id = sectionId, InstituteId = instituteId };

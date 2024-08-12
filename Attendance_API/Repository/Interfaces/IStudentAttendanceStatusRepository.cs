@@ -6,10 +6,10 @@ namespace Attendance_API.Repository.Interfaces
 {
     public interface IStudentAttendanceStatusRepository
     {
-        Task<ServiceResponse<List<StudentAttendanceStatusDTO>>> GetStudentAttendanceStatusList();
+        Task<ServiceResponse<List<StudentAttendanceStatusDTO>>> GetStudentAttendanceStatusList(int InstituteId);
         Task<ServiceResponse<StudentAttendanceStatusDTO>> GetStudentAttendanceStatusById(int Student_Attendance_Status_id);
-        Task<ServiceResponse<string>> AddStudentAttendanceStatus(StudentAttendanceStatusDTO request);
-        Task<ServiceResponse<string>> UpdateStudentAttendanceStatus(StudentAttendanceStatusDTO request);
+        Task<ServiceResponse<string>> SaveStudentAttendanceStatus(List<StudentAttendanceStatusDTO> request);
+        //Task<ServiceResponse<string>> UpdateStudentAttendanceStatus(StudentAttendanceStatusDTO request);
         Task<ServiceResponse<string>> DeleteStudentAttendanceStatus(int Student_Attendance_Status_id);
     }
 }

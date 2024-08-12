@@ -3,8 +3,8 @@
     public class ClassWiseGenderCountDTO
     {
         public string ClassName { get; set; }
-        public string Gender { get; set; }
-        public int Count { get; set; }
+        public int BoysCount { get; set; }
+        public int GirlsCount { get; set; }
     }
 
     public class CourseClassDTO
@@ -19,3 +19,4 @@
         public string SectionName { get; set; }
     }
 }
+    
