@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Attendance_API.Services.Interfaces;
 using Attendance_API.DTOs;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace Attendance_API.Controllers
 {
@@ -18,9 +19,9 @@ namespace Attendance_API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetEmployeeAttendanceStatusMasterList()
+        public async Task<IActionResult> GetEmployeeAttendanceStatusMasterList(int instituteId)
         {
-            var response = await _employeeAttendanceStatusMasterService.GetEmployeeAttendanceStatusMasterList();
+            var response = await _employeeAttendanceStatusMasterService.GetEmployeeAttendanceStatusMasterList(instituteId);
             if (response.Success)
             {
                 return Ok(response);
@@ -40,20 +41,9 @@ namespace Attendance_API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddEmployeeAttendanceStatusMaster(EmployeeAttendanceStatusMasterDTO request)
+        public async Task<IActionResult> SaveEmployeeAttendanceStatusMaster(List<EmployeeAttendanceStatusMasterDTO> request)
         {
-            var response = await _employeeAttendanceStatusMasterService.AddEmployeeAttendanceStatusMaster(request);
-            if (response.Success)
-            {
-                return Ok(response);
-            }
-            return StatusCode(response.StatusCode, response);
-        }
-
-        [HttpPut]
-        public async Task<IActionResult> UpdateEmployeeAttendanceStatusMaster(EmployeeAttendanceStatusMasterDTO request)
-        {
-            var response = await _employeeAttendanceStatusMasterService.UpdateEmployeeAttendanceStatusMaster(request);
+            var response = await _employeeAttendanceStatusMasterService.SaveEmployeeAttendanceStatusMaster(request);
             if (response.Success)
             {
                 return Ok(response);

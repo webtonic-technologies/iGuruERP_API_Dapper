@@ -32,7 +32,7 @@ namespace Attendance_API.Repository.Implementations
                          $"FROM tbl_StudentMaster sm " +
                          $"LEFT JOIN tbl_StudentAttendanceMaster sam ON sam.Student_id = sm.student_id and sam.Date = '{request.Date.ToString("yyyy-MM-dd")}' " +
                          $"join tbl_StudentAttendanceStatus sas on sas.Student_Attendance_Status_id = sam.Student_Attendance_Status_id " +
-                         $"where sm.class_id = {request.class_id} and sm.section_id = {request.section_id}";
+                         $"where sm.class_id = {request.class_id} and sm.section_id = {request.section_id} AND sm.Institute_id = {request.Institute_id} AND isDatewise = {request.isDatewise}";
 
             if (request.pageNumber != null && request.pageSize != null)
             {
@@ -45,7 +45,7 @@ namespace Attendance_API.Repository.Implementations
                          $"FROM tbl_StudentMaster sm " +
                          $"LEFT JOIN tbl_StudentAttendanceMaster sam ON sam.Student_id = sm.student_id and sam.Date = '{request.Date.ToString("yyyy-MM-dd")}' " +
                          $"join tbl_StudentAttendanceStatus sas on sas.Student_Attendance_Status_id = sam.Student_Attendance_Status_id " +
-                         $"where sm.class_id = {request.class_id} and sm.section_id = {request.section_id}";
+                         $"where sm.class_id = {request.class_id} and sm.section_id = {request.section_id} AND sm.Institute_id = {request.Institute_id} AND isDatewise = {request.isDatewise}";
 
             var countRes = await _connection.QueryAsync<long>(sql);
             var count = countRes.FirstOrDefault();
@@ -63,8 +63,8 @@ namespace Attendance_API.Repository.Implementations
             if (studentAttendanceMaster.Student_Attendance_id == 0)
             {
                 // Insert new record
-                string insertSql = $"INSERT INTO tbl_StudentAttendanceMaster (Student_id, Student_Attendance_Status_id, Remark, Date) " +
-                                  $"VALUES (@Student_id, @Student_Attendance_Status_id, @Remark, @Date)";
+                string insertSql = $"INSERT INTO tbl_StudentAttendanceMaster (Student_id, Student_Attendance_Status_id, Remark, Date,isHoliday,TimeSlot_id,Subject_id,isDatewise) " +
+                                  $"VALUES (@Student_id, @Student_Attendance_Status_id, @Remark, @Date,@isHoliday,@TimeSlot_id,@Subject_id,@isDatewise)";
                 await _connection.ExecuteAsync(insertSql, studentAttendanceMaster);
             }
             else
@@ -72,7 +72,7 @@ namespace Attendance_API.Repository.Implementations
                 // Update existing record
                 string updateSql = $"UPDATE tbl_StudentAttendanceMaster " +
                                   $"SET Student_id = @Student_id, Student_Attendance_Status_id = @Student_Attendance_Status_id, Remark = @Remark, Date = @Date " +
-                                  $"WHERE Student_Attendance_id = @Student_Attendance_id";
+                                  $"WHERE Student_Attendance_id = @Student_Attendance_id , isHoliday = @isHoliday,TimeSlot_id = @TimeSlot_id , Subject_id = @Subject_id , isDatewise = @isDatewise";
                 await _connection.ExecuteAsync(updateSql, studentAttendanceMaster);
             }
 

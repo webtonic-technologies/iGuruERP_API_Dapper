@@ -32,7 +32,7 @@ namespace Attendance_API.Services.Implementations
             return await _classAttendanceAnalysisRepo.GetMonthlyAttendanceAnalysis(academicYearId, classId, sectionId, instituteId);
         }
         
-        public async Task<ServiceResponse<List<MonthlyAttendanceAnalysisDTO>>> GetAttendanceRangeAnalysis(int academicYearId, int classId, int sectionId, int instituteId)
+        public async Task<ServiceResponse<List<AttendanceRangeDTO>>> GetAttendanceRangeAnalysis(int academicYearId, int classId, int sectionId, int instituteId)
         {
             return await _classAttendanceAnalysisRepo.GetAttendanceRangeAnalysis(academicYearId, classId, sectionId, instituteId);
         }

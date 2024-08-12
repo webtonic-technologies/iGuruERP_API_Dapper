@@ -19,11 +19,11 @@ namespace Attendance_API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetStudentAttendanceStatusList()
+        public async Task<IActionResult> GetStudentAttendanceStatusList(int InstituteId)
         {
             try
             {
-                var data = await _studentAttendanceStatusService.GetStudentAttendanceStatusList();
+                var data = await _studentAttendanceStatusService.GetStudentAttendanceStatusList(InstituteId);
                 return Ok(data);
             }
             catch (Exception ex)
@@ -46,12 +46,12 @@ namespace Attendance_API.Controllers
             }
         }
 
-        [HttpPost]
-        public async Task<IActionResult> AddStudentAttendanceStatus([FromBody] StudentAttendanceStatusDTO request)
+        [HttpPost("AddEditStudentAttendanceStatus")]
+        public async Task<IActionResult> AddEditStudentAttendanceStatus([FromBody] List<StudentAttendanceStatusDTO> request)
         {
             try
             {
-                var data = await _studentAttendanceStatusService.AddStudentAttendanceStatus(request);
+                var data = await _studentAttendanceStatusService.SaveStudentAttendanceStatus(request);
                 if (data != null)
                 {
                     return Ok(data);
@@ -67,26 +67,26 @@ namespace Attendance_API.Controllers
             }
         }
 
-        [HttpPut]
-        public async Task<IActionResult> UpdateStudentAttendanceStatus([FromBody] StudentAttendanceStatusDTO request)
-        {
-            try
-            {
-                var data = await _studentAttendanceStatusService.UpdateStudentAttendanceStatus(request);
-                if (data != null)
-                {
-                    return Ok(data);
-                }
-                else
-                {
-                    return BadRequest("Bad Request");
-                }
-            }
-            catch (Exception e)
-            {
-                return this.BadRequest(e.Message);
-            }
-        }
+        //[HttpPut]
+        //public async Task<IActionResult> UpdateStudentAttendanceStatus([FromBody] StudentAttendanceStatusDTO request)
+        //{
+        //    try
+        //    {
+        //        var data = await _studentAttendanceStatusService.SaveStudentAttendanceStatus(request);
+        //        if (data != null)
+        //        {
+        //            return Ok(data);
+        //        }
+        //        else
+        //        {
+        //            return BadRequest("Bad Request");
+        //        }
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        return this.BadRequest(e.Message);
+        //    }
+        //}
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteStudentAttendanceStatus(int id)

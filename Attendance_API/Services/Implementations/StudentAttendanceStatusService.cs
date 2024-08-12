@@ -17,11 +17,11 @@ namespace Attendance_API.Services.Implementations
             _studentAttendanceStatusRepository = studentAttendanceStatusRepository;
         }
 
-        public async Task<ServiceResponse<List<StudentAttendanceStatusDTO>>> GetStudentAttendanceStatusList()
+        public async Task<ServiceResponse<List<StudentAttendanceStatusDTO>>> GetStudentAttendanceStatusList(int InstituteId)
         {
             try
             {
-                return await _studentAttendanceStatusRepository.GetStudentAttendanceStatusList();
+                return await _studentAttendanceStatusRepository.GetStudentAttendanceStatusList(InstituteId);
             }
             catch (Exception ex)
             {
@@ -41,11 +41,11 @@ namespace Attendance_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<string>> AddStudentAttendanceStatus(StudentAttendanceStatusDTO request)
+        public async Task<ServiceResponse<string>> SaveStudentAttendanceStatus(List<StudentAttendanceStatusDTO> request)
         {
             try
             {
-                return await _studentAttendanceStatusRepository.AddStudentAttendanceStatus(request);
+                return await _studentAttendanceStatusRepository.SaveStudentAttendanceStatus(request);
             }
             catch (Exception ex)
             {
@@ -53,17 +53,17 @@ namespace Attendance_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<string>> UpdateStudentAttendanceStatus(StudentAttendanceStatusDTO request)
-        {
-            try
-            {
-                return await _studentAttendanceStatusRepository.UpdateStudentAttendanceStatus(request);
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
-            }
-        }
+        //public async Task<ServiceResponse<string>> UpdateStudentAttendanceStatus(StudentAttendanceStatusDTO request)
+        //{
+        //    try
+        //    {
+        //        return await _studentAttendanceStatusRepository.UpdateStudentAttendanceStatus(request);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
+        //    }
+        //}
 
         public async Task<ServiceResponse<string>> DeleteStudentAttendanceStatus(int Student_Attendance_Status_id)
         {

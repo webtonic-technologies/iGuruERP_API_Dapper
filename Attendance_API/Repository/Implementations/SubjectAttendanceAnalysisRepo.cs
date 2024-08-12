@@ -125,7 +125,7 @@ namespace Attendance_API.Repository.Implementations
                 var query = @"
                 SELECT 
                     CONCAT(LEFT(DATENAME(MONTH, sa.Date), 3), ' ', YEAR(sa.Date)) AS MonthYear,
-                    AVG(CAST(CASE WHEN ast.Short_Name = 'P'  THEN 1 ELSE 0 END AS FLOAT)) * 100 AS AverageAttendancePercentag
+                    AVG(CAST(CASE WHEN ast.Short_Name = 'P'  THEN 1 ELSE 0 END AS FLOAT)) * 100 AS AverageAttendancePercentage
                 FROM tbl_StudentAttendanceMaster sa
                 INNER JOIN tbl_studentmaster s ON sa.Student_id = s.student_id
                 LEFT JOIN tbl_StudentAttendanceStatus ast ON sa.Student_Attendance_Status_id = ast.Student_Attendance_Status_id
@@ -133,9 +133,9 @@ namespace Attendance_API.Repository.Implementations
                     AND (@ClassId =0 OR s.class_id = @ClassId)
                     AND (@SectionId = 0 OR  s.section_id = @SectionId)
                     AND sa.Date BETWEEN (SELECT Startdate FROM tbl_AcademicYear WHERE Id = @AcademicYearId)
-                                    AND (SELECT Enddate FROM tbl_AcademicYear WHERE Id = @AcademicYearId)
+                                    AND (SELECT Enddate FROM tbl_AcademicYear WHERE Id = @AcademicYearId)  AND (@subjectId = 0 OR sa.Subject_id = @subjectId)
                 GROUP BY YEAR(sa.Date), MONTH(sa.Date), DATENAME(MONTH, sa.Date)
-                ORDER BY YEAR(sa.Date), MONTH(sa.Date)  AND (@subjectId = 0 OR sa.Subject_id = @subjectId);";
+                ORDER BY YEAR(sa.Date), MONTH(sa.Date) ;";
 
                 // Parameters for the query
                 var parameters = new { AcademicYearId = academicYearId, ClassId = classId, SectionId = sectionId , subjectId = subjectId, instituteId = instituteId };
@@ -151,7 +151,7 @@ namespace Attendance_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<MonthlyAttendanceAnalysisDTO>>> GetAttendanceRangeAnalysis(int academicYearId, int classId, int sectionId,int subjectId, int instituteId)
+        public async Task<ServiceResponse<List<AttendanceRangeDTO>>> GetAttendanceRangeAnalysis(int academicYearId, int classId, int sectionId,int subjectId, int instituteId)
         {
             try
             {
@@ -193,13 +193,13 @@ namespace Attendance_API.Repository.Implementations
                 var parameters = new { AcademicYearId = academicYearId, ClassId = classId, SectionId = sectionId, subjectId= subjectId, instituteId = instituteId };
 
                 // Execute the query and fetch the result
-                var result = await _connection.QueryAsync<MonthlyAttendanceAnalysisDTO>(query, parameters);
+                var result = await _connection.QueryAsync<AttendanceRangeDTO>(query, parameters);
 
-                return new ServiceResponse<List<MonthlyAttendanceAnalysisDTO>>(true, "Monthly attendance analysis retrieved successfully", result.AsList(), 200);
+                return new ServiceResponse<List<AttendanceRangeDTO>>(true, "Monthly attendance analysis retrieved successfully", result.AsList(), 200);
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<List<MonthlyAttendanceAnalysisDTO>>(false, $"Error: {ex.Message}", null, 500);
+                return new ServiceResponse<List<AttendanceRangeDTO>>(false, $"Error: {ex.Message}", null, 500);
             }
         }
 
@@ -239,11 +239,11 @@ LEFT JOIN
 WHERE 
     a.Date BETWEEN @StartDate AND @EndDate  AND ISNULL(isDatewise ,0) = 0
 	AND (@class_id = 0 OR s.class_id = @class_id) 
-    AND (@section_id = 0 OR s.section_id = @section_id)   AND (@subjectId = 0 OR sa.Subject_id = @subjectId)
+    AND (@section_id = 0 OR s.section_id = @section_id)   AND (@subjectId = 0 OR a.Subject_id = @subjectId)
     AND (@instituteId = 0 OR s.institute_id = @instituteId)
 GROUP BY 
     s.Admission_Number,
-    s.First_Name,s.student_id;";
+    s.First_Name,s.Last_Name,s.student_id;";
 
                 // Parameters for the query
                 var parameters = new { AcademicYearId = academicYearId, class_id = classId, section_id = sectionId, subjectId= subjectId, instituteId = instituteId };
@@ -300,7 +300,7 @@ SELECT
             WHERE a.Date = d.Date AND ISNULL(isDatewise ,0) = 0
               AND ast.Short_Name = 'P' -- Filter for present status
               AND (@class_id = 0 OR s.class_id = @class_id)
-              AND (@section_id = 0 OR s.section_id = @section_id)   AND (@subjectId = 0 OR sa.Subject_id = @subjectId)
+              AND (@section_id = 0 OR s.section_id = @section_id)   AND (@subjectId = 0 OR a.Subject_id = @subjectId)
               AND (@instituteId = 0 OR s.institute_id = @instituteId)
         ), 
         0

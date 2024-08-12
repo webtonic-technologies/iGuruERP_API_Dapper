@@ -21,50 +21,50 @@ namespace Attendance_API.Controllers
         public async Task<IActionResult> AddShiftTimingAndDesignations([FromBody] ShiftTimingRequestDTO request)
         {
             var result = await _shiftTimingService.AddShiftTimingAndDesignations(request);
-            if (result)
-                return Ok();
+            if (result.Success)
+                return Ok(result);
             else
-                return BadRequest("Failed to add shift timing and designations.");
+                return BadRequest(result);
         }
 
         [HttpGet]
         public async Task<IActionResult> GetAllShiftTimings([FromQuery]ShiftTimingFilterDTO request)
         {
             var result = await _shiftTimingService.GetAllShiftTimings(request);
-            if (result != null)
+            if (result.Success)
                 return Ok(result);
             else
-                return NotFound("No shift timings found.");
+                return NotFound(result);
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetShiftTimingById(int id)
         {
             var result = await _shiftTimingService.GetShiftTimingById(id);
-            if (result != null)
+            if (result.Success)
                 return Ok(result);
             else
-                return NotFound($"Shift timing with ID {id} not found.");
+                return NotFound(result);
         }
 
         [HttpPut]
         public async Task<IActionResult> EditShiftTimingAndDesignations([FromBody] ShiftTimingRequestDTO request)
         {
             var result = await _shiftTimingService.EditShiftTimingAndDesignations(request);
-            if (result)
-                return Ok();
+            if (result.Success)
+                return Ok(result);
             else
-                return BadRequest("Failed to edit shift timing and designations.");
+                return BadRequest(result);
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteShiftTiming(int id)
         {
             var result = await _shiftTimingService.DeleteShiftTiming(id);
-            if (result)
-                return Ok();
+            if (result.Success)
+                return Ok(result);
             else
-                return BadRequest($"Failed to delete shift timing with ID {id}.");
+                return BadRequest(result);
         }
     }
 }

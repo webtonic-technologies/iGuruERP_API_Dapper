@@ -171,7 +171,7 @@ ORDER BY
     Employee_Name;
 ';
 
-EXEC sp_executesql @query, N'@StartDate DATE, @EndDate DATE , @InstituteId', @StartDate, @EndDate,@InstituteId;";
+EXEC sp_executesql @query, N'@StartDate DATE, @EndDate DATE , @InstituteId INT', @StartDate, @EndDate,@InstituteId;";
 
                 var parameters = new { StartDate = request.StartDate, EndDate = request.EndDate, InstituteId = request.instituteId };
 

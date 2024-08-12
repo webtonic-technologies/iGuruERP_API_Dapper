@@ -54,7 +54,7 @@ namespace Attendance_API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new ServiceResponse<List<MonthlyAttendanceAnalysisDTO>>(false, $"Error: {ex.Message}", null, 500));
+                return BadRequest(new ServiceResponse<List<AttendanceRangeDTO>>(false, $"Error: {ex.Message}", null, 500));
             }
         }
 
