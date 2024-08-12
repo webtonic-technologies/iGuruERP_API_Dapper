@@ -114,22 +114,30 @@ namespace Institute_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<string>> DeleteAdminDesignation(int Designation_id)
+        public async Task<ServiceResponse<string>> DeleteAdminDesignation(int designationId)
         {
             try
             {
-                string sql = "UPDATE tbl_Designation SET IsDeleted = @IsDeleted WHERE Designation_id = @Designation_id";
+                // Check if the designation is mapped to any employees
+                string checkMappingSql = @"SELECT COUNT(*) FROM [tbl_EmployeeProfileMaster] WHERE Designation_id = @DesignationId AND Status = 1"; // Assuming Status = 1 means active
+                int employeeCount = await _connection.ExecuteScalarAsync<int>(checkMappingSql, new { DesignationId = designationId });
 
-                // Execute the query and retrieve the number of affected rows
-                int affectedRows = await _connection.ExecuteAsync(sql, new { IsDeleted = true, Designation_id });
- 
+                if (employeeCount > 0)
+                {
+                    return new ServiceResponse<string>(false, "Cannot delete the designation; it is mapped to active employees.", string.Empty, 400);
+                }
+
+                // Proceed with the soft delete
+                string sql = "UPDATE tbl_Designation SET IsDeleted = @IsDeleted WHERE Designation_id = @DesignationId";
+
+                int affectedRows = await _connection.ExecuteAsync(sql, new { IsDeleted = true, DesignationId = designationId });
                 if (affectedRows > 0)
                 {
                     return new ServiceResponse<string>(true, "Operation successful", "Designation deleted successfully", 200);
                 }
                 else
                 {
-                    return new ServiceResponse<string>(false, "operation failed", string.Empty, 500);
+                    return new ServiceResponse<string>(false, "Operation failed", string.Empty, 404);
                 }
             }
             catch (Exception ex)
@@ -138,53 +146,60 @@ namespace Institute_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<AdminDesignation>> GetAdminDesignationById(int Designationid)
+        public async Task<ServiceResponse<AdminDesignationResponse>> GetAdminDesignationById(int Designationid)
         {
             try
             {
-                string sql = @"SELECT *
-                       FROM [dbo].[tbl_Designation]
-                       WHERE Designation_id = @Designation_id AND IsDeleted = 0";
+                string sql = @"
+            SELECT d.Department_id, d.Institute_id, d.DepartmentName as Department_name, 
+                   des.Designation_id, des.DesignationName, des.IsDeleted 
+            FROM [dbo].[tbl_Designation] des
+            JOIN [dbo].[tbl_Department] d ON des.Department_id = d.Department_id
+            WHERE des.Designation_id = @Designation_id AND des.IsDeleted = 0";
 
-                // Execute the query and retrieve the department
-                var designation = await _connection.QueryFirstOrDefaultAsync<AdminDesignation>(sql, new { Designation_id = Designationid });
+                // Execute the query and retrieve the designation along with department details
+                var designation = await _connection.QueryFirstOrDefaultAsync<AdminDesignationResponse>(sql, new { Designation_id = Designationid });
+
                 if (designation != null)
                 {
-                    return new ServiceResponse<AdminDesignation>(true, "Record found", designation, 200);
+                    return new ServiceResponse<AdminDesignationResponse>(true, "Record found", designation, 200);
                 }
                 else
                 {
-                    return new ServiceResponse<AdminDesignation>(false, "record not found", new AdminDesignation(), 500);
+                    return new ServiceResponse<AdminDesignationResponse>(false, "Record not found", new AdminDesignationResponse(), 404);
                 }
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<AdminDesignation>(false, ex.Message, new AdminDesignation(), 500);
+                return new ServiceResponse<AdminDesignationResponse>(false, ex.Message, new AdminDesignationResponse(), 500);
             }
         }
 
-        public async Task<ServiceResponse<List<AdminDesignation>>> GetAdminDesignationList(GetListRequest request)
+        public async Task<ServiceResponse<List<AdminDesignationResponse>>> GetAdminDesignationList(GetListRequest request)
         {
             try
             {
-                string sql = @"SELECT *
-                       FROM [dbo].[tbl_Designation]
-                       WHERE Institute_id = @Institute_id AND IsDeleted = 0";
+                string sql = @"
+            SELECT d.Department_id, d.Institute_id, d.DepartmentName as Department_name, 
+                   des.Designation_id, des.DesignationName, des.IsDeleted 
+            FROM [dbo].[tbl_Designation] des
+            JOIN [dbo].[tbl_Department] d ON des.Department_id = d.Department_id
+            WHERE des.Institute_id = @Institute_id AND des.IsDeleted = 0";
 
                 // Add search text filter if provided
                 if (!string.IsNullOrEmpty(request.SearchText))
                 {
-                    sql += " AND (DesignationName LIKE @SearchText OR Description LIKE @SearchText)";
+                    sql += " AND (des.DesignationName LIKE @SearchText OR d.DepartmentName LIKE @SearchText)";
                 }
 
                 // Add sorting
-                string sortColumn = "DesignationName"; // Default sort column
+                string sortColumn = "des.DesignationName"; // Default sort column
                 string sortOrder = request.SortDirection.ToUpper() == "DESC" ? "DESC" : "ASC"; // Validate sort direction
 
                 sql += $" ORDER BY {sortColumn} {sortOrder}";
 
                 // Execute the query and retrieve the designations
-                var designations = await _connection.QueryAsync<AdminDesignation>(sql, new
+                var designations = await _connection.QueryAsync<AdminDesignationResponse>(sql, new
                 {
                     Institute_id = request.Institute_id,
                     SearchText = "%" + request.SearchText + "%"
@@ -198,16 +213,16 @@ namespace Institute_API.Repository.Implementations
                         .Take(request.PageSize)
                         .ToList();
 
-                    return new ServiceResponse<List<AdminDesignation>>(true, "Records found", paginatedDesignations, 200, designations.Count());
+                    return new ServiceResponse<List<AdminDesignationResponse>>(true, "Records found", paginatedDesignations, 200, designations.Count());
                 }
                 else
                 {
-                    return new ServiceResponse<List<AdminDesignation>>(false, "Records not found", new List<AdminDesignation>(), 204);
+                    return new ServiceResponse<List<AdminDesignationResponse>>(false, "Records not found", new List<AdminDesignationResponse>(), 204);
                 }
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<List<AdminDesignation>>(false, ex.Message, new List<AdminDesignation>(), 500);
+                return new ServiceResponse<List<AdminDesignationResponse>>(false, ex.Message, new List<AdminDesignationResponse>(), 500);
             }
         }
     }

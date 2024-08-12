@@ -258,8 +258,8 @@ namespace Employee_API.Repository.Implementations
             {
                 string sql = @"
                 SELECT 
-                    SUM(CASE WHEN Status = 'Active' THEN 1 ELSE 0 END) AS ActiveCount,
-                    SUM(CASE WHEN Status = 'Inactive' THEN 1 ELSE 0 END) AS InactiveCount,
+                    SUM(CASE WHEN Status = 1 THEN 1 ELSE 0 END) AS ActiveCount,
+                    SUM(CASE WHEN Status = 0 THEN 1 ELSE 0 END) AS InactiveCount,
                     COUNT(*) AS TotalCount
                 FROM 
                     tbl_EmployeeProfileMaster
