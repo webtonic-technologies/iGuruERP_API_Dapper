@@ -230,6 +230,10 @@ namespace Employee_API.Repository.Implementations
         {
             try
             {
+                foreach(var data in request)
+                {
+                    data.employee_id = employee_id;
+                }
                 int addedRecords = 0;
                 string query = "SELECT COUNT(*) FROM tbl_DocumentsMaster WHERE employee_id = @employee_id";
                 int count = await _connection.ExecuteScalarAsync<int>(query, new { employee_id });
@@ -466,11 +470,17 @@ namespace Employee_API.Repository.Implementations
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
-        public async Task<ServiceResponse<int>> AddUpdateEmployeeAddressDetails(EmployeeAddressDetails? request, int employeeId)
+        public async Task<ServiceResponse<int>> AddUpdateEmployeeAddressDetails(List<EmployeeAddressDetails>? request, int employeeId)
         {
-            if (request == null)
+            if (request == null || !request.Any())
             {
-                return new ServiceResponse<int>(false, "Request cannot be null.", 0, 400);
+                return new ServiceResponse<int>(false, "Request cannot be null or empty.", 0, 400);
+            }
+
+            // Set Employee_id for each address in the request
+            foreach (var data in request)
+            {
+                data.Employee_id = employeeId;
             }
 
             if (_connection.State != ConnectionState.Open)
@@ -484,39 +494,28 @@ namespace Employee_API.Repository.Implementations
                 {
                     try
                     {
-                        // SQL query to insert or update employee address
-                        string upsertAddressSql = @"
-                IF EXISTS (SELECT 1 FROM tbl_EmployeePresentAddress WHERE Employee_id = @EmployeeId)
-                BEGIN
-                    UPDATE tbl_EmployeePresentAddress
-                    SET Address = @Address,
-                        Country_id = @Country_id,
-                        State_id = @State_id,
-                        City_id = @City_id,
-                        District_id = @District_id,
-                        Pin_code = @Pin_code,
-                        AddressTypeId = @AddressTypeId
-                    WHERE Employee_id = @EmployeeId;
-                END
-                ELSE
-                BEGIN
-                    INSERT INTO tbl_EmployeePresentAddress (Address, Country_id, State_id, City_id, District_id, Pin_code, AddressTypeId, Employee_id)
-                    VALUES (@Address, @Country_id, @State_id, @City_id, @District_id, @Pin_code, @AddressTypeId, @EmployeeId);
-                END;
+                        // Delete existing addresses for the employee
+                        string deleteAddressSql = @"
+                DELETE FROM tbl_EmployeePresentAddress 
+                WHERE Employee_id = @EmployeeId;";
 
-                -- Return the employee address ID
-                SELECT CAST(SCOPE_IDENTITY() AS INT);";
+                        await connection.ExecuteAsync(deleteAddressSql, new { EmployeeId = employeeId }, transaction);
 
-                        // Set EmployeeId in the request
-                        request.Employee_id = employeeId;
+                        // Insert new addresses
+                        string insertAddressSql = @"
+                INSERT INTO tbl_EmployeePresentAddress (Address, Country_id, State_id, City_id, District_id, Pin_code, AddressTypeId, Employee_id)
+                VALUES (@Address, @Country_id, @State_id, @City_id, @District_id, @Pin_code, @AddressTypeId, @Employee_id);";
 
-                        // Execute the upsert operation
-                        var addressId = await connection.QuerySingleAsync<int>(upsertAddressSql, request, transaction);
+                        // Execute the insert operation for each address
+                        foreach (var address in request)
+                        {
+                            await connection.ExecuteAsync(insertAddressSql, address, transaction);
+                        }
 
                         // Commit the transaction
                         transaction.Commit();
 
-                        return new ServiceResponse<int>(true, "Address saved successfully.", addressId, 200);
+                        return new ServiceResponse<int>(true, "Address saved successfully.", request.Count, 200);
                     }
                     catch (Exception ex)
                     {
@@ -562,17 +561,17 @@ namespace Employee_API.Repository.Implementations
                    ep.Status,
                    d.DepartmentName,
                    des.DesignationName,
-                   n.NationalityName,
-                   r.ReligionName,
-                   ms.MaritalStatusName,
-                   bg.BloodGroupName
+                   n.Nationality_Type as NationalityName,
+                   r.Religion_Type as ReligionName,
+                   ms.StatusName as MaritalStatusName,
+                   bg.Blood_Group_Type as BloodGroupName
             FROM [dbo].[tbl_EmployeeProfileMaster] ep
             LEFT JOIN [dbo].[tbl_Department] d ON ep.Department_id = d.Department_id
             LEFT JOIN [dbo].[tbl_Designation] des ON ep.Designation_id = des.Designation_id
             LEFT JOIN [dbo].[tbl_Nationality] n ON ep.Nationality_id = n.Nationality_id
             LEFT JOIN [dbo].[tbl_Religion] r ON ep.Religion_id = r.Religion_id
-            LEFT JOIN [dbo].[tbl_MaritalStatus] ms ON ep.marrital_status_id = ms.MaritalStatus_id
-            LEFT JOIN [dbo].[tbl_BloodGroup] bg ON ep.Blood_Group_id = bg.BloodGroup_id
+            LEFT JOIN [dbo].[tbl_MaritalStatus] ms ON ep.marrital_status_id = ms.statusId
+            LEFT JOIN [dbo].[tbl_BloodGroup] bg ON ep.Blood_Group_id = bg.Blood_Group_id
             WHERE ep.Employee_id = @EmployeeId";
 
                 // Execute the query and retrieve the employee profile
@@ -729,7 +728,7 @@ namespace Employee_API.Repository.Implementations
             try
             {
                 // Base SQL query with joins to fetch names including nationality and religion
-                var sql = @"
+                string sql = @"
             SELECT ep.Employee_id,
                    ep.First_Name,
                    ep.Middle_Name,
@@ -746,21 +745,27 @@ namespace Employee_API.Repository.Implementations
                    ep.Employee_code_id,
                    ep.marrital_status_id,
                    ep.Blood_Group_id,
+                   ep.aadhar_no,
+                   ep.pan_no,
+                   ep.EPF_no,
+                   ep.ESIC_no,
+                   ep.Institute_id,
                    ep.EmpPhoto,
+                   ep.uan_no,
                    ep.Status,
                    d.DepartmentName,
                    des.DesignationName,
-                   nat.NationalityName,
-                   rel.ReligionName,
-                   ms.MaritalStatusName,
-                   bg.BloodGroupName
+                   n.Nationality_Type as NationalityName,
+                   r.Religion_Type as ReligionName,
+                   ms.StatusName as MaritalStatusName,
+                   bg.Blood_Group_Type as BloodGroupName
             FROM [dbo].[tbl_EmployeeProfileMaster] ep
             LEFT JOIN [dbo].[tbl_Department] d ON ep.Department_id = d.Department_id
             LEFT JOIN [dbo].[tbl_Designation] des ON ep.Designation_id = des.Designation_id
-            LEFT JOIN [dbo].[tbl_Nationality] nat ON ep.Nationality_id = nat.Nationality_id
-            LEFT JOIN [dbo].[tbl_Religion] rel ON ep.Religion_id = rel.Religion_id
-            LEFT JOIN [dbo].[tbl_MaritalStatus] ms ON ep.marrital_status_id = ms.MaritalStatus_id
-            LEFT JOIN [dbo].[tbl_BloodGroup] bg ON ep.Blood_Group_id = bg.BloodGroup_id
+            LEFT JOIN [dbo].[tbl_Nationality] n ON ep.Nationality_id = n.Nationality_id
+            LEFT JOIN [dbo].[tbl_Religion] r ON ep.Religion_id = r.Religion_id
+            LEFT JOIN [dbo].[tbl_MaritalStatus] ms ON ep.marrital_status_id = ms.statusId
+            LEFT JOIN [dbo].[tbl_BloodGroup] bg ON ep.Blood_Group_id = bg.Blood_Group_id
             WHERE ep.Institute_id = @InstituteId";
 
                 // Initialize parameters
@@ -924,7 +929,7 @@ namespace Employee_API.Repository.Implementations
                 return new ServiceResponse<List<EmployeeBankDetails>>(false, ex.Message, [], 500);
             }
         }
-        public async Task<ServiceResponse<EmployeeAddressDetailsResponse>> GetEmployeeAddressDetailsById(int employeeId)
+        public async Task<ServiceResponse<EmployeeAddressResponse>> GetEmployeeAddressDetailsById(int employeeId)
         {
             try
             {
@@ -934,13 +939,13 @@ namespace Employee_API.Repository.Implementations
             e.Employee_Present_Address_id,
             e.Address,
             e.Country_id,
-            c.CountryName,
+            c.country_name as CountryName,
             e.State_id,
-            s.StateName,
+            s.state_name as StateName,
             e.City_id,
-            ci.CityName,
+            ci.city_name as CityName,
             e.District_id,
-            d.DistrictName,
+            d.district_name as DistrictName,
             e.Pin_code,
             e.AddressTypeId,
             e.Employee_id
@@ -949,21 +954,32 @@ namespace Employee_API.Repository.Implementations
         LEFT JOIN tbl_State s ON e.State_id = s.State_id
         LEFT JOIN tbl_City ci ON e.City_id = ci.City_id
         LEFT JOIN tbl_District d ON e.District_id = d.District_id
-        WHERE e.Employee_id = @EmployeeId AND e.IsDeleted = 0"; // Assuming IsDeleted is a column to check if the address is active
+        WHERE e.Employee_id = @EmployeeId"; // Assuming IsDeleted is a column to check if the address is active
 
                 // Execute the query and retrieve the address details
-                var addressDetails = await _connection.QuerySingleOrDefaultAsync<EmployeeAddressDetailsResponse>(sql, new { EmployeeId = employeeId });
+                var addressDetails = await _connection.QueryAsync<EmployeeAddressDetailsResponse>(sql, new { EmployeeId = employeeId });
 
-                if (addressDetails == null)
+                if (addressDetails == null || !addressDetails.Any())
                 {
-                    return new ServiceResponse<EmployeeAddressDetailsResponse>(false, "No address details found for the given employee.", null, 204);
+                    return new ServiceResponse<EmployeeAddressResponse>(false, "No address details found for the given employee.", null, 204);
                 }
 
-                return new ServiceResponse<EmployeeAddressDetailsResponse>(true, "Address details retrieved successfully.", addressDetails, 200);
+                // Create response object to hold present and permanent addresses
+                var response = new EmployeeAddressResponse
+                {
+                    PresentAddress = addressDetails
+                        .Where(a => a.AddressTypeId == 2) // Present addresses
+                        .ToList(),
+                    PermanentAddress = addressDetails
+                        .Where(a => a.AddressTypeId == 1) // Permanent addresses
+                        .ToList()
+                };
+
+                return new ServiceResponse<EmployeeAddressResponse>(true, "Address details retrieved successfully.", response, 200);
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<EmployeeAddressDetailsResponse>(false, ex.Message, null, 500);
+                return new ServiceResponse<EmployeeAddressResponse>(false, ex.Message, null, 500);
             }
         }
         public async Task<ServiceResponse<bool>> StatusActiveInactive(int employeeId)
@@ -974,11 +990,11 @@ namespace Employee_API.Repository.Implementations
 
                 if (data.Data != null)
                 {
-                    data.Data.Status = !data.Data.Status;
+                    bool Status = !data.Data.Status;
 
                     string sql = "UPDATE tbl_EmployeeProfileMaster SET Status = @Status WHERE Employee_id = @Employee_id";
 
-                    int rowsAffected = await _connection.ExecuteAsync(sql, new { data.Data.Status, Employee_id = employeeId });
+                    int rowsAffected = await _connection.ExecuteAsync(sql, new { Status , Employee_id = employeeId });
                     if (rowsAffected > 0)
                     {
                         return new ServiceResponse<bool>(true, "Operation Successful", true, 200);

@@ -218,7 +218,7 @@ namespace Institute_API.Repository.Implementations
                                                 .ToList();
                     if (paginatedList.Count != 0)
                     {
-                        return new ServiceResponse<List<Class>>(true, "Record found", paginatedList, 200);
+                        return new ServiceResponse<List<Class>>(true, "Record found", paginatedList, 200, response.Count);
                     }
                     else
                     {

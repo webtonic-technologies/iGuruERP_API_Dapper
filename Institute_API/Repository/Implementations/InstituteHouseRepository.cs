@@ -164,6 +164,16 @@ namespace Institute_API.Repository.Implementations
         {
             try
             {
+                // Check if the institute house is mapped to any students
+                string checkMappingSql = @"SELECT COUNT(*) FROM [dbo].[tbl_StudentMaster] WHERE Institute_house_id = @InstituteHouseId AND isActive = 1";
+                int studentCount = await _connection.ExecuteScalarAsync<int>(checkMappingSql, new { InstituteHouseId = instituteHouseId });
+
+                if (studentCount > 0)
+                {
+                    return new ServiceResponse<bool>(false, "Cannot delete the institute house; it is mapped to active students.", false, 400);
+                }
+
+                // Proceed with soft delete if no mappings found
                 string sql = @"UPDATE [dbo].[tbl_InstituteHouse]
                        SET IsDeleted = 1
                        WHERE Institute_house_id = @InstituteHouseId";

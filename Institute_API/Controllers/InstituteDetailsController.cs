@@ -103,12 +103,12 @@ namespace Institute_API.Controllers
                 return BadRequest(ex.Message);
             }
         }
-        [HttpGet("GetCitiesByStateId/{stateId}")]
-        public async Task<IActionResult> GetCitiesByStateIdAsync(int stateId)
+        [HttpGet("GetCitiesByDistrictIdAsync/{districtId}")]
+        public async Task<IActionResult> GetCitiesByDistrictIdAsync(int districtId)
         {
             try
             {
-                var data = await _instituteDetailsServices.GetCitiesByStateIdAsync(stateId);
+                var data = await _instituteDetailsServices.GetCitiesByDistrictIdAsync(districtId);
                 return Ok(data);
             }
             catch (Exception ex)
@@ -116,12 +116,12 @@ namespace Institute_API.Controllers
                 return BadRequest(ex.Message);
             }
         }
-        [HttpGet("GetDistrictsByCityId/{cityId}")]
-        public async Task<IActionResult> GetDistrictsByCityIdAsync(int cityId)
+        [HttpGet("GetDistrictsByStateIdAsync/{stateId}")]
+        public async Task<IActionResult> GetDistrictsByStateIdAsync(int stateId)
         {
             try
             {
-                var data = await _instituteDetailsServices.GetDistrictsByCityIdAsync(cityId);
+                var data = await _instituteDetailsServices.GetDistrictsByStateIdAsync(stateId);
                 return Ok(data);
             }
             catch (Exception ex)

@@ -31,6 +31,6 @@
         public List<EmployeeWorkExperience>? EmployeeWorkExperiences { get; set; }
         public List<EmployeeBankDetails>? EmployeeBankDetails { get; set; }
         public EmployeeFamily? Family { get; set; }
-        public EmployeeAddressDetails? EmployeeAddressDetails { get; set; }
+        public List<EmployeeAddressDetails>? EmployeeAddressDetails { get; set; }
     }
 }

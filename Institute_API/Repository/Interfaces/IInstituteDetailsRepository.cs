@@ -11,7 +11,7 @@ namespace Institute_API.Repository.Interfaces
         Task<ServiceResponse<List<InstituteDetailsResponseDTO>>> GetAllInstituteDetailsList();
         Task<ServiceResponse<List<Country>>> GetCountriesAsync();
         Task<ServiceResponse<List<State>>> GetStatesByCountryIdAsync(int countryId);
-        Task<ServiceResponse<List<City>>> GetCitiesByStateIdAsync(int stateId);
-        Task<ServiceResponse<List<District>>> GetDistrictsByCityIdAsync(int cityId);
+        Task<ServiceResponse<List<City>>> GetCitiesByDistrictIdAsync(int districtId);
+        Task<ServiceResponse<List<District>>> GetDistrictsByStateIdAsync(int stateId);
     }
 }
