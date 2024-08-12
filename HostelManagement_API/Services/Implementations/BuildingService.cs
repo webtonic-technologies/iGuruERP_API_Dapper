@@ -17,10 +17,9 @@ namespace HostelManagement_API.Services.Implementations
             _buildingRepository = buildingRepository;
         }
 
-        public async Task<ServiceResponse<int>> AddUpdateBuilding(AddUpdateBuildingRequest request)
+        public async Task<int> AddUpdateBuildings(AddUpdateBuildingsRequest request)
         {
-            var buildingId = await _buildingRepository.AddUpdateBuilding(request);
-            return new ServiceResponse<int>(true, "Building added/updated successfully", buildingId, 200);
+            return await _buildingRepository.AddUpdateBuildings(request);
         }
 
         public async Task<ServiceResponse<List<GetAllBuildingsResponse>>> GetAllBuildings(GetAllBuildingsRequest request)
@@ -33,6 +32,11 @@ namespace HostelManagement_API.Services.Implementations
         {
             var building = await _buildingRepository.GetBuildingById(buildingId);
             return new ServiceResponse<BuildingResponse>(true, "Building retrieved successfully", building, 200);
+        }
+
+        public async Task<IEnumerable<BuildingResponse>> GetAllBuildingsFetch()
+        {
+            return await _buildingRepository.GetAllBuildingsFetch();
         }
 
         public async Task<ServiceResponse<int>> DeleteBuilding(int buildingId)

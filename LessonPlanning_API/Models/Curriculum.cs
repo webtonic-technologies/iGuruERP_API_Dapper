@@ -9,10 +9,10 @@ namespace Lesson_API.Models
         public int SubjectID { get; set; }
         public int InstituteID { get; set; }
         public bool IsActive { get; set; }
-        public List<CurriculumChapter> CurriculumChapters { get; set; }
+        public List<CurriculumChapter1> CurriculumChapters { get; set; }
     }
 
-    public class CurriculumChapter
+    public class CurriculumChapter1
     {
         public int CurriculumChapterID { get; set; }
         public string ChapterName { get; set; }

@@ -30,5 +30,20 @@ namespace SiteAdmin_API.Controllers
             return StatusCode(response.StatusCode, response);
         }
 
+        [HttpPost("UpdateSubModules")]
+        public async Task<IActionResult> UpdateSubModule([FromBody] UpdateSubModuleRequest request)
+        {
+            var response = await _subModuleService.UpdateSubModule(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("Status")]
+        public async Task<IActionResult> UpdateSubModuleStatus([FromForm] int subModuleId)
+        {
+            var response = await _subModuleService.UpdateSubModuleStatus(subModuleId);
+            return StatusCode(response.StatusCode, response);
+        }
+
     }
 }
+

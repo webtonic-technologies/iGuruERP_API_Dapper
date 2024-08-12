@@ -4,6 +4,8 @@
     {
         public int StockID { get; set; }
         public int ItemTypeID { get; set; }
+        public string ItemTypeName { get; set; } // New property for ItemType name
+
         public string MedicineName { get; set; }
         public string Company { get; set; }
         public string BatchCode { get; set; }

@@ -26,6 +26,11 @@ namespace LibraryManagement_API.Services.Implementations
             return await _publisherRepository.GetAllPublishers(request);
         }
 
+        public async Task<ServiceResponse<List<PublisherFetchResponse>>> GetAllPublishersFetch(GetAllPublishersFetchRequest request)
+        {
+            return await _publisherRepository.GetAllPublishersFetch(request);
+        }
+
         public async Task<ServiceResponse<Publisher>> GetPublisherById(int publisherId)
         {
             return await _publisherRepository.GetPublisherById(publisherId);

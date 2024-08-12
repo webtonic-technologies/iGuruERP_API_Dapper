@@ -9,5 +9,8 @@ namespace SiteAdmin_API.Repository.Interfaces
     {
         Task<ServiceResponse<List<SubModule>>> GetAllSubModules(GetAllSubModulesRequest request);
         Task<ServiceResponse<List<FunctionalityResponse>>> GetAllFunctionality(GetAllFunctionalityRequest request);
+        Task<ServiceResponse<bool>> UpdateSubModule(UpdateSubModuleRequest request);
+        Task<ServiceResponse<bool>> UpdateSubModuleStatus(int subModuleId);
+
     }
 }

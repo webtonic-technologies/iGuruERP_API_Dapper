@@ -1,4 +1,5 @@
 ﻿using HostelManagement_API.DTOs.Requests;
+using HostelManagement_API.DTOs.Responses;
 using HostelManagement_API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -20,12 +21,12 @@ namespace HostelManagement_API.Controllers
         }
 
         [HttpPost("AddUpdateBlocks")]
-        public async Task<IActionResult> AddUpdateBlock([FromBody] AddUpdateBlockRequest request)
+        public async Task<IActionResult> AddUpdateBlocks([FromBody] AddUpdateBlocksRequest request)
         {
-            _logger.LogInformation("AddUpdateBlock Request Received: {@Request}", request);
-            var response = await _blockService.AddUpdateBlock(request);
-            _logger.LogInformation("AddUpdateBlock Response: {@Response}", response);
-            return StatusCode(response.StatusCode, response);
+            _logger.LogInformation("AddUpdateBlocks Request Received: {@Request}", request);
+            var result = await _blockService.AddUpdateBlocks(request);
+            _logger.LogInformation("AddUpdateBlocks Response: {@Response}", result);
+            return Ok(result);
         }
 
         [HttpPost("GetAllBlocks")]
@@ -35,6 +36,15 @@ namespace HostelManagement_API.Controllers
             var response = await _blockService.GetAllBlocks(request);
             _logger.LogInformation("GetAllBlocks Response: {@Response}", response);
             return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("GetAllBlocks_Fetch")]
+        public async Task<IActionResult> GetAllBlocksFetch()
+        {
+            _logger.LogInformation("GetAllBlocksFetch Request Received");
+            IEnumerable<BlockResponse> blocks = await _blockService.GetAllBlocksFetch();
+            _logger.LogInformation("GetAllBlocksFetch Response: {@Response}", blocks);
+            return Ok(new { Success = true, Message = "Blocks retrieved successfully", Data = blocks });
         }
 
         [HttpGet("GetBlock/{blockId}")]
