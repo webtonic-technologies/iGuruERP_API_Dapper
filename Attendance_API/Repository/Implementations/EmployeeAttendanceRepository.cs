@@ -58,15 +58,15 @@ namespace Attendance_API.Repository.Implementations
             if (employeeAttendanceMaster.Employee_Attendance_Master_id == 0)
             {
                 // Insert new record
-                string insertSql = $"INSERT INTO tbl_EmployeeAttendanceMaster (Employee_id, Employee_Attendance_Status_id, Remarks, Date) " +
-                                  $"VALUES (@Employee_id, @Employee_Attendance_Status_id, @Remarks, @Date)";
+                string insertSql = $"INSERT INTO tbl_EmployeeAttendanceMaster (Employee_id, Employee_Attendance_Status_id, Remarks, Date ,TimeSlot_id , isHoliday) " +
+                                  $"VALUES (@Employee_id, @Employee_Attendance_Status_id, @Remarks, @Date,@TimeSlot_id , @isHoliday)";
                 await _connection.ExecuteAsync(insertSql, employeeAttendanceMaster);
             }
             else
             {
                 // Update existing record
                 string updateSql = $"UPDATE tbl_EmployeeAttendanceMaster " +
-                                  $"SET Employee_id = @Employee_id, Employee_Attendance_Status_id = @Employee_Attendance_Status_id, Remarks = @Remarks, Date = @Date " +
+                                  $"SET Employee_id = @Employee_id, Employee_Attendance_Status_id = @Employee_Attendance_Status_id, Remarks = @Remarks, Date = @Date, TimeSlot_id = @TimeSlot_id , isHoliday =@isHoliday" +
                                   $"WHERE Employee_Attendance_Master_id = @Employee_Attendance_Master_id";
                 await _connection.ExecuteAsync(updateSql, employeeAttendanceMaster);
             }
