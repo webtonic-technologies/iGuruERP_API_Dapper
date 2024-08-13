@@ -7,6 +7,7 @@ using Infirmary_API.Repository.Interfaces;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Infirmary_API.Repository.Implementations
@@ -29,30 +30,62 @@ namespace Infirmary_API.Repository.Implementations
                 {
                     try
                     {
-                        string query = request.StudentVaccinationID == 0
-                            ? @"INSERT INTO tblStudentVaccination (AcademicYear, ClassID, SectionID, StudentID, VaccinationID, DateOfVaccination, InstituteID, IsActive) 
-                               VALUES (@AcademicYear, @ClassID, @SectionID, @StudentID, @VaccinationID, @DateOfVaccination, @InstituteID, @IsActive);
-                               SELECT CAST(SCOPE_IDENTITY() as int);"
-                            : @"UPDATE tblStudentVaccination SET AcademicYear = @AcademicYear, ClassID = @ClassID, SectionID = @SectionID, StudentID = @StudentID, VaccinationID = @VaccinationID, 
-                               DateOfVaccination = @DateOfVaccination, InstituteID = @InstituteID, IsActive = @IsActive 
-                               WHERE StudentVaccinationID = @StudentVaccinationID;
-                               SELECT @StudentVaccinationID;";
+                        int studentVaccinationID;
 
-                        var studentVaccinationID = await _connection.ExecuteScalarAsync<int>(query, request, transaction);
+                        if (request.StudentVaccinationID == 0)
+                        {
+                            // Insert new student vaccination record
+                            string insertVaccinationSql = @"
+                                INSERT INTO tblStudentVaccination (AcademicYear, ClassID, SectionID, VaccinationID, DateOfVaccination, InstituteID, IsActive)
+                                VALUES (@AcademicYear, @ClassID, @SectionID, @VaccinationID, @DateOfVaccination, @InstituteID, @IsActive);
+                                SELECT CAST(SCOPE_IDENTITY() as int);";
+
+                            studentVaccinationID = await _connection.ExecuteScalarAsync<int>(insertVaccinationSql, request, transaction);
+                        }
+                        else
+                        {
+                            // Update existing student vaccination record
+                            string updateVaccinationSql = @"
+                                UPDATE tblStudentVaccination
+                                SET AcademicYear = @AcademicYear,
+                                    ClassID = @ClassID,
+                                    SectionID = @SectionID,
+                                    VaccinationID = @VaccinationID,
+                                    DateOfVaccination = @DateOfVaccination,
+                                    InstituteID = @InstituteID,
+                                    IsActive = @IsActive
+                                WHERE StudentVaccinationID = @StudentVaccinationID";
+
+                            await _connection.ExecuteAsync(updateVaccinationSql, request, transaction);
+                            studentVaccinationID = request.StudentVaccinationID;
+                        }
+
+                        // Delete existing mappings if updating
+                        if (request.StudentVaccinationID != 0)
+                        {
+                            string deleteMappingsSql = "DELETE FROM tblStudentVaccinationMapping WHERE StudentVaccinationID = @StudentVaccinationID";
+                            await _connection.ExecuteAsync(deleteMappingsSql, new { StudentVaccinationID = studentVaccinationID }, transaction);
+                        }
+
+                        // Insert new student mappings
+                        foreach (var studentID in request.StudentIDs)
+                        {
+                            string insertMappingSql = @"
+                                INSERT INTO tblStudentVaccinationMapping (StudentVaccinationID, StudentID)
+                                VALUES (@StudentVaccinationID, @StudentID)";
+
+                            await _connection.ExecuteAsync(insertMappingSql, new { StudentVaccinationID = studentVaccinationID, StudentID = studentID }, transaction);
+                        }
 
                         transaction.Commit();
-                        return new ServiceResponse<string>(true, "Operation Successful", "Student vaccination updated successfully", 200);
+                        return new ServiceResponse<string>(true, "Operation Successful", "Student vaccinations added/updated successfully", 200);
                     }
-                    catch (Exception ex)
+                    catch (System.Exception ex)
                     {
                         transaction.Rollback();
                         return new ServiceResponse<string>(false, ex.Message, null, 500);
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<string>(false, ex.Message, null, 500);
             }
             finally
             {

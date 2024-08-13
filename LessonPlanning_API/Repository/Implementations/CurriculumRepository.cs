@@ -173,13 +173,13 @@ namespace Lesson_API.Repository.Implementations
                 }
 
                 transaction.Commit();
-                return new ServiceResponse<string>(request.CurriculumID.ToString(), true, "Curriculum added/updated successfully.");
+                return new ServiceResponse<string>(request.CurriculumID.ToString(), true, "Curriculum added/updated successfully.", 200);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while adding/updating curriculum.");
                 transaction.Rollback();
-                return new ServiceResponse<string>(null, false, "Operation failed: " + ex.Message);
+                return new ServiceResponse<string>(null, false, "Operation failed: " + ex.Message, 500);
             }
         }
 
@@ -211,12 +211,12 @@ namespace Lesson_API.Repository.Implementations
                     request.PageSize
                 });
 
-                return new ServiceResponse<List<GetAllCurriculumResponse>>(result.ToList(), true, "Curriculums retrieved successfully.");
+                return new ServiceResponse<List<GetAllCurriculumResponse>>(result.ToList(), true, "Curriculums retrieved successfully.", 200);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while retrieving curriculums.");
-                return new ServiceResponse<List<GetAllCurriculumResponse>>(null, false, "Operation failed: " + ex.Message);
+                return new ServiceResponse<List<GetAllCurriculumResponse>>(null, false, "Operation failed: " + ex.Message, 500);
             }
         }
 
@@ -229,17 +229,17 @@ namespace Lesson_API.Repository.Implementations
 
                 if (curriculum != null)
                 {
-                    return new ServiceResponse<Curriculum>(curriculum, true, "Curriculum found.");
+                    return new ServiceResponse<Curriculum>(curriculum, true, "Curriculum found.", 200);
                 }
                 else
                 {
-                    return new ServiceResponse<Curriculum>(null, false, "Curriculum not found.");
+                    return new ServiceResponse<Curriculum>(null, false, "Curriculum not found.", 404);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while retrieving curriculum by ID.");
-                return new ServiceResponse<Curriculum>(null, false, "Operation failed: " + ex.Message);
+                return new ServiceResponse<Curriculum>(null, false, "Operation failed: " + ex.Message, 500);
             }
         }
 
@@ -252,17 +252,17 @@ namespace Lesson_API.Repository.Implementations
 
                 if (rowsAffected > 0)
                 {
-                    return new ServiceResponse<bool>(true, true, "Curriculum deleted successfully.");
+                    return new ServiceResponse<bool>(true, true, "Curriculum deleted successfully.", 200);
                 }
                 else
                 {
-                    return new ServiceResponse<bool>(false, false, "Delete operation failed.");
+                    return new ServiceResponse<bool>(false, false, "Delete operation failed.", 404);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while deleting curriculum.");
-                return new ServiceResponse<bool>(false, false, "Operation failed: " + ex.Message);
+                return new ServiceResponse<bool>(false, false, "Operation failed: " + ex.Message, 500);
             }
         }
     }

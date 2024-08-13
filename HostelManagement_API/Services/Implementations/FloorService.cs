@@ -17,10 +17,9 @@ namespace HostelManagement_API.Services.Implementations
             _floorRepository = floorRepository;
         }
 
-        public async Task<ServiceResponse<int>> AddUpdateFloor(AddUpdateFloorRequest request)
+        public async Task<int> AddUpdateFloors(AddUpdateFloorsRequest request)
         {
-            var floorId = await _floorRepository.AddUpdateFloor(request);
-            return new ServiceResponse<int>(true, "Floor added/updated successfully", floorId, 200);
+            return await _floorRepository.AddUpdateFloors(request);
         }
 
         public async Task<ServiceResponse<List<GetAllFloorsResponse>>> GetAllFloors(GetAllFloorsRequest request)

@@ -20,17 +20,39 @@ namespace HostelManagement_API.Repository.Implementations
             _connectionString = configuration.GetConnectionString("DefaultConnection");
         }
 
-        public async Task<int> AddUpdateFloor(AddUpdateFloorRequest request)
+        public async Task<int> AddUpdateFloors(AddUpdateFloorsRequest request)
         {
             using (IDbConnection db = new SqlConnection(_connectionString))
             {
-                string sqlQuery = request.FloorID == 0
-                    ? @"INSERT INTO tblBuildingFloors (FloorName, BuildingID, InstituteID, IsActive) VALUES (@FloorName, @BuildingID, @InstituteID, 1); SELECT CAST(SCOPE_IDENTITY() as int)"
-                    : @"UPDATE tblBuildingFloors SET FloorName = @FloorName, BuildingID = @BuildingID, InstituteID = @InstituteID WHERE FloorID = @FloorID";
+                db.Open();
+                using (var transaction = db.BeginTransaction())
+                {
+                    try
+                    {
+                        foreach (var floor in request.Floors)
+                        {
+                            string sqlQuery = floor.FloorID == 0
+                                ? @"INSERT INTO tblBuildingFloors (FloorName, BuildingID, InstituteID, IsActive) 
+                                    VALUES (@FloorName, @BuildingID, @InstituteID, @IsActive); 
+                                    SELECT CAST(SCOPE_IDENTITY() as int)"
+                                : @"UPDATE tblBuildingFloors 
+                                    SET FloorName = @FloorName, BuildingID = @BuildingID, InstituteID = @InstituteID, IsActive = @IsActive
+                                    WHERE FloorID = @FloorID";
 
-                return request.FloorID == null
-                    ? await db.ExecuteScalarAsync<int>(sqlQuery, new { request.FloorName, request.BuildingID, request.InstituteID })
-                    : await db.ExecuteAsync(sqlQuery, new { request.FloorName, request.BuildingID, request.InstituteID, request.FloorID });
+                            var floorId = floor.FloorID == 0
+                                ? await db.ExecuteScalarAsync<int>(sqlQuery, new { floor.FloorName, floor.BuildingID, floor.InstituteID, floor.IsActive }, transaction)
+                                : await db.ExecuteAsync(sqlQuery, new { floor.FloorName, floor.BuildingID, floor.InstituteID, floor.IsActive, floor.FloorID }, transaction);
+                        }
+
+                        transaction.Commit();
+                        return 1; // Success code, can be improved to return meaningful result
+                    }
+                    catch
+                    {
+                        transaction.Rollback();
+                        throw;
+                    }
+                }
             }
         }
 

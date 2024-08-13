@@ -8,8 +8,9 @@ namespace HostelManagement_API.Services.Interfaces
 {
     public interface IBlockService
     {
-        Task<ServiceResponse<int>> AddUpdateBlock(AddUpdateBlockRequest request);
+        Task<int> AddUpdateBlocks(AddUpdateBlocksRequest request);
         Task<ServiceResponse<PagedResponse<BlockResponse>>> GetAllBlocks(GetAllBlocksRequest request);
+        Task<IEnumerable<BlockResponse>> GetAllBlocksFetch();
         Task<ServiceResponse<BlockResponse>> GetBlockById(int blockId);
         Task<ServiceResponse<int>> DeleteBlock(int blockId);
     }

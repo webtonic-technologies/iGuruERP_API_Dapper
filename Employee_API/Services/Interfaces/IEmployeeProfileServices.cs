@@ -20,5 +20,9 @@ namespace Employee_API.Services.Interfaces
         Task<ServiceResponse<List<EmployeeWorkExperience>>> GetEmployeeWorkExperienceById(int employeeId);
         Task<ServiceResponse<List<EmployeeBankDetails>>> GetEmployeeBankDetailsById(int employeeId);
         Task<ServiceResponse<bool>> StatusActiveInactive(int employeeId);
+        Task<ServiceResponse<List<MaritalStatus>>> GetMaritalStatusList();
+        Task<ServiceResponse<List<BloodGroup>>> GetBloodGroupList();
+        Task<ServiceResponse<List<Department>>> GetDepartmentList(int InstituteId);
+        Task<ServiceResponse<List<Designation>>> GetDesignationList(int DepartmentId);
     }
 }

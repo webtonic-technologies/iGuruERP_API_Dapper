@@ -126,13 +126,13 @@ namespace Lesson_API.Repository.Implementations
                 }
 
                 transaction.Commit();
-                return new ServiceResponse<string>(request.LessonPlanningID.ToString(), true, "Lesson Planning added/updated successfully.");
+                return new ServiceResponse<string>(request.LessonPlanningID.ToString(), true, "Lesson Planning added/updated successfully.", 200, null);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while adding/updating lesson planning.");
                 transaction.Rollback();
-                return new ServiceResponse<string>(null, false, "Operation failed: " + ex.Message);
+                return new ServiceResponse<string>(null, false, "Operation failed: " + ex.Message, 500, null);
             }
         }
 
@@ -215,15 +215,14 @@ namespace Lesson_API.Repository.Implementations
                         .ToList();
                 }
 
-                return new ServiceResponse<List<GetAllLessonPlanningResponse>>(lessonPlannings, true, "Lesson Plannings retrieved successfully.");
+                return new ServiceResponse<List<GetAllLessonPlanningResponse>>(lessonPlannings, true, "Lesson Plannings retrieved successfully.", 200, lessonPlannings.Count);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while retrieving lesson plannings.");
-                return new ServiceResponse<List<GetAllLessonPlanningResponse>>(null, false, "Operation failed: " + ex.Message);
+                return new ServiceResponse<List<GetAllLessonPlanningResponse>>(null, false, "Operation failed: " + ex.Message, 500, null);
             }
         }
-
 
         public async Task<ServiceResponse<LessonPlanning>> GetLessonPlanningById(int id)
         {
@@ -241,12 +240,12 @@ namespace Lesson_API.Repository.Implementations
                     lessonPlanning.LessonPlanningInformation = (await multi.ReadAsync<LessonPlanningInformation>()).ToList();
                 }
 
-                return new ServiceResponse<LessonPlanning>(lessonPlanning, lessonPlanning != null, lessonPlanning != null ? "Lesson Planning found." : "Lesson Planning not found.");
+                return new ServiceResponse<LessonPlanning>(lessonPlanning, lessonPlanning != null, lessonPlanning != null ? "Lesson Planning found." : "Lesson Planning not found.", 200, null);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while retrieving lesson planning by ID.");
-                return new ServiceResponse<LessonPlanning>(null, false, "Operation failed: " + ex.Message);
+                return new ServiceResponse<LessonPlanning>(null, false, "Operation failed: " + ex.Message, 500, null);
             }
         }
 
@@ -257,15 +256,13 @@ namespace Lesson_API.Repository.Implementations
                 var sql = @"UPDATE tblLessonPlanning SET IsActive = 0 WHERE LessonPlanningID = @LessonPlanningID";
                 var rowsAffected = await _dbConnection.ExecuteAsync(sql, new { LessonPlanningID = id });
 
-                return new ServiceResponse<bool>(rowsAffected > 0, rowsAffected > 0, rowsAffected > 0 ? "Lesson Planning deleted successfully." : "Delete operation failed.");
+                return new ServiceResponse<bool>(rowsAffected > 0, rowsAffected > 0, rowsAffected > 0 ? "Lesson Planning deleted successfully." : "Delete operation failed.", 200, null);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while deleting lesson planning.");
-                return new ServiceResponse<bool>(false, false, "Operation failed: " + ex.Message);
+                return new ServiceResponse<bool>(false, false, "Operation failed: " + ex.Message, 500, null);
             }
         }
     }
 }
-
-

@@ -29,6 +29,9 @@ builder.Services.AddTransient<ICreatePackageService, CreatePackageService>();
 builder.Services.AddTransient<IInstituteOnboardRepository, InstituteOnboardRepository>();
 builder.Services.AddTransient<IInstituteOnboardService, InstituteOnboardService>();
 
+builder.Services.AddTransient<IFunctionalityRepository, FunctionalityRepository>();
+builder.Services.AddTransient<IFunctionalityService, FunctionalityService>();
+
 
 var app = builder.Build();
 

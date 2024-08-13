@@ -16,14 +16,18 @@ namespace LibraryManagement_API.Services.Implementations
             _authorRepository = authorRepository;
         }
 
-        public async Task<ServiceResponse<string>> AddUpdateAuthor(Author request)
+        public async Task<ServiceResponse<string>> AddUpdateAuthors(AddUpdateAuthorsRequest request)
         {
-            return await _authorRepository.AddUpdateAuthor(request);
+            return await _authorRepository.AddUpdateAuthors(request);
         }
 
         public async Task<ServiceResponse<List<AuthorResponse>>> GetAllAuthors(GetAllAuthorsRequest request)
         {
             return await _authorRepository.GetAllAuthors(request);
+        }
+        public async Task<ServiceResponse<List<AuthorFetchResponse>>> GetAllAuthorsFetch(GetAllAuthorsFetchRequest request)
+        {
+            return await _authorRepository.GetAllAuthorsFetch(request);
         }
 
         public async Task<ServiceResponse<Author>> GetAuthorById(int authorId)

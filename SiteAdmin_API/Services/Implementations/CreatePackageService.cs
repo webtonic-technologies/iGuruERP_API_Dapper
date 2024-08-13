@@ -19,5 +19,15 @@ namespace SiteAdmin_API.Services.Implementations
         {
             return await _createPackageRepository.CreatePackage(request);
         }
+
+        public async Task<ServiceResponse<Package>> UpdatePackage(UpdatePackageRequest request)
+        {
+            return await _createPackageRepository.UpdatePackage(request);
+        }
+
+        public async Task<ServiceResponse<bool>> UpdatePackageStatus(int packageId)
+        {
+            return await _createPackageRepository.UpdatePackageStatus(packageId);
+        }
     }
 }

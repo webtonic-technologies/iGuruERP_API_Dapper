@@ -302,5 +302,97 @@ namespace Employee_API.Controllers
             }
 
         }
+        [HttpGet("GetMaritalStatusList")]
+        public async Task<IActionResult> GetMaritalStatusList()
+        {
+            try
+            {
+                var data = await _employeeProfileServices.GetMaritalStatusList();
+                if (data != null)
+                {
+                    return Ok(data);
+
+                }
+                else
+                {
+                    return BadRequest("Bad Request");
+                }
+
+            }
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
+
+        }
+        [HttpGet("GetBloodGroupList")]
+        public async Task<IActionResult> GetBloodGroupList()
+        {
+            try
+            {
+                var data = await _employeeProfileServices.GetBloodGroupList();
+                if (data != null)
+                {
+                    return Ok(data);
+
+                }
+                else
+                {
+                    return BadRequest("Bad Request");
+                }
+
+            }
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
+
+        }
+        [HttpGet("GetDepartmentList/{InstituteId}")]
+        public async Task<IActionResult> GetDepartmentList(int InstituteId)
+        {
+            try
+            {
+                var data = await _employeeProfileServices.GetDepartmentList(InstituteId);
+                if (data != null)
+                {
+                    return Ok(data);
+
+                }
+                else
+                {
+                    return BadRequest("Bad Request");
+                }
+
+            }
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
+
+        }
+        [HttpGet("GetDesignationList/{DepartmentId}")]
+        public async Task<IActionResult> GetDesignationList(int DepartmentId)
+        {
+            try
+            {
+                var data = await _employeeProfileServices.GetDesignationList(DepartmentId);
+                if (data != null)
+                {
+                    return Ok(data);
+
+                }
+                else
+                {
+                    return BadRequest("Bad Request");
+                }
+
+            }
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
+
+        }
     }
 }

@@ -1,7 +1,7 @@
 ﻿using LibraryManagement_API.DTOs.Requests;
-using LibraryManagement_API.Models;
 using LibraryManagement_API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
 
 namespace LibraryManagement_API.Controllers
 {
@@ -17,7 +17,7 @@ namespace LibraryManagement_API.Controllers
         }
 
         [HttpPost("AddUpdateLanguage")]
-        public async Task<IActionResult> AddUpdateLanguage(Language request)
+        public async Task<IActionResult> AddUpdateLanguage(AddUpdateLanguageRequest request)
         {
             var response = await _languageService.AddUpdateLanguage(request);
             return StatusCode(response.StatusCode, response);
@@ -27,6 +27,13 @@ namespace LibraryManagement_API.Controllers
         public async Task<IActionResult> GetAllLanguage(GetAllLanguageRequest request)
         {
             var response = await _languageService.GetAllLanguages(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("GetAllLanguage_Fetch")]
+        public async Task<IActionResult> GetAllLanguageFetch(GetAllLanguageFetchRequest request)
+        {
+            var response = await _languageService.GetAllLanguageFetch(request);
             return StatusCode(response.StatusCode, response);
         }
 

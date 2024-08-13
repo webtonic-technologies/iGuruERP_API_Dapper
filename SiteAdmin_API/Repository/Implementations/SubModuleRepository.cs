@@ -52,6 +52,55 @@ namespace SiteAdmin_API.Repository.Implementations
             }
         }
 
+        public async Task<ServiceResponse<bool>> UpdateSubModule(UpdateSubModuleRequest request)
+        {
+            try
+            {
+                string updateSql = @"
+                    UPDATE tblSubModule
+                    SET SubModuleName = @SubModuleName,
+                        ModuleID = @ModuleID,
+                        IsActive = @IsActive
+                    WHERE SubModuleID = @SubModuleID";
+
+                int rowsAffected = await _connection.ExecuteAsync(updateSql, request);
+
+                if (rowsAffected > 0)
+                {
+                    return new ServiceResponse<bool>(true, "SubModule updated successfully", true, 200);
+                }
+                else
+                {
+                    return new ServiceResponse<bool>(false, "Failed to update SubModule", false, 400);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<bool>(false, ex.Message, false, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<bool>> UpdateSubModuleStatus(int subModuleId)
+        {
+            try
+            {
+                // Toggle the IsActive status
+                string query = "UPDATE tblSubModule SET IsActive = CASE WHEN IsActive = 1 THEN 0 ELSE 1 END WHERE SubModuleID = @SubModuleID";
+                int rowsAffected = await _connection.ExecuteAsync(query, new { SubModuleID = subModuleId });
+
+                if (rowsAffected > 0)
+                {
+                    return new ServiceResponse<bool>(true, "SubModule status updated successfully", true, 200);
+                }
+
+                return new ServiceResponse<bool>(false, "Failed to update SubModule status", false, 400);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<bool>(false, ex.Message, false, 500);
+            }
+        }
+
 
     }
 }

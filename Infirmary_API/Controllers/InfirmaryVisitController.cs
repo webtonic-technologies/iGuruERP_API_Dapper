@@ -10,11 +10,15 @@ namespace Infirmary_API.Controllers
     [ApiController]
     public class InfirmaryVisitController : ControllerBase
     {
+        // Declare both services as readonly fields
         private readonly IInfirmaryVisitService _infirmaryVisitService;
+        private readonly IInfirmaryVisitorTypeService _infirmaryVisitorTypeService;
 
-        public InfirmaryVisitController(IInfirmaryVisitService infirmaryVisitService)
+        // Single constructor to inject both services
+        public InfirmaryVisitController(IInfirmaryVisitService infirmaryVisitService, IInfirmaryVisitorTypeService infirmaryVisitorTypeService)
         {
             _infirmaryVisitService = infirmaryVisitService;
+            _infirmaryVisitorTypeService = infirmaryVisitorTypeService;
         }
 
         [HttpPost("AddUpdateInfirmaryVisit")]
@@ -93,6 +97,27 @@ namespace Infirmary_API.Controllers
                 else
                 {
                     return BadRequest(data.Message);
+                }
+            }
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
+        }
+
+        [HttpGet("GetAllInfirmaryVisitorType")]
+        public async Task<IActionResult> GetAllInfirmaryVisitorType()
+        {
+            try
+            {
+                var data = await _infirmaryVisitorTypeService.GetAllInfirmaryVisitorTypes();
+                if (data.Success)
+                {
+                    return Ok(data);
+                }
+                else
+                {
+                    return NotFound(data.Message);
                 }
             }
             catch (Exception e)

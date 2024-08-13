@@ -7,5 +7,8 @@ namespace SiteAdmin_API.Repository.Interfaces
     public interface ICreatePackageRepository
     {
         Task<ServiceResponse<Package>> CreatePackage(CreatePackageRequest request);
+        Task<ServiceResponse<Package>> UpdatePackage(UpdatePackageRequest request);
+        Task<ServiceResponse<bool>> UpdatePackageStatus(int packageId);
+
     }
 }

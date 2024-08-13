@@ -30,6 +30,24 @@ builder.Services.AddTransient<IHomeworkService, HomeworkService>();
 builder.Services.AddTransient<IAssignmentRepository, AssignmentRepository>();
 builder.Services.AddTransient<IAssignmentService, AssignmentService>();
 
+builder.Services.AddScoped<IPlanTypeRepository, PlanTypeRepository>();
+builder.Services.AddScoped<IPlanTypeService, PlanTypeService>();
+
+builder.Services.AddScoped<IChapterSubtopicListRepository, ChapterSubtopicListRepository>();
+builder.Services.AddScoped<IChapterSubtopicListService, ChapterSubtopicListService>();
+
+builder.Services.AddScoped<ILessonPlanningChapterRepository, LessonPlanningChapterRepository>();
+builder.Services.AddScoped<ILessonPlanningChapterService, LessonPlanningChapterService>();
+
+builder.Services.AddScoped<ILessonPlanningSubtopicRepository, LessonPlanningSubtopicRepository>();
+builder.Services.AddScoped<ILessonPlanningSubtopicService, LessonPlanningSubtopicService>();
+
+builder.Services.AddScoped<IHomeWorkTypeRepository, HomeWorkTypeRepository>();
+builder.Services.AddScoped<IHomeWorkTypeService, HomeWorkTypeService>();
+
+builder.Services.AddScoped<IAssignmentTypeRepository, AssignmentTypeRepository>();
+builder.Services.AddScoped<IAssignmentTypeService, AssignmentTypeService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
