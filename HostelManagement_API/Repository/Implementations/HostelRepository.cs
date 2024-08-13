@@ -2,11 +2,8 @@
 using HostelManagement_API.DTOs.Requests;
 using HostelManagement_API.DTOs.Responses;
 using HostelManagement_API.Repository.Interfaces;
-using Microsoft.Extensions.Configuration;
-using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
-using System.Threading.Tasks;
 
 namespace HostelManagement_API.Repository.Implementations
 {
@@ -79,7 +76,7 @@ namespace HostelManagement_API.Repository.Implementations
                                 await db.ExecuteAsync(@"INSERT INTO tblHostelFloorMapping (HostelID, FloorID) VALUES (@HostelID, @FloorID)", new { HostelID = hostelId, FloorID = floorId }, transaction);
                             }
                         }
-
+                        var doc = await AddUpdateHostelDocuments(request.HostelDocs, hostelId);
                         transaction.Commit();
 
                         return hostelId;
@@ -140,7 +137,6 @@ namespace HostelManagement_API.Repository.Implementations
                 return await db.QueryFirstOrDefaultAsync<HostelResponse>(sqlQuery, new { HostelID = hostelId });
             }
         }
-
         public async Task<int> DeleteHostel(int hostelId)
         {
             using (IDbConnection db = new SqlConnection(_connectionString))
@@ -149,5 +145,49 @@ namespace HostelManagement_API.Repository.Implementations
                 return await db.ExecuteAsync(sqlQuery, new { HostelID = hostelId });
             }
         }
+        private async Task<int> AddUpdateHostelDocuments(List<HostelDocs>? request, int hostelId)
+        {
+            if (request == null || !request.Any())
+            {
+                return 0; // No documents to process
+            }
+
+            using (var connection = new SqlConnection(_connectionString)) 
+            {
+                await connection.OpenAsync();
+
+                using (var transaction = connection.BeginTransaction())
+                {
+                    try
+                    {
+                        // Delete existing documents for the specified hostel
+                        string deleteSql = @"
+                DELETE FROM tblHostelDocuments
+                WHERE HostelId = @HostelId";
+
+                        await connection.ExecuteAsync(deleteSql, new { HostelId = hostelId }, transaction);
+
+                        // Insert new documents from the request
+                        string insertSql = @"
+                INSERT INTO tblHostelDocuments (HostelId, DocFile)
+                VALUES (@HostelId, @DocFile)";
+
+                        foreach (var doc in request)
+                        {
+                            await connection.ExecuteAsync(insertSql, new { HostelId = hostelId, DocFile = doc.DocFile }, transaction);
+                        }
+
+                        transaction.Commit();
+                        return request.Count; // Return the number of documents added
+                    }
+                    catch
+                    {
+                        transaction.Rollback();
+                        throw; // Rethrow the exception to handle it upstream
+                    }
+                }
+            }
+        }
+
     }
 }
