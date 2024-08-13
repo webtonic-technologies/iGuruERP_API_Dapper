@@ -10,6 +10,7 @@ namespace Attendance_API.DTOs
         [MaxLength(20)]
         public string Longitude { get; set; }
         public int Department_id { get; set; }
+        public int InstituteId { get; set; }
         public decimal Radius_In_Meters { get; set; }
         public string Search_Location { get; set; }
     }

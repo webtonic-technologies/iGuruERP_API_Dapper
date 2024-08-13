@@ -45,25 +45,51 @@ namespace Attendance_API.Repository.Implementations
 
         public async Task<ServiceResponse<bool>> AddOrUpdateGeoFencing(List<GeoFencingDTO> geoFencings)
         {
-            foreach (var geoFencing in geoFencings)
+            if (geoFencings == null || geoFencings.Count == 0)
             {
-                var checkQuery = "SELECT COUNT(1) FROM tbl_GeoFencing WHERE Geo_Fencing_id = @Geo_Fencing_id";
-                var checkParameters = new { Geo_Fencing_id = geoFencing.Geo_Fencing_id };
-                var recordCount = await _dbConnection.ExecuteScalarAsync<int>(checkQuery, checkParameters);
-
-                if (recordCount == 0)
-                {
-                    var insertQuery = "INSERT INTO tbl_GeoFencing (Latitude, Longitude, Department_id, Radius_In_Meters, Search_Location, InstituteId) VALUES (@Latitude, @Longitude, @Department_id, @Radius_In_Meters, @Search_Location, @InstituteId)";
-                    await _dbConnection.ExecuteAsync(insertQuery, geoFencing);
-                }
-                else
-                {
-                    var updateQuery = "UPDATE tbl_GeoFencing SET Latitude = @Latitude, Longitude = @Longitude, Department_id = @Department_id, Radius_In_Meters = @Radius_In_Meters, Search_Location = @Search_Location, InstituteId = @InstituteId WHERE Geo_Fencing_id = @Geo_Fencing_id";
-                    await _dbConnection.ExecuteAsync(updateQuery, geoFencing);
-                }
+                return new ServiceResponse<bool>(false, "No GeoFencings provided", false, 400);
             }
+
+            var valuesList = new List<string>();
+            var parameters = new DynamicParameters();
+
+            for (int i = 0; i < geoFencings.Count; i++)
+            {
+                var geoFencing = geoFencings[i];
+                valuesList.Add($"(@Geo_Fencing_id_{i}, @Latitude_{i}, @Longitude_{i}, @Department_id_{i}, @Radius_In_Meters_{i}, @Search_Location_{i}, @InstituteId_{i})");
+
+                parameters.Add($"@Geo_Fencing_id_{i}", geoFencing.Geo_Fencing_id);
+                parameters.Add($"@Latitude_{i}", geoFencing.Latitude);
+                parameters.Add($"@Longitude_{i}", geoFencing.Longitude);
+                parameters.Add($"@Department_id_{i}", geoFencing.Department_id);
+                parameters.Add($"@Radius_In_Meters_{i}", geoFencing.Radius_In_Meters);
+                parameters.Add($"@Search_Location_{i}", geoFencing.Search_Location);
+                parameters.Add($"@InstituteId_{i}", geoFencing.InstituteId);
+            }
+
+            var mergeQuery = $@"
+        MERGE INTO tbl_GeoFencing AS target
+        USING (VALUES
+            {string.Join(", ", valuesList)}
+        ) AS source (Geo_Fencing_id, Latitude, Longitude, Department_id, Radius_In_Meters, Search_Location, InstituteId)
+        ON target.Geo_Fencing_id = source.Geo_Fencing_id
+        WHEN MATCHED THEN
+            UPDATE SET Latitude = source.Latitude,
+                       Longitude = source.Longitude,
+                       Department_id = source.Department_id,
+                       Radius_In_Meters = source.Radius_In_Meters,
+                       Search_Location = source.Search_Location,
+                       InstituteId = source.InstituteId
+        WHEN NOT MATCHED BY TARGET THEN
+            INSERT (Geo_Fencing_id, Latitude, Longitude, Department_id, Radius_In_Meters, Search_Location, InstituteId)
+            VALUES (source.Geo_Fencing_id, source.Latitude, source.Longitude, source.Department_id, source.Radius_In_Meters, source.Search_Location, source.InstituteId);
+    ";
+
+            await _dbConnection.ExecuteAsync(mergeQuery, parameters);
+
             return new ServiceResponse<bool>(true, "All GeoFencings processed successfully", true, 200);
         }
+
 
         public async Task<ServiceResponse<bool>> DeleteGeoFencing(int id)
         {
