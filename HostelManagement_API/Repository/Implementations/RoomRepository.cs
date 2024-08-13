@@ -76,7 +76,7 @@ namespace HostelManagement_API.Repository.Implementations
         {
             using (IDbConnection db = new SqlConnection(_connectionString))
             {
-                string countQuery = @"SELECT COUNT(*) FROM tblRoom WHERE InstituteID = @InstituteID";
+                string countQuery = @"SELECT COUNT(*) FROM tblRoom WHERE IsActive = 1 and InstituteID = @InstituteID";
                 int totalCount = await db.ExecuteScalarAsync<int>(countQuery, new { request.InstituteID });
 
                 string sqlQuery = @"

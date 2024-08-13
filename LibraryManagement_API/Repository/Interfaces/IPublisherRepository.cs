@@ -10,6 +10,8 @@ namespace LibraryManagement_API.Repository.Interfaces
     public interface IPublisherRepository
     {
         Task<ServiceResponse<List<PublisherResponse>>> GetAllPublishers(GetAllPublishersRequest request);
+        Task<ServiceResponse<List<PublisherFetchResponse>>> GetAllPublishersFetch(GetAllPublishersFetchRequest request);
+
         Task<ServiceResponse<Publisher>> GetPublisherById(int publisherId);
         Task<ServiceResponse<string>> AddUpdatePublisher(Publisher request);
         Task<ServiceResponse<bool>> DeletePublisher(int publisherId);

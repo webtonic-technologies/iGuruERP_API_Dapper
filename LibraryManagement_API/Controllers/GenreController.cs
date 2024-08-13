@@ -17,9 +17,9 @@ namespace LibraryManagement_API.Controllers
         }
 
         [HttpPost("AddUpdateGenre")]
-        public async Task<IActionResult> AddUpdateGenre(Genre request)
+        public async Task<IActionResult> AddUpdateGenre(AddUpdateGenreRequest request)
         {
-            var response = await _genreService.AddUpdateGenre(request);
+            var response = await _genreService.AddUpdateGenres(request);
             return StatusCode(response.StatusCode, response);
         }
 

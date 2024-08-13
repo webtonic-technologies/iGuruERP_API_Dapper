@@ -22,24 +22,74 @@ namespace LibraryManagement_API.Repository.Implementations
             _connection = new SqlConnection(configuration.GetConnectionString("DefaultConnection"));
         }
 
-        public async Task<ServiceResponse<string>> AddUpdateLanguage(Language request)
+        public async Task<ServiceResponse<string>> AddUpdateLanguage(AddUpdateLanguageRequest request)
+        {
+            using (var connection = _connection)
+            {
+                connection.Open();
+                using (var transaction = connection.BeginTransaction())
+                {
+                    try
+                    {
+                        foreach (var language in request.Languages)
+                        {
+                            string sql;
+
+                            if (language.LanguageID == 0)
+                            {
+                                sql = @"INSERT INTO tblLibraryLanguage (InstituteID, LanguageName, IsActive) 
+                                        VALUES (@InstituteID, @LanguageName, @IsActive)";
+
+                                await connection.ExecuteAsync(sql, new
+                                {
+                                    language.InstituteID,
+                                    language.LanguageName,
+                                    language.IsActive
+                                }, transaction);
+                            }
+                            else
+                            {
+                                sql = @"UPDATE tblLibraryLanguage 
+                                        SET InstituteID = @InstituteID, LanguageName = @LanguageName, IsActive = @IsActive
+                                        WHERE LanguageID = @LanguageID";
+
+                                await connection.ExecuteAsync(sql, new
+                                {
+                                    language.LanguageID,
+                                    language.InstituteID,
+                                    language.LanguageName,
+                                    language.IsActive
+                                }, transaction);
+                            }
+                        }
+
+                        transaction.Commit();
+                        return new ServiceResponse<string>(true, "Success", "Languages saved successfully", 200);
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        return new ServiceResponse<string>(false, ex.Message, null, 500);
+                    }
+                }
+            }
+        }
+
+        public async Task<ServiceResponse<List<LanguageFetchResponse>>> GetAllLanguageFetch(GetAllLanguageFetchRequest request)
         {
             try
             {
-                string sql = request.LanguageID == 0 ?
-                    @"INSERT INTO tblLibraryLanguage (InstituteID, LanguageName, IsActive) 
-                      VALUES (@InstituteID, @LanguageName, @IsActive)" :
-                    @"UPDATE tblLibraryLanguage SET InstituteID = @InstituteID, LanguageName = @LanguageName, 
-                      IsActive = @IsActive WHERE LanguageID = @LanguageID";
+                string sql = @"SELECT LanguageID, InstituteID, LanguageName, IsActive 
+                               FROM tblLibraryLanguage 
+                               WHERE InstituteID = @InstituteID AND IsActive = 1";
 
-                int rowsAffected = await _connection.ExecuteAsync(sql, request);
+                var languages = await _connection.QueryAsync<LanguageFetchResponse>(sql, new { request.InstituteID });
 
-                return new ServiceResponse<string>(rowsAffected > 0, rowsAffected > 0 ? "Success" : "Failure",
-                    rowsAffected > 0 ? "Language saved successfully" : "Failed to save language", rowsAffected > 0 ? 200 : 400);
+                return new ServiceResponse<List<LanguageFetchResponse>>(true, "Records Found", languages.AsList(), 200);
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<string>(false, ex.Message, null, 500);
+                return new ServiceResponse<List<LanguageFetchResponse>>(false, ex.Message, null, 500);
             }
         }
 

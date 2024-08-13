@@ -46,6 +46,24 @@ namespace LibraryManagement_API.Repository.Implementations
             }
         }
 
+        public async Task<ServiceResponse<List<PublisherFetchResponse>>> GetAllPublishersFetch(GetAllPublishersFetchRequest request)
+        {
+            try
+            {
+                string sql = @"SELECT PublisherID, InstituteID, PublisherName, MobileNumber, CountryID, IsActive 
+                               FROM tblPublisher 
+                               WHERE InstituteID = @InstituteID AND IsActive = 1";
+
+                var publishers = await _connection.QueryAsync<PublisherFetchResponse>(sql, new { request.InstituteID });
+
+                return new ServiceResponse<List<PublisherFetchResponse>>(true, "Records Found", publishers.AsList(), 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<PublisherFetchResponse>>(false, ex.Message, null, 500);
+            }
+        }
+
         public async Task<ServiceResponse<Publisher>> GetPublisherById(int publisherId)
         {
             try

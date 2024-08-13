@@ -20,20 +20,42 @@ namespace HostelManagement_API.Repository.Implementations
             _connectionString = configuration.GetConnectionString("DefaultConnection");
         }
 
-        public async Task<int> AddUpdateBuilding(AddUpdateBuildingRequest request)
+
+        public async Task<int> AddUpdateBuildings(AddUpdateBuildingsRequest request)
         {
             using (IDbConnection db = new SqlConnection(_connectionString))
             {
-                string sqlQuery = request.BuildingID == 0
-                    ? @"INSERT INTO tblBuilding (BuildingName, BlockID, InstituteID, IsActive) VALUES (@BuildingName, @BlockID, @InstituteID, 1); SELECT CAST(SCOPE_IDENTITY() as int)"
-                    : @"UPDATE tblBuilding SET BuildingName = @BuildingName, BlockID = @BlockID, InstituteID = @InstituteID WHERE BuildingID = @BuildingID";
+                db.Open();
+                using (var transaction = db.BeginTransaction())
+                {
+                    try
+                    {
+                        foreach (var building in request.Buildings)
+                        {
+                            string sqlQuery = building.BuildingID == 0
+                                ? @"INSERT INTO tblBuilding (BuildingName, BlockID, InstituteID, IsActive) 
+                                    VALUES (@BuildingName, @BlockID, @InstituteID, @IsActive); 
+                                    SELECT CAST(SCOPE_IDENTITY() as int)"
+                                : @"UPDATE tblBuilding 
+                                    SET BuildingName = @BuildingName, BlockID = @BlockID, InstituteID = @InstituteID, IsActive = @IsActive
+                                    WHERE BuildingID = @BuildingID";
 
-                return request.BuildingID == null
-                    ? await db.ExecuteScalarAsync<int>(sqlQuery, new { request.BuildingName, request.BlockID, request.InstituteID })
-                    : await db.ExecuteAsync(sqlQuery, new { request.BuildingName, request.BlockID, request.InstituteID, request.BuildingID });
+                            var buildingId = building.BuildingID == 0
+                                ? await db.ExecuteScalarAsync<int>(sqlQuery, new { building.BuildingName, building.BlockID, building.InstituteID, building.IsActive }, transaction)
+                                : await db.ExecuteAsync(sqlQuery, new { building.BuildingName, building.BlockID, building.InstituteID, building.IsActive, building.BuildingID }, transaction);
+                        }
+
+                        transaction.Commit();
+                        return 1; // Success code, can be improved to return meaningful result
+                    }
+                    catch
+                    {
+                        transaction.Rollback();
+                        throw;
+                    }
+                }
             }
         }
-
         public async Task<List<GetAllBuildingsResponse>> GetAllBuildings(GetAllBuildingsRequest request)
         {
             using (IDbConnection db = new SqlConnection(_connectionString))
@@ -55,6 +77,21 @@ namespace HostelManagement_API.Repository.Implementations
                                                 .ToList();
 
                 return groupedBuildings;
+            }
+        }
+
+        public async Task<IEnumerable<BuildingResponse>> GetAllBuildingsFetch()
+        {
+            using (IDbConnection db = new SqlConnection(_connectionString))
+            {
+                string sqlQuery = @"
+                    SELECT 
+                        BuildingID, BuildingName, BlockID, InstituteID, IsActive
+                    FROM tblBuilding
+                    ORDER BY BuildingName";
+
+                var buildings = await db.QueryAsync<BuildingResponse>(sqlQuery);
+                return buildings;
             }
         }
 

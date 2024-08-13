@@ -105,16 +105,15 @@ namespace Lesson_API.Repository.Implementations
                 }
 
                 transaction.Commit();
-                return new ServiceResponse<string>(request.HomeworkID.ToString(), true, "Homework added/updated successfully.");
+                return new ServiceResponse<string>(request.HomeworkID.ToString(), true, "Homework added/updated successfully.", 200, null);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while adding/updating homework.");
                 transaction.Rollback();
-                return new ServiceResponse<string>(null, false, "Operation failed: " + ex.Message);
+                return new ServiceResponse<string>(null, false, "Operation failed: " + ex.Message, 500, null);
             }
         }
-
 
         public async Task<ServiceResponse<List<GetAllHomeworkResponse>>> GetAllHomework(GetAllHomeworkRequest request)
         {
@@ -202,16 +201,14 @@ namespace Lesson_API.Repository.Implementations
                     homeworkList.Add(homeworkResponse);
                 }
 
-                return new ServiceResponse<List<GetAllHomeworkResponse>>(homeworkList, true, "Homeworks retrieved successfully.");
+                return new ServiceResponse<List<GetAllHomeworkResponse>>(homeworkList, true, "Homeworks retrieved successfully.", 200, homeworkList.Count);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while retrieving homeworks.");
-                return new ServiceResponse<List<GetAllHomeworkResponse>>(null, false, "Operation failed: " + ex.Message);
+                return new ServiceResponse<List<GetAllHomeworkResponse>>(null, false, "Operation failed: " + ex.Message, 500, null);
             }
         }
-
-
 
         public async Task<ServiceResponse<Homework>> GetHomeworkById(int id)
         {
@@ -253,12 +250,12 @@ namespace Lesson_API.Repository.Implementations
                     homework.ClassSections = (await multi.ReadAsync<HomeworkClassSection>()).ToList();
                 }
 
-                return new ServiceResponse<Homework>(homework, homework != null, homework != null ? "Homework found." : "Homework not found.");
+                return new ServiceResponse<Homework>(homework, homework != null, homework != null ? "Homework found." : "Homework not found.", 200, null);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while retrieving homework by ID.");
-                return new ServiceResponse<Homework>(null, false, "Operation failed: " + ex.Message);
+                return new ServiceResponse<Homework>(null, false, "Operation failed: " + ex.Message, 500, null);
             }
         }
 
@@ -269,12 +266,12 @@ namespace Lesson_API.Repository.Implementations
                 var sql = @"UPDATE tblHomework SET IsActive = 0 WHERE HomeworkID = @HomeworkID";
                 var rowsAffected = await _dbConnection.ExecuteAsync(sql, new { HomeworkID = id });
 
-                return new ServiceResponse<bool>(rowsAffected > 0, rowsAffected > 0, rowsAffected > 0 ? "Homework deleted successfully." : "Delete operation failed.");
+                return new ServiceResponse<bool>(rowsAffected > 0, rowsAffected > 0, rowsAffected > 0 ? "Homework deleted successfully." : "Delete operation failed.", 200, null);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while deleting homework.");
-                return new ServiceResponse<bool>(false, false, "Operation failed: " + ex.Message);
+                return new ServiceResponse<bool>(false, false, "Operation failed: " + ex.Message, 500, null);
             }
         }
     }

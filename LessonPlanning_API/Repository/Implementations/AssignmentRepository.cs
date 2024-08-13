@@ -129,13 +129,13 @@ namespace Lesson_API.Repository.Implementations
                 }
 
                 transaction.Commit();
-                return new ServiceResponse<string>(request.AssignmentID.ToString(), true, "Assignment added/updated successfully.");
+                return new ServiceResponse<string>(request.AssignmentID.ToString(), true, "Assignment added/updated successfully.", 200);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while adding/updating assignment.");
                 transaction.Rollback();
-                return new ServiceResponse<string>(null, false, "Operation failed: " + ex.Message);
+                return new ServiceResponse<string>(null, false, "Operation failed: " + ex.Message, 500);
             }
         }
 
@@ -237,12 +237,12 @@ namespace Lesson_API.Repository.Implementations
                     assignmentList.Add(assignmentResponse);
                 }
 
-                return new ServiceResponse<List<GetAllAssignmentsResponse>>(assignmentList, true, "Assignments retrieved successfully.");
+                return new ServiceResponse<List<GetAllAssignmentsResponse>>(assignmentList, true, "Assignments retrieved successfully.", 200);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while retrieving assignments.");
-                return new ServiceResponse<List<GetAllAssignmentsResponse>>(null, false, "Operation failed: " + ex.Message);
+                return new ServiceResponse<List<GetAllAssignmentsResponse>>(null, false, "Operation failed: " + ex.Message, 500);
             }
         }
 
@@ -294,12 +294,12 @@ namespace Lesson_API.Repository.Implementations
                     assignment.ClassSections = (await multi.ReadAsync<AssignmentClassSection>()).ToList();
                 }
 
-                return new ServiceResponse<Assignment>(assignment, assignment != null, assignment != null ? "Assignment found." : "Assignment not found.");
+                return new ServiceResponse<Assignment>(assignment, assignment != null, assignment != null ? "Assignment found." : "Assignment not found.", assignment != null ? 200 : 404);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while retrieving assignment by ID.");
-                return new ServiceResponse<Assignment>(null, false, "Operation failed: " + ex.Message);
+                return new ServiceResponse<Assignment>(null, false, "Operation failed: " + ex.Message, 500);
             }
         }
 
@@ -310,12 +310,12 @@ namespace Lesson_API.Repository.Implementations
                 var sql = @"UPDATE tblAssignment SET IsActive = 0 WHERE AssignmentID = @AssignmentID";
                 var rowsAffected = await _dbConnection.ExecuteAsync(sql, new { AssignmentID = id });
 
-                return new ServiceResponse<bool>(rowsAffected > 0, rowsAffected > 0, rowsAffected > 0 ? "Assignment deleted successfully." : "Delete operation failed.");
+                return new ServiceResponse<bool>(rowsAffected > 0, rowsAffected > 0, rowsAffected > 0 ? "Assignment deleted successfully." : "Delete operation failed.", rowsAffected > 0 ? 200 : 400);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while deleting assignment.");
-                return new ServiceResponse<bool>(false, false, "Operation failed: " + ex.Message);
+                return new ServiceResponse<bool>(false, false, "Operation failed: " + ex.Message, 500);
             }
         }
     }

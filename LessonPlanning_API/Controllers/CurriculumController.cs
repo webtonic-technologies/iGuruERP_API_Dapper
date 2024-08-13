@@ -20,11 +20,7 @@ namespace Lesson_API.Controllers
         public async Task<IActionResult> AddUpdateCurriculum([FromBody] CurriculumRequest request)
         {
             var response = await _curriculumService.AddUpdateCurriculum(request);
-            if (response.Success)
-            {
-                return Ok(response);
-            }
-            return BadRequest(response);
+            return StatusCode(response.StatusCode, response);  // Ensure the correct status code is returned
         }
 
         [HttpPost("GetAllCurriculum")]

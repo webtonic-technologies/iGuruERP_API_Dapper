@@ -34,6 +34,15 @@ builder.Services.AddTransient<IInfirmaryVisitService, InfirmaryVisitService>();
 builder.Services.AddTransient<IStudentVaccinationRepository, StudentVaccinationRepository>();
 builder.Services.AddTransient<IStudentVaccinationService, StudentVaccinationService>();
 
+builder.Services.AddTransient<IVaccinationFetchRepository, VaccinationFetchRepository>();
+builder.Services.AddTransient<IVaccinationFetchService, VaccinationFetchService>();
+
+builder.Services.AddTransient<IItemTypeFetchRepository, ItemTypeFetchRepository>();
+builder.Services.AddTransient<IItemTypeFetchService, ItemTypeFetchService>();
+
+builder.Services.AddTransient<IInfirmaryVisitorTypeRepository, InfirmaryVisitorTypeRepository>();
+builder.Services.AddTransient<IInfirmaryVisitorTypeService, InfirmaryVisitorTypeService>();
+
 
 var app = builder.Build();
 

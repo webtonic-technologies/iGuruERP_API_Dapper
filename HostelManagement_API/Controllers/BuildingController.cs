@@ -1,4 +1,5 @@
 ﻿using HostelManagement_API.DTOs.Requests;
+using HostelManagement_API.DTOs.Responses;
 using HostelManagement_API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -20,12 +21,12 @@ namespace HostelManagement_API.Controllers
         }
 
         [HttpPost("AddUpdateBuildings")]
-        public async Task<IActionResult> AddUpdateBuilding([FromBody] AddUpdateBuildingRequest request)
+        public async Task<IActionResult> AddUpdateBuildings([FromBody] AddUpdateBuildingsRequest request)
         {
-            _logger.LogInformation("AddUpdateBuilding Request Received: {@Request}", request);
-            var response = await _buildingService.AddUpdateBuilding(request);
-            _logger.LogInformation("AddUpdateBuilding Response: {@Response}", response);
-            return StatusCode(response.StatusCode, response);
+            _logger.LogInformation("AddUpdateBuildings Request Received: {@Request}", request);
+            var result = await _buildingService.AddUpdateBuildings(request);
+            _logger.LogInformation("AddUpdateBuildings Response: {@Response}", result);
+            return Ok(result);
         }
 
         [HttpPost("GetAllBuildings")]
@@ -35,6 +36,15 @@ namespace HostelManagement_API.Controllers
             var response = await _buildingService.GetAllBuildings(request);
             _logger.LogInformation("GetAllBuildings Response: {@Response}", response);
             return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("GetAllBuildings_Fetch")]
+        public async Task<IActionResult> GetAllBuildingsFetch()
+        {
+            _logger.LogInformation("GetAllBuildingsFetch Request Received");
+            IEnumerable<BuildingResponse> buildings = await _buildingService.GetAllBuildingsFetch();
+            _logger.LogInformation("GetAllBuildingsFetch Response: {@Response}", buildings);
+            return Ok(new { Success = true, Message = "Buildings retrieved successfully", Data = buildings });
         }
 
         [HttpGet("GetBuilding/{buildingId}")]

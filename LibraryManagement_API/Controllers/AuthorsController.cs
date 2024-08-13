@@ -17,9 +17,9 @@ namespace LibraryManagement_API.Controllers
         }
 
         [HttpPost("AddUpdateAuthor")]
-        public async Task<IActionResult> AddUpdateAuthor(Author request)
+        public async Task<IActionResult> AddUpdateAuthors(AddUpdateAuthorsRequest request)
         {
-            var response = await _authorService.AddUpdateAuthor(request);
+            var response = await _authorService.AddUpdateAuthors(request);
             return StatusCode(response.StatusCode, response);
         }
 
@@ -27,6 +27,13 @@ namespace LibraryManagement_API.Controllers
         public async Task<IActionResult> GetAllAuthors(GetAllAuthorsRequest request)
         {
             var response = await _authorService.GetAllAuthors(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("GetAllAuthors_Fetch")]
+        public async Task<IActionResult> GetAllAuthorsFetch(GetAllAuthorsFetchRequest request)
+        {
+            var response = await _authorService.GetAllAuthorsFetch(request);
             return StatusCode(response.StatusCode, response);
         }
 

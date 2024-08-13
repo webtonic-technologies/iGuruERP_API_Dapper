@@ -7,6 +7,7 @@ using Infirmary_API.Repository.Interfaces;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Infirmary_API.Repository.Implementations
@@ -24,23 +25,59 @@ namespace Infirmary_API.Repository.Implementations
         {
             try
             {
-                string query = request.ItemTypeID == 0
-                    ? @"INSERT INTO tblInfirmaryItemType (ItemType, Description, IsActive, InstituteID) 
-                       VALUES (@ItemTypeName, @Description, @IsActive, @InstituteID)"
-                    : @"UPDATE tblInfirmaryItemType SET ItemType = @ItemTypeName, Description = @Description, 
-                       IsActive = @IsActive, InstituteID = @InstituteID 
-                       WHERE ItemTypeID = @ItemTypeID";
+                _connection.Open();
+                using (var transaction = _connection.BeginTransaction())
+                {
+                    try
+                    {
+                        foreach (var itemType in request.ItemTypes)
+                        {
+                            // Check if the item type already exists
+                            var existingItemType = await _connection.QueryFirstOrDefaultAsync<int>(@"
+                        SELECT COUNT(1) 
+                        FROM tblInfirmaryItemType 
+                        WHERE ItemType = @ItemTypeName AND InstituteID = @InstituteID",
+                                new { itemType.ItemTypeName, itemType.InstituteID }, transaction);
 
-                int result = await _connection.ExecuteAsync(query, request);
+                            if (existingItemType > 0)
+                            {
+                                // If the item type already exists, skip the insertion
+                                continue;
+                            }
 
-                if (result > 0)
-                    return new ServiceResponse<string>(true, "Operation Successful", "ItemType data updated successfully", 200);
-                else
-                    return new ServiceResponse<string>(false, "Operation Failed", null, 400);
+                            if (itemType.ItemTypeID == 0)
+                            {
+                                await _connection.ExecuteAsync(@"
+                            INSERT INTO tblInfirmaryItemType (ItemType, Description, InstituteID, IsActive)
+                            VALUES (@ItemTypeName, @Description, @InstituteID, @IsActive);",
+                                    itemType, transaction);
+                            }
+                            else
+                            {
+                                await _connection.ExecuteAsync(@"
+                            UPDATE tblInfirmaryItemType
+                            SET ItemType = @ItemTypeName,
+                                Description = @Description,
+                                InstituteID = @InstituteID,
+                                IsActive = @IsActive
+                            WHERE ItemTypeID = @ItemTypeID;",
+                                    itemType, transaction);
+                            }
+                        }
+
+                        transaction.Commit();
+                        return new ServiceResponse<string>(true, "Operation Successful", "Items added/updated successfully", 200);
+                    }
+                    catch (System.Exception ex)
+                    {
+                        transaction.Rollback();
+                        return new ServiceResponse<string>(false, ex.Message, null, 500);
+                    }
+                }
             }
-            catch (Exception ex)
+            finally
             {
-                return new ServiceResponse<string>(false, ex.Message, null, 500);
+                _connection.Close();
             }
         }
 
@@ -54,7 +91,7 @@ namespace Infirmary_API.Repository.Implementations
                 string sql = @"
                 SELECT 
                     ItemTypeID,
-                    ItemType,
+                    ItemType as ItemTypeName,
                     Description,
                     IsActive,
                     InstituteID
@@ -85,7 +122,7 @@ namespace Infirmary_API.Repository.Implementations
         {
             try
             {
-                string query = "SELECT * FROM tblInfirmaryItemType WHERE ItemTypeID = @Id AND IsActive = 1";
+                string query = "SELECT ItemTypeID, ItemType as ItemTypeName, Description, IsActive, InstituteID FROM tblInfirmaryItemType WHERE ItemTypeID = @Id AND IsActive = 1";
                 var result = await _connection.QueryFirstOrDefaultAsync<ItemType>(query, new { Id = id });
 
                 if (result != null)

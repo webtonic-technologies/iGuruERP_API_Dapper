@@ -49,35 +49,55 @@ namespace Infirmary_API.Repository.Implementations
         {
             try
             {
-                string countSql = @"SELECT COUNT(*) FROM tblStockEntry WHERE IsActive = 1 AND InstituteID = @InstituteID";
-                int totalCount = await _connection.ExecuteScalarAsync<int>(countSql, new { request.InstituteID });
+                string countSql = @"
+            SELECT COUNT(*) 
+            FROM tblStockEntry 
+            WHERE IsActive = 1 
+              AND InstituteID = @InstituteID 
+              AND (@StartDate IS NULL OR EntryDate >= @StartDate) 
+              AND (@EndDate IS NULL OR EntryDate <= @EndDate)";
+
+                int totalCount = await _connection.ExecuteScalarAsync<int>(countSql, new
+                {
+                    request.InstituteID,
+                    StartDate = request.StartDate,
+                    EndDate = request.EndDate
+                });
 
                 string sql = @"
-                SELECT 
-                    StockID,
-                    ItemTypeID,
-                    MedicineName,
-                    Company,
-                    BatchCode,
-                    Diagnosis,
-                    Quantity,
-                    PricePerQuantity,
-                    ExpiryDate,
-                    EntryDate,
-                    DosageDetails,
-                    InstituteID,
-                    IsActive
-                FROM 
-                    tblStockEntry
-                WHERE
-                    IsActive = 1 AND InstituteID = @InstituteID
-                ORDER BY 
-                    StockID
-                OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+        SELECT 
+            se.StockID,
+            se.ItemTypeID,
+            it.ItemType AS ItemTypeName,
+            se.MedicineName,
+            se.Company,
+            se.BatchCode,
+            se.Diagnosis,
+            se.Quantity,
+            se.PricePerQuantity,
+            se.ExpiryDate,
+            se.EntryDate,
+            se.DosageDetails,
+            se.InstituteID,
+            se.IsActive
+        FROM 
+            tblStockEntry se
+        INNER JOIN 
+            tblInfirmaryItemType it ON se.ItemTypeID = it.ItemTypeID
+        WHERE
+            se.IsActive = 1 
+            AND se.InstituteID = @InstituteID
+            AND (@StartDate IS NULL OR se.EntryDate >= @StartDate) 
+            AND (@EndDate IS NULL OR se.EntryDate <= @EndDate)
+        ORDER BY 
+            se.StockID
+        OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 
                 var result = await _connection.QueryAsync<StockEntryResponse>(sql, new
                 {
                     request.InstituteID,
+                    StartDate = request.StartDate,
+                    EndDate = request.EndDate,
                     Offset = (request.PageNumber - 1) * request.PageSize,
                     PageSize = request.PageSize
                 });
@@ -94,7 +114,29 @@ namespace Infirmary_API.Repository.Implementations
         {
             try
             {
-                string query = "SELECT * FROM tblStockEntry WHERE StockID = @Id AND IsActive = 1";
+                string query = @"
+        SELECT 
+            se.StockID,
+            se.ItemTypeID,
+            it.ItemType AS ItemTypeName,
+            se.MedicineName,
+            se.Company,
+            se.BatchCode,
+            se.Diagnosis,
+            se.Quantity,
+            se.PricePerQuantity,
+            se.ExpiryDate,
+            se.EntryDate,
+            se.DosageDetails,
+            se.InstituteID,
+            se.IsActive
+        FROM 
+            tblStockEntry se
+        INNER JOIN 
+            tblInfirmaryItemType it ON se.ItemTypeID = it.ItemTypeID
+        WHERE 
+            se.StockID = @Id AND se.IsActive = 1";
+
                 var result = await _connection.QueryFirstOrDefaultAsync<StockEntry>(query, new { Id = id });
 
                 if (result != null)
@@ -107,6 +149,7 @@ namespace Infirmary_API.Repository.Implementations
                 return new ServiceResponse<StockEntry>(false, ex.Message, null, 500);
             }
         }
+
 
         public async Task<ServiceResponse<bool>> DeleteStockEntry(int id)
         {

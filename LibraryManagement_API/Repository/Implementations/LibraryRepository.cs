@@ -19,24 +19,66 @@ namespace LibraryManagement_API.Repository.Implementations
             _connection = new SqlConnection(configuration.GetConnectionString("DefaultConnection"));
         }
 
-        public async Task<ServiceResponse<string>> AddUpdateLibrary(Library request)
+        private IDbConnection CreateConnection()
         {
-            try
-            {
-                string sql = request.LibraryID == 0 ?
-                    @"INSERT INTO tblLibrary (InstituteID, LibraryName, ShortName, LibraryInchargeID, IsActive) 
-                      VALUES (@InstituteID, @LibraryName, @ShortName, @LibraryInchargeID, @IsActive)" :
-                    @"UPDATE tblLibrary SET InstituteID = @InstituteID, LibraryName = @LibraryName, ShortName = @ShortName, 
-                      LibraryInchargeID = @LibraryInchargeID, IsActive = @IsActive WHERE LibraryID = @LibraryID";
+            return _connection; // Use _connection instead of _configuration
+        }
 
-                int rowsAffected = await _connection.ExecuteAsync(sql, request);
-
-                return new ServiceResponse<string>(rowsAffected > 0, rowsAffected > 0 ? "Success" : "Failure",
-                    rowsAffected > 0 ? "Library saved successfully" : "Failed to save library", rowsAffected > 0 ? 200 : 400);
-            }
-            catch (Exception ex)
+        public async Task<ServiceResponse<string>> AddUpdateLibrary(AddUpdateLibraryRequest request)
+        {
+            using (var connection = CreateConnection())
             {
-                return new ServiceResponse<string>(false, ex.Message, null, 500);
+                connection.Open();
+                using (var transaction = connection.BeginTransaction())
+                {
+                    try
+                    {
+                        foreach (var library in request.Libraries)
+                        {
+                            string sql;
+
+                            if (library.LibraryID == 0)
+                            {
+                                sql = @"INSERT INTO tblLibrary (InstituteID, LibraryName, ShortName, LibraryInchargeID, IsActive) 
+                                        VALUES (@InstituteID, @LibraryName, @ShortName, @LibraryInchargeID, @IsActive)";
+
+                                await connection.ExecuteAsync(sql, new
+                                {
+                                    library.InstituteID,
+                                    library.LibraryName,
+                                    library.ShortName,
+                                    library.LibraryInchargeID,
+                                    library.IsActive
+                                }, transaction);
+                            }
+                            else
+                            {
+                                sql = @"UPDATE tblLibrary 
+                                        SET InstituteID = @InstituteID, LibraryName = @LibraryName, ShortName = @ShortName, 
+                                            LibraryInchargeID = @LibraryInchargeID, IsActive = @IsActive
+                                        WHERE LibraryID = @LibraryID";
+
+                                await connection.ExecuteAsync(sql, new
+                                {
+                                    library.LibraryID,
+                                    library.InstituteID,
+                                    library.LibraryName,
+                                    library.ShortName,
+                                    library.LibraryInchargeID,
+                                    library.IsActive
+                                }, transaction);
+                            }
+                        }
+
+                        transaction.Commit();
+                        return new ServiceResponse<string>(true, "Success", "Libraries saved successfully", 200);
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        return new ServiceResponse<string>(false, ex.Message, null, 500);
+                    }
+                }
             }
         }
 
@@ -101,6 +143,67 @@ namespace LibraryManagement_API.Repository.Implementations
             catch (Exception ex)
             {
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<List<LibraryInchargeResponse>>> GetAllLibraryIncharge(GetAllLibraryInchargeRequest request)
+        {
+            try
+            {
+                string sql = @"
+                    SELECT 
+                        Employee_id AS EmployeeID,
+                        First_Name AS FirstName,
+                        Middle_Name AS MiddleName,
+                        Last_Name AS LastName,
+                        mobile_number AS MobileNumber,
+                        EmailID
+                    FROM tbl_EmployeeProfileMaster
+                    WHERE Institute_id = @InstituteID 
+                      AND Department_id = @DepartmentID 
+                      AND Designation_id = @DesignationID";
+
+                var incharges = await _connection.QueryAsync<LibraryInchargeResponse>(sql, new
+                {
+                    request.InstituteID,
+                    request.DepartmentID,
+                    request.DesignationID
+                });
+
+                return new ServiceResponse<List<LibraryInchargeResponse>>(true, "Records Found", incharges.AsList(), 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<LibraryInchargeResponse>>(false, ex.Message, null, 500);
+            }
+        }
+
+
+        public async Task<ServiceResponse<List<LibraryFetchResponse>>> GetAllLibraryFetch(GetAllLibraryFetchRequest request)
+        {
+            try
+            {
+                string sql = @"
+                    SELECT 
+                        l.LibraryID,
+                        l.InstituteID,
+                        l.LibraryName,
+                        l.ShortName,
+                        CONCAT(e.First_Name, ' ', e.Middle_Name, ' ', e.Last_Name) AS LibraryIncharge
+                    FROM 
+                        tblLibrary l
+                    LEFT JOIN 
+                        tbl_EmployeeProfileMaster e ON l.LibraryInchargeID = e.Employee_id
+                    WHERE 
+                        l.InstituteID = @InstituteID AND l.IsActive = 1";
+
+                var libraries = await _connection.QueryAsync<LibraryFetchResponse>(sql, new { request.InstituteID });
+
+                return new ServiceResponse<List<LibraryFetchResponse>>(true, "Records Found", libraries.AsList(), 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<LibraryFetchResponse>>(false, ex.Message, null, 500);
             }
         }
     }

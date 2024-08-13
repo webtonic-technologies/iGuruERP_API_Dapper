@@ -25,5 +25,15 @@ namespace SiteAdmin_API.Services.Implementations
         {
             return await _subModuleRepository.GetAllFunctionality(request);
         }
+
+        public async Task<ServiceResponse<bool>> UpdateSubModule(UpdateSubModuleRequest request)
+        {
+            return await _subModuleRepository.UpdateSubModule(request);
+        }
+
+        public async Task<ServiceResponse<bool>> UpdateSubModuleStatus(int subModuleId)
+        {
+            return await _subModuleRepository.UpdateSubModuleStatus(subModuleId);
+        }
     }
 }

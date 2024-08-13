@@ -37,7 +37,12 @@ namespace LibraryManagement_API.Controllers.Configuration
             return StatusCode(response.StatusCode, response);
         }
 
-        
+        [HttpPost("GetAllPublishers_Fetch")]
+        public async Task<IActionResult> GetAllPublishersFetch(GetAllPublishersFetchRequest request)
+        {
+            var response = await _publisherService.GetAllPublishersFetch(request);
+            return StatusCode(response.StatusCode, response);
+        }
 
         [HttpPut("Delete/{PublisherID}")]
         public async Task<IActionResult> DeletePublisher(int PublisherID)

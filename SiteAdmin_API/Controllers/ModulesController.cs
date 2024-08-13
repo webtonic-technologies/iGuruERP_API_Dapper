@@ -15,13 +15,27 @@ namespace SiteAdmin_API.Controllers
             _moduleService = moduleService;
         }
 
+        // Existing method to get all modules
         [HttpPost("GetAllModules")]
-        public async Task<IActionResult> GetAllModules([FromBody] GetAllModulesRequest request)
+        public async Task<IActionResult> GetAllModules()
         {
-            var response = await _moduleService.GetAllModules(request);
+            var response = await _moduleService.GetAllModules();
             return StatusCode(response.StatusCode, response);
         }
 
-        // Other endpoints for Modules
+        // New method to update a module
+        [HttpPost("UpdateModules")]
+        public async Task<IActionResult> UpdateModule([FromBody] UpdateModuleRequest request)
+        {
+            var response = await _moduleService.UpdateModule(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("Status")]
+        public async Task<IActionResult> UpdateModuleStatus([FromForm] int moduleId)
+        {
+            var response = await _moduleService.UpdateModuleStatus(moduleId);
+            return StatusCode(response.StatusCode, response);
+        }
     }
 }
