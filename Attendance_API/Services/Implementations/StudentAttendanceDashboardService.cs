@@ -23,5 +23,13 @@ namespace Attendance_API.Services.Implementations
         {
             return await _studentAttendanceDashboardRepo.GetClasswiseAttendanceCountsForTodayAsync(instituteId);
         }
+        public async Task<ServiceResponse<IEnumerable<EmployeeOnLeaveDTO>>> GetEmployeesOnLeaveForTodayAsync(int instituteId)
+        {
+            return await _studentAttendanceDashboardRepo.GetEmployeesOnLeaveForTodayAsync(instituteId);
+        }
+        public async Task<ServiceResponse<IEnumerable<AbsentStudentDTO>>> GetAbsentStudentsForTodayAsync(int instituteId)
+        {
+            return await _studentAttendanceDashboardRepo.GetAbsentStudentsForTodayAsync(instituteId);
+        }
     }
 }

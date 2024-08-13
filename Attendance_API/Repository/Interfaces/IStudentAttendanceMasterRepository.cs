@@ -8,5 +8,6 @@ namespace Attendance_API.Repository.Interfaces
         Task<ServiceResponse<StudentAttendanceMasterResponseDTO>> GetStudentAttendanceMasterList(StudentAttendanceMasterRequestDTO request);
         Task<ServiceResponse<StudentAttendanceMasterDTO>> InsertOrUpdateStudentAttendanceMaster(StudentAttendanceMasterDTO studentAttendanceMaster);
         Task<ServiceResponse<bool>> DeleteStudentAttendanceMaster(int studentAttendanceId);
+        Task<ServiceResponse<IEnumerable<TimeSlotDTO>>> GetTimeSlotsForDropdown();
     }
 }

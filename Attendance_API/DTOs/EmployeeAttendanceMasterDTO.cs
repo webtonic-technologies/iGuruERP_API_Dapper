@@ -10,5 +10,7 @@ namespace Attendance_API.DTOs
         [MaxLength(200)]
         public string Remarks { get; set; }
         public DateTime Date { get; set; }
+        public bool isHoliday { get; set; }
+        public int TimeSlot_id { get; set; }
     }
 }

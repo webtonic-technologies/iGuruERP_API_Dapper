@@ -31,5 +31,10 @@ namespace Attendance_API.Services.Implementations
         {
             return await _studentAttendanceMasterRepository.DeleteStudentAttendanceMaster(studentAttendanceId);
         }
+
+        public async Task<ServiceResponse<IEnumerable<TimeSlotDTO>>> GetTimeSlotsForDropdown()
+        {
+            return await _studentAttendanceMasterRepository.GetTimeSlotsForDropdown();
+        }
     }
 }

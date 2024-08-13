@@ -10,6 +10,7 @@
         [TimeFormat(ErrorMessage = "Invalid time format. Please use HH:MM format.")]
         public string Late_Coming { get; set; } = string.Empty;
         public DateTime Applicable_Date { get; set; }
+        public int InstituteId { get; set; }
         public List<int> Designations { get; set; }
     }
 
