@@ -91,5 +91,27 @@ namespace Attendance_API.Repository.Implementations
 
             return new ServiceResponse<bool>(true, "Operation successful", true, 200);
         }
+
+        public async Task<ServiceResponse<IEnumerable<TimeSlotDTO>>> GetTimeSlotsForDropdown()
+        {
+            try
+            {
+                string sql = "SELECT id, name, value FROM tbl_TimeSlot";
+                var result = await _connection.QueryAsync<TimeSlotDTO>(sql);
+
+                if (result != null)
+                {
+                    return new ServiceResponse<IEnumerable<TimeSlotDTO>>(true, "Time slots retrieved successfully", result, 200);
+                }
+                else
+                {
+                    return new ServiceResponse<IEnumerable<TimeSlotDTO>>(false, "No time slots found", null, 404);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<IEnumerable<TimeSlotDTO>>(false, ex.Message, null, 500);
+            }
+        }
     }
 }

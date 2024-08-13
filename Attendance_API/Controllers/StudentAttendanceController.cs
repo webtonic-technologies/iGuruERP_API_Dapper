@@ -38,5 +38,12 @@ namespace Attendance_API.Controllers
             var data = await _studentAttendanceMasterService.DeleteStudentAttendanceMaster(studentAttendanceId);
             return Ok(data);
         }
+
+        [HttpGet("GetTimeSlotsForDropdown")]
+        public async Task<IActionResult> GetTimeSlotsForDropdown()
+        {
+            var data = await _studentAttendanceMasterService.GetTimeSlotsForDropdown();
+            return Ok(data);
+        }
     }
 }

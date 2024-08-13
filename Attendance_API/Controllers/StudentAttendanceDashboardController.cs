@@ -36,5 +36,25 @@ namespace Attendance_API.Controllers
             }
             return StatusCode(response.StatusCode, response);
         }
+        [HttpGet("GetEmployeesOnLeaveForTodayAsync")]
+        public async Task<IActionResult> GetEmployeesOnLeaveForTodayAsync(int instituteId)
+        {
+            var response = await _studentAttendanceDashboardService.GetEmployeesOnLeaveForTodayAsync(instituteId);
+            if (response.Success)
+            {
+                return Ok(response);
+            }
+            return StatusCode(response.StatusCode, response);
+        }
+        [HttpGet("GetAbsentStudentsForTodayAsync")]
+        public async Task<IActionResult> GetAbsentStudentsForTodayAsync(int instituteId)
+        {
+            var response = await _studentAttendanceDashboardService.GetAbsentStudentsForTodayAsync(instituteId);
+            if (response.Success)
+            {
+                return Ok(response);
+            }
+            return StatusCode(response.StatusCode, response);
+        }
     }
 }

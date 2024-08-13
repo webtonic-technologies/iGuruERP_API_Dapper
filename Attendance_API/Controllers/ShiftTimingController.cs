@@ -17,17 +17,17 @@ namespace Attendance_API.Controllers
             _shiftTimingService = shiftTimingService;
         }
 
-        [HttpPost]
+        [HttpPost("AddShiftTimingAndDesignations")]
         public async Task<IActionResult> AddShiftTimingAndDesignations([FromBody] ShiftTimingRequestDTO request)
         {
-            var result = await _shiftTimingService.AddShiftTimingAndDesignations(request);
+            var result = await _shiftTimingService.AddOrEditShiftTimingsAndDesignations(new List<ShiftTimingRequestDTO> { request });
             if (result.Success)
                 return Ok(result);
             else
                 return BadRequest(result);
         }
 
-        [HttpGet]
+        [HttpGet("GetAllShiftTimings")]
         public async Task<IActionResult> GetAllShiftTimings([FromQuery]ShiftTimingFilterDTO request)
         {
             var result = await _shiftTimingService.GetAllShiftTimings(request);
@@ -37,7 +37,7 @@ namespace Attendance_API.Controllers
                 return NotFound(result);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("GetShiftTimingById/{id}")]
         public async Task<IActionResult> GetShiftTimingById(int id)
         {
             var result = await _shiftTimingService.GetShiftTimingById(id);
@@ -47,17 +47,17 @@ namespace Attendance_API.Controllers
                 return NotFound(result);
         }
 
-        [HttpPut]
+        [HttpPut("EditShiftTimingAndDesignations")]
         public async Task<IActionResult> EditShiftTimingAndDesignations([FromBody] ShiftTimingRequestDTO request)
         {
-            var result = await _shiftTimingService.EditShiftTimingAndDesignations(request);
+            var result = await _shiftTimingService.AddOrEditShiftTimingsAndDesignations(new List<ShiftTimingRequestDTO> { request });
             if (result.Success)
                 return Ok(result);
             else
                 return BadRequest(result);
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("DeleteShiftTiming/{id}")]
         public async Task<IActionResult> DeleteShiftTiming(int id)
         {
             var result = await _shiftTimingService.DeleteShiftTiming(id);
