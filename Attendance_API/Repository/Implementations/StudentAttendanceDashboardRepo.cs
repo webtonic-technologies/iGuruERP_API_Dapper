@@ -202,5 +202,53 @@ namespace Attendance_API.Repository.Implementations
                 return new ServiceResponse<IEnumerable<EmployeeOnLeaveDTO>>(false, ex.Message, null, 500);
             }
         }
+
+        public async Task<ServiceResponse<EmployeeAttendanceStatsDTO>> GetEmployeeAttendanceStatsForTodayAsync(int instituteId)
+        {
+            try
+            {
+                var sql = @"
+        DECLARE @Today DATE = CAST(GETDATE() AS DATE);
+
+        -- Employee Attendance Statistics
+        SELECT
+            (SELECT COUNT(*) FROM tbl_EmployeeProfileMaster WHERE Institute_id = @Institute_id ) AS TotalEmployeeCount,
+            ISNULL(SUM(CASE WHEN a.Employee_Attendance_Status_id = eas.Employee_Attendance_Status_id
+                            AND eas.Short_Name = 'P' THEN 1 ELSE 0 END), 0) AS PresentCount,
+            ISNULL(SUM(CASE WHEN a.Employee_Attendance_Status_id = eas.Employee_Attendance_Status_id
+                            AND eas.Short_Name = 'L' THEN 1 ELSE 0 END), 0) AS OnLeaveCount,
+            ISNULL(SUM(CASE WHEN a.Employee_Attendance_Status_id IS NULL THEN 1 ELSE 0 END), 0) AS NotMarkedCount,
+            ISNULL(SUM(CASE WHEN a.Date > st.Late_Coming THEN 1 ELSE 0 END), 0) AS LateLoginCount
+        FROM tbl_EmployeeProfileMaster e
+        LEFT JOIN tbl_EmployeeAttendanceMaster a
+            ON e.Employee_id = a.Employee_id
+            AND a.Date = @Today
+        LEFT JOIN tbl_EmployeeAttendanceStatusMaster eas
+            ON a.Employee_Attendance_Status_id = eas.Employee_Attendance_Status_id
+        LEFT JOIN tbl_ShiftTimingDesignationMapping stm
+            ON e.Designation_id = stm.Designation_id
+        LEFT JOIN tbl_ShiftTimingMaster st
+            ON stm.Shift_Timing_id = st.Shift_Timing_id
+        WHERE e.Institute_id = @Institute_id;
+        ";
+
+                var parameters = new { Institute_id = instituteId };
+
+                var result = await _connection.QuerySingleAsync<EmployeeAttendanceStatsDTO>(sql, parameters);
+
+                if (result != null)
+                {
+                    return new ServiceResponse<EmployeeAttendanceStatsDTO>(true, "Employee attendance statistics retrieved successfully", result, 200);
+                }
+                else
+                {
+                    return new ServiceResponse<EmployeeAttendanceStatsDTO>(false, "No employee attendance statistics found for the given parameters", null, 404);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<EmployeeAttendanceStatsDTO>(false, ex.Message, null, 500);
+            }
+        }
     }
 }
