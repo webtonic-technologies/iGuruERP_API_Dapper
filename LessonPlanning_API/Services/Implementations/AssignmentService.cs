@@ -37,5 +37,10 @@ namespace Lesson_API.Services.Implementations
         {
             return await _assignmentRepository.DeleteAssignment(id);
         }
+
+        public async Task<ServiceResponse<byte[]>> DownloadDocument(int documentId)
+        {
+            return await _assignmentRepository.DownloadDocument(documentId);
+        }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Infirmary_API.DTOs.Requests;
+using System;
 using System.Collections.Generic;
 
 namespace Infirmary_API.DTOs.Response
@@ -23,5 +24,6 @@ namespace Infirmary_API.DTOs.Response
 
         // Add this property to include Medicines in the response
         public List<MedicineResponse> Medicines { get; set; }
+        public List<InfirmaryVisitDocs>? InfirmaryVisitDocs { get; set; }
     }
 }
