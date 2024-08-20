@@ -39,7 +39,15 @@ namespace Institute_API.Services.Implementations
             string relativePath = Path.Combine("Assets", targetFolder, fileName);
             return (fileName,relativePath, filePath);
         }
+        public bool IsValidFileFormat(string base64File)
+        {
+            byte[] fileData = Convert.FromBase64String(base64File);
 
+            // Check if the file has a valid image or PDF format
+            string fileExtension = GetImageExtension(fileData);
+
+            return !string.IsNullOrEmpty(fileExtension);
+        }
         public string GetImageAsBase64(string filename, string subFolder = null)
         {
             string directoryPath;
@@ -56,7 +64,8 @@ namespace Institute_API.Services.Implementations
 
             if (!File.Exists(filePath))
             {
-                throw new Exception("File not found");
+                return string.Empty;
+                //throw new Exception("File not found");
             }
 
             byte[] fileBytes = File.ReadAllBytes(filePath);
@@ -102,11 +111,24 @@ namespace Institute_API.Services.Implementations
             {
                 return ".gif";
             }
+            else if (IsPdf(imageData))
+            {
+                return ".pdf";
+            }
             else
             {
                 // Default to an empty string or handle unrecognized formats as needed
                 return string.Empty;
             }
+        }
+        private bool IsPdf(byte[] imageData)
+        {
+            // PDF signature: "%PDF"
+            return imageData.Length >= 4 &&
+                   imageData[0] == 0x25 &&
+                   imageData[1] == 0x50 &&
+                   imageData[2] == 0x44 &&
+                   imageData[3] == 0x46;
         }
 
         private bool IsJpeg(byte[] imageData)
