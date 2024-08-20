@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Institute_API.DTOs;
 using Institute_API.DTOs.ServiceResponse;
+using Institute_API.Helper;
 using Institute_API.Repository.Interfaces;
 using System.Data;
 using System.Data.Common;
@@ -19,6 +20,8 @@ namespace Institute_API.Repository.Implementations
         {
             try
             {
+                var StartDate = DateTimeHelper.ConvertToDateTime(holidayDTO.StartDate);
+                var EndDate = DateTimeHelper.ConvertToDateTime(holidayDTO.EndDate);
                 _connection.Open();
                 using (var transaction = _connection.BeginTransaction())
                 {
@@ -50,7 +53,16 @@ namespace Institute_API.Repository.Implementations
                     }
 
                     // Execute holiday query and retrieve the holiday ID
-                    holidayId = await _connection.ExecuteScalarAsync<int>(holidayQuery, holidayDTO, transaction);
+                    holidayId = await _connection.ExecuteScalarAsync<int>(holidayQuery, new
+                    {
+                        holidayDTO.HolidayName,
+                        StartDate,
+                        EndDate,
+                        holidayDTO.Description,
+                        holidayDTO.Institute_id,
+                        holidayDTO.Academic_year_id,
+                        holidayDTO.Holiday_id
+                    }, transaction);
 
                     // Insert or update class session mappings
                     foreach (var mapping in holidayDTO.ClassSessionMappings)
@@ -102,12 +114,13 @@ namespace Institute_API.Repository.Implementations
             try
             {
                 string holidayQuery = @"
-            SELECT Holiday_id, HolidayName, StartDate, EndDate, Description, IsApproved, ApprovedBy,Institute_id,Academic_year_id,YearName
+            SELECT Holiday_id, HolidayName, StartDate, EndDate, Description, IsApproved, ApprovedBy,Institute_id,tbl_Holiday.Academic_year_id,YearName
+            LEFT JOIN tbl_AcademicYear on tbl_AcademicYear.Academic_year_id = tbl_Holiday.Academic_year_id
             FROM [dbo].[tbl_Holiday]
             WHERE Holiday_id = @HolidayId ;
         ";
 
-                var holiday = await _connection.QueryFirstOrDefaultAsync<HolidayDTO>(holidayQuery, new { HolidayId = holidayId});
+                var holiday = await _connection.QueryFirstOrDefaultAsync<HolidayDTO>(holidayQuery, new { HolidayId = holidayId });
 
                 if (holiday == null)
                 {
@@ -324,15 +337,15 @@ namespace Institute_API.Repository.Implementations
                 _connection.Open();
                 using (var transaction = _connection.BeginTransaction())
                 {
-            //        string deleteMappingQuery = @"
-            //    DELETE FROM [dbo].[tbl_HolidayClassSessionMapping] WHERE Holiday_id = @HolidayId;
-            //";
+                    //        string deleteMappingQuery = @"
+                    //    DELETE FROM [dbo].[tbl_HolidayClassSessionMapping] WHERE Holiday_id = @HolidayId;
+                    //";
 
-            //        await _connection.ExecuteAsync(deleteMappingQuery, new { HolidayId = holidayId }, transaction);
+                    //        await _connection.ExecuteAsync(deleteMappingQuery, new { HolidayId = holidayId }, transaction);
 
-            //        string deleteHolidayQuery = @"
-            //    DELETE FROM [dbo].[tbl_Holiday] WHERE Holiday_id = @HolidayId;
-            //";
+                    //        string deleteHolidayQuery = @"
+                    //    DELETE FROM [dbo].[tbl_Holiday] WHERE Holiday_id = @HolidayId;
+                    //";
 
                     string deleteHolidayQuery = @"
                 UPDATE [dbo].[tbl_Holiday] SET isDelete = 1  WHERE Holiday_id = @HolidayId;
