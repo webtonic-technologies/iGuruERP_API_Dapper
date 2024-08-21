@@ -24,6 +24,7 @@ namespace Attendance_API.Repository.Implementations
     DECLARE @cols AS NVARCHAR(MAX);
     DECLARE @query AS NVARCHAR(MAX);
 
+
     -- Generate a list of all dates between StartDate and EndDate
     WITH DateList AS (
         SELECT @StartDate AS Date
@@ -94,19 +95,30 @@ namespace Attendance_API.Repository.Implementations
             WHERE 
                 Admission_Number IS NOT NULL AND First_Name IS NOT NULL AND Roll_Number IS NOT NULL
             ORDER BY 
-                Roll_Number;'; 
+                Roll_Number
+            OFFSET (@PageNumber - 1) * @PageSize ROWS
+            FETCH NEXT @PageSize ROWS ONLY;'; 
 
-    EXEC sp_executesql @query,   N'@StartDate DATE, @EndDate DATE, @class_id INT, @section_id INT, @institute_id INT', 
-    @StartDate, @EndDate, @class_id, @section_id, @institute_id;";
+    EXEC sp_executesql @query,   N'@StartDate DATE, @EndDate DATE, @class_id INT, @section_id INT, @institute_id INT, @pageSize INT, @pageNumber INT', 
+    @StartDate, @EndDate, @class_id, @section_id, @institute_id, @pageSize,@PageNumber;";
+                
                 // Parameters for the query
-                var parameters = new { StartDate = request.StartDate, EndDate = request.EndDate, section_id = request.section_id, class_id = request.class_id, institute_id = request.instituteId };
+                var parameters = new { StartDate = request.StartDate, EndDate = request.EndDate, section_id = request.section_id, class_id = request.class_id, institute_id = request.instituteId, pageSize = request.PageSize, pageNumber = request.PageNumber };
 
                 // Execute the query and fetch the result
                 var result = await _connection.QueryAsync<dynamic>(query, parameters);
-                //var resultJson = JsonSerializer.Deserialize<dynamic>(result);
 
+                // Get total count without pagination
+                var totalCountQuery = @"
+                SELECT COUNT(*) 
+                FROM tbl_StudentAttendanceMaster a
+                LEFT JOIN tbl_studentmaster s ON a.Student_id = s.Student_id
+                WHERE 
+                    isDatewise = 1 AND a.Date BETWEEN @StartDate AND @EndDate AND (@class_id = 0 OR s.class_id = @class_id) AND  (@section_id = 0 OR s.section_id = @section_id) AND (@institute_id = 0 OR s.institute_id = @institute_id);";
 
-                return new ServiceResponse<dynamic>(true, "Operation successful", result, 200);
+                var totalCount = await _connection.ExecuteScalarAsync<int>(totalCountQuery, parameters);
+
+                return new ServiceResponse<dynamic>(true, "Operation successful", new { Records = result, TotalCount = totalCount }, 200);
             }
             catch (Exception ex)
             {
@@ -121,6 +133,7 @@ namespace Attendance_API.Repository.Implementations
                 var query = @"
 DECLARE @cols AS NVARCHAR(MAX);
 DECLARE @query AS NVARCHAR(MAX);
+
 
 -- Generate a list of all subjects
 WITH SubjectList AS (
@@ -176,7 +189,6 @@ SET @query = '
             AND (@institute_id = 0 OR s.institute_id = @institute_id)
     )
 
-
     SELECT 
 	Student_id,
         Admission_Number,
@@ -193,24 +205,34 @@ SET @query = '
     WHERE 
         Admission_Number IS NOT NULL AND First_Name IS NOT NULL AND Roll_Number IS NOT NULL
     ORDER BY 
-        Roll_Number;'; 
+        Roll_Number
+    OFFSET (@PageNumber - 1) * @PageSize ROWS
+    FETCH NEXT @PageSize ROWS ONLY;'; 
 
 EXEC sp_executesql @query, 
-    N'@Date DATE,@class_id INT, @section_id INT, @institute_id INT', 
-    @Date, @class_id, @section_id, @institute_id;";
+    N'@Date DATE,@class_id INT, @section_id INT, @institute_id INT, @pageSize INT, @pageNumber INT', 
+    @Date, @class_id, @section_id, @institute_id, @pageSize,@PageNumber;";
 
-                var parameters = new { Date = request.Date, section_id = request.section_id, class_id = request.class_id, institute_id = request.Institute_Id };
+                var parameters = new { Date = request.Date, section_id = request.section_id, class_id = request.class_id, institute_id = request.Institute_Id, pageSize = request.PageSize, pageNumber = request.PageNumber };
 
                 var result = await _connection.QueryAsync<dynamic>(query, parameters);
 
-                return new ServiceResponse<dynamic>(true, "Operation successful", result, 200);
+                // Get total count without pagination
+                var totalCountQuery = @"
+                SELECT COUNT(*) 
+                FROM tbl_StudentAttendanceMaster a
+                INNER JOIN tbl_studentmaster s ON a.Student_id = s.Student_id
+                WHERE 
+                    isDatewise = 0 AND CAST(a.Date AS DATE) = CAST(@Date AS DATE) AND (@class_id = 0 OR s.class_id = @class_id) AND (@section_id = 0 OR s.section_id = @section_id) AND (@institute_id = 0 OR s.institute_id = @institute_id);";
+
+                var totalCount = await _connection.ExecuteScalarAsync<int>(totalCountQuery, parameters);
+
+                return new ServiceResponse<dynamic>(true, "Operation successful", new { Records = result, TotalCount = totalCount }, 200);
             }
             catch (Exception ex)
             {
                 return new ServiceResponse<dynamic>(false, $"Error: {ex.Message}", null, 500);
             }
         }
-
-
     }
 }

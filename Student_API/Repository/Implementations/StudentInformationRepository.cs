@@ -83,7 +83,7 @@ namespace Student_API.Repository.Implementations
                     LEFT JOIN tbl_CasteMaster ON tbl_CasteMaster.caste_id = tbl_StudentMaster.Caste_id
                     LEFT JOIN tbl_InstituteDetails ON tbl_InstituteDetails.Institute_id = tbl_StudentMaster.Institute_id
                     LEFT JOIN tbl_AcademicYear ON tbl_AcademicYear.Id = tbl_StudentMaster.Academic_year_id
-                    LEFT JOIN tbl_InstituteHouse ON tbl_InstituteHouse.Institute_House_id = tbl_StudentMaster.Student_House_id
+                    LEFT JOIN tbl_InstituteHouse ON tbl_InstituteHouse.Institute_house_id = tbl_StudentMaster.Institute_house_id
                     WHERE tbl_StudentMaster.student_id = @studentId;
 
                     SELECT [Student_Other_Info_id], [student_id], [StudentType_id], [email_id],  [Identification_Mark_1],

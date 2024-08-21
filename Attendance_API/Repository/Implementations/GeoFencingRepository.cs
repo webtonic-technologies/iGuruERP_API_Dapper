@@ -62,7 +62,7 @@ namespace Attendance_API.Repository.Implementations
                 parameters.Add($"@Latitude_{i}", geoFencing.Latitude);
                 parameters.Add($"@Longitude_{i}", geoFencing.Longitude);
                 parameters.Add($"@Department_id_{i}", geoFencing.Department_id);
-                parameters.Add($"@Radius_In_Meters_{i}", geoFencing.Radius_In_Meters);
+                parameters.Add($"@Radius_In_Meters_{i}", geoFencing.Radius_In_Meters);  
                 parameters.Add($"@Search_Location_{i}", geoFencing.Search_Location);
                 parameters.Add($"@InstituteId_{i}", geoFencing.InstituteId);
             }

@@ -1,11 +1,16 @@
-﻿namespace Institute_API.DTOs
+﻿using Institute_API.Helper;
+
+namespace Institute_API.DTOs
 {
     public class HolidayRequestDTO
     {
         public int Holiday_id { get; set; }
         public string HolidayName { get; set; }
-        public DateTime StartDate { get; set; }
-        public DateTime EndDate { get; set; }
+
+        [ValidDateString("dd-MM-yyyy hh:mm tt")]
+        public string StartDate { get; set; }
+        [ValidDateString("dd-MM-yyyy hh:mm tt")]
+        public string EndDate { get; set; }
         public string Description { get; set; }
         //public bool IsApproved { get; set; }
         //public int? ApprovedBy { get; set; }
