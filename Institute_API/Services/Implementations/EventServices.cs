@@ -20,6 +20,10 @@ namespace Institute_API.Services.Implementations
             {
                 if (eventDto.AttachmentFile != null && eventDto.AttachmentFile != "")
                 {
+                    if (!_imageService.IsValidFileFormat(eventDto.AttachmentFile))
+                    {
+                        return new ServiceResponse<int>(false, "Unsupported file format. Only JPG, PNG, GIF, and PDF are allowed.", 0, 400);
+                    }
                     var file = await _imageService.SaveImageAsync(eventDto.AttachmentFile, "Event");
                     if (eventDto.Event_id != 0)
                     {

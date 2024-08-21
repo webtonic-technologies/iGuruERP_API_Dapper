@@ -4,6 +4,7 @@ using Institute_API.Services.Interfaces;
 using Institute_API.Repository.Interfaces;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Collections.Immutable;
+using Microsoft.AspNetCore.Mvc.Diagnostics;
 
 namespace Institute_API.Services.Implementations
 {
@@ -15,7 +16,7 @@ namespace Institute_API.Services.Implementations
         public GalleryService(IGalleryRepository galleryRepository, IImageService imageService)
         {
             _galleryRepository = galleryRepository;
-            _imageService = imageService;   
+            _imageService = imageService;
         }
 
         public async Task<ServiceResponse<int>> AddGalleryImage(GalleryDTO galleryDTO)
@@ -37,6 +38,13 @@ namespace Institute_API.Services.Implementations
                 //    await galleryDTO.File.CopyToAsync(fileStream);
                 //}
                 List<string> savedFilePaths = new List<string>();
+                foreach (var items in galleryDTO.FileName)
+                {
+                    if (!_imageService.IsValidFileFormat(items))
+                    {
+                        return new ServiceResponse<int>(false, "Unsupported file format. Only JPG, PNG, GIF, and PDF are allowed.", 0, 400);
+                    }
+                }
                 foreach (var item in galleryDTO.FileName)
                 {
                     if (item != null && item != "")
@@ -45,7 +53,7 @@ namespace Institute_API.Services.Implementations
                         savedFilePaths.Add(file.relativePath);
                     }
                 }
-               galleryDTO.FileName = savedFilePaths;
+                galleryDTO.FileName = savedFilePaths;
 
                 //galleryDTO.FileName = uniqueFileName;
                 var data = await _galleryRepository.AddGalleryImage(galleryDTO);
@@ -121,19 +129,19 @@ namespace Institute_API.Services.Implementations
                 {
                     foreach (var galleryEvent in response.Data)
                     {
-                        foreach(var item in galleryEvent.FileNames)
+                        foreach (var item in galleryEvent.FileNames)
                         {
-                            if(item != null && item != "")
+                            if (item != null && item != "")
                             {
                                 galleryEvent.FileName.Add(_imageService.GetImageAsBase64(item));
                             }
-                          
+
                             //for (int i = 0; i < galleryEvent.FileNames.Count; i++)
                             //{
                             //    galleryEvent.FileNames[i] = Path.Combine(Directory.GetCurrentDirectory(), "Assets", "Gallery", galleryEvent.FileNames[i]);
                             //}
                         }
-                       
+
                     }
                 }
 
