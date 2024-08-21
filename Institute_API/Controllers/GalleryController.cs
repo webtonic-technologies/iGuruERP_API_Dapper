@@ -31,7 +31,7 @@ namespace Institute_API.Controllers
             }
         }
 
-        [HttpGet("GetApprovedImagesByEvent")]
+        [HttpPost("GetApprovedImagesByEvent")]
         public async Task<IActionResult> GetApprovedImagesByEvent(GetGalleryRequestModel model)
         {
             try
@@ -59,7 +59,7 @@ namespace Institute_API.Controllers
             }
         }
 
-        [HttpGet("GetAllGalleryImagesByEvent")]
+        [HttpPost("GetAllGalleryImagesByEvent")]
         public async Task<IActionResult> GetAllGalleryImagesByEvent(GetGalleryRequestModel model)
         {
             try

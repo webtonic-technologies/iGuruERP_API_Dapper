@@ -317,7 +317,7 @@ namespace Institute_API.Repository.Implementations
             {
                 // Get event details from tbl_CreateEvent
                 string eventQuery = @"
-            SELECT Event_id,EventName,StartDate,EndDate,Description,Location,ScheduleTime AS ScheduleDate,Time AS ScheduleTime,AttachmentFile,isApproved,approvedBy,Academic_year_id,YearName
+            SELECT Event_id,EventName,StartDate,EndDate,Description,Location,ScheduleTime AS ScheduleDate,Time AS ScheduleTime,AttachmentFile,isApproved,approvedBy,Academic_year_id
             FROM tbl_CreateEvent
             WHERE Event_id = @EventId";
 

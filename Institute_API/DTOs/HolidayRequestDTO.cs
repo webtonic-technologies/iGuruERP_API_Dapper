@@ -16,6 +16,9 @@ namespace Institute_API.DTOs
         //public int? ApprovedBy { get; set; }
         public int Institute_id {  get; set; }
         public int Academic_year_id { get; set; }
+
+        public int CreatedBy { get; set; }
+
         public List<HolidayClassSessionMapping> ClassSessionMappings { get; set; }
     }
 
