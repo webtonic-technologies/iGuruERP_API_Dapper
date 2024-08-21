@@ -25,12 +25,12 @@ namespace Transport_API.Repository.Implementations
             string sql;
             if (routeMapping.AssignRouteID == 0)
             {
-                sql = @"INSERT INTO tblAssignRoute (RoutePlanID, VehicleID, DriverID, TransportStaffID) 
-                        VALUES (@RoutePlanID, @VehicleID, @DriverID, @TransportStaffID)";
+                sql = @"INSERT INTO tblAssignRoute (RoutePlanID, VehicleID, DriverID, TransportStaffID, IsActive) 
+                        VALUES (@RoutePlanID, @VehicleID, @DriverID, @TransportStaffID, @IsActive)";
             }
             else
             {
-                sql = @"UPDATE tblAssignRoute SET RoutePlanID = @RoutePlanID, VehicleID = @VehicleID, DriverID = @DriverID, TransportStaffID = @TransportStaffID
+                sql = @"UPDATE tblAssignRoute SET RoutePlanID = @RoutePlanID, VehicleID = @VehicleID, DriverID = @DriverID, TransportStaffID = @TransportStaffID, IsActive = @IsActive
                         WHERE AssignRouteID = @AssignRouteID";
             }
 
@@ -88,8 +88,8 @@ namespace Transport_API.Repository.Implementations
                    ISNULL(CONCAT(e.First_Name, ' ', e.Last_Name), '') AS DriverName,
                    ts.Employee_id as TransportStaffID,
                    ISNULL(CONCAT(ts.First_Name, ' ', ts.Last_Name), '') AS TransportStaffName,
-                   (SELECT COUNT(*) FROM tblStudentRouteMapping srm WHERE srm.RoutePlanID = rp.RoutePlanID) AS TotalStudents,
-                   (SELECT COUNT(*) FROM tblEmployeeRouteMapping erm WHERE erm.RoutePlanID = rp.RoutePlanID) AS TotalEmployees
+                   (SELECT COUNT(*) FROM tblStudentStopMapping srm WHERE srm.RoutePlanID = rp.RoutePlanID) AS TotalStudents,
+                   (SELECT COUNT(*) FROM tblEmployeeStopMapping erm WHERE erm.RoutePlanID = rp.RoutePlanID) AS TotalEmployees
             FROM tblAssignRoute ar
             JOIN tblRoutePlan rp ON ar.RoutePlanID = rp.RoutePlanID
             JOIN tblVehicleMaster v ON ar.VehicleID = v.VehicleID
@@ -134,8 +134,8 @@ namespace Transport_API.Repository.Implementations
                    ISNULL(CONCAT(e.First_Name, ' ', e.Last_Name), '') AS DriverName,
                    ts.Employee_id as TransportStaffID,
                    ISNULL(CONCAT(ts.First_Name, ' ', ts.Last_Name), '') AS TransportStaffName,
-                   (SELECT COUNT(*) FROM tblStudentRouteMapping srm WHERE srm.RoutePlanID = rp.RoutePlanID) AS TotalStudents,
-                   (SELECT COUNT(*) FROM tblEmployeeRouteMapping erm WHERE erm.RoutePlanID = rp.RoutePlanID) AS TotalEmployees
+                   (SELECT COUNT(*) FROM tblStudentStopMapping srm WHERE srm.RoutePlanID = rp.RoutePlanID) AS TotalStudents,
+                   (SELECT COUNT(*) FROM tblEmployeeStopMapping erm WHERE erm.RoutePlanID = rp.RoutePlanID) AS TotalEmployees
             FROM tblAssignRoute ar
             JOIN tblRoutePlan rp ON ar.RoutePlanID = rp.RoutePlanID
             JOIN tblVehicleMaster v ON ar.VehicleID = v.VehicleID

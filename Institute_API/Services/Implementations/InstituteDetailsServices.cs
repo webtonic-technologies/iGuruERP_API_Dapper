@@ -24,7 +24,69 @@ namespace Institute_API.Services.Implementations
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
-        public async Task<ServiceResponse<InstituteDetailsDTO>> GetInstituteDetailsById(int Id)
+
+        public async Task<ServiceResponse<bool>> DeleteImage(DeleteImageRequest request)
+        {
+            try
+            {
+                return await _instituteDetailsRepository.DeleteImage(request);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<bool>(false, ex.Message, false, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<List<InstituteDetailsResponseDTO>>> GetAllInstituteDetailsList()
+        {
+            try
+            {
+                return await _instituteDetailsRepository.GetAllInstituteDetailsList();
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<InstituteDetailsResponseDTO>>(false, ex.Message, [], 500);
+            }
+        }
+
+        public async Task<ServiceResponse<List<City>>> GetCitiesByDistrictIdAsync(int districtId)
+        {
+            try
+            {
+                return await _instituteDetailsRepository.GetCitiesByDistrictIdAsync(districtId);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<City>>(false, ex.Message, [], 500);
+            }
+        }
+
+        public async Task<ServiceResponse<List<Country>>> GetCountriesAsync()
+        {
+
+            try
+            {
+                return await _instituteDetailsRepository.GetCountriesAsync();
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<Country>>(false, ex.Message, [], 500);
+            }
+        }
+
+        public async Task<ServiceResponse<List<District>>> GetDistrictsByStateIdAsync(int stateId)
+        {
+            try
+            {
+                return await _instituteDetailsRepository.GetDistrictsByStateIdAsync(stateId);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<District>>(false, ex.Message, [], 500);
+            }
+        }
+
+        public async Task<ServiceResponse<InstituteDetailsResponseDTO>> GetInstituteDetailsById(int Id)
         {
             try
             {
@@ -32,7 +94,19 @@ namespace Institute_API.Services.Implementations
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<InstituteDetailsDTO>(false, ex.Message, new InstituteDetailsDTO(), 500);
+                return new ServiceResponse<InstituteDetailsResponseDTO>(false, ex.Message, new InstituteDetailsResponseDTO(), 500);
+            }
+        }
+
+        public async Task<ServiceResponse<List<State>>> GetStatesByCountryIdAsync(int countryId)
+        {
+            try
+            {
+                return await _instituteDetailsRepository.GetStatesByCountryIdAsync(countryId);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<State>>(false, ex.Message, [], 500);
             }
         }
     }

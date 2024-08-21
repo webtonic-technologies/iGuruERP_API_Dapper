@@ -1,6 +1,5 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using VisitorManagement_API.DTOs.Requests;
+﻿using VisitorManagement_API.DTOs.Requests;
+using VisitorManagement_API.DTOs.Responses;
 using VisitorManagement_API.DTOs.ServiceResponse;
 using VisitorManagement_API.Models;
 using VisitorManagement_API.Repository.Interfaces;
@@ -22,12 +21,12 @@ namespace VisitorManagement_API.Services.Implementations
             return await _appointmentRepository.AddUpdateAppointment(appointment);
         }
 
-        public async Task<ServiceResponse<IEnumerable<Appointment>>> GetAllAppointments(GetAllAppointmentsRequest request)
+        public async Task<ServiceResponse<IEnumerable<AppointmentResponse>>> GetAllAppointments(GetAllAppointmentsRequest request)
         {
             return await _appointmentRepository.GetAllAppointments(request);
         }
 
-        public async Task<ServiceResponse<Appointment>> GetAppointmentById(int appointmentId)
+        public async Task<ServiceResponse<AppointmentResponse>> GetAppointmentById(int appointmentId)
         {
             return await _appointmentRepository.GetAppointmentById(appointmentId);
         }

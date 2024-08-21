@@ -50,7 +50,7 @@ namespace VisitorManagement_API.Controllers
             return BadRequest(response);
         }
 
-        [HttpPut("Appointments/Status/{appointmentId}")]
+        [HttpDelete("Appointments/Status/{appointmentId}")]
         public async Task<IActionResult> UpdateAppointmentStatus(int appointmentId)
         {
             var response = await _appointmentService.UpdateAppointmentStatus(appointmentId);

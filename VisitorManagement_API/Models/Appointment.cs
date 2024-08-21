@@ -15,5 +15,6 @@
         public int NoOfVisitors { get; set; }
         public bool Status { get; set; }  // Assuming there is a Status column
         public int InstituteId { get; set; }
+        public int ApprovalStatus { get; set; }
     }
 }

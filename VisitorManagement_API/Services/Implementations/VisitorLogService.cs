@@ -18,7 +18,7 @@ namespace VisitorManagement_API.Services.Implementations
             _visitorLogRepository = visitorLogRepository;
         }
 
-        public async Task<ServiceResponse<string>> AddUpdateVisitorLog(VisitorLog visitorLog)
+        public async Task<ServiceResponse<string>> AddUpdateVisitorLog(VisitorRequestDTO visitorLog)
         {
             return await _visitorLogRepository.AddUpdateVisitorLog(visitorLog);
         }

@@ -15,17 +15,17 @@ namespace VisitorManagement_API.Services.Implementations
             _sourceRepository = sourceRepository;
         }
 
-        public async Task<ServiceResponse<string>> AddUpdateSource(Source source)
+        public async Task<ServiceResponse<string>> AddUpdateSource(Sources source)
         {
             return await _sourceRepository.AddUpdateSource(source);
         }
 
-        public async Task<ServiceResponse<IEnumerable<Source>>> GetAllSources(GetAllSourcesRequest request)
+        public async Task<ServiceResponse<IEnumerable<Sources>>> GetAllSources(GetAllSourcesRequest request)
         {
             return await _sourceRepository.GetAllSources(request);
         }
 
-        public async Task<ServiceResponse<Source>> GetSourceById(int sourceId)
+        public async Task<ServiceResponse<Sources>> GetSourceById(int sourceId)
         {
             return await _sourceRepository.GetSourceById(sourceId);
         }

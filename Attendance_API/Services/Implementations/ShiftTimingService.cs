@@ -1,6 +1,7 @@
 ﻿using Attendance_API.DTOs;
 using Attendance_API.Repository.Interfaces;
 using Attendance_API.Services.Interfaces;
+using Attendance_API.DTOs.ServiceResponse;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -15,29 +16,24 @@ namespace Attendance_API.Services.Implementations
             _shiftTimingRepository = shiftTimingRepository;
         }
 
-        public async Task<bool> AddShiftTimingAndDesignations(ShiftTimingRequestDTO request)
+        public async Task<ServiceResponse<string>> AddOrEditShiftTimingsAndDesignations(List<ShiftTimingRequestDTO> requests)
         {
-            return await _shiftTimingRepository.AddShiftTimingAndDesignations(request);
+            return await _shiftTimingRepository.AddOrEditShiftTimingsAndDesignations(requests);
         }
 
-        public async Task<ShiftTimingResponseDTO> GetAllShiftTimings(ShiftTimingFilterDTO request)
-        {
-            return await _shiftTimingRepository.GetAllShiftTimings(request);
-        }
-
-        public async Task<ShiftTimingResponse> GetShiftTimingById(int id)
+        public async Task<ServiceResponse<ShiftTimingResponse>> GetShiftTimingById(int id)
         {
             return await _shiftTimingRepository.GetShiftTimingById(id);
         }
 
-        public async Task<bool> EditShiftTimingAndDesignations(ShiftTimingRequestDTO request)
-        {
-            return await _shiftTimingRepository.EditShiftTimingAndDesignations(request);
-        }
-
-        public async Task<bool> DeleteShiftTiming(int id)
+        public async Task<ServiceResponse<string>> DeleteShiftTiming(int id)
         {
             return await _shiftTimingRepository.DeleteShiftTiming(id);
+        }
+
+        public async Task<ServiceResponse<ShiftTimingResponseDTO>> GetAllShiftTimings(ShiftTimingFilterDTO request)
+        {
+            return await _shiftTimingRepository.GetAllShiftTimings(request);
         }
     }
 }

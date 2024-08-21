@@ -50,10 +50,20 @@ namespace VisitorManagement_API.Controllers
             return BadRequest(response);
         }
 
-        [HttpPut("EmployeeGatePass/Status/{gatePassId}")]
+        [HttpDelete("EmployeeGatePass/Delete/{gatePassId}")]
         public async Task<IActionResult> UpdateEmployeeGatePassStatus(int gatePassId)
         {
             var response = await _employeeGatePassService.UpdateEmployeeGatePassStatus(gatePassId);
+            if (response.Success)
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
+        }
+        [HttpGet("GetVisitedFor")]
+        public async Task<IActionResult> GetAllVisitedForReason()
+        {
+            var response = await _employeeGatePassService.GetAllVisitedForReason();
             if (response.Success)
             {
                 return Ok(response);

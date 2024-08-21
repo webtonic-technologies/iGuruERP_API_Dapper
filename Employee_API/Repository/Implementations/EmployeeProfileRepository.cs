@@ -4,7 +4,7 @@ using Employee_API.DTOs.ServiceResponse;
 using Employee_API.Models;
 using Employee_API.Repository.Interfaces;
 using System.Data;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Employee_API.Repository.Implementations
 {
@@ -62,6 +62,13 @@ namespace Employee_API.Repository.Implementations
                     });
                     if (employeeId > 0)
                     {
+                        request.Family.Employee_id = employeeId;
+                        var empfam = await AddUpdateEmployeeFamily(request.Family ??= new EmployeeFamily());
+                        var empdoc = await AddUpdateEmployeeDocuments(request.EmployeeDocuments ??= [], employeeId);
+                        var empQua = await AddUpdateEmployeeQualification(request.EmployeeQualifications ??= [], employeeId);
+                        var empwork = await AddUpdateEmployeeWorkExp(request.EmployeeWorkExperiences ??= [], employeeId);
+                        var empbank = await AddUpdateEmployeeBankDetails(request.EmployeeBankDetails ??= [], employeeId);
+                        var empadd = await AddUpdateEmployeeAddressDetails(request.EmployeeAddressDetails, employeeId);
                         return new ServiceResponse<int>(true, "operation successful", employeeId, 200);
                     }
                     else
@@ -127,6 +134,13 @@ namespace Employee_API.Repository.Implementations
                     });
                     if (rowsAffected > 0)
                     {
+                        request.Family.Employee_id = request.Employee_id;
+                        var empfam = await AddUpdateEmployeeFamily(request.Family ??= new EmployeeFamily());
+                        var empdoc = await AddUpdateEmployeeDocuments(request.EmployeeDocuments ??= [], request.Employee_id);
+                        var empQua = await AddUpdateEmployeeQualification(request.EmployeeQualifications ??= [], request.Employee_id);
+                        var empwork = await AddUpdateEmployeeWorkExp(request.EmployeeWorkExperiences ??= [], request.Employee_id);
+                        var empbank = await AddUpdateEmployeeBankDetails(request.EmployeeBankDetails ??= [], request.Employee_id);
+                        var empadd = await AddUpdateEmployeeAddressDetails(request.EmployeeAddressDetails, request.Employee_id);
                         return new ServiceResponse<int>(true, "operation successful", request.Employee_id, 200);
                     }
                     else
@@ -213,13 +227,19 @@ namespace Employee_API.Repository.Implementations
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
-        public async Task<ServiceResponse<string>> AddUpdateEmployeeDocuments(List<EmployeeDocument> request, int employee_id)
+        public async Task<ServiceResponse<int>> AddUpdateEmployeeDocuments(List<EmployeeDocument> request, int employee_id)
         {
             try
             {
+                foreach (var data in request)
+                {
+                    data.employee_id = employee_id;
+                }
                 int addedRecords = 0;
                 string query = "SELECT COUNT(*) FROM tbl_DocumentsMaster WHERE employee_id = @employee_id";
                 int count = await _connection.ExecuteScalarAsync<int>(query, new { employee_id });
+
+                // If records exist, delete them and insert new ones
                 if (count > 0)
                 {
                     string deleteQuery = "DELETE FROM tbl_DocumentsMaster WHERE employee_id = @employee_id";
@@ -227,52 +247,43 @@ namespace Employee_API.Repository.Implementations
                     if (rowsAffected > 0)
                     {
                         string insertQuery = @"INSERT INTO [dbo].[tbl_DocumentsMaster] 
-                        (employee_id, Document_Name, file_name, file_path) 
-                       VALUES 
-                        (@employee_id, @Document_Name, @file_name, @file_path);";
+                    (employee_id, Document_Name, file_path) 
+                    VALUES 
+                    (@employee_id, @Document_Name, @file_path);";
+
                         foreach (EmployeeDocument document in request)
                         {
                             document.file_path = ImageUpload(document.file_path);
                         }
+
                         addedRecords = await _connection.ExecuteAsync(insertQuery, request);
-                        if (addedRecords > 0)
-                        {
-                            return new ServiceResponse<string>(true, "operation successful", "Documents added successfully", 200);
-                        }
-                        else
-                        {
-                            return new ServiceResponse<string>(false, "operation successful", string.Empty, 500);
-                        }
+                        return new ServiceResponse<int>(true, "Documents updated successfully", addedRecords, 200);
                     }
                     else
                     {
-                        return new ServiceResponse<string>(false, "Some error occured", string.Empty, 500);
+                        return new ServiceResponse<int>(false, "Error occurred while deleting existing documents", 0, 500);
                     }
                 }
                 else
                 {
+                    // If no records exist, insert new documents
                     string insertQuery = @"INSERT INTO [dbo].[tbl_DocumentsMaster] 
-                        (employee_id, Document_Name, file_name, file_path) 
-                       VALUES 
-                        (@employee_id, @Document_Name, @file_name, @file_path);";
+                (employee_id, Document_Name, file_path) 
+                VALUES 
+                (@employee_id, @Document_Name, @file_path);";
+
                     foreach (EmployeeDocument document in request)
                     {
                         document.file_path = ImageUpload(document.file_path);
                     }
+
                     addedRecords = await _connection.ExecuteAsync(insertQuery, request);
-                    if (addedRecords > 0)
-                    {
-                        return new ServiceResponse<string>(true, "operation successful", "Documents added successfully", 200);
-                    }
-                    else
-                    {
-                        return new ServiceResponse<string>(false, "operation successful", string.Empty, 500);
-                    }
+                    return new ServiceResponse<int>(true, "Documents added successfully", addedRecords, 200);
                 }
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
+                return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
         public async Task<ServiceResponse<int>> AddUpdateEmployeeQualification(List<EmployeeQualification>? request, int employeeId)
@@ -460,20 +471,114 @@ namespace Employee_API.Repository.Implementations
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
+        public async Task<ServiceResponse<int>> AddUpdateEmployeeAddressDetails(List<EmployeeAddressDetails>? request, int employeeId)
+        {
+            if (request == null || !request.Any())
+            {
+                return new ServiceResponse<int>(false, "Request cannot be null or empty.", 0, 400);
+            }
+
+            // Set Employee_id for each address in the request
+            foreach (var data in request)
+            {
+                data.Employee_id = employeeId;
+            }
+
+            if (_connection.State != ConnectionState.Open)
+            {
+                _connection.Open();
+            }
+
+            using (var connection = _connection)
+            {
+                using (var transaction = connection.BeginTransaction())
+                {
+                    try
+                    {
+                        // Delete existing addresses for the employee
+                        string deleteAddressSql = @"
+                DELETE FROM tbl_EmployeePresentAddress 
+                WHERE Employee_id = @EmployeeId;";
+
+                        await connection.ExecuteAsync(deleteAddressSql, new { EmployeeId = employeeId }, transaction);
+
+                        // Insert new addresses
+                        string insertAddressSql = @"
+                INSERT INTO tbl_EmployeePresentAddress (Address, Country_id, State_id, City_id, District_id, Pin_code, AddressTypeId, Employee_id)
+                VALUES (@Address, @Country_id, @State_id, @City_id, @District_id, @Pin_code, @AddressTypeId, @Employee_id);";
+
+                        // Execute the insert operation for each address
+                        foreach (var address in request)
+                        {
+                            await connection.ExecuteAsync(insertAddressSql, address, transaction);
+                        }
+
+                        // Commit the transaction
+                        transaction.Commit();
+
+                        return new ServiceResponse<int>(true, "Address saved successfully.", request.Count, 200);
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        return new ServiceResponse<int>(false, ex.Message, 0, 500);
+                    }
+                    finally
+                    {
+                        connection.Close();
+                    }
+                }
+            }
+        }
         public async Task<ServiceResponse<EmployeeProfileResponseDTO>> GetEmployeeProfileById(int employeeId)
         {
             try
             {
                 var response = new EmployeeProfileResponseDTO();
-                string sql = @"SELECT Employee_id, First_Name, Middle_Name, Last_Name, Gender_id, Department_id, 
-                            Designation_id, mobile_number, Date_of_Joining, Nationality_id, Religion_id, 
-                            Date_of_Birth, EmailID, Employee_code_id, marrital_status_id, Blood_Group_id, 
-                            aadhar_no, pan_no, EPF_no, ESIC_no, Institute_id, EmpPhoto, uan_no, Status
-                       FROM [dbo].[tbl_EmployeeProfileMaster]
-                       WHERE Employee_id = @EmployeeId";
+                string sql = @"
+            SELECT ep.Employee_id,
+                   ep.First_Name,
+                   ep.Middle_Name,
+                   ep.Last_Name,
+                   ep.Gender_id,
+                   g.Gender_Type as GenderName,
+                   ep.Department_id,
+                   ep.Designation_id,
+                   ep.mobile_number,
+                   ep.Date_of_Joining,
+                   ep.Nationality_id,
+                   ep.Religion_id,
+                   ep.Date_of_Birth,
+                   ep.EmailID,
+                   ep.Employee_code_id,
+                   ep.marrital_status_id,
+                   ep.Blood_Group_id,
+                   ep.aadhar_no,
+                   ep.pan_no,
+                   ep.EPF_no,
+                   ep.ESIC_no,
+                   ep.Institute_id,
+                   ep.EmpPhoto,
+                   ep.uan_no,
+                   ep.Status,
+                   d.DepartmentName,
+                   des.DesignationName,
+                   n.Nationality_Type as NationalityName,
+                   r.Religion_Type as ReligionName,
+                   ms.StatusName as MaritalStatusName,
+                   bg.Blood_Group_Type as BloodGroupName
+            FROM [dbo].[tbl_EmployeeProfileMaster] ep
+            LEFT JOIN [dbo].[tbl_Department] d ON ep.Department_id = d.Department_id
+            LEFT JOIN [dbo].[tbl_Designation] des ON ep.Designation_id = des.Designation_id
+            LEFT JOIN [dbo].[tbl_Nationality] n ON ep.Nationality_id = n.Nationality_id
+            LEFT JOIN [dbo].[tbl_Religion] r ON ep.Religion_id = r.Religion_id
+            LEFT JOIN [dbo].[tbl_MaritalStatus] ms ON ep.marrital_status_id = ms.statusId
+            LEFT JOIN [dbo].[tbl_BloodGroup] bg ON ep.Blood_Group_id = bg.Blood_Group_id
+            LEFT JOIN tbl_Gender g on ep.Gender_id = g.Gender_id
+            WHERE ep.Employee_id = @EmployeeId";
 
                 // Execute the query and retrieve the employee profile
-                var employee = await _connection.QueryFirstOrDefaultAsync<EmployeeProfile>(sql, new { EmployeeId = employeeId });
+                var employee = await _connection.QueryFirstOrDefaultAsync<dynamic>(sql, new { EmployeeId = employeeId });
                 if (employee != null)
                 {
                     response.aadhar_no = employee.aadhar_no;
@@ -500,12 +605,20 @@ namespace Employee_API.Repository.Implementations
                     response.EmpPhoto = GetImage(employee.EmpPhoto);
                     response.uan_no = employee.uan_no;
 
+                    // Set additional name properties
+                    response.DepartmentName = employee.DepartmentName;
+                    response.DesignationName = employee.DesignationName;
+                    response.NationalityName = employee.NationalityName;
+                    response.ReligionName = employee.ReligionName;
+                    response.MaritalStatusName = employee.MaritalStatusName;
+                    response.BloodGroupName = employee.BloodGroupName;
+                    response.GenderName = employee.GenderName;
                     string famsql = @"SELECT Employee_family_id, Employee_id, Father_Name, Fathers_Occupation,
-                            Mother_Name, Mothers_Occupation, Spouse_Name, Spouses_Occupation,
-                            Guardian_Name, Guardians_Occupation, Primary_Emergency_Contact_no,
-                            Secondary_Emergency_Contact_no
-                       FROM [dbo].[tbl_EmployeeFamilyMaster]
-                       WHERE Employee_id = @EmployeeId";
+                                    Mother_Name, Mothers_Occupation, Spouse_Name, Spouses_Occupation,
+                                    Guardian_Name, Guardians_Occupation, Primary_Emergency_Contact_no,
+                                    Secondary_Emergency_Contact_no
+                              FROM [dbo].[tbl_EmployeeFamilyMaster]
+                              WHERE Employee_id = @EmployeeId";
 
                     // Execute the query and retrieve the employee family details
                     var employeeFamily = await _connection.QueryFirstOrDefaultAsync<EmployeeFamily>(famsql, new { EmployeeId = employeeId });
@@ -513,9 +626,10 @@ namespace Employee_API.Repository.Implementations
                     {
                         response.Family = employeeFamily;
                     }
+
                     string banksql = @"SELECT bank_id, employee_id, bank_name, account_name, account_number, IFSC_code, Bank_address
-                       FROM [dbo].[tbl_BankDetailsmaster]
-                       WHERE employee_id = @EmployeeId";
+                               FROM [dbo].[tbl_BankDetailsmaster]
+                               WHERE employee_id = @EmployeeId";
 
                     // Execute the query and retrieve the list of bank details
                     var bankDetails = await _connection.QueryAsync<EmployeeBankDetails>(banksql, new { EmployeeId = employeeId });
@@ -523,9 +637,10 @@ namespace Employee_API.Repository.Implementations
                     {
                         response.EmployeeBankDetails = bankDetails.AsList();
                     }
+
                     string docsql = @"SELECT Document_id, employee_id, Document_Name, file_name, file_path
-                       FROM [dbo].[tbl_DocumentsMaster]
-                       WHERE employee_id = @EmployeeId";
+                              FROM [dbo].[tbl_DocumentsMaster]
+                              WHERE employee_id = @EmployeeId";
 
                     // Execute the query and retrieve the list of documents
                     var documents = await _connection.QueryAsync<EmployeeDocument>(docsql, new { EmployeeId = employeeId });
@@ -537,9 +652,10 @@ namespace Employee_API.Repository.Implementations
                         }
                         response.EmployeeDocuments = documents.AsList();
                     }
+
                     string quasql = @"SELECT Qualification_Info_id, employee_id, Educational_Qualification, Year_of_Completion
-                       FROM [dbo].[tbl_QualificationInfoMaster]
-                       WHERE employee_id = @EmployeeId";
+                              FROM [dbo].[tbl_QualificationInfoMaster]
+                              WHERE employee_id = @EmployeeId";
 
                     // Execute the query and retrieve the list of qualifications
                     var qualifications = await _connection.QueryAsync<EmployeeQualification>(quasql, new { EmployeeId = employeeId });
@@ -547,9 +663,10 @@ namespace Employee_API.Repository.Implementations
                     {
                         response.EmployeeQualifications = qualifications.AsList();
                     }
+
                     string expsql = @"SELECT work_experience_id, Year, Month, Previous_Organisation, Previous_Designation, Employee_id
-                       FROM [dbo].[tbl_WorkExperienceMaster]
-                       WHERE Employee_id = @EmployeeId";
+                              FROM [dbo].[tbl_WorkExperienceMaster]
+                              WHERE Employee_id = @EmployeeId";
 
                     // Execute the query and retrieve the list of work experiences
                     var workExperiences = await _connection.QueryAsync<EmployeeWorkExperience>(expsql, new { EmployeeId = employeeId });
@@ -557,6 +674,8 @@ namespace Employee_API.Repository.Implementations
                     {
                         response.EmployeeWorkExperiences = workExperiences.AsList();
                     }
+                    var data = await GetEmployeeAddressDetailsById(employeeId);
+                    response.EmployeeAddressDetails = data.Data;
                     return new ServiceResponse<EmployeeProfileResponseDTO>(true, "Records found", response, 200);
                 }
                 else
@@ -607,72 +726,98 @@ namespace Employee_API.Repository.Implementations
                 return new ServiceResponse<EmployeeFamily>(false, ex.Message, new EmployeeFamily(), 500);
             }
         }
-        public async Task<ServiceResponse<List<EmployeeProfile>>> GetEmployeeProfileList(GetAllEmployeeListRequest request)
+        public async Task<ServiceResponse<List<EmployeeProfileResponseDTO>>> GetEmployeeProfileList(GetAllEmployeeListRequest request)
         {
             try
             {
-                string query = @"
-        SELECT 
-            [Employee_id], [First_Name], [Middle_Name], [Last_Name], [Gender_id], 
-            [Department_id], [Designation_id], [mobile_number], [Date_of_Joining], 
-            [Nationality_id], [Religion_id], [Date_of_Birth], [EmailID], [Employee_code_id], 
-            [marrital_status_id], [Blood_Group_id], [aadhar_no], [pan_no], [EPF_no], 
-            [ESIC_no], [Institute_id], [EmpPhoto], [uan_no], Status
-        FROM [tbl_EmployeeProfileMaster] 
-        WHERE (1=1)";
+                // Base SQL query with joins to fetch names including nationality and religion
+                string sql = @"SELECT DISTINCT ep.Employee_id, 
+                ep.First_Name, 
+                ep.Middle_Name, 
+                ep.Last_Name, 
+                ep.Gender_id, 
+                g.Gender_Type as GenderName, 
+                ep.Department_id, 
+                ep.Designation_id, 
+                ep.mobile_number, 
+                ep.Date_of_Joining, 
+                ep.Nationality_id, 
+                ep.Religion_id, 
+                ep.Date_of_Birth, 
+                ep.EmailID, 
+                ep.Employee_code_id, 
+                ep.marrital_status_id, 
+                ep.Blood_Group_id, 
+                ep.aadhar_no, 
+                ep.pan_no, 
+                ep.EPF_no, 
+                ep.ESIC_no, 
+                ep.Institute_id, 
+                ep.EmpPhoto, 
+                ep.uan_no, 
+                ep.Status, 
+                d.DepartmentName, 
+                des.DesignationName, 
+                n.Nationality_Type as NationalityName, 
+                r.Religion_Type as ReligionName, 
+                ms.StatusName as MaritalStatusName, 
+                bg.Blood_Group_Type as BloodGroupName 
+FROM [dbo].[tbl_EmployeeProfileMaster] ep 
+LEFT JOIN [dbo].[tbl_Department] d ON ep.Department_id = d.Department_id 
+LEFT JOIN [dbo].[tbl_Designation] des ON ep.Designation_id = des.Designation_id 
+LEFT JOIN [dbo].[tbl_Nationality] n ON ep.Nationality_id = n.Nationality_id 
+LEFT JOIN [dbo].[tbl_Religion] r ON ep.Religion_id = r.Religion_id 
+LEFT JOIN [dbo].[tbl_MaritalStatus] ms ON ep.marrital_status_id = ms.statusId 
+LEFT JOIN [dbo].[tbl_BloodGroup] bg ON ep.Blood_Group_id = bg.Blood_Group_id 
+LEFT JOIN tbl_Gender g on ep.Gender_id = g.Gender_id 
+WHERE ep.Institute_id = @InstituteId;
+";
 
                 var parameters = new DynamicParameters();
-
-                if (request.InstituteId > 0)
-                {
-                    query += " AND Institute_id = @InstituteId";
-                    parameters.Add("@InstituteId", request.InstituteId);
-                }
+                parameters.Add("InstituteId", request.InstituteId);
 
                 if (request.DepartmentId > 0)
                 {
-                    query += " AND Department_id = @DepartmentId";
-                    parameters.Add("@DepartmentId", request.DepartmentId);
+                    sql += " AND ep.Department_id = @DepartmentId";
+                    parameters.Add("DepartmentId", request.DepartmentId);
                 }
 
                 if (request.DesignationId > 0)
                 {
-                    query += " AND Designation_id = @DesignationId";
-                    parameters.Add("@DesignationId", request.DesignationId);
+                    sql += " AND ep.Designation_id = @DesignationId";
+                    parameters.Add("DesignationId", request.DesignationId);
                 }
 
-                if (!string.IsNullOrEmpty(request.SearchText))
+                if (!string.IsNullOrWhiteSpace(request.SearchText))
                 {
-                    query += " AND (First_Name LIKE @SearchText OR Middle_Name LIKE @SearchText OR Last_Name LIKE @SearchText OR EmailID LIKE @SearchText)";
-                    parameters.Add("@SearchText", "%" + request.SearchText + "%");
+                    sql += " AND (ep.First_Name LIKE @SearchText OR ep.Last_Name LIKE @SearchText OR ep.EmailID LIKE @SearchText)";
+                    parameters.Add("SearchText", $"%{request.SearchText}%");
                 }
 
-                var employees = await _connection.QueryAsync<EmployeeProfile>(query, parameters);
+                var employees = await _connection.QueryAsync<EmployeeProfileResponseDTO>(sql, parameters);
 
                 if (employees != null && employees.Any())
                 {
-                    // Apply pagination in memory
-                    var paginatedList = employees.Skip((request.PageNumber - 1) * request.PageSize)
-                                                 .Take(request.PageSize)
-                                                 .ToList();
+                    // Apply pagination manually using C# logic
+                    var paginatedEmployees = employees
+                        .Skip((request.PageNumber - 1) * request.PageSize)
+                        .Take(request.PageSize)
+                        .Distinct() // Ensure distinct records
+                        .ToList();
 
-                    foreach (var data in paginatedList)
-                    {
-                        data.EmpPhoto = GetImage(data.EmpPhoto);
-                    }
-
-                    return new ServiceResponse<List<EmployeeProfile>>(true, "Operation successful", paginatedList, 200, employees.Count());
+                    return new ServiceResponse<List<EmployeeProfileResponseDTO>>(true, "Records found", paginatedEmployees, 200);
                 }
                 else
                 {
-                    return new ServiceResponse<List<EmployeeProfile>>(false, "No records found", new List<EmployeeProfile>(), 204);
+                    return new ServiceResponse<List<EmployeeProfileResponseDTO>>(false, "No records found", new List<EmployeeProfileResponseDTO>(), 204);
                 }
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<List<EmployeeProfile>>(false, ex.Message, new List<EmployeeProfile>(), 500);
+                return new ServiceResponse<List<EmployeeProfileResponseDTO>>(false, ex.Message, new List<EmployeeProfileResponseDTO>(), 500);
             }
         }
+
         public async Task<ServiceResponse<List<EmployeeDocument>>> GetEmployeeDocuments(int employee_id)
         {
             try
@@ -788,6 +933,59 @@ namespace Employee_API.Repository.Implementations
                 return new ServiceResponse<List<EmployeeBankDetails>>(false, ex.Message, [], 500);
             }
         }
+        public async Task<ServiceResponse<EmployeeAddressResponse>> GetEmployeeAddressDetailsById(int employeeId)
+        {
+            try
+            {
+                // SQL query to retrieve employee address details along with country, state, city, and district names
+                string sql = @"
+        SELECT 
+            e.Employee_Present_Address_id,
+            e.Address,
+            e.Country_id,
+            c.country_name as CountryName,
+            e.State_id,
+            s.state_name as StateName,
+            e.City_id,
+            ci.city_name as CityName,
+            e.District_id,
+            d.district_name as DistrictName,
+            e.Pin_code,
+            e.AddressTypeId,
+            e.Employee_id
+        FROM tbl_EmployeePresentAddress e
+        LEFT JOIN tbl_Country c ON e.Country_id = c.Country_id
+        LEFT JOIN tbl_State s ON e.State_id = s.State_id
+        LEFT JOIN tbl_City ci ON e.City_id = ci.City_id
+        LEFT JOIN tbl_District d ON e.District_id = d.District_id
+        WHERE e.Employee_id = @EmployeeId"; // Assuming IsDeleted is a column to check if the address is active
+
+                // Execute the query and retrieve the address details
+                var addressDetails = await _connection.QueryAsync<EmployeeAddressDetailsResponse>(sql, new { EmployeeId = employeeId });
+
+                if (addressDetails == null || !addressDetails.Any())
+                {
+                    return new ServiceResponse<EmployeeAddressResponse>(false, "No address details found for the given employee.", null, 204);
+                }
+
+                // Create response object to hold present and permanent addresses
+                var response = new EmployeeAddressResponse
+                {
+                    PresentAddress = addressDetails
+                        .Where(a => a.AddressTypeId == 2) // Present addresses
+                        .ToList(),
+                    PermanentAddress = addressDetails
+                        .Where(a => a.AddressTypeId == 1) // Permanent addresses
+                        .ToList()
+                };
+
+                return new ServiceResponse<EmployeeAddressResponse>(true, "Address details retrieved successfully.", response, 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<EmployeeAddressResponse>(false, ex.Message, null, 500);
+            }
+        }
         public async Task<ServiceResponse<bool>> StatusActiveInactive(int employeeId)
         {
             try
@@ -796,11 +994,11 @@ namespace Employee_API.Repository.Implementations
 
                 if (data.Data != null)
                 {
-                    data.Data.Status = !data.Data.Status;
+                    bool Status = !data.Data.Status;
 
                     string sql = "UPDATE tbl_EmployeeProfileMaster SET Status = @Status WHERE Employee_id = @Employee_id";
 
-                    int rowsAffected = await _connection.ExecuteAsync(sql, new { data.Data.Status, Employee_id = employeeId });
+                    int rowsAffected = await _connection.ExecuteAsync(sql, new { Status, Employee_id = employeeId });
                     if (rowsAffected > 0)
                     {
                         return new ServiceResponse<bool>(true, "Operation Successful", true, 200);
@@ -820,6 +1018,115 @@ namespace Employee_API.Repository.Implementations
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
+        public async Task<ServiceResponse<List<MaritalStatus>>> GetMaritalStatusList()
+        {
+            try
+            {
+                string sql = @"
+        SELECT statusId, statusName 
+        FROM [tbl_MaritalStatus]";
+
+                var data = await _connection.QueryAsync<MaritalStatus>(sql);
+
+                if (data != null && data.Any())
+                {
+                    return new ServiceResponse<List<MaritalStatus>>(true, "Marital status list retrieved successfully", data.ToList(), 200);
+                }
+                else
+                {
+                    return new ServiceResponse<List<MaritalStatus>>(false, "No marital statuses found", new List<MaritalStatus>(), 404);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<MaritalStatus>>(false, ex.Message, new List<MaritalStatus>(), 500);
+            }
+        }
+        public async Task<ServiceResponse<List<BloodGroup>>> GetBloodGroupList()
+        {
+            try
+            {
+                string sql = @"
+        SELECT [Blood_Group_id], [Blood_Group_Type]
+        FROM [tbl_BloodGroup]";
+
+                var data = await _connection.QueryAsync<BloodGroup>(sql);
+
+                if (data != null && data.Any())
+                {
+                    return new ServiceResponse<List<BloodGroup>>(true, "Blood group list retrieved successfully", data.ToList(), 200);
+                }
+                else
+                {
+                    return new ServiceResponse<List<BloodGroup>>(false, "No blood groups found", new List<BloodGroup>(), 404);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<BloodGroup>>(false, ex.Message, new List<BloodGroup>(), 500);
+            }
+        }
+        public async Task<ServiceResponse<List<Designation>>> GetDesignationList(int DepartmentId)
+        {
+            try
+            {
+                string sql = @"
+        SELECT [Designation_id], 
+               [Institute_id], 
+               [DesignationName], 
+               [Department_id], 
+               [IsDeleted]
+        FROM [tbl_Designation]
+        WHERE Department_id = @DepartmentId AND IsDeleted = 0"; // Only fetch non-deleted designations
+
+                var parameters = new { DepartmentId };
+
+                var data = await _connection.QueryAsync<Designation>(sql, parameters);
+
+                if (data != null && data.Any())
+                {
+                    return new ServiceResponse<List<Designation>>(true, "Designation list retrieved successfully", data.ToList(), 200);
+                }
+                else
+                {
+                    return new ServiceResponse<List<Designation>>(false, "No designations found for the specified department", new List<Designation>(), 404);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<Designation>>(false, ex.Message, new List<Designation>(), 500);
+            }
+        }
+        public async Task<ServiceResponse<List<Department>>> GetDepartmentList(int InstituteId)
+        {
+            try
+            {
+                string sql = @"
+        SELECT [Department_id], 
+               [Institute_id], 
+               [DepartmentName], 
+               [IsDeleted]
+        FROM [tbl_Department]
+        WHERE Institute_id = @InstituteId AND IsDeleted = 0"; // Only fetch non-deleted departments
+
+                var parameters = new { InstituteId };
+
+                var data = await _connection.QueryAsync<Department>(sql, parameters);
+
+                if (data != null && data.Any())
+                {
+                    return new ServiceResponse<List<Department>>(true, "Department list retrieved successfully", data.ToList(), 200);
+                }
+                else
+                {
+                    return new ServiceResponse<List<Department>>(false, "No departments found for the specified institute", new List<Department>(), 404);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<Department>>(false, ex.Message, new List<Department>(), 500);
+            }
+        }
         private string ImageUpload(string image)
         {
             if (string.IsNullOrEmpty(image) || image == "string")
@@ -836,7 +1143,10 @@ namespace Employee_API.Repository.Implementations
             string fileExtension = IsJpeg(imageData) == true ? ".jpg" : IsPng(imageData) == true ? ".png" : IsGif(imageData) == true ? ".gif" : string.Empty;
             string fileName = Guid.NewGuid().ToString() + fileExtension;
             string filePath = Path.Combine(directoryPath, fileName);
-
+            if (string.IsNullOrEmpty(fileExtension))
+            {
+                throw new InvalidOperationException("Incorrect file uploaded");
+            }
             // Write the byte array to the image file
             File.WriteAllBytes(filePath, imageData);
             return filePath;

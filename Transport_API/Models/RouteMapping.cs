@@ -5,5 +5,6 @@
     public int VehicleID { get; set; }
     public int DriverID { get; set; }
     public int TransportStaffID { get; set; }
+    public bool IsActive { get; set; }
 
 }

@@ -18,17 +18,17 @@ namespace Attendance_API.Controllers
             _studentAttendanceMasterService = studentAttendanceMasterService;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetStudentAttendanceMasterList([FromQuery] StudentAttendanceMasterRequestDTO request)
+        [HttpPost("GetStudentAttendanceMasterList")]
+        public async Task<IActionResult> GetStudentAttendanceMasterList([FromBody] StudentAttendanceMasterRequestDTO request)
         {
             var data = await _studentAttendanceMasterService.GetStudentAttendanceMasterList(request);
             return Ok(data);
         }
 
         [HttpPost]
-        public async Task<IActionResult> InsertOrUpdateStudentAttendanceMaster([FromBody] StudentAttendanceMasterDTO studentAttendanceMaster)
+        public async Task<IActionResult> InsertOrUpdateStudentAttendanceMasters([FromBody] List<StudentAttendanceMasterDTO> studentAttendanceMasters)
         {
-            var data = await _studentAttendanceMasterService.InsertOrUpdateStudentAttendanceMaster(studentAttendanceMaster);
+            var data = await _studentAttendanceMasterService.InsertOrUpdateStudentAttendanceMasters(studentAttendanceMasters);
             return Ok(data);
         }
 
@@ -36,6 +36,13 @@ namespace Attendance_API.Controllers
         public async Task<IActionResult> DeleteStudentAttendanceMaster(int studentAttendanceId)
         {
             var data = await _studentAttendanceMasterService.DeleteStudentAttendanceMaster(studentAttendanceId);
+            return Ok(data);
+        }
+
+        [HttpGet("GetTimeSlotsForDropdown")]
+        public async Task<IActionResult> GetTimeSlotsForDropdown()
+        {
+            var data = await _studentAttendanceMasterService.GetTimeSlotsForDropdown();
             return Ok(data);
         }
     }

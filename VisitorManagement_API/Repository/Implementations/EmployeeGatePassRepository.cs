@@ -25,8 +25,9 @@ namespace VisitorManagement_API.Repository.Implementations
                 if (employeeGatePass.GatePassID == 0)
                 {
                     // Insert new employee gate pass
-                    string query = @"INSERT INTO tblGatePass (EmployeeID, PassNo, VisitorFor, CheckOutTime, CheckInTime, Purpose, PlanOfVisit, Remarks, StatusID, InstituteId)
-                                     VALUES (@EmployeeID, @PassNo, @VisitorFor, @CheckOutTime, @CheckInTime, @Purpose, @PlanOfVisit, @Remarks, @StatusID, @InstituteId)";
+                    string query = @"INSERT INTO tblGatePass (EmployeeID, PassNo, VisitorFor, CheckOutTime, CheckInTime, Purpose, PlanOfVisit, Remarks, StatusID, InstituteId, IsDeleted)
+                                     VALUES (@EmployeeID, @PassNo, @VisitorFor, @CheckOutTime, @CheckInTime, @Purpose, @PlanOfVisit, @Remarks, @StatusID, @InstituteId,@IsDeleted)";
+                    employeeGatePass.IsDeleted = false;
                     int insertedValue = await _dbConnection.ExecuteAsync(query, employeeGatePass);
                     if (insertedValue > 0)
                     {
@@ -58,15 +59,41 @@ namespace VisitorManagement_API.Repository.Implementations
             try
             {
                 string query = @"
-            SELECT gp.GatePassID, gp.EmployeeID, gp.Departmentid, d.DepartmentName AS Departmentname,
-                   des.DesignationName AS Designationname, gp.Designationid, gp.PassNo, gp.VisitorFor, 
-                   gp.CheckOutTime, gp.CheckInTime, gp.Purpose, gp.PlanOfVisit, gp.Remarks, gp.StatusID, gp.InstituteId
-            FROM tblGatePass gp
-            JOIN tbl_Department d ON gp.Departmentid = d.Department_id
-            JOIN tbl_Designation des ON gp.Designationid = des.Designation_id
-            WHERE gp.StatusID = 1 and InstituteId = @InstituteId";
+        SELECT gp.GatePassID, gp.EmployeeID, 
+               e.First_Name + ' ' + e.Middle_Name + ' ' + e.Last_Name AS EmployeeName, 
+               e.Department_id AS Departmentid, d.DepartmentName, 
+               e.Designation_id AS Designationid, des.DesignationName, 
+               gp.PassNo, gp.VisitorFor, vf.VisitedForName as VisitorForName, gp.CheckOutTime, gp.CheckInTime, 
+               gp.Purpose, gp.PlanOfVisit, gp.Remarks, gp.StatusID, a.ApprovalType AS StatusName, gp.InstituteId
+        FROM tblGatePass gp
+        JOIN tbl_EmployeeProfileMaster e ON gp.EmployeeID = e.Employee_id
+        JOIN tbl_Department d ON e.Department_id = d.Department_id
+        JOIN tbl_Designation des ON e.Designation_id = des.Designation_id
+        JOIN tblVisitorApprovalMaster a ON gp.StatusID = a.ApprovalTypeID
+        JOIN tblVisitedFor vf ON gp.VisitorFor = vf.VisitedFor
+        WHERE gp.IsDeleted = 0 AND gp.InstituteId = @InstituteId";
 
-                var employeeGatePasses = await _dbConnection.QueryAsync<EmployeeGatepassResponse>(query, new {request.InstituteId});
+                var employeeGatePasses = await _dbConnection.QueryAsync<EmployeeGatepassResponse>(query, new { request.InstituteId });
+
+                // Apply filters only if they are provided
+                if (request.StartDate.HasValue && request.EndDate.HasValue)
+                {
+                    employeeGatePasses = employeeGatePasses.Where(gp => gp.CheckInTime >= request.StartDate && gp.CheckInTime <= request.EndDate);
+                }
+
+                if (request.EmployeeId > 0)
+                {
+                    employeeGatePasses = employeeGatePasses.Where(gp => gp.EmployeeID == request.EmployeeId);
+                }
+
+                if (!string.IsNullOrWhiteSpace(request.SearchText))
+                {
+                    employeeGatePasses = employeeGatePasses.Where(gp => gp.EmployeeName.Contains(request.SearchText, StringComparison.OrdinalIgnoreCase) ||
+                                                                        gp.PassNo.Contains(request.SearchText, StringComparison.OrdinalIgnoreCase) ||
+                                                                        gp.Purpose.Contains(request.SearchText, StringComparison.OrdinalIgnoreCase));
+                }
+
+                // Pagination
                 var paginatedEmployeeGatePasses = employeeGatePasses.Skip((request.PageNumber - 1) * request.PageSize).Take(request.PageSize);
 
                 return new ServiceResponse<IEnumerable<EmployeeGatepassResponse>>(true, "Employee Gate Passes Retrieved Successfully", paginatedEmployeeGatePasses, 200, employeeGatePasses.Count());
@@ -77,18 +104,24 @@ namespace VisitorManagement_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<EmployeeGatepassResponse>> GetEmployeeGatePassById(int gatePassId)
+        public async Task<ServiceResponse<EmployeeGatepassResponse>> GetEmployeeGatePassById(int gatePassId) 
         {
             try
             {
                 string query = @"
-            SELECT gp.GatePassID, gp.EmployeeID, gp.Departmentid, d.DepartmentName AS Departmentname,
-                   des.DesignationName AS Designationname, gp.Designationid, gp.PassNo, gp.VisitorFor, 
-                   gp.CheckOutTime, gp.CheckInTime, gp.Purpose, gp.PlanOfVisit, gp.Remarks, gp.StatusID, gp.InstituteId
-            FROM tblGatePass gp
-            JOIN tbl_Department d ON gp.Departmentid = d.Department_id
-            JOIN tbl_Designation des ON gp.Designationid = des.Designation_id
-            WHERE gp.GatePassID = @GatePassID AND gp.StatusID = 1";
+        SELECT gp.GatePassID, gp.EmployeeID, 
+               e.First_Name + ' ' + e.Middle_Name + ' ' + e.Last_Name AS EmployeeName, 
+               e.Department_id AS Departmentid, d.DepartmentName, 
+               e.Designation_id AS Designationid, des.DesignationName, 
+               gp.PassNo, gp.VisitorFor, vf.VisitedForName as VisitorForName, gp.CheckOutTime, gp.CheckInTime, 
+               gp.Purpose, gp.PlanOfVisit, gp.Remarks, gp.StatusID, a.ApprovalType AS StatusName, gp.InstituteId
+        FROM tblGatePass gp
+        JOIN tbl_EmployeeProfileMaster e ON gp.EmployeeID = e.Employee_id
+        JOIN tbl_Department d ON e.Department_id = d.Department_id
+        JOIN tbl_Designation des ON e.Designation_id = des.Designation_id
+        JOIN tblVisitorApprovalMaster a ON gp.StatusID = a.ApprovalTypeID
+        JOIN tblVisitedFor vf ON gp.VisitorFor = vf.VisitedFor
+        WHERE gp.GatePassID = @GatePassID AND gp.IsDeleted = 0";
 
                 var employeeGatePass = await _dbConnection.QueryFirstOrDefaultAsync<EmployeeGatepassResponse>(query, new { GatePassID = gatePassId });
 
@@ -109,8 +142,8 @@ namespace VisitorManagement_API.Repository.Implementations
         {
             try
             {
-                // Assuming there is a StatusID column in tblGatePass table, and 0 means 'soft deleted'
-                string query = "UPDATE tblGatePass SET StatusID = 0 WHERE GatePassID = @GatePassID";
+                // Assuming there is an IsDeleted column in tblGatePass table and a value of 1 means 'soft deleted'
+                string query = "UPDATE tblGatePass SET IsDeleted = 1 WHERE GatePassID = @GatePassID";
                 int rowsAffected = await _dbConnection.ExecuteAsync(query, new { GatePassID = gatePassId });
 
                 if (rowsAffected > 0)
@@ -125,6 +158,24 @@ namespace VisitorManagement_API.Repository.Implementations
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
+        public async Task<ServiceResponse<List<Visitedfor>>> GetAllVisitedForReason()
+        {
+            try
+            {
+                string query = "select * from tblVisitedFor";
+                var rowsAffected = await _dbConnection.QueryAsync<Visitedfor>(query);
 
+                if (rowsAffected.Any())
+                {
+                    return new ServiceResponse<List<Visitedfor>>(true, "Records found", rowsAffected.AsList(), 200);
+                }
+
+                return new ServiceResponse<List<Visitedfor>>(false, "Failed to Update Employee Gate Pass Status", [], 400);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<Visitedfor>>(false, ex.Message, [], 500);
+            }
+        }
     }
 }

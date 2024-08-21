@@ -22,14 +22,19 @@ namespace Attendance_API.Services.Implementations
             return await _studentAttendanceMasterRepository.GetStudentAttendanceMasterList(request);
         }
 
-        public async Task<ServiceResponse<StudentAttendanceMasterDTO>> InsertOrUpdateStudentAttendanceMaster(StudentAttendanceMasterDTO studentAttendanceMaster)
+        public async Task<ServiceResponse<List<StudentAttendanceMasterDTO>>> InsertOrUpdateStudentAttendanceMasters(List<StudentAttendanceMasterDTO> studentAttendanceMasters)
         {
-            return await _studentAttendanceMasterRepository.InsertOrUpdateStudentAttendanceMaster(studentAttendanceMaster);
+            return await _studentAttendanceMasterRepository.InsertOrUpdateStudentAttendanceMasters(studentAttendanceMasters);
         }
 
         public async Task<ServiceResponse<bool>> DeleteStudentAttendanceMaster(int studentAttendanceId)
         {
             return await _studentAttendanceMasterRepository.DeleteStudentAttendanceMaster(studentAttendanceId);
+        }
+
+        public async Task<ServiceResponse<IEnumerable<TimeSlotDTO>>> GetTimeSlotsForDropdown()
+        {
+            return await _studentAttendanceMasterRepository.GetTimeSlotsForDropdown();
         }
     }
 }

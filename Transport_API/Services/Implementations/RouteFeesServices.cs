@@ -13,14 +13,14 @@ namespace Transport_API.Services.Implementations
         {
             _routeFeesRepository = routeFeesRepository;
         }
-        public Task<ServiceResponse<string>> AddUpdateRouteFeeStructure(RouteFeeStructure request)
+        public async Task<ServiceResponse<string>> AddUpdateRouteFeeStructure(RouteFeeStructure request)
         {
-            throw new NotImplementedException();
+            return await _routeFeesRepository.AddUpdateRouteFeeStructure(request);
         }
 
-        public Task<ServiceResponse<RouteFeeStructure>> GetRouteFeeStructureById(int routeFeeStructureId)
+        public async Task<ServiceResponse<RouteFeeStructure>> GetRouteFeeStructureById(int routeFeeStructureId)
         {
-            throw new NotImplementedException();
+            return await _routeFeesRepository.GetRouteFeeStructureById(routeFeeStructureId);
         }
     }
 }

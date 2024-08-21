@@ -66,7 +66,7 @@ namespace Institute_API.Controllers
             }
         }
 
-        [HttpDelete("DeleteCourseClass")]
+        [HttpDelete("DeleteCourseClass/{id}")]
         public async Task<IActionResult> DeleteAcademicConfig(int id)
         {
             try

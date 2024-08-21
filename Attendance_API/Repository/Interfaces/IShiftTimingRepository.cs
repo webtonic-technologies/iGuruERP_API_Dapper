@@ -1,13 +1,13 @@
 ﻿using Attendance_API.DTOs;
+using Attendance_API.DTOs.ServiceResponse;
 
 namespace Attendance_API.Repository.Interfaces
 {
     public interface IShiftTimingRepository
     {
-        Task<bool> AddShiftTimingAndDesignations(ShiftTimingRequestDTO request);
-        Task<ShiftTimingResponse> GetShiftTimingById(int id);
-        Task<bool> EditShiftTimingAndDesignations(ShiftTimingRequestDTO request);
-        Task<bool> DeleteShiftTiming(int id);
-        Task<ShiftTimingResponseDTO> GetAllShiftTimings(ShiftTimingFilterDTO request);
+        Task<ServiceResponse<string>> AddOrEditShiftTimingsAndDesignations(List<ShiftTimingRequestDTO> requests);
+        Task<ServiceResponse<ShiftTimingResponse>> GetShiftTimingById(int id);
+        Task<ServiceResponse<string>> DeleteShiftTiming(int id);
+        Task<ServiceResponse<ShiftTimingResponseDTO>> GetAllShiftTimings(ShiftTimingFilterDTO request);
     }
 }

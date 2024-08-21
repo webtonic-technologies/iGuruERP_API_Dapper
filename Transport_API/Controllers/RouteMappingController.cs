@@ -57,12 +57,90 @@ namespace Transport_API.Controllers
             }
         }
 
-        [HttpPut("Status/{RouteMappingId}")]
+        [HttpDelete("Delete/{RouteMappingId}")]
         public async Task<IActionResult> UpdateRouteMappingStatus(int RouteMappingId)
         {
             try
             {
                 var response = await _routeMappingService.UpdateRouteMappingStatus(RouteMappingId);
+                return StatusCode(response.StatusCode, response);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+        [HttpPost("AddUpdateEmployeeStopMapping")]
+        public async Task<IActionResult> AddUpdateEmployeeStopMapping(List<EmployeeStopMapping> request)
+        {
+            try
+            {
+                var response = await _routeMappingService.AddUpdateEmployeeStopMapping(request);
+                return StatusCode(response.StatusCode, response);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+        [HttpPost("AddUpdateStudentStopMapping")]
+        public async Task<IActionResult> AddUpdateStudentStopMapping(List<StudentStopMapping> request)
+        {
+            try
+            {
+                var response = await _routeMappingService.AddUpdateStudentStopMapping(request);
+                return StatusCode(response.StatusCode, response);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+        [HttpGet("GetEmployeeStopMappings/{RouteMappingId}")]
+        public async Task<IActionResult> GetEmployeeStopMappings(int RoutePlanId)
+        {
+            try
+            {
+                var response = await _routeMappingService.GetEmployeeStopMappings(RoutePlanId);
+                return StatusCode(response.StatusCode, response);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+        [HttpGet("GetStudentStopMappings/{RouteMappingId}")]
+        public async Task<IActionResult> GetStudentStopMappings(int RoutePlanId)
+        {
+            try
+            {
+                var response = await _routeMappingService.GetStudentStopMappings(RoutePlanId);
+                return StatusCode(response.StatusCode, response);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+        [HttpPost("RemoveEmployeeStopMapping")]
+        public async Task<IActionResult> RemoveEmployeeStopMapping(List<EmployeeStopMapping> request)
+        {
+            try
+            {
+                var response = await _routeMappingService.RemoveEmployeeStopMapping(request);
+                return StatusCode(response.StatusCode, response);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+        [HttpPost("RemoveStudentStopMapping")]
+        public async Task<IActionResult> RemoveStudentStopMapping(List<StudentStopMapping> request)
+        {
+            try
+            {
+                var response = await _routeMappingService.RemoveStudentStopMapping(request);
                 return StatusCode(response.StatusCode, response);
             }
             catch (Exception e)

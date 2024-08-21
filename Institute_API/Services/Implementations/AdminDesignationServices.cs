@@ -39,7 +39,7 @@ namespace Institute_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<AdminDesignation>> GetAdminDesignationById(int Designationid)
+        public async Task<ServiceResponse<AdminDesignationResponse>> GetAdminDesignationById(int Designationid)
         {
             try
             {
@@ -47,11 +47,11 @@ namespace Institute_API.Services.Implementations
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<AdminDesignation>(false, ex.Message, new AdminDesignation(), 500);
+                return new ServiceResponse<AdminDesignationResponse>(false, ex.Message, new AdminDesignationResponse(), 500);
             }
         }
 
-        public async Task<ServiceResponse<List<AdminDesignation>>> GetAdminDesignationList(GetListRequest request)
+        public async Task<ServiceResponse<List<AdminDesignationResponse>>> GetAdminDesignationList(GetListRequest request)
         {
             try
             {
@@ -59,7 +59,7 @@ namespace Institute_API.Services.Implementations
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<List<AdminDesignation>>(false, ex.Message, [], 500);
+                return new ServiceResponse<List<AdminDesignationResponse>>(false, ex.Message, [], 500);
             }
         }
     }

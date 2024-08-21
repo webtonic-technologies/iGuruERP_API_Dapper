@@ -6,7 +6,8 @@ namespace Attendance_API.Repository.Interfaces
     public interface IStudentAttendanceMasterRepository
     {
         Task<ServiceResponse<StudentAttendanceMasterResponseDTO>> GetStudentAttendanceMasterList(StudentAttendanceMasterRequestDTO request);
-        Task<ServiceResponse<StudentAttendanceMasterDTO>> InsertOrUpdateStudentAttendanceMaster(StudentAttendanceMasterDTO studentAttendanceMaster);
+        Task<ServiceResponse<List<StudentAttendanceMasterDTO>>> InsertOrUpdateStudentAttendanceMasters(List<StudentAttendanceMasterDTO> studentAttendanceMasters);
         Task<ServiceResponse<bool>> DeleteStudentAttendanceMaster(int studentAttendanceId);
+        Task<ServiceResponse<IEnumerable<TimeSlotDTO>>> GetTimeSlotsForDropdown();
     }
 }

@@ -28,6 +28,11 @@ namespace VisitorManagement_API.Services.Implementations
             return await _employeeGatePassRepository.GetAllEmployeeGatePass(request);
         }
 
+        public async Task<ServiceResponse<List<Visitedfor>>> GetAllVisitedForReason()
+        {
+            return await _employeeGatePassRepository.GetAllVisitedForReason();
+        }
+
         public async Task<ServiceResponse<EmployeeGatepassResponse>> GetEmployeeGatePassById(int gatePassId)
         {
             return await _employeeGatePassRepository.GetEmployeeGatePassById(gatePassId);

@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 using Transport_API.Repository.Implementations;
@@ -27,6 +26,9 @@ builder.Services.AddScoped<IVehicleMaintenanceService, VehicleMaintenanceService
 
 builder.Services.AddScoped<IReportsRepository, ReportsRepository>();
 builder.Services.AddScoped<IReportsService, ReportsService>();
+
+builder.Services.AddScoped<IRouteFeesRepository, RouteFeesRepository>();
+builder.Services.AddScoped<IRouteFeesServices, RouteFeesServices>();
 
 // Add services to the container.
 

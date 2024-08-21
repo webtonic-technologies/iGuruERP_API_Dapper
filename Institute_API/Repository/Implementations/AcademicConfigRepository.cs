@@ -93,10 +93,25 @@ namespace Institute_API.Repository.Implementations
         {
             try
             {
+                // Check if there are any mappings in tbl_ClassSectionSubjectMapping for the given classId
+                string checkMappingSql = @"
+            SELECT COUNT(*) 
+            FROM tbl_ClassSectionSubjectMapping csm
+            LEFT JOIN tbl_Section sec ON CHARINDEX(CONVERT(varchar, sec.section_id), csm.section_id) > 0
+            WHERE sec.class_id = @ClassId OR csm.class_id = @ClassId AND csm.IsDeleted = 0";
+
+                int mappingCount = await _connection.ExecuteScalarAsync<int>(checkMappingSql, new { ClassId = classId });
+
+                if (mappingCount > 0)
+                {
+                    throw new InvalidOperationException("Cannot delete class or sections as they are in use in ClassSectionSubjectMapping.");
+                }
+
                 // Soft delete the class by setting IsDeleted to true
-                string updateClassSql = @"UPDATE [dbo].[tbl_Class]
-                                  SET IsDeleted = 1
-                                  WHERE class_id = @ClassId";
+                string updateClassSql = @"
+            UPDATE [dbo].[tbl_Class]
+            SET IsDeleted = 1
+            WHERE class_id = @ClassId";
 
                 // Execute the query and retrieve the number of affected rows
                 int affectedRows = await _connection.ExecuteAsync(updateClassSql, new { ClassId = classId });
@@ -104,9 +119,10 @@ namespace Institute_API.Repository.Implementations
                 if (affectedRows > 0)
                 {
                     // Soft delete the sections related to this class
-                    string updateSectionSql = @"UPDATE [dbo].[tbl_Section]
-                                        SET IsDeleted = 1
-                                        WHERE class_id = @ClassId";
+                    string updateSectionSql = @"
+                UPDATE [dbo].[tbl_Section]
+                SET IsDeleted = 1
+                WHERE class_id = @ClassId";
 
                     int sectionAffectedRows = await _connection.ExecuteAsync(updateSectionSql, new { ClassId = classId });
 
@@ -167,8 +183,14 @@ namespace Institute_API.Repository.Implementations
                        FROM [dbo].[tbl_Class]
                        WHERE Institute_id = @Institute_id AND IsDeleted = 0";
 
+                // Add search filter if SearchText is provided
+                if (!string.IsNullOrEmpty(request.SearchText))
+                {
+                    sql += " AND class_name LIKE @SearchText";
+                }
+
                 // Execute the query and retrieve the classes
-                var data = await _connection.QueryAsync<Class>(sql, new { request.Institute_id });
+                var data = await _connection.QueryAsync<Class>(sql, new { request.Institute_id, SearchText = $"%{request.SearchText}%" });
                 if (data != null)
                 {
                     foreach (var item in data)
@@ -190,12 +212,13 @@ namespace Institute_API.Repository.Implementations
                         response.Add(record);
                     }
 
+                    // Pagination
                     var paginatedList = response.Skip((request.PageNumber - 1) * request.PageSize)
                                                 .Take(request.PageSize)
                                                 .ToList();
                     if (paginatedList.Count != 0)
                     {
-                        return new ServiceResponse<List<Class>>(true, "Record found", paginatedList, 200);
+                        return new ServiceResponse<List<Class>>(true, "Record found", paginatedList, 200, response.Count);
                     }
                     else
                     {
@@ -215,26 +238,36 @@ namespace Institute_API.Repository.Implementations
         private async Task<int> AddUpdateSections(List<Section> sections, int classId)
         {
             int result = 0;
+
+            // Fetch existing sections for the given classId
+            var existingSections = await GetExistingSections(classId);
+
+            // Create a dictionary for easy look-up of existing section IDs
+            var existingSectionsDict = existingSections.ToDictionary(s => s.section_id);
+
+            // Check for sections to delete
+            foreach (var existingSection in existingSections)
+            {
+                // If the existing section is not in the incoming sections, delete it
+                if (!sections.Any(s => s.section_id == existingSection.section_id))
+                {
+                    string deleteSectionSql = @"DELETE FROM [dbo].[tbl_Section] 
+                                         WHERE section_id = @SectionId";
+                    result += await _connection.ExecuteAsync(deleteSectionSql, new { SectionId = existingSection.section_id });
+                }
+            }
+
+            // Now, process the incoming sections for updates or inserts
             foreach (var section in sections)
             {
-                if (section.section_id == 0)
+                if (existingSectionsDict.ContainsKey(section.section_id))
                 {
-                    string insertSectionSql = @"INSERT INTO [dbo].[tbl_Section] (section_name, class_id, IsDeleted)
-                                        VALUES (@SectionName, @ClassId, @IsDeleted)";
-                    result += await _connection.ExecuteAsync(insertSectionSql, new
-                    {
-                        SectionName = section.section_name,
-                        ClassId = classId,
-                        IsDeleted = false
-                    });
-                }
-                else
-                {
+                    // Update existing section
                     string updateSectionSql = @"UPDATE [dbo].[tbl_Section]
-                                        SET section_name = @SectionName,
-                                            class_id = @ClassId,
-                                            IsDeleted = @IsDeleted
-                                        WHERE section_id = @SectionId";
+                                         SET section_name = @SectionName,
+                                             class_id = @ClassId,
+                                             IsDeleted = @IsDeleted
+                                         WHERE section_id = @SectionId";
                     result += await _connection.ExecuteAsync(updateSectionSql, new
                     {
                         SectionName = section.section_name,
@@ -243,8 +276,27 @@ namespace Institute_API.Repository.Implementations
                         IsDeleted = false
                     });
                 }
+                else
+                {
+                    // Insert new section
+                    string insertSectionSql = @"INSERT INTO [dbo].[tbl_Section] (section_name, class_id, IsDeleted)
+                                         VALUES (@SectionName, @ClassId, @IsDeleted)";
+                    result += await _connection.ExecuteAsync(insertSectionSql, new
+                    {
+                        SectionName = section.section_name,
+                        ClassId = classId,
+                        IsDeleted = false
+                    });
+                }
             }
+
             return result;
+        }
+        private async Task<List<Section>> GetExistingSections(int classId)
+        {
+            string query = "SELECT * FROM [dbo].[tbl_Section] WHERE class_id = @ClassId";
+            var sections = await _connection.QueryAsync<Section>(query, new { ClassId = classId });
+            return sections.ToList();
         }
 
     }

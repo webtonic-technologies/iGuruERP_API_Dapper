@@ -27,7 +27,7 @@ namespace Employee_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<string>> AddUpdateEmployeeDocuments(List<EmployeeDocument> request, int employeeId)
+        public async Task<ServiceResponse<int>> AddUpdateEmployeeDocuments(List<EmployeeDocument> request, int employeeId)
         {
             try
             {
@@ -35,7 +35,7 @@ namespace Employee_API.Services.Implementations
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
+                return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
 
@@ -87,6 +87,42 @@ namespace Employee_API.Services.Implementations
             }
         }
 
+        public async Task<ServiceResponse<List<BloodGroup>>> GetBloodGroupList()
+        {
+            try
+            {
+                return await _employeeProfileRepository.GetBloodGroupList();
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<BloodGroup>>(false, ex.Message, [], 500);
+            }
+        }
+
+        public async Task<ServiceResponse<List<Department>>> GetDepartmentList(int InstituteId)
+        {
+            try
+            {
+                return await _employeeProfileRepository.GetDepartmentList(InstituteId);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<Department>>(false, ex.Message, [], 500);
+            }
+        }
+
+        public async Task<ServiceResponse<List<Designation>>> GetDesignationList(int DepartmentId)
+        {
+            try
+            {
+                return await _employeeProfileRepository.GetDesignationList(DepartmentId);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<Designation>>(false, ex.Message, [], 500);
+            }
+        }
+
         public async Task<ServiceResponse<List<EmployeeBankDetails>>> GetEmployeeBankDetailsById(int employeeId)
         {
             try
@@ -135,7 +171,7 @@ namespace Employee_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<EmployeeProfile>>> GetEmployeeProfileList(GetAllEmployeeListRequest request)
+        public async Task<ServiceResponse<List<EmployeeProfileResponseDTO>>> GetEmployeeProfileList(GetAllEmployeeListRequest request)
         {
             try
             {
@@ -143,7 +179,7 @@ namespace Employee_API.Services.Implementations
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<List<EmployeeProfile>>(false, ex.Message, [], 500);
+                return new ServiceResponse<List<EmployeeProfileResponseDTO>>(false, ex.Message, [], 500);
             }
         }
 
@@ -168,6 +204,18 @@ namespace Employee_API.Services.Implementations
             catch (Exception ex)
             {
                 return new ServiceResponse<List<EmployeeWorkExperience>>(false, ex.Message, [], 500);
+            }
+        }
+
+        public async Task<ServiceResponse<List<MaritalStatus>>> GetMaritalStatusList()
+        {
+            try
+            {
+                return await _employeeProfileRepository.GetMaritalStatusList();
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<MaritalStatus>>(false, ex.Message, [], 500);
             }
         }
 

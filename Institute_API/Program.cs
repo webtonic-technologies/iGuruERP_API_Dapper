@@ -31,6 +31,10 @@ builder.Services.AddTransient<IEventRepository, EventRepository>();
 builder.Services.AddTransient<IEventServices, EventServices>();
 builder.Services.AddTransient<IHolidayService, HolidayService>();
 builder.Services.AddTransient<IHolidayRepository, HolidayRepository>();
+builder.Services.AddTransient<IAcademicConfigSubjectsRepository, AcademicConfigSubjectsRepository>();
+builder.Services.AddTransient<IAcademicConfigSubjectsServices, AcademicConfigSubjectsServices>();
+builder.Services.AddTransient<IAcaConfigSubStudentRepository, AcaConfigSubStudentRepository>();
+builder.Services.AddTransient<IAcaConfigSubStudentServices, AcaConfigSubStudentServices>();
 builder.Services.AddTransient<IImageService, ImageService>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

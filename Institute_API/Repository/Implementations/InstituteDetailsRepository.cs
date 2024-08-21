@@ -27,14 +27,10 @@ namespace Institute_API.Repository.Implementations
                     {
                         Institute_name = request.Institute_name,
                         Institute_Alias = request.Institute_Alias,
-                        Institute_Logo = ImageUpload(request.Institute_Logo),
-                        Institute_DigitalSignatory = ImageUpload(request.Institute_DigitalSignatory),
-                        Institute_PrincipalSignatory = ImageUpload(request.Institute_PrincipalSignatory),
-                        Institute_DigitalStamp = ImageUpload(request.Institute_DigitalStamp),
-                        en_date = request.en_date
+                        en_date = DateTime.Now
                     };
-                    string query = @"INSERT INTO [tbl_InstituteDetails] (Institute_name, Institute_Alias, Institute_Logo, Institute_DigitalStamp, Institute_DigitalSignatory, Institute_PrincipalSignatory, en_date)
-                             VALUES (@Institute_name, @Institute_Alias, @Institute_Logo, @Institute_DigitalStamp, @Institute_DigitalSignatory, @Institute_PrincipalSignatory, @en_date)
+                    string query = @"INSERT INTO [tbl_InstituteDetails] (Institute_name, Institute_Alias, en_date)
+                             VALUES (@Institute_name, @Institute_Alias, @en_date)
                              SELECT SCOPE_IDENTITY()";
 
                     int institutionId = await _connection.QuerySingleOrDefaultAsync<int>(query, newInstitution);
@@ -46,6 +42,10 @@ namespace Institute_API.Repository.Implementations
                         int desc = request.InstituteDescription != null ? await AddUpdateInstituteDescription(request.InstituteDescription, institutionId) : 0;
                         int academic = request.AcademicInfos != null ? await AddUpdateAcademicInfo(request.AcademicInfos, institutionId) : 0;
                         int semester = request.SemesterInfo != null ? await AddUpdateSemesterInfo(request.SemesterInfo, institutionId) : 0;
+                        int logosInserted = await InsertInstituteLogos(request.InstituteLogos ??= ([]), institutionId);
+                        int stampsInserted = await InsertInstituteDigitalStamps(request.InstituteDigitalStamps ??= ([]), institutionId);
+                        int signsInserted = await InsertInstituteDigitalSigns(request.InstituteDigitalSigns ??= ([]), institutionId);
+                        int prinSignsInserted = await InsertInstitutePrinSigns(request.InstitutePrinSigns ??= ([]), institutionId);
                         if (address > 0 && schContact > 0 && smMapping > 0 && desc > 0 && academic > 0 && semester > 0)
                         {
                             return new ServiceResponse<int>(true, "Operation successsful", institutionId, 200);
@@ -67,10 +67,6 @@ namespace Institute_API.Repository.Implementations
                 SET 
                     Institute_name = @Institute_name,
                     Institute_Alias = @Institute_Alias,
-                    Institute_Logo = @Institute_Logo,
-                    Institute_DigitalStamp = @Institute_DigitalStamp,
-                    Institute_DigitalSignatory = @Institute_DigitalSignatory,
-                    Institute_PrincipalSignatory = @Institute_PrincipalSignatory,
                     en_date = @en_date
                 WHERE Institute_id = @Institute_id";
                     var newInstitution = new InstituteDetails
@@ -78,15 +74,15 @@ namespace Institute_API.Repository.Implementations
                         Institute_id = request.Institute_id,
                         Institute_name = request.Institute_name,
                         Institute_Alias = request.Institute_Alias,
-                        Institute_DigitalSignatory = ImageUpload(request.Institute_DigitalSignatory),
-                        Institute_DigitalStamp = ImageUpload(request.Institute_DigitalStamp),
-                        Institute_Logo = ImageUpload(request.Institute_Logo),
-                        Institute_PrincipalSignatory = ImageUpload(request.Institute_PrincipalSignatory),
-                        en_date = request.en_date
+                        en_date = DateTime.Now
                     };
                     int rowsAffected = await _connection.ExecuteAsync(updateQuery, newInstitution);
                     if (rowsAffected > 0)
                     {
+                        int logosInserted = await InsertInstituteLogos(request.InstituteLogos ??= ([]), request.Institute_id);
+                        int stampsInserted = await InsertInstituteDigitalStamps(request.InstituteDigitalStamps ??= ([]), request.Institute_id);
+                        int signsInserted = await InsertInstituteDigitalSigns(request.InstituteDigitalSigns ??= ([]), request.Institute_id);
+                        int prinSignsInserted = await InsertInstitutePrinSigns(request.InstitutePrinSigns ??= ([]), request.Institute_id);
                         int address = request.InstituteAddresses != null ? await AddUpdateInstituteAddress(request.InstituteAddresses, request.Institute_id) : 0;
                         int schContact = request.SchoolContacts != null ? await AddUpdateSchoolContact(request.SchoolContacts, request.Institute_id) : 0;
                         int smMapping = request.InstituteSMMappings != null ? await AddUpdateSMMapping(request.InstituteSMMappings, request.Institute_id) : 0;
@@ -113,68 +109,334 @@ namespace Institute_API.Repository.Implementations
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
-        public async Task<ServiceResponse<InstituteDetailsDTO>> GetInstituteDetailsById(int Id)
+        public async Task<ServiceResponse<InstituteDetailsResponseDTO>> GetInstituteDetailsById(int Id)
         {
             try
             {
-                var response = new InstituteDetailsDTO();
-                string query = @"
-                SELECT *
-                FROM tbl_InstituteDetails
-                WHERE Institute_id = @Institute_id";
-                var institute = await _connection.QueryFirstOrDefaultAsync<InstituteDetails>(query, new { Institute_id = Id });
+                string queryInstituteDetails = @"
+            SELECT 
+                i.Institute_id, 
+                i.Institute_name, 
+                i.Institute_Alias, 
+                i.en_date
+            FROM tbl_InstituteDetails i
+            WHERE i.Institute_id = @Institute_id";
+
+                var institute = await _connection.QueryFirstOrDefaultAsync<InstituteDetails>(queryInstituteDetails, new { Institute_id = Id });
 
                 if (institute != null)
                 {
-                    response.Institute_id = institute.Institute_id;
-                    response.Institute_name = institute.Institute_name;
-                    response.Institute_Alias = institute.Institute_Alias;
-                    response.en_date = institute.en_date;
-                    response.Institute_Logo = GetImage(institute.Institute_Logo);
-                    response.Institute_DigitalStamp = GetImage(institute.Institute_DigitalStamp);
-                    response.Institute_DigitalSignatory = GetImage(institute.Institute_DigitalSignatory);
-                    response.Institute_PrincipalSignatory = GetImage(institute.Institute_PrincipalSignatory);
+                    var response = new InstituteDetailsResponseDTO
+                    {
+                        Institute_id = institute.Institute_id,
+                        Institute_name = institute.Institute_name,
+                        Institute_Alias = institute.Institute_Alias,
+                        en_date = institute.en_date,
+                        InstituteLogos = await GetInstituteLogos(Id),
+                        InstituteDigitalStamps = await GetInstituteDigitalStamps(Id),
+                        InstituteDigitalSigns = await GetInstituteDigitalSigns(Id),
+                        InstitutePrinSigns = await GetInstitutePrinSigns(Id),
+                        InstituteDescription = await GetInstituteDescription(Id),
+                        AddressResponse = await GetInstituteAddresses(Id),
+                        InstituteSMMappings = await GetInstituteSMMappings(Id),
+                        SchoolContacts = await GetSchoolContacts(Id),
+                        AcademicInfos = await GetAcademicInfos(Id),
+                        SemesterInfo = await GetSemesterInfo(Id)
+                    };
 
-                    var des = await _connection.QueryFirstOrDefaultAsync<InstituteDescription>(
-                        "SELECT * FROM tbl_InstitueDescription WHERE Institute_id = @Institute_id"
-                        , new { Institute_id = Id });
-                    response.InstituteDescription = des ?? new InstituteDescription();
-
-                    var address = await _connection.QueryAsync<InstituteAddress>(
-                         "SELECT * FROM tbl_InstituteAddress WHERE Institute_id = @Institute_id"
-                        , new { Institute_id = Id });
-                    response.InstituteAddresses = address != null ? address.AsList() : [];
-
-                    var smMapping = await _connection.QueryAsync<InstituteSMMapping>(
-                      "SELECT * FROM tbl_InstitueSMMapping WHERE Institute_id = @Institute_id"
-                     , new { Institute_id = Id });
-                    response.InstituteSMMappings = smMapping != null ? smMapping.AsList() : [];
-
-                    var schCont = await _connection.QueryAsync<SchoolContact>(
-                     "SELECT * FROM tbl_SchoolContact WHERE Institute_id = @Institute_id"
-                    , new { Institute_id = Id });
-                    response.SchoolContacts = schCont != null ? schCont.AsList() : [];
-
-                    var academic = await _connection.QueryAsync<AcademicInfo>(
-                   "SELECT * FROM tbl_AcademicInfo WHERE Institute_id = @Institute_id"
-                  , new { Institute_id = Id });
-                    response.AcademicInfos = academic != null ? academic.AsList() : [];
-
-                    var sem = await _connection.QueryFirstOrDefaultAsync<SemesterInfo>(
-                 "SELECT * FROM tbl_SemesterInfo WHERE Institute_id = @Institute_id"
-                , new { Institute_id = Id });
-                    response.SemesterInfo = sem ?? new SemesterInfo();
-
-                    return new ServiceResponse<InstituteDetailsDTO>(true, " records found", response, 200);
+                    return new ServiceResponse<InstituteDetailsResponseDTO>(true, "Records found", response, 200);
                 }
                 else
                 {
-                    return new ServiceResponse<InstituteDetailsDTO>(false, "No records found", new InstituteDetailsDTO(), 500);
+                    return new ServiceResponse<InstituteDetailsResponseDTO>(false, "No records found", new InstituteDetailsResponseDTO(), 404);
                 }
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<InstituteDetailsDTO>(false, ex.Message, new InstituteDetailsDTO(), 500);
+                return new ServiceResponse<InstituteDetailsResponseDTO>(false, ex.Message, new InstituteDetailsResponseDTO(), 500);
+            }
+        }
+        public async Task<ServiceResponse<List<InstituteDetailsResponseDTO>>> GetAllInstituteDetailsList()
+        {
+            try
+            {
+                string queryInstitutes = @"
+            SELECT 
+                i.Institute_id, 
+                i.Institute_name, 
+                i.Institute_Alias, 
+                i.en_date
+            FROM tbl_InstituteDetails i";
+
+                var institutes = await _connection.QueryAsync<InstituteDetails>(queryInstitutes);
+
+                var responseList = new List<InstituteDetailsResponseDTO>();
+
+                foreach (var institute in institutes)
+                {
+                    var response = new InstituteDetailsResponseDTO
+                    {
+                        Institute_id = institute.Institute_id,
+                        Institute_name = institute.Institute_name,
+                        Institute_Alias = institute.Institute_Alias,
+                        en_date = institute.en_date,
+                        InstituteLogos = await GetInstituteLogos(institute.Institute_id),
+                        InstituteDigitalStamps = await GetInstituteDigitalStamps(institute.Institute_id),
+                        InstituteDigitalSigns = await GetInstituteDigitalSigns(institute.Institute_id),
+                        InstitutePrinSigns = await GetInstitutePrinSigns(institute.Institute_id),
+                        AddressResponse = await GetInstituteAddresses(institute.Institute_id),
+                        InstituteDescription = await GetInstituteDescription(institute.Institute_id),
+                        InstituteSMMappings = await GetInstituteSMMappings(institute.Institute_id),
+                        SchoolContacts = await GetSchoolContacts(institute.Institute_id),
+                        AcademicInfos = await GetAcademicInfos(institute.Institute_id),
+                        SemesterInfo = await GetSemesterInfo(institute.Institute_id)
+                    };
+
+                    responseList.Add(response);
+                }
+
+                return new ServiceResponse<List<InstituteDetailsResponseDTO>>(true, "Records found", responseList, 200, responseList.Count);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<InstituteDetailsResponseDTO>>(false, ex.Message, new List<InstituteDetailsResponseDTO>(), 500);
+            }
+        }
+        public async Task<ServiceResponse<List<Country>>> GetCountriesAsync()
+        {
+            string query = "SELECT * FROM tbl_Country";
+            var data = await _connection.QueryAsync<Country>(query);
+            return new ServiceResponse<List<Country>>(true, "Records found", data.ToList(), 200);
+        }
+        public async Task<ServiceResponse<List<State>>> GetStatesByCountryIdAsync(int countryId)
+        {
+            string query = "SELECT * FROM tbl_State WHERE Country_id = @Country_id";
+            var data = await _connection.QueryAsync<State>(query, new { Country_id = countryId });
+            return new ServiceResponse<List<State>>(true, "Records found", data.ToList(), 200);
+        }
+        public async Task<ServiceResponse<List<City>>> GetCitiesByDistrictIdAsync(int districtId)
+        {
+            string query = "SELECT * FROM tbl_City WHERE district_id = @district_id";
+            var data = await _connection.QueryAsync<City>(query, new { district_id = districtId });
+            return new ServiceResponse<List<City>>(true, "Records found", data.ToList(), 200);
+        }
+        public async Task<ServiceResponse<List<District>>> GetDistrictsByStateIdAsync(int stateId)
+        {
+            string query = "SELECT * FROM tbl_District WHERE state_id = @state_id";
+            var data = await _connection.QueryAsync<District>(query, new { state_id = stateId });
+            return new ServiceResponse<List<District>>(true, "Records found", data.ToList(), 200);
+        }
+        private async Task<List<InstituteLogosResponse>> GetInstituteLogos(int instituteId)
+        {
+            string query = "SELECT InstituteLogoId, InstituteId, InstituteLogo FROM tbl_InstituteLogo WHERE InstituteId = @InstituteId";
+            var logos = await _connection.QueryAsync<InstituteLogos>(query, new { InstituteId = instituteId });
+            return logos.Select(l => new InstituteLogosResponse
+            {
+                InstituteLogoId = l.InstituteLogoId,
+                InstituteId = l.InstituteId,
+                InstituteLogo = GetImage(l.InstituteLogo)
+            }).ToList();
+        }
+        private async Task<List<InstituteDigitalStampsResponse>> GetInstituteDigitalStamps(int instituteId)
+        {
+            string query = "SELECT InstituteDigitalStampId, InstituteId, DigitalStamp FROM tbl_InstituteDigitalStamp WHERE InstituteId = @InstituteId";
+            var stamps = await _connection.QueryAsync<InstituteDigitalStamps>(query, new { InstituteId = instituteId });
+            return stamps.Select(s => new InstituteDigitalStampsResponse
+            {
+                InstituteDigitalStampId = s.InstituteDigitalStampId,
+                InstituteId = s.InstituteId,
+                DigitalStamp = GetImage(s.DigitalStamp)
+            }).ToList();
+        }
+        private async Task<List<InstituteDigitalSignsResponse>> GetInstituteDigitalSigns(int instituteId)
+        {
+            string query = "SELECT InstituteDigitalSignId, InstituteId, DigitalSign FROM tbl_InstituteDigitalSign WHERE InstituteId = @InstituteId";
+            var signs = await _connection.QueryAsync<InstituteDigitalSigns>(query, new { InstituteId = instituteId });
+            return signs.Select(s => new InstituteDigitalSignsResponse
+            {
+                InstituteDigitalSignId = s.InstituteDigitalSignId,
+                InstituteId = s.InstituteId,
+                DigitalSign = GetImage(s.DigitalSign)
+            }).ToList();
+        }
+        private async Task<List<InstitutePrinSignsResponse>> GetInstitutePrinSigns(int instituteId)
+        {
+            string query = "SELECT InstitutePrinSignId, InstituteId, InstitutePrinSign FROM tbl_InstitutePrinSign WHERE InstituteId = @InstituteId";
+            var prinSigns = await _connection.QueryAsync<InstitutePrinSigns>(query, new { InstituteId = instituteId });
+            return prinSigns.Select(p => new InstitutePrinSignsResponse
+            {
+                InstitutePrinSignId = p.InstitutePrinSignId,
+                InstituteId = p.InstituteId,
+                InstitutePrinSign = GetImage(p.InstitutePrinSign)
+            }).ToList();
+        }
+        private async Task<InstituteDescription> GetInstituteDescription(int instituteId)
+        {
+            string query = "SELECT * FROM tbl_InstitueDescription WHERE Institute_id = @Institute_id";
+            var description = await _connection.QueryFirstOrDefaultAsync<InstituteDescription>(query, new { Institute_id = instituteId });
+            return description ?? new InstituteDescription();
+        }
+        private async Task<InstituteAddressResponse> GetInstituteAddresses(int instituteId)
+        {
+            string query = @"
+    SELECT 
+        ia.Institute_address_id, ia.country_id, c.country_name AS CountryName,
+        ia.state_id, s.state_name AS StateName, ia.city_id, ci.city_name AS CityName,
+        ia.house, ia.pincode, ia.district_id, d.district_name AS DistrictName,
+        ia.Locality, ia.Landmark, ia.Mobile_number, ia.Email,
+        ia.AddressType_id, at.Address_Type AS AddressTypeName, ia.en_date, ia.Institute_id
+    FROM tbl_InstituteAddress ia
+    LEFT JOIN tbl_Country c ON ia.country_id = c.Country_id
+    LEFT JOIN tbl_State s ON ia.state_id = s.State_id
+    LEFT JOIN tbl_City ci ON ia.city_id = ci.City_id
+    LEFT JOIN tbl_District d ON ia.district_id = d.District_id
+    LEFT JOIN tbl_AddressType at ON ia.AddressType_id = at.AddressType_id
+    WHERE ia.Institute_id = @Institute_id";
+
+            var addresses = await _connection.QueryAsync(query, new { Institute_id = instituteId });
+
+            // Initialize the response
+            var addressResponse = new InstituteAddressResponse
+            {
+                BillingAddress = new List<AddressResponse>(),
+                MailingAddress = new List<AddressResponse>()
+            };
+
+            // Map addresses to AddressResponse and categorize them
+            foreach (var ia in addresses)
+            {
+                var address = new AddressResponse
+                {
+                    Institute_address_id = ia.Institute_address_id,
+                    Institute_id = ia.Institute_id,
+                    country_id = ia.country_id,
+                    CountryName = ia.CountryName,
+                    state_id = ia.state_id,
+                    StateName = ia.StateName,
+                    city_id = ia.city_id,
+                    CityName = ia.CityName,
+                    house = ia.house,
+                    pincode = ia.pincode,
+                    district_id = ia.district_id,
+                    DistrictName = ia.DistrictName,
+                    Locality = ia.Locality,
+                    Landmark = ia.Landmark,
+                    Mobile_number = ia.Mobile_number,
+                    Email = ia.Email,
+                    AddressType_id = ia.AddressType_id,
+                    AddressTypeName = ia.AddressTypeName,
+                    en_date = ia.en_date
+                };
+
+                // Categorize based on AddressType_id
+                if (ia.AddressType_id == 3) // Billing Address
+                {
+                    addressResponse.BillingAddress.Add(address);
+                }
+                else if (ia.AddressType_id == 4) // Mailing Address
+                {
+                    addressResponse.MailingAddress.Add(address);
+                }
+            }
+
+            return addressResponse;
+        }
+        private async Task<List<InstituteSMMappingResponse>> GetInstituteSMMappings(int instituteId)
+        {
+            string query = @"
+        SELECT ism.SM_Mapping_Id, ism.Institute_id, ism.SM_Id, sm.Social_Media_Type AS SM_Name, ism.URL 
+        FROM tbl_InstitueSMMapping ism
+        JOIN tbl_SocialMediaMaster sm ON ism.SM_Id = sm.Social_Media_id
+        WHERE ism.Institute_id = @Institute_id";
+
+            var smMappings = await _connection.QueryAsync<InstituteSMMappingResponse>(query, new { Institute_id = instituteId });
+            return smMappings.ToList();
+        }
+        private async Task<List<SchoolContactResponse>> GetSchoolContacts(int instituteId)
+        {
+            string query = @"
+        SELECT sc.School_Contact_id, sc.ContactType_id, ct.ContactType AS ContactType_Name, 
+               sc.Institute_id, sc.Contact_Person_name, sc.Telephone_number, sc.Email_ID, sc.Mobile_number, sc.isPrimary, sc.en_date 
+        FROM tbl_SchoolContact sc 
+        LEFT JOIN tbl_ContactType ct ON sc.ContactType_id = ct.ContactType_id 
+        WHERE sc.Institute_id = @Institute_id";
+
+            var schoolContacts = await _connection.QueryAsync<SchoolContactResponse>(query, new { Institute_id = instituteId });
+            return schoolContacts.ToList();
+        }
+        private async Task<List<AcademicInfo>> GetAcademicInfos(int instituteId)
+        {
+            string query = "SELECT * FROM tbl_AcademicInfo WHERE Institute_id = @Institute_id";
+            var academicInfos = await _connection.QueryAsync<AcademicInfo>(query, new { Institute_id = instituteId });
+            foreach (var data in academicInfos)
+            {
+                data.StatusName = data.Status == true ? "Active" : "InActive";
+            }
+            return academicInfos.ToList();
+        }
+        private async Task<SemesterInfo> GetSemesterInfo(int instituteId)
+        {
+            string query = "SELECT * FROM tbl_SemesterInfo WHERE Institute_id = @Institute_id";
+            var semesterInfo = await _connection.QueryFirstOrDefaultAsync<SemesterInfo>(query, new { Institute_id = instituteId });
+            return semesterInfo ?? new SemesterInfo();
+        }
+        public async Task<ServiceResponse<bool>> DeleteImage(DeleteImageRequest request)
+        {
+            try
+            {
+                string deleteQuery = string.Empty;
+                string imagePath = string.Empty;
+
+                // Determine the query and file path based on the ImageName
+                switch (request.ImageName)
+                {
+                    case "Logo":
+                        deleteQuery = "DELETE FROM tbl_InstituteLogo WHERE InstituteLogoId = @ImageId AND InstituteId = @InstituteId";
+                        imagePath = await _connection.QuerySingleOrDefaultAsync<string>(
+                            "SELECT InstituteLogo FROM tbl_InstituteLogo WHERE InstituteLogoId = @ImageId AND InstituteId = @InstituteId",
+                            new { request.ImageId, request.InstituteId });
+                        break;
+                    case "DigStamp":
+                        deleteQuery = "DELETE FROM tbl_InstituteDigitalStamp WHERE InstituteDigitalStampId = @ImageId AND InstituteId = @InstituteId";
+                        imagePath = await _connection.QuerySingleOrDefaultAsync<string>(
+                            "SELECT DigitalStamp FROM tbl_InstituteDigitalStamp WHERE InstituteDigitalStampId = @ImageId AND InstituteId = @InstituteId",
+                            new { request.ImageId, request.InstituteId });
+                        break;
+                    case "DigSign":
+                        deleteQuery = "DELETE FROM tbl_InstituteDigitalSign WHERE InstituteDigitalSignId = @ImageId AND InstituteId = @InstituteId";
+                        imagePath = await _connection.QuerySingleOrDefaultAsync<string>(
+                            "SELECT DigitalSign FROM tbl_InstituteDigitalSign WHERE InstituteDigitalSignId = @ImageId AND InstituteId = @InstituteId",
+                            new { request.ImageId, request.InstituteId });
+                        break;
+                    case "PrincSign":
+                        deleteQuery = "DELETE FROM tbl_InstitutePrinSign WHERE InstitutePrinSignId = @ImageId AND InstituteId = @InstituteId";
+                        imagePath = await _connection.QuerySingleOrDefaultAsync<string>(
+                            "SELECT InstitutePrinSign FROM tbl_InstitutePrinSign WHERE InstitutePrinSignId = @ImageId AND InstituteId = @InstituteId",
+                            new { request.ImageId, request.InstituteId });
+                        break;
+                    default:
+                        return new ServiceResponse<bool>(false, "Invalid ImageName", false, 400);
+                }
+
+                // Delete the record from the database
+                int rowsAffected = await _connection.ExecuteAsync(deleteQuery, new { request.ImageId, request.InstituteId });
+                if (rowsAffected > 0)
+                {
+                    // Delete the file from the folder
+                    if (!string.IsNullOrEmpty(imagePath) && File.Exists(imagePath))
+                    {
+                        File.Delete(imagePath);
+                    }
+                    return new ServiceResponse<bool>(true, "Image deleted successfully", true, 200);
+                }
+                else
+                {
+                    return new ServiceResponse<bool>(false, "Image not found or delete failed", false, 404);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
         private async Task<int> AddUpdateInstituteAddress(List<InstituteAddress> request, int InstitutionId)
@@ -331,8 +593,8 @@ namespace Institute_API.Repository.Implementations
                 if (rowsAffected > 0)
                 {
                     string insertQuery = @"
-                INSERT INTO [tbl_AcademicInfo] (Institute_id, [AcademicYearStartMonth], [AcademicYearEndMonth])
-                VALUES (@Institute_id, @AcademicYearStartMonth, @AcademicYearEndMonth)";
+                INSERT INTO [tbl_AcademicInfo] (Institute_id, [AcademicYearStartMonth], [AcademicYearEndMonth], Status)
+                VALUES (@Institute_id, @AcademicYearStartMonth, @AcademicYearEndMonth, @Status)";
                     // Execute the query with multiple parameterized sets of values
                     addedRecords = await _connection.ExecuteAsync(insertQuery, request);
                 }
@@ -340,8 +602,8 @@ namespace Institute_API.Repository.Implementations
             else
             {
                 string insertQuery = @"
-                INSERT INTO [tbl_AcademicInfo] (Institute_id, [AcademicYearStartMonth], [AcademicYearEndMonth])
-                VALUES (@Institute_id, @AcademicYearStartMonth, @AcademicYearEndMonth)";
+                INSERT INTO [tbl_AcademicInfo] (Institute_id, [AcademicYearStartMonth], [AcademicYearEndMonth], Status)
+                VALUES (@Institute_id, @AcademicYearStartMonth, @AcademicYearEndMonth, @Status)";
                 // Execute the query with multiple parameterized sets of values
                 addedRecords = await _connection.ExecuteAsync(insertQuery, request);
             }
@@ -374,6 +636,122 @@ namespace Institute_API.Repository.Implementations
             }
             return rowsAffected;
         }
+        private async Task<int> InsertInstituteLogos(List<InstituteLogos> logos, int instituteId)
+        {
+            if (logos == null || instituteId <= 0)
+                return 0;
+
+            string deleteQuery = "DELETE FROM tbl_InstituteLogo WHERE InstituteId = @InstituteId";
+            await _connection.ExecuteAsync(deleteQuery, new { InstituteId = instituteId });
+
+            foreach (var logo in logos)
+            {
+                var newLogo = new InstituteLogos
+                {
+                    InstituteId = instituteId,
+                    InstituteLogo = ImageUpload(logo.InstituteLogo)
+                };
+
+                string logoQuery = @"
+            INSERT INTO tbl_InstituteLogo (InstituteId, InstituteLogo)
+            VALUES (@InstituteId, @InstituteLogo);
+        ";
+
+                int logoId = await _connection.ExecuteAsync(logoQuery, new { InstituteId = newLogo.InstituteId, InstituteLogo = newLogo.InstituteLogo });
+                if (logoId <= 0)
+                {
+                    return 0;
+                }
+            }
+            return 1;
+        }
+        private async Task<int> InsertInstituteDigitalStamps(List<InstituteDigitalStamps> stamps, int instituteId)
+        {
+            if (stamps == null || instituteId <= 0)
+                return 0;
+
+            string deleteQuery = "DELETE FROM tbl_InstituteDigitalStamp WHERE InstituteId = @InstituteId";
+            await _connection.ExecuteAsync(deleteQuery, new { InstituteId = instituteId });
+
+            foreach (var stamp in stamps)
+            {
+                var newStamp = new InstituteDigitalStamps
+                {
+                    InstituteId = instituteId,
+                    DigitalStamp = ImageUpload(stamp.DigitalStamp)
+                };
+
+                string stampQuery = @"
+            INSERT INTO tbl_InstituteDigitalStamp (InstituteId, DigitalStamp)
+            VALUES (@InstituteId, @DigitalStamp);
+        ";
+
+                int stampId = await _connection.ExecuteAsync(stampQuery, new { InstituteId = newStamp.InstituteId, DigitalStamp = newStamp.DigitalStamp });
+                if (stampId <= 0)
+                {
+                    return 0;
+                }
+            }
+            return 1;
+        }
+        private async Task<int> InsertInstituteDigitalSigns(List<InstituteDigitalSigns> signs, int instituteId)
+        {
+            if (signs == null || instituteId <= 0)
+                return 0;
+
+            string deleteQuery = "DELETE FROM tbl_InstituteDigitalSign WHERE InstituteId = @InstituteId";
+            await _connection.ExecuteAsync(deleteQuery, new { InstituteId = instituteId });
+
+            foreach (var sign in signs)
+            {
+                var newSign = new InstituteDigitalSigns
+                {
+                    InstituteId = instituteId,
+                    DigitalSign = ImageUpload(sign.DigitalSign)
+                };
+
+                string signQuery = @"
+            INSERT INTO tbl_InstituteDigitalSign (InstituteId, DigitalSign)
+            VALUES (@InstituteId, @DigitalSign);
+        ";
+
+                int signId = await _connection.ExecuteAsync(signQuery, new { InstituteId = newSign.InstituteId, DigitalSign = newSign.DigitalSign });
+                if (signId <= 0)
+                {
+                    return 0;
+                }
+            }
+            return 1;
+        }
+        private async Task<int> InsertInstitutePrinSigns(List<InstitutePrinSigns> prinSigns, int instituteId)
+        {
+            if (prinSigns == null || instituteId <= 0)
+                return 0;
+
+            string deleteQuery = "DELETE FROM tbl_InstitutePrinSign WHERE InstituteId = @InstituteId";
+            await _connection.ExecuteAsync(deleteQuery, new { InstituteId = instituteId });
+
+            foreach (var prinSign in prinSigns)
+            {
+                var newPrinSign = new InstitutePrinSigns
+                {
+                    InstituteId = instituteId,
+                    InstitutePrinSign = ImageUpload(prinSign.InstitutePrinSign)
+                };
+
+                string prinSignQuery = @"
+            INSERT INTO tbl_InstitutePrinSign (InstituteId, InstitutePrinSign)
+            VALUES (@InstituteId, @InstitutePrinSign);
+        ";
+
+                int prinSignId = await _connection.ExecuteAsync(prinSignQuery, new { InstituteId = newPrinSign.InstituteId, InstitutePrinSign = newPrinSign.InstitutePrinSign });
+                if (prinSignId <= 0)
+                {
+                    return 0;
+                }
+            }
+            return 1;
+        }
         private string ImageUpload(string image)
         {
             if (string.IsNullOrEmpty(image) || image == "string")
@@ -390,7 +768,10 @@ namespace Institute_API.Repository.Implementations
             string fileExtension = IsJpeg(imageData) == true ? ".jpg" : IsPng(imageData) == true ? ".png" : IsGif(imageData) == true ? ".gif" : string.Empty;
             string fileName = Guid.NewGuid().ToString() + fileExtension;
             string filePath = Path.Combine(directoryPath, fileName);
-
+            if (string.IsNullOrEmpty(fileExtension))
+            {
+                throw new InvalidOperationException("Incorrect file uploaded");
+            }
             // Write the byte array to the image file
             File.WriteAllBytes(filePath, imageData);
             return filePath;

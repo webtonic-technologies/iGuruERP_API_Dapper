@@ -12,6 +12,12 @@
         public string HouseName { get; set; } = string.Empty;
         public string HouseColor { get; set; } = string.Empty;
         public string FileName { get; set; } = string.Empty;
-        public DateTime? en_date {  get; set; }
+        public DateTime? en_date { get; set; }
+        public bool IsDeleted { get; set; }
+    }
+    public class GetInstituteHouseList
+    {
+        public int InstituteID { get; set; }
+        public string SearchText { get; set; } = string.Empty;
     }
 }

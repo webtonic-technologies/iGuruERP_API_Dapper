@@ -51,6 +51,83 @@ namespace Institute_API.Controllers
                 return BadRequest(ex.Message);
             }
         }
-    
+        [HttpPost("DeleteImage")]
+        public async Task<IActionResult> DeleteImage(DeleteImageRequest request)
+        {
+            try
+            {
+                var data = await _instituteDetailsServices.DeleteImage(request);
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+        [HttpGet("GetInstituteDetails")]
+        public async Task<IActionResult> GetInstituteDetails()
+        {
+            try
+            {
+                var data = await _instituteDetailsServices.GetAllInstituteDetailsList();
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+        [HttpGet("GetCountryList")]
+        public async Task<IActionResult> GetCountriesAsync()
+        {
+            try
+            {
+                var data = await _instituteDetailsServices.GetCountriesAsync();
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+        [HttpGet("GetStatesByCountryId/{countryId}")]
+        public async Task<IActionResult> GetStatesByCountryIdAsync(int countryId)
+        {
+            try
+            {
+                var data = await _instituteDetailsServices.GetStatesByCountryIdAsync(countryId);
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+        [HttpGet("GetCitiesByDistrictIdAsync/{districtId}")]
+        public async Task<IActionResult> GetCitiesByDistrictIdAsync(int districtId)
+        {
+            try
+            {
+                var data = await _instituteDetailsServices.GetCitiesByDistrictIdAsync(districtId);
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+        [HttpGet("GetDistrictsByStateIdAsync/{stateId}")]
+        public async Task<IActionResult> GetDistrictsByStateIdAsync(int stateId)
+        {
+            try
+            {
+                var data = await _instituteDetailsServices.GetDistrictsByStateIdAsync(stateId);
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
     }
 }

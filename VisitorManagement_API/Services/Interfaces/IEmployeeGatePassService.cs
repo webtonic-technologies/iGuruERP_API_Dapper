@@ -13,5 +13,6 @@ namespace VisitorManagement_API.Services.Interfaces
         Task<ServiceResponse<IEnumerable<EmployeeGatepassResponse>>> GetAllEmployeeGatePass(GetAllEmployeeGatePassRequest request);
         Task<ServiceResponse<EmployeeGatepassResponse>> GetEmployeeGatePassById(int gatePassId);
         Task<ServiceResponse<bool>> UpdateEmployeeGatePassStatus(int gatePassId);
+        Task<ServiceResponse<List<Visitedfor>>> GetAllVisitedForReason();
     }
 }

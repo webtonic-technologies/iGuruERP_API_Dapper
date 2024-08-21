@@ -4,7 +4,6 @@ using System.Data.SqlClient;
 using VisitorManagement_API.DTOs.Requests;
 using VisitorManagement_API.DTOs.Responses;
 using VisitorManagement_API.DTOs.ServiceResponse;
-using VisitorManagement_API.Models;
 using VisitorManagement_API.Repository.Interfaces;
 
 namespace VisitorManagement_API.Repository.Implementations
@@ -19,65 +18,177 @@ namespace VisitorManagement_API.Repository.Implementations
             _hostingEnvironment = hostingEnvironment;
         }
 
-        public async Task<ServiceResponse<string>> AddUpdateVisitorLog(VisitorLog visitorLog)
+        public async Task<ServiceResponse<string>> AddUpdateVisitorLog(VisitorRequestDTO visitorLog)
         {
+            if (_dbConnection.State != ConnectionState.Open)
+            {
+                _dbConnection.Open();
+            }
+            using var transaction = _dbConnection.BeginTransaction();
             try
             {
+                int affectedRows = 0;
+                string insertOrUpdateQuery;
                 if (visitorLog.VisitorID == 0)
                 {
                     // Insert new visitor log
-                    string query = @"INSERT INTO tblVisitorMaster (VisitorCodeID, VisitorName, Photo, SourceID, PurposeID, MobileNo, EmailID, Address, OrganizationName, EmployeeID, NoOfVisitor, AccompaniedBy, CheckInTime, CheckOutTime, Remarks, IDProofDocumentID, Information, Document, ApprovalTypeID, Status, InstituteId)
-                                     VALUES (@VisitorCodeID, @VisitorName, @Photo, @SourceID, @PurposeID, @MobileNo, @EmailID, @Address, @OrganizationName, @EmployeeID, @NoOfVisitor, @AccompaniedBy, @CheckInTime, @CheckOutTime, @Remarks, @IDProofDocumentID, @Information, @Document, @ApprovalTypeID, @Status, @InstituteId)";
+                    insertOrUpdateQuery = @"
+                INSERT INTO tblVisitorMaster (VisitorCodeID, VisitorName, Photo, SourceID, PurposeID, MobileNo, EmailID, Address, OrganizationName, EmployeeID, NoOfVisitor, AccompaniedBy, CheckInTime, CheckOutTime, Remarks, IDProofDocumentID, Information, ApprovalTypeID, Status, InstituteId)
+                VALUES (@VisitorCodeID, @VisitorName, @Photo, @SourceID, @PurposeID, @MobileNo, @EmailID, @Address, @OrganizationName, @EmployeeID, @NoOfVisitor, @AccompaniedBy, @CheckInTime, @CheckOutTime, @Remarks, @IDProofDocumentID, @Information, @ApprovalTypeID, @Status, @InstituteId);
+                SELECT CAST(SCOPE_IDENTITY() as int)";
                     visitorLog.Photo = ImageUpload(visitorLog.Photo);
-                    visitorLog.Document = PDFUpload(visitorLog.Document);
-                    int insertedValue = await _dbConnection.ExecuteAsync(query, visitorLog);
-                    if (insertedValue > 0)
-                    {
-                        return new ServiceResponse<string>(true, "Visitor Log Added Successfully", "Success", 201);
-                    }
-                    return new ServiceResponse<string>(false, "Failed to Add Visitor Log", "Failure", 400);
+                    visitorLog.VisitorID = await _dbConnection.QuerySingleAsync<int>(insertOrUpdateQuery, visitorLog, transaction);
+                    affectedRows = visitorLog.VisitorID > 0 ? 1 : 0;
                 }
                 else
                 {
                     // Update existing visitor log
-                    string query = @"UPDATE tblVisitorMaster SET VisitorCodeID = @VisitorCodeID, VisitorName = @VisitorName, Photo = @Photo, SourceID = @SourceID, PurposeID = @PurposeID, MobileNo = @MobileNo, 
-                                    EmailID = @EmailID, Address = @Address, OrganizationName = @OrganizationName, EmployeeID = @EmployeeID, NoOfVisitor = @NoOfVisitor, AccompaniedBy = @AccompaniedBy, 
-                                    CheckInTime = @CheckInTime, CheckOutTime = @CheckOutTime, Remarks = @Remarks, IDProofDocumentID = @IDProofDocumentID, Information = @Information, Document = @Document,
-                                    ApprovalTypeID = @ApprovalTypeID, Status = @Status, InstituteId = @InstituteId WHERE VisitorID = @VisitorID";
+                    insertOrUpdateQuery = @"
+                UPDATE tblVisitorMaster 
+                SET VisitorCodeID = @VisitorCodeID, VisitorName = @VisitorName, Photo = @Photo, SourceID = @SourceID, PurposeID = @PurposeID, MobileNo = @MobileNo, EmailID = @EmailID, Address = @Address, OrganizationName = @OrganizationName, EmployeeID = @EmployeeID, NoOfVisitor = @NoOfVisitor, AccompaniedBy = @AccompaniedBy, CheckInTime = @CheckInTime, CheckOutTime = @CheckOutTime, Remarks = @Remarks, IDProofDocumentID = @IDProofDocumentID, Information = @Information, ApprovalTypeID = @ApprovalTypeID, Status = @Status, InstituteId = @InstituteId
+                WHERE VisitorID = @VisitorID";
                     visitorLog.Photo = ImageUpload(visitorLog.Photo);
-                    visitorLog.Document = PDFUpload(visitorLog.Document);
-                    int rowsAffected = await _dbConnection.ExecuteAsync(query, visitorLog);
-                    if (rowsAffected > 0)
-                    {
-                        return new ServiceResponse<string>(true, "Visitor Log Updated Successfully", "Success", 200);
-                    }
-                    return new ServiceResponse<string>(false, "Failed to Update Visitor Log", "Failure", 400);
+                    affectedRows = await _dbConnection.ExecuteAsync(insertOrUpdateQuery, visitorLog, transaction);
                 }
+
+                if (affectedRows == 0)
+                {
+                    transaction.Rollback();
+                    return new ServiceResponse<string>(false, "Failed to Add or Update Visitor Log", "Failure", 400);
+                }
+
+                // Handling Visitor Documents
+                bool documentsHandledSuccessfully = await HandleVisitorDocuments(visitorLog.VisitorID, visitorLog.VisitorDocuments, transaction);
+
+                if (!documentsHandledSuccessfully)
+                {
+                    transaction.Rollback();
+                    return new ServiceResponse<string>(false, "Failed to Handle Visitor Documents", "Failure", 400);
+                }
+
+                transaction.Commit();
+                return new ServiceResponse<string>(true, "Visitor Log Saved Successfully", "Success", 201);
             }
             catch (Exception ex)
             {
+                transaction.Rollback();
                 return new ServiceResponse<string>(false, ex.Message, "Error", 500);
             }
+            finally { _dbConnection.Close(); }
+        }
+        private async Task<bool> HandleVisitorDocuments(int visitorId, List<VisitorDocument>? documents, IDbTransaction transaction)
+        {
+            // Delete existing documents for the visitor
+            string deleteQuery = "DELETE FROM tblVisitorDocuments WHERE VisitorId = @VisitorId";
+            int deleteResult = await _dbConnection.ExecuteAsync(deleteQuery, new { VisitorId = visitorId }, transaction);
+
+            // Insert new documents
+            if (documents != null && documents.Count > 0)
+            {
+                foreach (var document in documents)
+                {
+                    document.VisitorId = visitorId;
+                    document.PdfDoc = PDFUpload(document.PdfDoc);
+
+                    string insertDocumentQuery = @"
+                INSERT INTO tblVisitorDocuments (VisitorId, PdfDoc) 
+                VALUES (@VisitorId, @PdfDoc)";
+                    int insertResult = await _dbConnection.ExecuteAsync(insertDocumentQuery, document, transaction);
+                    if (insertResult == 0)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
         }
         public async Task<ServiceResponse<IEnumerable<Visitorlogresponse>>> GetAllVisitorLogs(GetAllVisitorLogsRequest request)
         {
             try
             {
-                string query = @"SELECT vm.*, s.Source as Sourcename, p.Purpose as Purposename
+                string query = @"SELECT vm.*, s.Source as Sourcename, p.Purpose as Purposename, e.First_Name, e.Middle_Name, e.Last_Name,  i.IDProofDocument as IDProofDocumentName, 
+                                a.ApprovalType as ApprovalTypeName
                          FROM tblVisitorMaster vm
                          LEFT JOIN tblSources s ON vm.SourceID = s.SourceID
                          LEFT JOIN tblPurposeType p ON vm.PurposeID = p.PurposeID
-                         WHERE vm.Status = 1 and InstituteId = @InstituteId";
+                         LEFT JOIN tbl_EmployeeProfileMaster e ON vm.EmployeeID = e.Employee_id
+                         LEFT JOIN tblIDProofDocument i ON vm.IDProofDocumentID = i.IDProofDocumentID
+                         LEFT JOIN tblVisitorApprovalMaster a ON vm.ApprovalTypeID = a.ApprovalTypeID
+                         WHERE vm.Status = 1 AND vm.InstituteId = @InstituteId";
 
-                var visitorLogs = await _dbConnection.QueryAsync<Visitorlogresponse>(query, new { InstituteId = request.InstituteId});
-                foreach (var data in visitorLogs)
+                var visitorLogs = await _dbConnection.QueryAsync(query, new { InstituteId = request.InstituteId });
+
+                // Filter by date range if provided
+                IEnumerable<dynamic> filteredVisitorLogs;
+
+                if (request.StartDate.HasValue && request.EndDate.HasValue)
                 {
-                    data.Photo = GetImage(data.Photo);
-                    data.Document = GetImage(data.Document);
+                    filteredVisitorLogs = visitorLogs
+                        .Where(v => v.CheckInTime >= request.StartDate && v.CheckInTime <= request.EndDate);
+                }
+                else
+                {
+                    filteredVisitorLogs = visitorLogs; // Return all logs if no date range is provided
                 }
 
-                var paginatedVisitorLogs = visitorLogs.Skip((request.PageNumber - 1) * request.PageSize).Take(request.PageSize);
-                return new ServiceResponse<IEnumerable<Visitorlogresponse>>(true, "Visitor Logs Retrieved Successfully", paginatedVisitorLogs, 200, visitorLogs.Count());
+                var visitorLogResponses = filteredVisitorLogs
+                    .Select(v => new Visitorlogresponse
+                    {
+                        VisitorID = v.VisitorID,
+                        VisitorCodeID = v.VisitorCodeID,
+                        VisitorName = v.VisitorName,
+                        Photo = GetImage(v.Photo),
+                        SourceID = v.SourceID,
+                        Sourcename = v.Sourcename,
+                        PurposeID = v.PurposeID,
+                        Purposename = v.Purposename,
+                        MobileNo = v.MobileNo,
+                        EmailID = v.EmailID,
+                        Address = v.Address,
+                        OrganizationName = v.OrganizationName,
+                        EmployeeID = v.EmployeeID,
+                        EmployeeFullName = $"{v.First_Name} {v.Middle_Name} {v.Last_Name}".Trim(),
+                        NoOfVisitor = v.NoOfVisitor,
+                        AccompaniedBy = v.AccompaniedBy,
+                        CheckInTime = v.CheckInTime,
+                        CheckOutTime = v.CheckOutTime,
+                        Remarks = v.Remarks,
+                        IDProofDocumentID = v.IDProofDocumentID,
+                        IDProofDocumentName = v.IDProofDocumentName,
+                        Information = v.Information,
+                        ApprovalTypeID = v.ApprovalTypeID,
+                        ApprovalTypeName = v.ApprovalTypeName,
+                        Status = v.Status,
+                        InstituteId = v.InstituteId
+                    })
+                    .ToList();
+
+                foreach (var data in visitorLogResponses)
+                {
+                    // Fetch documents related to the visitor
+                    string documentQuery = @"SELECT DocumentId, VisitorId, PdfDoc
+                                     FROM tblVisitorDocuments
+                                     WHERE VisitorId = @VisitorId";
+                    var documents = await _dbConnection.QueryAsync<VisitorDocumentResponse>(documentQuery, new { VisitorId = data.VisitorID });
+                    foreach (var item in documents)
+                    {
+                        item.PdfDoc = GetPDF(item.PdfDoc);
+                    }
+                    data.VisitorDocuments = documents.ToList();
+                }
+                if (!string.IsNullOrWhiteSpace(request.SearchText))
+                {
+                    filteredVisitorLogs = filteredVisitorLogs
+                        .Where(v => v.VisitorName.Contains(request.SearchText, StringComparison.OrdinalIgnoreCase) ||
+                                     v.MobileNo.Contains(request.SearchText) ||
+                                     v.EmailID.Contains(request.SearchText));
+                }
+                var paginatedVisitorLogs = visitorLogResponses
+                    .Skip((request.PageNumber - 1) * request.PageSize)
+                    .Take(request.PageSize);
+
+                return new ServiceResponse<IEnumerable<Visitorlogresponse>>(true, "Visitor Logs Retrieved Successfully", paginatedVisitorLogs, 200, visitorLogResponses.Count());
             }
             catch (Exception ex)
             {
@@ -88,19 +199,64 @@ namespace VisitorManagement_API.Repository.Implementations
         {
             try
             {
-                string query = @"SELECT vm.*, s.Source as Sourcename, p.Purpose as Purposename
+                string query = @"SELECT vm.*, s.Source as Sourcename, p.Purpose as Purposename, 
+                                e.First_Name, e.Middle_Name, e.Last_Name, 
+                                i.IDProofDocument as IDProofDocumentName, 
+                                a.ApprovalType as ApprovalTypeName
                          FROM tblVisitorMaster vm
                          LEFT JOIN tblSources s ON vm.SourceID = s.SourceID
                          LEFT JOIN tblPurposeType p ON vm.PurposeID = p.PurposeID
+                         LEFT JOIN tbl_EmployeeProfileMaster e ON vm.EmployeeID = e.Employee_id
+                         LEFT JOIN tblIDProofDocument i ON vm.IDProofDocumentID = i.IDProofDocumentID
+                         LEFT JOIN tblVisitorApprovalMaster a ON vm.ApprovalTypeID = a.ApprovalTypeID
                          WHERE vm.VisitorID = @VisitorID AND vm.Status = 1";
 
-                var visitorLog = await _dbConnection.QueryFirstOrDefaultAsync<Visitorlogresponse>(query, new { VisitorID = visitorId });
+                var visitorLog = await _dbConnection.QueryFirstOrDefaultAsync(query, new { VisitorID = visitorId });
 
                 if (visitorLog != null)
                 {
-                    visitorLog.Photo = GetImage(visitorLog.Photo);
-                    visitorLog.Document = GetImage(visitorLog.Document);
-                    return new ServiceResponse<Visitorlogresponse>(true, "Visitor Log Retrieved Successfully", visitorLog, 200);
+                    var visitorLogResponse = new Visitorlogresponse
+                    {
+                        VisitorID = visitorLog.VisitorID,
+                        VisitorCodeID = visitorLog.VisitorCodeID,
+                        VisitorName = visitorLog.VisitorName,
+                        Photo = GetImage(visitorLog.Photo),
+                        SourceID = visitorLog.SourceID,
+                        Sourcename = visitorLog.Sourcename,
+                        PurposeID = visitorLog.PurposeID,
+                        Purposename = visitorLog.Purposename,
+                        MobileNo = visitorLog.MobileNo,
+                        EmailID = visitorLog.EmailID,
+                        Address = visitorLog.Address,
+                        OrganizationName = visitorLog.OrganizationName,
+                        EmployeeID = visitorLog.EmployeeID,
+                        EmployeeFullName = $"{visitorLog.First_Name} {visitorLog.Middle_Name} {visitorLog.Last_Name}".Trim(),
+                        NoOfVisitor = visitorLog.NoOfVisitor,
+                        AccompaniedBy = visitorLog.AccompaniedBy,
+                        CheckInTime = visitorLog.CheckInTime,
+                        CheckOutTime = visitorLog.CheckOutTime,
+                        Remarks = visitorLog.Remarks,
+                        IDProofDocumentID = visitorLog.IDProofDocumentID,
+                        IDProofDocumentName = visitorLog.IDProofDocumentName,
+                        Information = visitorLog.Information,
+                        ApprovalTypeID = visitorLog.ApprovalTypeID,
+                        ApprovalTypeName = visitorLog.ApprovalTypeName,
+                        Status = visitorLog.Status,
+                        InstituteId = visitorLog.InstituteId
+                    };
+
+                    // Fetch documents related to the visitor
+                    string documentQuery = @"SELECT DocumentId, VisitorId, PdfDoc
+                                     FROM tblVisitorDocuments
+                                     WHERE VisitorId = @VisitorId";
+                    var documents = await _dbConnection.QueryAsync<VisitorDocumentResponse>(documentQuery, new { VisitorId = visitorLog.VisitorID });
+                    foreach(var item in documents)
+                    {
+                        item.PdfDoc = GetPDF(item.PdfDoc);
+                    }
+                    visitorLogResponse.VisitorDocuments = documents.ToList();
+
+                    return new ServiceResponse<Visitorlogresponse>(true, "Visitor Log Retrieved Successfully", visitorLogResponse, 200);
                 }
 
                 return new ServiceResponse<Visitorlogresponse>(false, "Visitor Log Not Found", null, 404);
@@ -146,7 +302,10 @@ namespace VisitorManagement_API.Repository.Implementations
             string fileExtension = IsJpeg(imageData) == true ? ".jpg" : IsPng(imageData) == true ? ".png" : IsGif(imageData) == true ? ".gif" : string.Empty;
             string fileName = Guid.NewGuid().ToString() + fileExtension;
             string filePath = Path.Combine(directoryPath, fileName);
-
+            if (string.IsNullOrEmpty(fileExtension))
+            {
+                throw new InvalidOperationException("Incorrect file uploaded");
+            }
             // Write the byte array to the image file
             File.WriteAllBytes(filePath, imageData);
             return filePath;
@@ -193,6 +352,10 @@ namespace VisitorManagement_API.Repository.Implementations
                 Directory.CreateDirectory(directoryPath);
             }
             string fileExtension = IsPdf(imageData) == true ? ".pdf" : string.Empty;
+            if (string.IsNullOrEmpty(fileExtension))
+            {
+                throw new InvalidOperationException("Incorrect file uploaded");
+            }
             string fileName = Guid.NewGuid().ToString() + fileExtension;
             string filePath = Path.Combine(directoryPath, fileName);
 
