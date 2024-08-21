@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using System;
 using System.Collections.Generic;
 
 namespace Lesson_API.DTOs.Requests
@@ -28,5 +29,12 @@ namespace Lesson_API.DTOs.Requests
         public string MainTeaching { get; set; }
         public string Conclusion { get; set; }
         public string Attachments { get; set; }
+        public List<documents> Documents { get; set; }
+    }
+    public class documents
+    {
+        public int DocumentsId { get; set; }
+        public int LessonPlanningInfoID { get; set; }
+        public string DocFile { get; set; } = string.Empty;
     }
 }

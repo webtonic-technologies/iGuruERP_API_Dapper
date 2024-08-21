@@ -13,5 +13,6 @@ namespace Lesson_API.Repository.Interfaces
         Task<ServiceResponse<List<GetAllAssignmentsResponse>>> GetAllAssignments(GetAllAssignmentsRequest request);
         Task<ServiceResponse<Assignment>> GetAssignmentById(int id);
         Task<ServiceResponse<bool>> DeleteAssignment(int id);
+        Task<ServiceResponse<byte[]>> DownloadDocument(int documentId);
     }
 }

@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using HostelManagement_API.Models;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using Microsoft.AspNetCore.Http.HttpResults;
+using System.Collections.Generic;
 
 namespace HostelManagement_API.DTOs.Requests
 {
@@ -16,5 +19,12 @@ namespace HostelManagement_API.DTOs.Requests
         public string Attachments { get; set; } // Path to the uploaded file
         public int InstituteID { get; set; }
         public bool IsActive { get; set; }
+        public List<HostelDocs>? HostelDocs { get; set; }
+    }
+    public class HostelDocs
+    {
+        public int DocumentsId { get; set; }
+        public int HostelId { get; set; }
+        public string DocFile { get; set; } = string.Empty;
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using HostelManagement_API.DTOs.Requests;
+using System.Collections.Generic;
 
 namespace HostelManagement_API.DTOs.Responses
 {
@@ -14,5 +15,6 @@ namespace HostelManagement_API.DTOs.Responses
         public string Block { get; set; }
         public string Building { get; set; }
         public string Floors { get; set; }
+        public List<HostelDocs>? HostelDocs { get; set; }
     }
 }

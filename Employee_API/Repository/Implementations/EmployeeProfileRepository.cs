@@ -541,6 +541,7 @@ namespace Employee_API.Repository.Implementations
                    ep.Middle_Name,
                    ep.Last_Name,
                    ep.Gender_id,
+                   g.Gender_Type as GenderName,
                    ep.Department_id,
                    ep.Designation_id,
                    ep.mobile_number,
@@ -573,6 +574,7 @@ namespace Employee_API.Repository.Implementations
             LEFT JOIN [dbo].[tbl_Religion] r ON ep.Religion_id = r.Religion_id
             LEFT JOIN [dbo].[tbl_MaritalStatus] ms ON ep.marrital_status_id = ms.statusId
             LEFT JOIN [dbo].[tbl_BloodGroup] bg ON ep.Blood_Group_id = bg.Blood_Group_id
+            LEFT JOIN tbl_Gender g on ep.Gender_id = g.Gender_id
             WHERE ep.Employee_id = @EmployeeId";
 
                 // Execute the query and retrieve the employee profile
@@ -610,7 +612,7 @@ namespace Employee_API.Repository.Implementations
                     response.ReligionName = employee.ReligionName;
                     response.MaritalStatusName = employee.MaritalStatusName;
                     response.BloodGroupName = employee.BloodGroupName;
-
+                    response.GenderName = employee.GenderName;
                     string famsql = @"SELECT Employee_family_id, Employee_id, Father_Name, Fathers_Occupation,
                                     Mother_Name, Mothers_Occupation, Spouse_Name, Spouses_Occupation,
                                     Guardian_Name, Guardians_Occupation, Primary_Emergency_Contact_no,
@@ -729,51 +731,51 @@ namespace Employee_API.Repository.Implementations
             try
             {
                 // Base SQL query with joins to fetch names including nationality and religion
-                string sql = @"
-            SELECT ep.Employee_id,
-                   ep.First_Name,
-                   ep.Middle_Name,
-                   ep.Last_Name,
-                   ep.Gender_id,
-                   ep.Department_id,
-                   ep.Designation_id,
-                   ep.mobile_number,
-                   ep.Date_of_Joining,
-                   ep.Nationality_id,
-                   ep.Religion_id,
-                   ep.Date_of_Birth,
-                   ep.EmailID,
-                   ep.Employee_code_id,
-                   ep.marrital_status_id,
-                   ep.Blood_Group_id,
-                   ep.aadhar_no,
-                   ep.pan_no,
-                   ep.EPF_no,
-                   ep.ESIC_no,
-                   ep.Institute_id,
-                   ep.EmpPhoto,
-                   ep.uan_no,
-                   ep.Status,
-                   d.DepartmentName,
-                   des.DesignationName,
-                   n.Nationality_Type as NationalityName,
-                   r.Religion_Type as ReligionName,
-                   ms.StatusName as MaritalStatusName,
-                   bg.Blood_Group_Type as BloodGroupName
-            FROM [dbo].[tbl_EmployeeProfileMaster] ep
-            LEFT JOIN [dbo].[tbl_Department] d ON ep.Department_id = d.Department_id
-            LEFT JOIN [dbo].[tbl_Designation] des ON ep.Designation_id = des.Designation_id
-            LEFT JOIN [dbo].[tbl_Nationality] n ON ep.Nationality_id = n.Nationality_id
-            LEFT JOIN [dbo].[tbl_Religion] r ON ep.Religion_id = r.Religion_id
-            LEFT JOIN [dbo].[tbl_MaritalStatus] ms ON ep.marrital_status_id = ms.statusId
-            LEFT JOIN [dbo].[tbl_BloodGroup] bg ON ep.Blood_Group_id = bg.Blood_Group_id
-            WHERE ep.Institute_id = @InstituteId";
+                string sql = @"SELECT DISTINCT ep.Employee_id, 
+                ep.First_Name, 
+                ep.Middle_Name, 
+                ep.Last_Name, 
+                ep.Gender_id, 
+                g.Gender_Type as GenderName, 
+                ep.Department_id, 
+                ep.Designation_id, 
+                ep.mobile_number, 
+                ep.Date_of_Joining, 
+                ep.Nationality_id, 
+                ep.Religion_id, 
+                ep.Date_of_Birth, 
+                ep.EmailID, 
+                ep.Employee_code_id, 
+                ep.marrital_status_id, 
+                ep.Blood_Group_id, 
+                ep.aadhar_no, 
+                ep.pan_no, 
+                ep.EPF_no, 
+                ep.ESIC_no, 
+                ep.Institute_id, 
+                ep.EmpPhoto, 
+                ep.uan_no, 
+                ep.Status, 
+                d.DepartmentName, 
+                des.DesignationName, 
+                n.Nationality_Type as NationalityName, 
+                r.Religion_Type as ReligionName, 
+                ms.StatusName as MaritalStatusName, 
+                bg.Blood_Group_Type as BloodGroupName 
+FROM [dbo].[tbl_EmployeeProfileMaster] ep 
+LEFT JOIN [dbo].[tbl_Department] d ON ep.Department_id = d.Department_id 
+LEFT JOIN [dbo].[tbl_Designation] des ON ep.Designation_id = des.Designation_id 
+LEFT JOIN [dbo].[tbl_Nationality] n ON ep.Nationality_id = n.Nationality_id 
+LEFT JOIN [dbo].[tbl_Religion] r ON ep.Religion_id = r.Religion_id 
+LEFT JOIN [dbo].[tbl_MaritalStatus] ms ON ep.marrital_status_id = ms.statusId 
+LEFT JOIN [dbo].[tbl_BloodGroup] bg ON ep.Blood_Group_id = bg.Blood_Group_id 
+LEFT JOIN tbl_Gender g on ep.Gender_id = g.Gender_id 
+WHERE ep.Institute_id = @InstituteId;
+";
 
-                // Initialize parameters
                 var parameters = new DynamicParameters();
                 parameters.Add("InstituteId", request.InstituteId);
 
-                // Conditionally apply filters
                 if (request.DepartmentId > 0)
                 {
                     sql += " AND ep.Department_id = @DepartmentId";
@@ -792,18 +794,18 @@ namespace Employee_API.Repository.Implementations
                     parameters.Add("SearchText", $"%{request.SearchText}%");
                 }
 
-                // Implement pagination
-                sql += " ORDER BY ep.Employee_id OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
-                parameters.Add("Offset", (request.PageNumber - 1) * request.PageSize);
-                parameters.Add("PageSize", request.PageSize);
-
-                // Execute the query and retrieve the list of employee profiles
                 var employees = await _connection.QueryAsync<EmployeeProfileResponseDTO>(sql, parameters);
 
-                // Check if any records were found
                 if (employees != null && employees.Any())
                 {
-                    return new ServiceResponse<List<EmployeeProfileResponseDTO>>(true, "Records found", employees.ToList(), 200);
+                    // Apply pagination manually using C# logic
+                    var paginatedEmployees = employees
+                        .Skip((request.PageNumber - 1) * request.PageSize)
+                        .Take(request.PageSize)
+                        .Distinct() // Ensure distinct records
+                        .ToList();
+
+                    return new ServiceResponse<List<EmployeeProfileResponseDTO>>(true, "Records found", paginatedEmployees, 200);
                 }
                 else
                 {
@@ -815,6 +817,7 @@ namespace Employee_API.Repository.Implementations
                 return new ServiceResponse<List<EmployeeProfileResponseDTO>>(false, ex.Message, new List<EmployeeProfileResponseDTO>(), 500);
             }
         }
+
         public async Task<ServiceResponse<List<EmployeeDocument>>> GetEmployeeDocuments(int employee_id)
         {
             try

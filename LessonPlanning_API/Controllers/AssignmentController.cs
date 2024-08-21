@@ -60,5 +60,39 @@ namespace Lesson_API.Controllers
             }
             return BadRequest(response);
         }
+        [HttpGet("download/{documentId}")]
+        public async Task<IActionResult> DownloadDocument(int documentId)
+        {
+            var response = await _assignmentService.DownloadDocument(documentId);
+            if (response.Success)
+            {
+                // Determine the MIME type based on the file extension
+                string fileExtension = Path.GetExtension(response.Message).ToLowerInvariant();
+                string mimeType;
+
+                switch (fileExtension)
+                {
+                    case ".pdf":
+                        mimeType = "application/pdf";
+                        break;
+                    case ".jpg":
+                    case ".jpeg":
+                        mimeType = "image/jpeg";
+                        break;
+                    case ".png":
+                        mimeType = "image/png";
+                        break;
+                    case ".gif":
+                        mimeType = "image/gif";
+                        break;
+                    default:
+                        mimeType = "application/octet-stream"; // Fallback for unknown types
+                        break;
+                }
+
+                return File(response.Data, mimeType, response.Message); // Use the original file name
+            }
+            return NotFound(response);
+        }
     }
 }

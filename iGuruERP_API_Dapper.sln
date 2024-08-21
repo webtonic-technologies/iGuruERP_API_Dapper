@@ -23,15 +23,17 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraryManagement_API", "Li
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HostelManagement_API", "HostelManagement_API\HostelManagement_API.csproj", "{3F08380E-60BD-49E7-A5F8-E59A3164DB65}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infirmary_API", "Infirmary_API\Infirmary_API.csproj", "{6F7BCD7E-6A9A-4645-A3B6-C3E1FC754A67}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Infirmary_API", "Infirmary_API\Infirmary_API.csproj", "{6F7BCD7E-6A9A-4645-A3B6-C3E1FC754A67}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LessonPlanning_API", "LessonPlanning_API\LessonPlanning_API.csproj", "{B38F7A8D-46B6-43EA-A36F-6ACFDD57B44E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LessonPlanning_API", "LessonPlanning_API\LessonPlanning_API.csproj", "{B38F7A8D-46B6-43EA-A36F-6ACFDD57B44E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProductUpdate_API", "ProductUpdate_API\ProductUpdate_API.csproj", "{E6FD4CCC-D332-4F0F-AB81-3B1B2B0F1FF2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProductUpdate_API", "ProductUpdate_API\ProductUpdate_API.csproj", "{E6FD4CCC-D332-4F0F-AB81-3B1B2B0F1FF2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SiteAdmin_API", "SiteAdmin_API\SiteAdmin_API.csproj", "{D98315AD-0359-4019-8330-D6B3A6C7A318}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SiteAdmin_API", "SiteAdmin_API\SiteAdmin_API.csproj", "{D98315AD-0359-4019-8330-D6B3A6C7A318}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UserRoleManagement_API", "UserRoleManagement_API\UserRoleManagement_API.csproj", "{1236A63D-8DE0-41B8-A7E1-2E200C550BFC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UserRoleManagement_API", "UserRoleManagement_API\UserRoleManagement_API.csproj", "{1236A63D-8DE0-41B8-A7E1-2E200C550BFC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FeesManagement_API", "FeesManagement_API\FeesManagement_API.csproj", "{95B09D4E-3864-4C4A-AB88-9FC05CA6D83A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -99,6 +101,10 @@ Global
 		{1236A63D-8DE0-41B8-A7E1-2E200C550BFC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1236A63D-8DE0-41B8-A7E1-2E200C550BFC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1236A63D-8DE0-41B8-A7E1-2E200C550BFC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{95B09D4E-3864-4C4A-AB88-9FC05CA6D83A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{95B09D4E-3864-4C4A-AB88-9FC05CA6D83A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{95B09D4E-3864-4C4A-AB88-9FC05CA6D83A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{95B09D4E-3864-4C4A-AB88-9FC05CA6D83A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

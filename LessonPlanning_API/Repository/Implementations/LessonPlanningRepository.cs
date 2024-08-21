@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
@@ -19,11 +20,13 @@ namespace Lesson_API.Repository.Implementations
     {
         private readonly IDbConnection _dbConnection;
         private readonly ILogger<LessonPlanningRepository> _logger;
+        private readonly IWebHostEnvironment _hostingEnvironment;
 
-        public LessonPlanningRepository(IConfiguration configuration, ILogger<LessonPlanningRepository> logger)
+        public LessonPlanningRepository(IConfiguration configuration, ILogger<LessonPlanningRepository> logger, IWebHostEnvironment hostingEnvironment)
         {
             _dbConnection = new SqlConnection(configuration.GetConnectionString("DefaultConnection"));
             _logger = logger;
+            _hostingEnvironment = hostingEnvironment;
         }
 
         public async Task<ServiceResponse<string>> AddUpdateLessonPlanning(LessonPlanningRequest request)
@@ -123,6 +126,7 @@ namespace Lesson_API.Repository.Implementations
                             info.Attachments
                         }, transaction);
                     }
+                    var docs = await AddUpdateDocuments(info.Documents, info.LessonPlanningInfoID);
                 }
 
                 transaction.Commit();
@@ -238,6 +242,10 @@ namespace Lesson_API.Repository.Implementations
                 if (lessonPlanning != null)
                 {
                     lessonPlanning.LessonPlanningInformation = (await multi.ReadAsync<LessonPlanningInformation>()).ToList();
+                    foreach(var data in lessonPlanning.LessonPlanningInformation)
+                    {
+                        data.Documents =  GetLessonPlanningDocuments(data.LessonPlanningInfoID);
+                    }
                 }
 
                 return new ServiceResponse<LessonPlanning>(lessonPlanning, lessonPlanning != null, lessonPlanning != null ? "Lesson Planning found." : "Lesson Planning not found.", 200, null);
@@ -248,7 +256,32 @@ namespace Lesson_API.Repository.Implementations
                 return new ServiceResponse<LessonPlanning>(null, false, "Operation failed: " + ex.Message, 500, null);
             }
         }
+        public async Task<ServiceResponse<int>> HardDeleteDocument(int documentId)
+        {
+            try
+            {
+                // SQL query to delete the document
+                string deleteSql = @"
+        DELETE FROM tblLessonDocuments 
+        WHERE DocumentsId = @DocumentsId";
 
+                // Execute the delete operation
+                int affectedRows = await _dbConnection.ExecuteAsync(deleteSql, new { DocumentsId = documentId });
+
+                if (affectedRows > 0)
+                {
+                    return new ServiceResponse<int>(affectedRows, true, "Document deleted successfully", 200);
+                }
+                else
+                {
+                    return new ServiceResponse<int>(0, false, "Document not found", 404);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(0, false, ex.Message, 500);
+            }
+        }
         public async Task<ServiceResponse<bool>> DeleteLessonPlanning(int id)
         {
             try
@@ -262,6 +295,127 @@ namespace Lesson_API.Repository.Implementations
             {
                 _logger.LogError(ex, "Error occurred while deleting lesson planning.");
                 return new ServiceResponse<bool>(false, false, "Operation failed: " + ex.Message, 500, null);
+            }
+        }
+        private async Task<ServiceResponse<int>> AddUpdateDocuments(List<documents> request, int lessonPlanningInfoID)
+        {
+            if (request == null || !request.Any())
+            {
+                return new ServiceResponse<int>(0, false, "No documents provided to update", 400);
+            }
+
+            try
+            {
+                // Step 1: Hard delete existing documents for the given LessonPlanningInfoID
+                string deleteSql = @"
+        DELETE FROM tblLessonDocuments 
+        WHERE LessonPlanningInfoID = @LessonPlanningInfoID"
+                ;
+
+                await _dbConnection.ExecuteAsync(deleteSql, new { LessonPlanningInfoID = lessonPlanningInfoID });
+
+                // Step 2: Insert new documents
+                string insertSql = @"
+        INSERT INTO tblLessonDocuments (LessonPlanningInfoID, DocFile)
+        VALUES (@LessonPlanningInfoID, @DocFile)";
+
+                foreach (var doc in request)
+                {
+                    doc.LessonPlanningInfoID = lessonPlanningInfoID; // Ensure the LessonPlanningInfoID is set for each document
+                    doc.DocFile = ImageUpload(doc.DocFile); // Assuming ImageUpload handles file uploads and returns the file path
+                    await _dbConnection.ExecuteAsync(insertSql, doc);
+                }
+
+                return new ServiceResponse<int>(request.Count, true, "Documents added/updated successfully", 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(0, false, ex.Message, 500);
+            }
+        }
+        private string ImageUpload(string image)
+        {
+            if (string.IsNullOrEmpty(image) || image == "string")
+            {
+                return string.Empty;
+            }
+            byte[] imageData = Convert.FromBase64String(image);
+            string directoryPath = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "LessonPlanning");
+
+            if (!Directory.Exists(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
+            string fileExtension = IsJpeg(imageData) == true ? ".jpg" : IsPng(imageData) == true ? ".png" : IsGif(imageData) == true ? ".gif" : IsPdf(imageData) == true ? ".pdf" : string.Empty;
+            string fileName = Guid.NewGuid().ToString() + fileExtension;
+            string filePath = Path.Combine(directoryPath, fileName);
+            if (string.IsNullOrEmpty(fileExtension))
+            {
+                throw new InvalidOperationException("Incorrect file uploaded");
+            }
+            // Write the byte array to the image file
+            File.WriteAllBytes(filePath, imageData);
+            return filePath;
+        }
+        private bool IsJpeg(byte[] bytes)
+        {
+            // JPEG magic number: 0xFF, 0xD8
+            return bytes.Length > 1 && bytes[0] == 0xFF && bytes[1] == 0xD8;
+        }
+        private bool IsPng(byte[] bytes)
+        {
+            // PNG magic number: 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A
+            return bytes.Length > 7 && bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47
+                && bytes[4] == 0x0D && bytes[5] == 0x0A && bytes[6] == 0x1A && bytes[7] == 0x0A;
+        }
+        private bool IsGif(byte[] bytes)
+        {
+            // GIF magic number: "GIF"
+            return bytes.Length > 2 && bytes[0] == 0x47 && bytes[1] == 0x49 && bytes[2] == 0x46;
+        }
+        private bool IsPdf(byte[] fileData)
+        {
+            return fileData.Length > 4 &&
+                   fileData[0] == 0x25 && fileData[1] == 0x50 && fileData[2] == 0x44 && fileData[3] == 0x46;
+        }
+        private string GetImage(string Filename)
+        {
+            var filePath = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "LessonPlanning", Filename);
+
+            if (!File.Exists(filePath))
+            {
+                return string.Empty;
+            }
+            byte[] fileBytes = File.ReadAllBytes(filePath);
+            string base64String = Convert.ToBase64String(fileBytes);
+            return base64String;
+        }
+        private List<documents> GetLessonPlanningDocuments(int lessonPlanningInfoID)
+        {
+            try
+            {
+                string sql = @"
+        SELECT DocumentsId, LessonPlanningInfoID, DocFile 
+        FROM tblLessonDocuments 
+        WHERE LessonPlanningInfoID = @LessonPlanningInfoID";
+
+                var documentsList =  _dbConnection.Query<documents>(sql, new { LessonPlanningInfoID = lessonPlanningInfoID });
+                foreach (var data in documentsList)
+                {
+                    data.DocFile = GetImage(data.DocFile);
+                }
+                if (documentsList != null && documentsList.Any())
+                {
+                    return documentsList.ToList();
+                }
+                else
+                {
+                    return [];
+                }
+            }
+            catch (Exception ex)
+            {
+                return [];
             }
         }
     }

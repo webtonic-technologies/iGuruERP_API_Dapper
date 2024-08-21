@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Lesson_API.DTOs.Requests;
+using System.Collections.Generic;
 
 namespace Lesson_API.Models
 {
@@ -13,5 +14,6 @@ namespace Lesson_API.Models
         public int InstituteID { get; set; }
         public bool IsActive { get; set; }
         public List<HomeworkClassSection> ClassSections { get; set; }
+        public List<HomeworkDocs> HomeworkDocs { get; set; }
     }
 }
