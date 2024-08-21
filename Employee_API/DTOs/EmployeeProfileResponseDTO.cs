@@ -62,5 +62,5 @@ namespace Employee_API.DTOs
         public string Pin_code { get; set; } = string.Empty;
         public int AddressTypeId { get; set; }
         public int Employee_id { get; set; }
-    }
+    }       
 }

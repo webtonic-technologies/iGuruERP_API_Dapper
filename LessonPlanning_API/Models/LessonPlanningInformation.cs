@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Lesson_API.DTOs.Requests;
+using System;
 
 namespace Lesson_API.Models
 {
@@ -15,5 +16,6 @@ namespace Lesson_API.Models
         public string MainTeaching { get; set; }
         public string Conclusion { get; set; }
         public string Attachments { get; set; }
+        public List<documents> Documents { get; set; }
     }
 }

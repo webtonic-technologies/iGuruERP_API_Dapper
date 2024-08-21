@@ -368,6 +368,10 @@ namespace Institute_API.Repository.Implementations
         {
             string query = "SELECT * FROM tbl_AcademicInfo WHERE Institute_id = @Institute_id";
             var academicInfos = await _connection.QueryAsync<AcademicInfo>(query, new { Institute_id = instituteId });
+            foreach (var data in academicInfos)
+            {
+                data.StatusName = data.Status == true ? "Active" : "InActive";
+            }
             return academicInfos.ToList();
         }
         private async Task<SemesterInfo> GetSemesterInfo(int instituteId)
