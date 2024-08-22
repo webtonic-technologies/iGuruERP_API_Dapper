@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Student_API.Helper;
+using System.ComponentModel.DataAnnotations;
 
 namespace Student_API.DTOs.RequestDTO
 {
@@ -21,24 +22,26 @@ namespace Student_API.DTOs.RequestDTO
         public string Admission_Number { get; set; }
         [MaxLength(20)]
         public string Roll_Number { get; set; }
-        public DateTime? Date_of_Joining { get; set; }
+        [ValidDateString("dd-MM-yyyy hh:mm tt")]
+        public string Date_of_Joining { get; set; }
         public int Academic_year_id { get; set; }
         [Required]
         public int? Nationality_id { get; set; }
         [Required]
         public int? Religion_id { get; set; }
         [Required]
-        public DateTime? Date_of_Birth { get; set; }
+        [ValidDateString("dd-MM-yyyy hh:mm tt")]
+        public string Date_of_Birth { get; set; }
         [Required]
         public int? Mother_Tongue_id { get; set; }
 
         public int? Caste_id { get; set; }
-        public string Medium { get; set; }
+        //public string Medium { get; set; }
         public int? Blood_Group_id { get; set; }
-        public int? App_User_id { get; set; }
+        //public int? App_User_id { get; set; }
         [MaxLength(20)]
         public string Aadhar_Number { get; set; }
-        public string NEP { get; set; }
+        public string PEN { get; set; }
         public string QR_code { get; set; }
         public bool IsPhysicallyChallenged { get; set; }
         public bool IsSports { get; set; }

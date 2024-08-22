@@ -12,7 +12,7 @@ namespace Student_API.Services.Implementations
         {
             _studentDocumentRepository = documentConfigRepository;
         }
-        public async Task<ServiceResponse<int>> AddUpdateStudentDocument(List<StudentDocumentConfigDTO> studentDocumentDto)
+        public async Task<ServiceResponse<int>> AddUpdateStudentDocument(List<StudentDocumentConfig> studentDocumentDto)
         {
             try
             {

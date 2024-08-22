@@ -21,11 +21,11 @@
         public string First_Language { get; set; }
         public string Second_Language { get; set; }
         public string Third_Language { get; set; }
-        public string Medium { get; set; }
+        //public string Medium { get; set; }
         public int? Blood_Group_id { get; set; }
-        public int? App_User_id { get; set; }
+        //public int? App_User_id { get; set; }
         public string Aadhar_Number { get; set; }
-        public string NEP { get; set; }
+        public string PEN { get; set; }
         public string QR_code { get; set; }
     }
 }
