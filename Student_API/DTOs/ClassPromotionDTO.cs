@@ -12,8 +12,8 @@
     {
         public int OldClassId { get; set; }
         public int NewClassId { get; set; }
-        public int OldSectionId { get; set; }
-        public int NewSectionId { get; set; }
+        //public int OldSectionId { get; set; }
+        //public int NewSectionId { get; set; }
     }
 
 }
