@@ -10,7 +10,7 @@
         public string SectionName { get; set; }
         public string GenderName { get; set; }
         public string ParentName { get; set; }
-        public DateTime RequestedDateTime { get; set; }
+        public string RequestedDateTime { get; set; }
         public string Reason { get; set; }
         public int Status { get; set; }
     }

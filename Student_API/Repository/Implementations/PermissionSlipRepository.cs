@@ -42,7 +42,7 @@ namespace Student_API.Repository.Implementations
                 sec.Section_name AS SectionName,
                 g.Gender_Type AS GenderName,
                 p.first_name + ' ' + p.last_name AS ParentName,
-                ps.RequestedDateTime,
+                FORMAT(ps.RequestedDateTime, 'dd-MM-yyyy HH:mm tt') AS RequestedDateTime ,
                 ps.Reason,
                 ps.Status,
                 ps.ModifiedDate

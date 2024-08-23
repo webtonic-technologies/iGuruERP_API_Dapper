@@ -150,16 +150,202 @@ namespace Student_API.Repository.Implementations
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
+        //public async Task<ServiceResponse<bool>> PromoteClasses(ClassPromotionDTO classPromotionDTO)
+        //{
+
+
+        //    if (_connection.State != ConnectionState.Open)
+        //        _connection.Open();
+        //    using (var transaction = _connection.BeginTransaction())
+        //    {
+        //        try
+        //        {
+        //            string tempTableQuery = @"
+        //    IF OBJECT_ID('tempdb..#TempPromotion') IS NOT NULL
+        //    DROP TABLE #TempPromotion;
+
+        //    CREATE TABLE #TempPromotion (
+        //        StudentId INT,
+        //        NewClassId INT,
+        //        NewSectionId INT
+        //    )";
+
+        //            await _connection.ExecuteAsync(tempTableQuery, transaction: transaction);
+
+        //            // Insert intermediate promotions into the temp table
+        //            foreach (var classSection in classPromotionDTO.ClassSections)
+        //            {
+        //                string insertTempQuery = @"
+        //        INSERT INTO #TempPromotion (StudentId, NewClassId, NewSectionId)
+        //        SELECT student_id, @NewClassId, @NewSectionId
+        //        FROM tbl_StudentMaster
+        //        WHERE class_id = @OldClassId AND section_id = @OldSectionId";
+
+        //                await _connection.ExecuteAsync(insertTempQuery, new
+        //                {
+        //                    NewClassId = classSection.NewClassId,
+        //                    NewSectionId = classSection.NewSectionId,
+        //                    OldClassId = classSection.OldClassId,
+        //                    OldSectionId = classSection.OldSectionId
+        //                }, transaction: transaction);
+        //            }
+
+        //            // Update the actual student master table
+        //            string updateQuery = @"
+        //    UPDATE SM
+        //    SET SM.class_id = TP.NewClassId, SM.section_id = TP.NewSectionId
+        //    FROM tbl_StudentMaster SM
+        //    INNER JOIN #TempPromotion TP ON SM.student_id = TP.StudentId";
+
+        //            await _connection.ExecuteAsync(updateQuery, transaction: transaction);
+
+
+        //            string logQuery = @"
+        //            INSERT INTO tbl_ClassPromotionLog ( UserId, IPAddress, PromotionDateTime,institute_id)
+        //            VALUES ( @UserId, @IPAddress, GETDATE(),@institute_id)";
+
+        //            await _connection.ExecuteAsync(logQuery, new
+        //            {
+        //                UserId = classPromotionDTO.UserId,
+        //                IPAddress = classPromotionDTO.IPAddress,
+        //                institute_id = classPromotionDTO.institute_id
+        //            }, transaction: transaction);
+        //            transaction.Commit();
+        //            return new ServiceResponse<bool>(true, "Classes promoted successfully", true, 200);
+        //        }
+
+        //        catch (Exception ex)
+        //        {
+        //            transaction.Rollback();
+        //            return new ServiceResponse<bool>(false, ex.Message, false, 500);
+        //        }
+        //    }
+        //}
+
+        //public async Task<ServiceResponse<bool>> PromoteClasses(ClassPromotionDTO classPromotionDTO)
+        //{
+        //    if (_connection.State != ConnectionState.Open)
+        //        _connection.Open();
+
+        //    using (var transaction = _connection.BeginTransaction())
+        //    {
+        //        try
+        //        {
+        //            foreach (var classSection in classPromotionDTO.ClassSections)
+        //            {
+        //                string classNameQuery = @"
+        //        SELECT class_name 
+        //        FROM tbl_Class 
+        //        WHERE class_id = @NewClassId";
+
+        //                string className = await _connection.QueryFirstOrDefaultAsync<string>(classNameQuery, new { NewClassId = classSection.NewClassId }, transaction: transaction);
+
+        //                // Validate if all sections from the old class are present in the new class
+        //                string oldSectionsQuery = @"
+        //        SELECT section_name 
+        //        FROM tbl_Section 
+        //        WHERE class_id = @OldClassId";
+
+        //                var oldSections = await _connection.QueryAsync<string>(oldSectionsQuery, new { OldClassId = classSection.OldClassId }, transaction: transaction);
+
+        //                string newSectionsQuery = @"
+        //        SELECT section_name 
+        //        FROM tbl_Section 
+        //        WHERE class_id = @NewClassId";
+
+        //                var newSections = await _connection.QueryAsync<string>(newSectionsQuery, new { NewClassId = classSection.NewClassId }, transaction: transaction);
+
+        //                var missingSections = oldSections.Except(newSections).ToList();
+
+        //                if (missingSections.Any())
+        //                {
+        //                    string missingSectionsMessage = $"The following sections are missing in the new class ({className}): {string.Join(", ", missingSections)}";
+        //                    return new ServiceResponse<bool>(false, missingSectionsMessage, false, 400);
+        //                }
+
+        //                // Proceed with promotion if validation passes
+        //                string sectionMappingQuery = @"
+        //        SELECT OS.student_id, OSec.section_id AS OldSectionId, NSec.section_id AS NewSectionId
+        //        FROM tbl_StudentMaster OS
+        //        INNER JOIN tbl_Section OSec ON OS.section_id = OSec.section_id
+        //        INNER JOIN tbl_Section NSec ON NSec.section_name = OSec.section_name
+        //        WHERE OS.class_id = @OldClassId AND NSec.class_id = @NewClassId AND OS.institute_id = @institute_id";
+
+        //                var sectionMappings = await _connection.QueryAsync<(int StudentId, int OldSectionId, int NewSectionId)>(
+        //                    sectionMappingQuery,
+        //                    new { OldClassId = classSection.OldClassId, NewClassId = classSection.NewClassId , institute_id  = classPromotionDTO.institute_id },
+        //                    transaction: transaction
+        //                );
+
+        //                string tempTableQuery = @"
+        //        IF OBJECT_ID('tempdb..#TempPromotion') IS NOT NULL
+        //        DROP TABLE #TempPromotion;
+
+        //        CREATE TABLE #TempPromotion (
+        //            StudentId INT,
+        //            NewClassId INT,
+        //            NewSectionId INT
+        //        )";
+
+        //                await _connection.ExecuteAsync(tempTableQuery, transaction: transaction);
+
+        //                string insertTempQuery = @"
+        //        INSERT INTO #TempPromotion (StudentId, NewClassId, NewSectionId)
+        //        VALUES (@StudentId, @NewClassId, @NewSectionId)";
+
+        //                foreach (var mapping in sectionMappings)
+        //                {
+        //                    await _connection.ExecuteAsync(insertTempQuery, new
+        //                    {
+        //                        StudentId = mapping.StudentId,
+        //                        NewClassId = classSection.NewClassId,
+        //                        NewSectionId = mapping.NewSectionId
+        //                    }, transaction: transaction);
+        //                }
+        //            }
+
+        //            // Update the actual student master table
+        //            string updateQuery = @"
+        //    UPDATE SM
+        //    SET SM.class_id = TP.NewClassId, SM.section_id = TP.NewSectionId
+        //    FROM tbl_StudentMaster SM
+        //    INNER JOIN #TempPromotion TP ON SM.student_id = TP.StudentId";
+
+        //            await _connection.ExecuteAsync(updateQuery, transaction: transaction);
+
+        //            // Log the promotion
+        //            string logQuery = @"
+        //    INSERT INTO tbl_ClassPromotionLog (UserId, IPAddress, PromotionDateTime, institute_id)
+        //    VALUES (@UserId, @IPAddress, GETDATE(), @institute_id)";
+
+        //            await _connection.ExecuteAsync(logQuery, new
+        //            {
+        //                UserId = classPromotionDTO.UserId,
+        //                IPAddress = classPromotionDTO.IPAddress,
+        //                institute_id = classPromotionDTO.institute_id
+        //            }, transaction: transaction);
+
+        //            transaction.Commit();
+        //            return new ServiceResponse<bool>(true, "Classes promoted successfully", true, 200);
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            transaction.Rollback();
+        //            return new ServiceResponse<bool>(false, ex.Message, false, 500);
+        //        }
+        //    }
+        //}
+
         public async Task<ServiceResponse<bool>> PromoteClasses(ClassPromotionDTO classPromotionDTO)
         {
-
-
             if (_connection.State != ConnectionState.Open)
                 _connection.Open();
+
             using (var transaction = _connection.BeginTransaction())
             {
                 try
                 {
+                    // Create the temporary table outside the loop
                     string tempTableQuery = @"
             IF OBJECT_ID('tempdb..#TempPromotion') IS NOT NULL
             DROP TABLE #TempPromotion;
@@ -172,25 +358,70 @@ namespace Student_API.Repository.Implementations
 
                     await _connection.ExecuteAsync(tempTableQuery, transaction: transaction);
 
-                    // Insert intermediate promotions into the temp table
                     foreach (var classSection in classPromotionDTO.ClassSections)
                     {
+                        // Query to get the class name for the new class
+                        string classNameQuery = @"
+                SELECT class_name 
+                FROM tbl_Class 
+                WHERE class_id = @NewClassId";
+
+                        string className = await _connection.QueryFirstOrDefaultAsync<string>(classNameQuery, new { NewClassId = classSection.NewClassId }, transaction: transaction);
+
+                        // Validate if all sections from the old class are present in the new class
+                        string oldSectionsQuery = @"
+                SELECT section_name 
+                FROM tbl_Section 
+                WHERE class_id = @OldClassId";
+
+                        var oldSections = await _connection.QueryAsync<string>(oldSectionsQuery, new { OldClassId = classSection.OldClassId }, transaction: transaction);
+
+                        string newSectionsQuery = @"
+                SELECT section_name 
+                FROM tbl_Section 
+                WHERE class_id = @NewClassId";
+
+                        var newSections = await _connection.QueryAsync<string>(newSectionsQuery, new { NewClassId = classSection.NewClassId }, transaction: transaction);
+
+                        var missingSections = oldSections.Except(newSections).ToList();
+
+                        if (missingSections.Any())
+                        {
+                            string missingSectionsMessage = $"The following sections are missing in the new class ({className}): {string.Join(", ", missingSections)}";
+                            return new ServiceResponse<bool>(false, missingSectionsMessage, false, 400);
+                        }
+
+                        // Proceed with promotion if validation passes
+                        string sectionMappingQuery = @"
+                SELECT OS.student_id, OSec.section_id AS OldSectionId, NSec.section_id AS NewSectionId
+                FROM tbl_StudentMaster OS
+                INNER JOIN tbl_Section OSec ON OS.section_id = OSec.section_id
+                INNER JOIN tbl_Section NSec ON NSec.section_name = OSec.section_name
+                WHERE OS.class_id = @OldClassId AND NSec.class_id = @NewClassId";
+
+                        var sectionMappings = await _connection.QueryAsync<(int StudentId, int OldSectionId, int NewSectionId)>(
+                            sectionMappingQuery,
+                            new { OldClassId = classSection.OldClassId, NewClassId = classSection.NewClassId },
+                            transaction: transaction
+                        );
+
+                        // Insert data into the temporary table
                         string insertTempQuery = @"
                 INSERT INTO #TempPromotion (StudentId, NewClassId, NewSectionId)
-                SELECT student_id, @NewClassId, @NewSectionId
-                FROM tbl_StudentMaster
-                WHERE class_id = @OldClassId AND section_id = @OldSectionId";
+                VALUES (@StudentId, @NewClassId, @NewSectionId)";
 
-                        await _connection.ExecuteAsync(insertTempQuery, new
+                        foreach (var mapping in sectionMappings)
                         {
-                            NewClassId = classSection.NewClassId,
-                            NewSectionId = classSection.NewSectionId,
-                            OldClassId = classSection.OldClassId,
-                            OldSectionId = classSection.OldSectionId
-                        }, transaction: transaction);
+                            await _connection.ExecuteAsync(insertTempQuery, new
+                            {
+                                StudentId = mapping.StudentId,
+                                NewClassId = classSection.NewClassId,
+                                NewSectionId = mapping.NewSectionId
+                            }, transaction: transaction);
+                        }
                     }
 
-                    // Update the actual student master table
+                    // Update the actual student master table after accumulating all data
                     string updateQuery = @"
             UPDATE SM
             SET SM.class_id = TP.NewClassId, SM.section_id = TP.NewSectionId
@@ -199,10 +430,10 @@ namespace Student_API.Repository.Implementations
 
                     await _connection.ExecuteAsync(updateQuery, transaction: transaction);
 
-
+                    // Log the promotion
                     string logQuery = @"
-                    INSERT INTO tbl_ClassPromotionLog ( UserId, IPAddress, PromotionDateTime,institute_id)
-                    VALUES ( @UserId, @IPAddress, GETDATE(),@institute_id)";
+            INSERT INTO tbl_ClassPromotionLog (UserId, IPAddress, PromotionDateTime, institute_id)
+            VALUES (@UserId, @IPAddress, GETDATE(), @institute_id)";
 
                     await _connection.ExecuteAsync(logQuery, new
                     {
@@ -210,10 +441,10 @@ namespace Student_API.Repository.Implementations
                         IPAddress = classPromotionDTO.IPAddress,
                         institute_id = classPromotionDTO.institute_id
                     }, transaction: transaction);
+
                     transaction.Commit();
                     return new ServiceResponse<bool>(true, "Classes promoted successfully", true, 200);
                 }
-
                 catch (Exception ex)
                 {
                     transaction.Rollback();
@@ -221,6 +452,8 @@ namespace Student_API.Repository.Implementations
                 }
             }
         }
+
+
         public async Task<ServiceResponse<List<ClassPromotionLogDTO>>> GetClassPromotionLog(GetClassPromotionLogParam obj)
         {
             try

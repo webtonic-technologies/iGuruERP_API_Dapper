@@ -55,7 +55,7 @@ namespace Student_API.Repository.Implementations
             INTO #StudentTypeWiseCount
             FROM tbl_StudentOtherInfo s
             JOIN tbl_StudentMaster sm ON sm.student_id = s.student_id
-            JOIN tbl_StudentType st ON s.StudentType_Id = st.Student_Type_id 
+            JOIN tbl_StudentType st ON sm.StudentType_Id = st.Student_Type_id 
             WHERE sm.Institute_id = @Institute_id
             GROUP BY st.Student_Type_Name;
 
