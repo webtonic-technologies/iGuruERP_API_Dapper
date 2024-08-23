@@ -46,8 +46,8 @@ namespace Institute_API.Repository.Implementations
                     else
                     {
                         holidayQuery = @"
-                    INSERT INTO [dbo].[tbl_Holiday] (HolidayName, StartDate, EndDate, Description,Institute_id,Academic_year_id)
-                    VALUES (@HolidayName, @StartDate, @EndDate, @Description,@Institute_id,@Academic_year_id);
+                    INSERT INTO [dbo].[tbl_Holiday] (HolidayName, StartDate, EndDate, Description,Institute_id,Academic_year_id,CreatedBy,CreatedTime)
+                    VALUES (@HolidayName, @StartDate, @EndDate, @Description,@Institute_id,@Academic_year_id,@CreatedBy,GETDATE());
                     SELECT SCOPE_IDENTITY();
                 ";
                     }
@@ -61,7 +61,8 @@ namespace Institute_API.Repository.Implementations
                         holidayDTO.Description,
                         holidayDTO.Institute_id,
                         holidayDTO.Academic_year_id,
-                        holidayDTO.Holiday_id
+                        holidayDTO.Holiday_id,
+                        holidayDTO.CreatedBy
                     }, transaction);
 
                     // Insert or update class session mappings
