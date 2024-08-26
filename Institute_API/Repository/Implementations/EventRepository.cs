@@ -243,6 +243,25 @@ namespace Institute_API.Repository.Implementations
                             }
                         }
 
+                        if (eventDto.AttachmentFile != null && eventDto.AttachmentFile.Any())
+                        {
+                            // Delete existing attachments
+                            string deleteAttachmentsQuery = @"
+                    DELETE FROM [dbo].[tbl_EventFileMapping]
+                    WHERE Event_id = @Event_id";
+                            await _connection.ExecuteAsync(deleteAttachmentsQuery, new { Event_id = insertedEventId }, transaction);
+
+                            // Insert new attachments
+                            string insertAttachmentsQuery = @"
+                    INSERT INTO [dbo].[tbl_EventFileMapping] (Event_id, attachment)
+                    VALUES (@Event_id, @attachment)";
+
+                            foreach (var file in eventDto.AttachmentFile)
+                            {
+                                await _connection.ExecuteAsync(insertAttachmentsQuery, new { Event_id = insertedEventId, attachment = file }, transaction);
+                            }
+                        }
+
                         // Commit the transaction if all operations succeed
                         transaction.Commit();
 
@@ -288,6 +307,18 @@ namespace Institute_API.Repository.Implementations
                         //    string deleteEventQuery = @"
                         //DELETE FROM [dbo].[tbl_CreateEvent]
                         //WHERE Event_id = @eventId";
+
+                        string query1 = @"
+                         SELECT COUNT(0)
+                         FROM [dbo].[tbl_Gallery]
+                         WHERE Event_id = @eventId";
+
+                        int count = await _connection.ExecuteScalarAsync<int>(query1, new { eventId });
+
+                        if (count > 0)
+                        {
+                            return new ServiceResponse<bool>(false, "There is a dependency in gallery documents, so it cannot be deleted.", false, 400);
+                        }
 
                         string deleteEventQuery = @"UPDATE tbl_CreateEvent SET isDelete = 1 WHERE Event_id = @eventId";
                         await _connection.ExecuteAsync(deleteEventQuery, new { eventId }, transaction);
@@ -360,16 +391,16 @@ namespace Institute_API.Repository.Implementations
                 return new ServiceResponse<EventDTO>(false, ex.Message, null, 500);
             }
         }
-        public async Task<ServiceResponse<bool>> ToggleEventActiveStatus(int eventId, bool isActive, int UserId)
+        public async Task<ServiceResponse<bool>> ToggleEventActiveStatus(int eventId, int Status, int UserId)
         {
             try
             {
                 string query = @"
             UPDATE tbl_CreateEvent
-            SET isApproved = @IsActive , approvedBy = @UserId
+            SET Status = @Status , approvedBy = @UserId
             WHERE Event_id = @EventId";
 
-                int rowsAffected = await _connection.ExecuteAsync(query, new { IsActive = isActive, EventId = eventId, UserId = UserId });
+                int rowsAffected = await _connection.ExecuteAsync(query, new { Status = Status, EventId = eventId, UserId = UserId });
 
                 if (rowsAffected > 0)
                 {
@@ -385,7 +416,7 @@ namespace Institute_API.Repository.Implementations
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
-        public async Task<ServiceResponse<List<EventDTO>>> GetApprovedEvents(int Institute_id, int Academic_year_id, string sortColumn, string sortDirection, int? pageSize = null, int? pageNumber = null)
+        public async Task<ServiceResponse<List<EventDTO>>> GetApprovedEvents(int Institute_id, int Academic_year_id,int Status, string sortColumn, string sortDirection, int? pageSize = null, int? pageNumber = null)
         {
             try
             {
@@ -420,12 +451,12 @@ namespace Institute_API.Repository.Implementations
            Location,
            AttachmentFile
     FROM tbl_CreateEvent 
-    WHERE  isApproved = 1 AND  isDelete = 0 AND Institute_id = @Institute_id AND (@Academic_year_id = 0 OR Academic_year_id=@Academic_year_id)";
+    WHERE  isApproved = 1 AND  Status = @Status AND isDelete = 0 AND Institute_id = @Institute_id AND (@Academic_year_id = 0 OR Academic_year_id=@Academic_year_id)";
 
                 string queryCount = @"
     SELECT COUNT(*)
     FROM tbl_CreateEvent 
-    WHERE  isApproved = 1 AND isDelete = 0 AND Institute_id = @Institute_id AND (@Academic_year_id = 0 OR Academic_year_id=@Academic_year_id)";
+    WHERE  isApproved = 1 AND Status = @Status AND isDelete = 0 AND Institute_id = @Institute_id AND (@Academic_year_id = 0 OR Academic_year_id=@Academic_year_id)";
 
                 List<EventDTO> events;
                 int totalRecords = 0;
@@ -443,7 +474,7 @@ namespace Institute_API.Repository.Implementations
 
         {queryCount}";
 
-                    using (var multi = await _connection.QueryMultipleAsync(queryPaginated, new { Offset = offset, PageSize = pageSize, Institute_id = Institute_id, Academic_year_id = Academic_year_id }))
+                    using (var multi = await _connection.QueryMultipleAsync(queryPaginated, new { Offset = offset, PageSize = pageSize, Institute_id = Institute_id, Academic_year_id = Academic_year_id , Status  = Status }))
                     {
                         events = multi.Read<EventDTO>().ToList();
                         totalRecords = multi.ReadSingle<int>();

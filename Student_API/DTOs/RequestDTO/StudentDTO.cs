@@ -22,7 +22,7 @@ namespace Student_API.DTOs.RequestDTO
         public string Admission_Number { get; set; }
         [MaxLength(20)]
         public string Roll_Number { get; set; }
-        [ValidDateString("dd-MM-yyyy hh:mm tt")]
+        [ValidDateString("dd-MM-yyyy")]
         public string Date_of_Joining { get; set; }
         public int Academic_year_id { get; set; }
         [Required]
@@ -30,7 +30,7 @@ namespace Student_API.DTOs.RequestDTO
         [Required]
         public int? Religion_id { get; set; }
         [Required]
-        [ValidDateString("dd-MM-yyyy hh:mm tt")]
+        [ValidDateString("dd-MM-yyyy")]
         public string Date_of_Birth { get; set; }
         [Required]
         public int? Mother_Tongue_id { get; set; }
@@ -52,6 +52,7 @@ namespace Student_API.DTOs.RequestDTO
         public string? File_Name { get; set; }
         public int Institute_id { get; set; }
         public int Student_House_id { get; set; }
+        public int StudentType_id { get; set; }
         public StudentOtherInfos StudentOtherInfos { get; set; }
         public List<StudentParentInfo> studentParentInfos { get; set; } 
         public List<StudentSibling> studentSiblings { get; set; } 

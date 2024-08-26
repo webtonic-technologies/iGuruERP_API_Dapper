@@ -17,10 +17,10 @@ namespace Attendance_API.Controllers
             _shiftTimingService = shiftTimingService;
         }
 
-        [HttpPost("AddShiftTimingAndDesignations")]
-        public async Task<IActionResult> AddShiftTimingAndDesignations([FromBody] ShiftTimingRequestDTO request)
+        [HttpPost("AddOrEditShiftTimingsAndDesignations")]
+        public async Task<IActionResult> AddOrEditShiftTimingsAndDesignations([FromBody] List<ShiftTimingRequestDTO> request)
         {
-            var result = await _shiftTimingService.AddOrEditShiftTimingsAndDesignations(new List<ShiftTimingRequestDTO> { request });
+            var result = await _shiftTimingService.AddOrEditShiftTimingsAndDesignations(request );
             if (result.Success)
                 return Ok(result);
             else
