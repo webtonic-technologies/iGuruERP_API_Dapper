@@ -5,6 +5,7 @@ using System.Data;
 using Dapper;
 using Institute_API.Models;
 using System.Text;
+using static Institute_API.Models.Enums;
 
 namespace Institute_API.Repository.Implementations
 {
@@ -91,6 +92,11 @@ namespace Institute_API.Repository.Implementations
         {
             try
             {
+
+                if (!Enum.IsDefined(typeof(Status_Enum), Status))
+                {
+                    return new ServiceResponse<bool>(false, "Invalid status value", false, 400);
+                }
                 string query = @"
                 UPDATE [dbo].[tbl_Gallery]
                 SET Status = @Status , approvedBy = @UserId
