@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Logging;
 using System.Data;
 using System.Data.Common;
+using static Institute_API.Models.Enums;
 
 namespace Institute_API.Repository.Implementations
 {
@@ -167,10 +168,11 @@ namespace Institute_API.Repository.Implementations
                             eventQuery = @"
                     INSERT INTO [dbo].[tbl_CreateEvent] (EventName, StartDate, EndDate, Description, Location, ScheduleTime, Time, AttachmentFile, Institute_id, Academic_year_id,CreatedBy,CreatedTime)
                     VALUES (@EventName, @StartDate, @EndDate, @Description, @Location, @ScheduleDate, @ScheduleTime, @AttachmentFile, @Institute_id, @Academic_year_id,@CreatedBy,GETDATE());
-                    SELECT SCOPE_IDENTITY();";  
+                    SELECT SCOPE_IDENTITY();";
                         }
                         int insertedEventId = await _connection.ExecuteScalarAsync<int>(eventQuery, new
                         {
+                            eventDto.Event_id,
                             eventDto.EventName,
                             StartDate,
                             EndDate,
@@ -184,10 +186,15 @@ namespace Institute_API.Repository.Implementations
                             eventDto.CreatedBy
                         }, transaction);
 
+                        if (eventDto.Event_id > 0)
+                        {
+                            insertedEventId = eventDto.Event_id;
+                        }
+
                         // Retrieve existing Employee Mappings
                         var existingEmployeeMappings = await _connection.QueryAsync<int>(
-                            "SELECT Employee_id FROM [dbo].[tbl_EventEmployeeMapping] WHERE Event_id = @Event_id",
-                            new { Event_id = insertedEventId }, transaction);
+                        "SELECT Employee_id FROM [dbo].[tbl_EventEmployeeMapping] WHERE Event_id = @Event_id",
+                        new { Event_id = insertedEventId }, transaction);
 
                         // Delete removed Employee Mappings
                         var employeeIdsToDelete = existingEmployeeMappings.Except(eventDto.EmployeeMappings.Select(x => x.Employee_id)).ToList();
@@ -313,10 +320,11 @@ namespace Institute_API.Repository.Implementations
                          FROM [dbo].[tbl_Gallery]
                          WHERE Event_id = @eventId";
 
-                        int count = await _connection.ExecuteScalarAsync<int>(query1, new { eventId });
+                        int count = await _connection.ExecuteScalarAsync<int>(query1, new { eventId }, transaction);
 
                         if (count > 0)
                         {
+                            transaction.Rollback();
                             return new ServiceResponse<bool>(false, "There is a dependency in gallery documents, so it cannot be deleted.", false, 400);
                         }
 
@@ -395,6 +403,11 @@ namespace Institute_API.Repository.Implementations
         {
             try
             {
+                if (!Enum.IsDefined(typeof(Status_Enum), Status))
+                {
+                    return new ServiceResponse<bool>(false, "Invalid status value", false, 400);
+                }
+
                 string query = @"
             UPDATE tbl_CreateEvent
             SET Status = @Status , approvedBy = @UserId
@@ -416,7 +429,7 @@ namespace Institute_API.Repository.Implementations
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
-        public async Task<ServiceResponse<List<EventDTO>>> GetApprovedEvents(int Institute_id, int Academic_year_id,int Status, string sortColumn, string sortDirection, int? pageSize = null, int? pageNumber = null)
+        public async Task<ServiceResponse<List<EventDTO>>> GetApprovedEvents(int Institute_id, int Academic_year_id, int Status, string sortColumn, string sortDirection, int? pageSize = null, int? pageNumber = null)
         {
             try
             {
@@ -474,7 +487,7 @@ namespace Institute_API.Repository.Implementations
 
         {queryCount}";
 
-                    using (var multi = await _connection.QueryMultipleAsync(queryPaginated, new { Offset = offset, PageSize = pageSize, Institute_id = Institute_id, Academic_year_id = Academic_year_id , Status  = Status }))
+                    using (var multi = await _connection.QueryMultipleAsync(queryPaginated, new { Offset = offset, PageSize = pageSize, Institute_id = Institute_id, Academic_year_id = Academic_year_id, Status = Status }))
                     {
                         events = multi.Read<EventDTO>().ToList();
                         totalRecords = multi.ReadSingle<int>();
