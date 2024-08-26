@@ -320,10 +320,11 @@ namespace Institute_API.Repository.Implementations
                          FROM [dbo].[tbl_Gallery]
                          WHERE Event_id = @eventId";
 
-                        int count = await _connection.ExecuteScalarAsync<int>(query1, new { eventId });
+                        int count = await _connection.ExecuteScalarAsync<int>(query1, new { eventId }, transaction);
 
                         if (count > 0)
                         {
+                            transaction.Rollback();
                             return new ServiceResponse<bool>(false, "There is a dependency in gallery documents, so it cannot be deleted.", false, 400);
                         }
 
