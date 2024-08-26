@@ -57,6 +57,26 @@ namespace Student_API.Controllers
             }
             return StatusCode(response.StatusCode, response);
         }
+        [HttpPost("AddPermissionSlip")]
+        public async Task<IActionResult> AddPermissionSlip(PermissionSlip obj)
+        {
+            var response = await _permissionSlipService.AddPermissionSlip(obj);
+            if (response.Success)
+            {
+                return Ok(response);
+            }
+            return StatusCode(response.StatusCode, response);
+        }
 
+        [HttpGet("GetPermissionSlipById")]
+        public async Task<IActionResult> GetPermissionSlipById(int permissionSlipId)
+        {
+            var response = await _permissionSlipService.GetPermissionSlipById(permissionSlipId);
+            if (response.Success)
+            {
+                return Ok(response);
+            }
+            return StatusCode(response.StatusCode, response);
+        }
     }
 }
