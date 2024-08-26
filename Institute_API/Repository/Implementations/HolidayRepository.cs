@@ -5,6 +5,7 @@ using Institute_API.Helper;
 using Institute_API.Repository.Interfaces;
 using System.Data;
 using System.Data.Common;
+using static Institute_API.Models.Enums;
 
 namespace Institute_API.Repository.Implementations
 {
@@ -375,6 +376,11 @@ namespace Institute_API.Repository.Implementations
         {
             try
             {
+
+                if (!Enum.IsDefined(typeof(Status_Enum), Status))
+                {
+                    return new ServiceResponse<bool>(false, "Invalid status value", false, 400);
+                }
                 string query = @"
             UPDATE [dbo].[tbl_Holiday]
             SET Status = @Status,

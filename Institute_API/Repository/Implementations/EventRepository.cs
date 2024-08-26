@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Logging;
 using System.Data;
 using System.Data.Common;
+using static Institute_API.Models.Enums;
 
 namespace Institute_API.Repository.Implementations
 {
@@ -401,6 +402,11 @@ namespace Institute_API.Repository.Implementations
         {
             try
             {
+                if (!Enum.IsDefined(typeof(Status_Enum), Status))
+                {
+                    return new ServiceResponse<bool>(false, "Invalid status value", false, 400);
+                }
+
                 string query = @"
             UPDATE tbl_CreateEvent
             SET Status = @Status , approvedBy = @UserId
