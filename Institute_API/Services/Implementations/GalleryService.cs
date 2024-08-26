@@ -68,7 +68,7 @@ namespace Institute_API.Services.Implementations
         {
             try
             {
-                var response = await _galleryRepository.GetApprovedImagesByEvent(model.Institute_id, model.pageSize, model.pageNumber);
+                var response = await _galleryRepository.GetApprovedImagesByEvent(model.Institute_id, model.Status ,model.pageSize, model.pageNumber);
                 if (response.Success)
                 {
                     foreach (var galleryEvent in response.Data)
@@ -107,11 +107,11 @@ namespace Institute_API.Services.Implementations
                 return new ServiceResponse<List<GalleryEventDTO>>(false, ex.Message, null, 500);
             }
         }
-        public async Task<ServiceResponse<bool>> UpdateGalleryImageApprovalStatus(int galleryId, bool isApproved, int userId)
+        public async Task<ServiceResponse<bool>> UpdateGalleryImageApprovalStatus(int galleryId, int Status, int userId)
         {
             try
             {
-                var data = await _galleryRepository.UpdateGalleryImageApprovalStatus(galleryId, isApproved, userId);
+                var data = await _galleryRepository.UpdateGalleryImageApprovalStatus(galleryId, Status, userId);
                 return data;
             }
             catch (Exception ex)

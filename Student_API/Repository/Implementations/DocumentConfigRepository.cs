@@ -62,7 +62,7 @@ namespace Student_API.Repository.Implementations
                 string query = @"
         SELECT Student_Document_id, Student_Document_Name, FORMAT([en_date], 'dd-MM-yyyy HH:mm tt') AS en_date,Institute_id
         FROM [dbo].[tbl_StudentDocumentMaster]
-        WHERE Student_Document_id = @DocumentConfigtId";
+        WHERE Student_Document_id = @DocumentConfigtId AND  ISNULL(isDelete,0) = 0 ";
 
                 var studentDocument = await _connection.QuerySingleOrDefaultAsync<StudentDocumentConfigDTO>(query, new { DocumentConfigtId });
 
@@ -85,6 +85,19 @@ namespace Student_API.Repository.Implementations
 
                 try
                 {
+                    string query1 = @"
+                         SELECT COUNT(0)
+                         FROM [dbo].[tbl_DocManager]
+                         WHERE document_id = @studentDocumentId";
+
+                    int count = await _connection.ExecuteScalarAsync<int>(query1, new { studentDocumentId });
+
+                    if (count > 0)
+                    {
+                        return new ServiceResponse<bool>(false, "There is a dependency in student documents, so it cannot be deleted.", false, 400);
+                    }
+
+
                     string query = @"
                 Update  [dbo].[tbl_StudentDocumentMaster]
                 SET isDelete = 1
@@ -106,15 +119,15 @@ namespace Student_API.Repository.Implementations
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
-        public async Task<ServiceResponse<List<StudentDocumentConfigDTO>>> GetAllStudentDocuments(int Institute_id,string sortColumn, string sortDirection, int? pageSize = null, int? pageNumber = null)
+        public async Task<ServiceResponse<List<StudentDocumentConfigDTO>>> GetAllStudentDocuments(int Institute_id, string sortColumn, string sortDirection, int? pageSize = null, int? pageNumber = null)
         {
             try
             {
                 // List of valid sortable columns
                 var validSortColumns = new Dictionary<string, string>
-        {
-            { "Document_Name", "Student_Document_Name" },
-            { "Created", "en_date" }
+        { 
+            { "Student_Document_Name", "Student_Document_Name" },
+            { "en_date", "en_date" }
         };
 
                 // Ensure the sort column is valid, default to "Student_Document_Name" if not

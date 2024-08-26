@@ -69,10 +69,10 @@ namespace Student_API.DTOs.RequestDTO
         public string Identification_Mark_1 { get; set; }
         [MaxLength(30)]
         public string Identification_Mark_2 { get; set; }
-        [ValidDateString("dd-MM-yyyy hh:mm tt")]
+        [ValidDateString("dd-MM-yyyy")]
         public string Admission_Date { get; set; }
       
-        [ValidDateString("dd-MM-yyyy hh:mm tt")]
+        [ValidDateString("dd-MM-yyyy")]
         public string Register_Date { get; set; }
         [MaxLength(30)]
         public string Register_Number { get; set; }
@@ -107,7 +107,7 @@ namespace Student_API.DTOs.RequestDTO
         public string Family_Ration_Card_Type { get; set; }
         [MaxLength(30)]
         public string Family_Ration_Card_no { get; set; }
-        [ValidDateString("dd-MM-yyyy hh:mm tt")]
+        [ValidDateString("dd-MM-yyyy")]
         public string Date_of_Birth { get; set; }
         [MaxLength(20)]
         public string Aadhar_no { get; set; }
@@ -163,7 +163,7 @@ namespace Student_API.DTOs.RequestDTO
         public string Middle_Name { get; set; }
         [MaxLength(30)]
         public string Admission_Number { get; set; }
-        [ValidDateString("dd-MM-yyyy hh:mm tt")]
+        [ValidDateString("dd-MM-yyyy")]
         public string Date_of_Birth { get; set; }
         public string Class { get; set; }
         public string section  { get; set; }
@@ -190,7 +190,7 @@ namespace Student_API.DTOs.RequestDTO
         public string Previous_Class { get; set; }
         [MaxLength(50)]
         public string TC_number { get; set; }
-        [ValidDateString("dd-MM-yyyy hh:mm tt")]
+        [ValidDateString("dd-MM-yyyy")]
         public string TC_date { get; set; }
         public bool isTC_Submitted { get; set; }
     }

@@ -239,7 +239,7 @@ namespace Institute_API.Repository.Implementations
         }
 
 
-        public async Task<ServiceResponse<List<HolidayDTO>>> GetApprovedHolidays(int Institute_id, int Academic_year_id, string sortColumn, string sortDirection, int? pageSize = null, int? pageNumber = null)
+        public async Task<ServiceResponse<List<HolidayDTO>>> GetApprovedHolidays(int Institute_id, int Academic_year_id, int Status,string sortColumn, string sortDirection, int? pageSize = null, int? pageNumber = null)
         {
             try
             {
@@ -268,12 +268,12 @@ namespace Institute_API.Repository.Implementations
                 string queryAll = @"
     SELECT Holiday_id, HolidayName, StartDate, EndDate, Description, IsApproved, ApprovedBy, Institute_id
     FROM [dbo].[tbl_Holiday]
-    WHERE IsApproved = 1 AND Institute_id = @Institute_id AND isDelete = 0 AND (@Academic_year_id = 0 OR Academic_year_id = @Academic_year_id)";
+    WHERE IsApproved = 1 AND Status =@Status AND Institute_id = @Institute_id AND isDelete = 0 AND (@Academic_year_id = 0 OR Academic_year_id = @Academic_year_id)";
 
                 string queryCount = @"
     SELECT COUNT(*)
     FROM [dbo].[tbl_Holiday]
-    WHERE IsApproved = 1 AND Institute_id = @Institute_id AND isDelete = 0 AND (@Academic_year_id = 0 OR Academic_year_id = @Academic_year_id)";
+    WHERE IsApproved = 1 AND Status =@Status AND  Institute_id = @Institute_id AND isDelete = 0 AND (@Academic_year_id = 0 OR Academic_year_id = @Academic_year_id)";
 
                 List<HolidayDTO> holidays;
                 int totalRecords = 0;
@@ -370,18 +370,18 @@ namespace Institute_API.Repository.Implementations
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
-        public async Task<ServiceResponse<bool>> UpdateHolidayApprovalStatus(int holidayId, bool isApproved, int approvedBy)
+        public async Task<ServiceResponse<bool>> UpdateHolidayApprovalStatus(int holidayId, int Status, int approvedBy)
         {
             try
             {
                 string query = @"
             UPDATE [dbo].[tbl_Holiday]
-            SET IsApproved = @IsApproved,
+            SET Status = @Status,
                 ApprovedBy = @ApprovedBy
             WHERE Holiday_id = @HolidayId;
         ";
 
-                int affectedRows = await _connection.ExecuteAsync(query, new { IsApproved = isApproved, ApprovedBy = approvedBy, HolidayId = holidayId });
+                int affectedRows = await _connection.ExecuteAsync(query, new { Status = Status, ApprovedBy = approvedBy, HolidayId = holidayId });
 
                 if (affectedRows > 0)
                 {

@@ -90,7 +90,7 @@ namespace Institute_API.Controllers
         {
             try
             {
-                var response = await _holidayService.UpdateHolidayApprovalStatus(request.holidayId, request.IsApproved, request.ApprovedBy);
+                var response = await _holidayService.UpdateHolidayApprovalStatus(request.holidayId, request.Status, request.ApprovedBy);
                 return StatusCode(response.StatusCode, response);
             }
             catch (Exception ex)

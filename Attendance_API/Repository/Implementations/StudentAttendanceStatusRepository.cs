@@ -126,6 +126,20 @@ namespace Attendance_API.Repository.Implementations
         {
             try
             {
+
+
+                string query1 = @"
+                         SELECT COUNT(0)
+                         FROM [dbo].[tbl_StudentAttendanceMaster]
+                         WHERE Student_Attendance_Status_id = @Student_Attendance_Status_id"
+          ;
+
+                int count = await _connection.ExecuteScalarAsync<int>(query1, new { Student_Attendance_Status_id });
+
+                if (count > 0)
+                {
+                    return new ServiceResponse<string>(false, "There is a dependency in Student Attendance, so it cannot be deleted.", string.Empty, 400);
+                }
                 string sql = @"update  [dbo].[tbl_StudentAttendanceStatus]
                         set isDelete = 1
                        WHERE Student_Attendance_Status_id = @Student_Attendance_Status_id";

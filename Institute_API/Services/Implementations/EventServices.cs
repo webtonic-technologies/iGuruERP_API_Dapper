@@ -18,24 +18,30 @@ namespace Institute_API.Services.Implementations
         {
             try
             {
-                if (eventDto.AttachmentFile != null && eventDto.AttachmentFile != "")
+                  List<string>  strings = new List<string>();
+                foreach (var item in eventDto.AttachmentFile)
                 {
-                    if (!_imageService.IsValidFileFormat(eventDto.AttachmentFile))
+                    if (item != null && item != "")
                     {
-                        return new ServiceResponse<int>(false, "Unsupported file format. Only JPG, PNG, GIF, and PDF are allowed.", 0, 400);
-                    }
-                    var file = await _imageService.SaveImageAsync(eventDto.AttachmentFile, "Event");
-                    if (eventDto.Event_id != 0)
-                    {
-                        var data = await _eventRepository.GetEventAttachmentFileById(eventDto.Event_id);
-                        if (data.Data != null)
+                        if (!_imageService.IsValidFileFormat(item))
                         {
-                            _imageService.DeleteFile(data.Data);
+                            return new ServiceResponse<int>(false, "Unsupported file format. Only JPG, PNG, GIF, and PDF are allowed.", 0, 400);
                         }
+                        var file = await _imageService.SaveImageAsync(item, "Event");
+                        if (eventDto.Event_id != 0)
+                        {
+                            var data = await _eventRepository.GetEventAttachmentFileById(eventDto.Event_id);
+                            if (data.Data != null)
+                            {
+                                _imageService.DeleteFile(data.Data);
+                            }
+                        }
+                        strings.Add(file.relativePath);
+
                     }
-                    eventDto.AttachmentFile = file.relativePath;
                 }
                 //_imageService.SaveImageAsync();
+                eventDto.AttachmentFile = strings;  
                 return await _eventRepository.AddUpdateEvent(eventDto);
             }
             catch (Exception ex)
@@ -55,11 +61,11 @@ namespace Institute_API.Services.Implementations
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
-        public async Task<ServiceResponse<bool>> ToggleEventActiveStatus(int eventId, bool isActive, int userId)
+        public async Task<ServiceResponse<bool>> ToggleEventActiveStatus(int eventId, int Status, int userId)
         {
             try
             {
-                return await _eventRepository.ToggleEventActiveStatus(eventId, isActive, userId);
+                return await _eventRepository.ToggleEventActiveStatus(eventId, Status, userId);
             }
             catch (Exception ex)
             {
@@ -70,7 +76,7 @@ namespace Institute_API.Services.Implementations
         {
             try
             {
-                var data = await _eventRepository.GetApprovedEvents(commonRequest.Institute_id, commonRequest.Academic_year_id, commonRequest.sortColumn, commonRequest.sortDirection, commonRequest.pageSize, commonRequest.pageNumber);
+                var data = await _eventRepository.GetApprovedEvents(commonRequest.Institute_id, commonRequest.Academic_year_id, commonRequest.Status, commonRequest.sortColumn, commonRequest.sortDirection, commonRequest.pageSize, commonRequest.pageNumber);
                 foreach (var eventDto in data.Data)
                 {
                     if (eventDto != null && eventDto.AttachmentFile != null && eventDto.AttachmentFile != "")

@@ -87,16 +87,16 @@ namespace Institute_API.Repository.Implementations
             //    return new ServiceResponse<int>(false, ex.Message, 0, 500);
             //}
         }
-        public async Task<ServiceResponse<bool>> UpdateGalleryImageApprovalStatus(int galleryId, bool isApproved, int userId)
+        public async Task<ServiceResponse<bool>> UpdateGalleryImageApprovalStatus(int galleryId, int Status, int userId)
         {
             try
             {
                 string query = @"
                 UPDATE [dbo].[tbl_Gallery]
-                SET isApproved = @IsApproved , approvedBy = @UserId
+                SET Status = @Status , approvedBy = @UserId
                 WHERE Gallery_id = @GalleryId";
 
-                int rowsAffected = await _connection.ExecuteAsync(query, new { IsApproved = isApproved, GalleryId = galleryId, UserId = userId });
+                int rowsAffected = await _connection.ExecuteAsync(query, new { Status = Status, GalleryId = galleryId, UserId = userId });
 
                 if (rowsAffected > 0)
                 {
@@ -113,15 +113,16 @@ namespace Institute_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<GalleryEventDTO>>> GetApprovedImagesByEvent(int Institute_id, int? pageSize = null, int? pageNumber = null)
+        public async Task<ServiceResponse<List<GalleryEventDTO>>> GetApprovedImagesByEvent(int Institute_id, int Status ,int? pageSize = null, int? pageNumber = null)
         {
 
             try
             {
                 string query = @"
-            SELECT Event_id, FileName, isApproved
+            SELECT tbl_Gallery.Event_id, tbl_Gallery.FileName, tbl_Gallery.isApproved,tbl_Gallery.Status,ScheduleTime AS EventDateTime
             FROM [dbo].[tbl_Gallery]
-            WHERE Institute_id = @Institute_id AND isApproved = 1 AND isDelete = 0
+INNER JOIN tbl_CreateEvent ON tbl_CreateEvent.Event_id = tbl_Gallery.Event_id
+            WHERE Institute_id = @Institute_id AND Status = @Status AND isDelete = 0
             ORDER BY Event_id";
 
                 if (pageSize.HasValue && pageNumber.HasValue)
@@ -133,7 +134,7 @@ namespace Institute_API.Repository.Implementations
                 FETCH NEXT @PageSize ROWS ONLY;";
                 }
 
-                var images = await _connection.QueryAsync<Gallery>(query, new { Institute_id, Offset = (pageNumber - 1) * pageSize, PageSize = pageSize });
+                var images = await _connection.QueryAsync<Gallery>(query, new { Institute_id, Status, Offset = (pageNumber - 1) * pageSize, PageSize = pageSize });
 
                 var result = images.GroupBy(x => x.Event_id)
                                    .Select(g => new GalleryEventDTO
@@ -158,10 +159,12 @@ namespace Institute_API.Repository.Implementations
             try
             {
                 string query = @"
-            SELECT Event_id, FileName, isApproved
+          SELECT tbl_Gallery.Event_id, tbl_Gallery.FileName, tbl_Gallery.isApproved,tbl_Gallery.Status,ScheduleTime AS EventDateTime
             FROM [dbo].[tbl_Gallery]
+INNER JOIN tbl_CreateEvent ON tbl_CreateEvent.Event_id = tbl_Gallery.Event_id
             WHERE Institute_id = @Institute_id  AND isDelete = 0
             ORDER BY Event_id";
+
 
                 if (pageSize.HasValue && pageNumber.HasValue)
                 {

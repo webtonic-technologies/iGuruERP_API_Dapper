@@ -69,7 +69,7 @@ namespace Student_API.Repository.Implementations
             {
                 string sql = @"
                     SELECT  tbl_StudentMaster.student_id, tbl_StudentMaster.First_Name, tbl_StudentMaster.Middle_Name, tbl_StudentMaster.Last_Name, tbl_StudentMaster.gender_id, Gender_Type, tbl_Class.[class_id], class_name AS class_course, tbl_section.[section_id], section_name AS Section, [Admission_Number], [Roll_Number],
-                    FORMAT([Date_of_Joining], 'dd-MM-yyyy HH:mm tt') AS Date_of_Joining, Academic_year_id, tbl_AcademicYear.YearName, tbl_StudentMaster.Nationality_id, Nationality_Type, tbl_Religion.Religion_id, Religion_Type, FORMAT(tbl_StudentMaster.Date_of_Birth, 'dd-MM-yyyy HH:mm tt') AS Date_of_Birth, tbl_StudentMaster.Mother_Tongue_id, Mother_Tongue_Name, tbl_StudentMaster.Caste_id, caste_type,
+                    FORMAT([Date_of_Joining], 'dd-MM-yyyy') AS Date_of_Joining, Academic_year_id, tbl_AcademicYear.YearName, tbl_StudentMaster.Nationality_id, Nationality_Type, tbl_Religion.Religion_id, Religion_Type, FORMAT(tbl_StudentMaster.Date_of_Birth, 'dd-MM-yyyy') AS Date_of_Birth, tbl_StudentMaster.Mother_Tongue_id, Mother_Tongue_Name, tbl_StudentMaster.Caste_id, caste_type,
                     tbl_StudentMaster.Blood_Group_id, Blood_Group_Type, [Aadhar_Number], [PEN], [QR_code], [IsPhysicallyChallenged],
                     [IsSports], [IsAided], [IsNCC], [IsNSS], [IsScout], tbl_StudentMaster.File_Name, [isActive], tbl_StudentMaster.StudentType_id, Student_Type_Name
                     , tbl_Gender.Gender_Type, Religion_Type, Gender_Type, tbl_StudentMaster.Institute_id, Institute_name, tbl_InstituteHouse.Institute_House_id AS Student_House_id, tbl_InstituteHouse.HouseName AS Student_House_Name
@@ -89,13 +89,13 @@ namespace Student_API.Repository.Implementations
                     WHERE tbl_StudentMaster.student_id = @studentId;
 
                     SELECT [Student_Other_Info_id], [student_id], [email_id], [Identification_Mark_1],
-                    [Identification_Mark_2], FORMAT([Admission_Date], 'dd-MM-yyyy HH:mm tt') AS Admission_Date, FORMAT([Register_Date], 'dd-MM-yyyy HH:mm tt') AS Register_Date, [Register_Number], [samagra_ID], [Place_of_Birth], [comments], 
+                    [Identification_Mark_2], FORMAT([Admission_Date], 'dd-MM-yyyy') AS Admission_Date, FORMAT([Register_Date], 'dd-MM-yyyy') AS Register_Date, [Register_Number], [samagra_ID], [Place_of_Birth], [comments], 
                     [language_known] 
                     FROM [dbo].[tbl_StudentOtherInfo] 
                     WHERE student_id = @studentId;
 
                     SELECT [Student_Parent_Info_id], [Student_id], tbl_StudentParentsInfo.Parent_Type_id, [First_Name], [Middle_Name], [Last_Name], [Contact_Number],
-                    [Bank_Account_no], [Bank_IFSC_Code], [Family_Ration_Card_Type], [Family_Ration_Card_no], [Mobile_Number], FORMAT([Date_of_Birth], 'dd-MM-yyyy HH:mm tt') AS Date_of_Birth, [Aadhar_no], 
+                    [Bank_Account_no], [Bank_IFSC_Code], [Family_Ration_Card_Type], [Family_Ration_Card_no], [Mobile_Number], FORMAT([Date_of_Birth], 'dd-MM-yyyy') AS Date_of_Birth, [Aadhar_no], 
                     [PAN_card_no], [Residential_Address], tbl_StudentParentsInfo.Occupation_id, [Designation], [Name_of_the_Employer], [Office_no], [Email_id], [Annual_Income], 
                     [File_Name], tbl_Occupation.Occupation_Type, tbl_ParentType.parent_type
                     FROM [dbo].[tbl_StudentParentsInfo]
@@ -103,12 +103,12 @@ namespace Student_API.Repository.Implementations
                     INNER JOIN tbl_ParentType ON tbl_ParentType.Parent_Type_id = tbl_StudentParentsInfo.Parent_Type_id
                     WHERE student_id = @studentId;
 
-                    SELECT ss.[Student_Siblings_id], ss.Name, ss.Last_Name, ss.Middle_Name, ss.[Student_id], ss.[Admission_Number], FORMAT(ss.[Date_of_Birth], 'dd-MM-yyyy HH:mm tt') AS Date_of_Birth, ss.[Class], ss.[section],
+                    SELECT ss.[Student_Siblings_id], ss.Name, ss.Last_Name, ss.Middle_Name, ss.[Student_id], ss.[Admission_Number], FORMAT(ss.[Date_of_Birth], 'dd-MM-yyyy') AS Date_of_Birth, ss.[Class], ss.[section],
                     ss.[Institute_Name], ss.[Aadhar_no]
                     FROM [tbl_StudentSiblings] ss
                     WHERE ss.[Student_id] = @studentId;
 
-                    SELECT [Student_Prev_School_id], [student_id], [Previous_School_Name], [Previous_Board], [Previous_Medium], [Previous_School_Address], [previous_School_Course], [Previous_Class], [TC_number], FORMAT([TC_date], 'dd-MM-yyyy HH:mm tt') AS TC_date , [isTC_Submitted]
+                    SELECT [Student_Prev_School_id], [student_id], [Previous_School_Name], [Previous_Board], [Previous_Medium], [Previous_School_Address], [previous_School_Course], [Previous_Class], [TC_number], FORMAT([TC_date], 'dd-MM-yyyy') AS TC_date , [isTC_Submitted]
                     FROM [dbo].[tbl_StudentPreviousSchool] 
                     WHERE student_id = @studentId;
 
@@ -173,8 +173,8 @@ namespace Student_API.Repository.Implementations
                         int studentId = request.student_id;
                         if (studentId == 0)
                         {
-                            request.Date_of_Birth = Convert.ToString(DateTimeHelper.ConvertToDateTime(request.Date_of_Birth));
-                            request.Date_of_Joining = Convert.ToString(DateTimeHelper.ConvertToDateTime(request.Date_of_Joining));
+                            request.Date_of_Birth = DateTimeHelper.ConvertToDateTime(request.Date_of_Birth, "dd-MM-yyyy").ToString("yyyy-MM-dd");
+                            request.Date_of_Joining = DateTimeHelper.ConvertToDateTime(request.Date_of_Joining, "dd-MM-yyyy").ToString("yyyy-MM-dd");
                             // Insert student data
                             string insertStudentSql = @"
                         INSERT INTO [dbo].[tbl_StudentMaster] (
@@ -204,8 +204,8 @@ namespace Student_API.Repository.Implementations
                         else
                         {
                             // Update student data
-                            request.Date_of_Birth = Convert.ToString(DateTimeHelper.ConvertToDateTime(request.Date_of_Birth));
-                            request.Date_of_Joining = Convert.ToString(DateTimeHelper.ConvertToDateTime(request.Date_of_Joining));
+                            request.Date_of_Birth = DateTimeHelper.ConvertToDateTime(request.Date_of_Birth, "dd-MM-yyyy").ToString("yyyy-MM-dd");
+                            request.Date_of_Joining = DateTimeHelper.ConvertToDateTime(request.Date_of_Joining, "dd-MM-yyyy").ToString("yyyy-MM-dd");
                             string updateStudentSql = @"
                         UPDATE [dbo].[tbl_StudentMaster]
                         SET 
@@ -252,8 +252,8 @@ namespace Student_API.Repository.Implementations
                         if (request.StudentOtherInfos != null)
                         {
                             request.StudentOtherInfos.student_id = studentId;
-                            request.StudentOtherInfos.Admission_Date = Convert.ToString(DateTimeHelper.ConvertToDateTime(request.StudentOtherInfos.Admission_Date));
-                            request.StudentOtherInfos.Register_Date = Convert.ToString(DateTimeHelper.ConvertToDateTime(request.StudentOtherInfos.Register_Date));
+                            request.StudentOtherInfos.Admission_Date = DateTimeHelper.ConvertToDateTime(request.StudentOtherInfos.Admission_Date, "dd-MM-yyyy").ToString("yyyy-MM-dd");
+                            request.StudentOtherInfos.Register_Date = DateTimeHelper.ConvertToDateTime(request.StudentOtherInfos.Register_Date, "dd-MM-yyyy").ToString("yyyy-MM-dd");
                             if (request.StudentOtherInfos.Student_Other_Info_id == 0)
                             {
                                 string insertOtherInfoSql = @"
@@ -304,7 +304,7 @@ namespace Student_API.Repository.Implementations
                             parentInfo.studentParentOfficeInfo.Parents_Type_id = parentInfo.Parent_Type_id;
 
                             // Convert Date_of_Birth for parent
-                            parentInfo.Date_of_Birth = Convert.ToString(DateTimeHelper.ConvertToDateTime(parentInfo.Date_of_Birth));
+                            parentInfo.Date_of_Birth = DateTimeHelper.ConvertToDateTime(parentInfo.Date_of_Birth, "dd-MM-yyyy").ToString("yyyy-MM-dd");
 
                             if (parentInfo.Student_Parent_Info_id == 0)
                             {
@@ -384,7 +384,7 @@ namespace Student_API.Repository.Implementations
                         {
                             siblingInfo.Student_id = studentId;
                             // Convert Date_of_Birth for sibling
-                            siblingInfo.Date_of_Birth = Convert.ToString(DateTimeHelper.ConvertToDateTime(siblingInfo.Date_of_Birth));
+                            siblingInfo.Date_of_Birth = DateTimeHelper.ConvertToDateTime(siblingInfo.Date_of_Birth, "dd-MM-yyyy").ToString("yyyy-MM-dd");
 
                             if (siblingInfo.Student_Siblings_id == 0)
                             {
@@ -479,7 +479,7 @@ namespace Student_API.Repository.Implementations
                         SELECT CAST(SCOPE_IDENTITY() as int);";
 
                                 // Convert TC_date for previous school
-                                request.studentPreviousSchools.TC_date = Convert.ToString(DateTimeHelper.ConvertToDateTime(request.studentPreviousSchools.TC_date));
+                                request.studentPreviousSchools.TC_date = DateTimeHelper.ConvertToDateTime(request.studentPreviousSchools.TC_date, "dd-MM-yyyy").ToString("yyyy-MM-dd");
 
                                 int previousSchoolId = await _connection.ExecuteScalarAsync<int>(insertPreviousSchoolSql, request.studentPreviousSchools, transaction);
                                 if (previousSchoolId <= 0)
@@ -504,7 +504,7 @@ namespace Student_API.Repository.Implementations
                         WHERE [Student_Prev_School_id] = @Student_Prev_School_id;";
 
                                 // Convert TC_date for previous school
-                                request.studentPreviousSchools.TC_date = Convert.ToString(DateTimeHelper.ConvertToDateTime(request.studentPreviousSchools.TC_date));
+                                request.studentPreviousSchools.TC_date = DateTimeHelper.ConvertToDateTime(request.studentPreviousSchools.TC_date, "dd-MM-yyyy").ToString("yyyy-MM-dd");
 
                                 int affectedRows = await _connection.ExecuteAsync(updatePreviousSchoolSql, request.studentPreviousSchools, transaction);
                                 if (affectedRows <= 0)
@@ -1157,8 +1157,8 @@ namespace Student_API.Repository.Implementations
                 Section_name AS Section, 
                 Admission_Number, 
                 Roll_Number,
-                Date_of_Joining,
-                tbl_StudentMaster.Date_of_Birth,
+                FORMAT([Date_of_Joining], 'dd-MM-yyyy') AS Date_of_Joining,
+                FORMAT([tbl_StudentMaster.Date_of_Birth], 'dd-MM-yyyy') AS Date_of_Birth ,
                 Religion_Type, 
                 Gender_Type,
                 CONCAT(tbl_StudentParentsInfo.First_Name, ' ', tbl_StudentParentsInfo.Last_Name) AS Father_Name 
