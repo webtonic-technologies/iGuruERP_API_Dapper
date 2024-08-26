@@ -17,7 +17,7 @@ namespace Institute_API.DTOs
 
         [ValidDateString("hh:mm tt")]
         public string ScheduleTime { get; set; }
-        public string AttachmentFile { get; set; }
+        public List<string> AttachmentFile { get; set; }
         public int Institute_id { get; set; }
         public int Academic_year_id { get; set; }
         public int CreatedBy { get; set; }

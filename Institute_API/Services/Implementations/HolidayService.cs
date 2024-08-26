@@ -54,7 +54,7 @@ namespace Institute_API.Services.Implementations
         {
             try
             {
-                return await _holidayRepository.GetApprovedHolidays(commonRequest.Institute_id, commonRequest.Academic_year_id, commonRequest.sortColumn, commonRequest.sortDirection, commonRequest.pageSize, commonRequest.pageNumber);
+                return await _holidayRepository.GetApprovedHolidays(commonRequest.Institute_id, commonRequest.Academic_year_id, commonRequest.Status, commonRequest.sortColumn, commonRequest.sortDirection, commonRequest.pageSize, commonRequest.pageNumber);
             }
             catch (Exception ex)
             {
@@ -74,11 +74,11 @@ namespace Institute_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<bool>> UpdateHolidayApprovalStatus(int holidayId, bool isApproved, int approvedBy)
+        public async Task<ServiceResponse<bool>> UpdateHolidayApprovalStatus(int holidayId, int Status, int approvedBy)
         {
             try
             {
-                return await _holidayRepository.UpdateHolidayApprovalStatus(holidayId, isApproved, approvedBy);
+                return await _holidayRepository.UpdateHolidayApprovalStatus(holidayId, Status, approvedBy);
             }
             catch (Exception ex)
             {

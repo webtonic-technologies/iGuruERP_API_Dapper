@@ -50,7 +50,7 @@ namespace Institute_API.Controllers
         {
             try
             {
-                var response = await _galleryService.UpdateGalleryImageApprovalStatus(obj.GalleryId, obj.isApproved, obj.UserId);
+                var response = await _galleryService.UpdateGalleryImageApprovalStatus(obj.GalleryId, obj.Status, obj.UserId);
                 return StatusCode(response.StatusCode, response);
             }
             catch (Exception ex)

@@ -9,7 +9,7 @@ namespace Institute_API.Services.Interfaces
         Task<ServiceResponse<int>> AddUpdateEvent(EventRequestDTO eventDto);
         Task<ServiceResponse<EventDTO>> GetEventById(int eventId);
         Task<ServiceResponse<List<EventDTO>>> GetApprovedEvents(CommonRequestDTO commonRequest);
-        Task<ServiceResponse<bool>> ToggleEventActiveStatus(int eventId, bool isActive, int userId);
+        Task<ServiceResponse<bool>> ToggleEventActiveStatus(int eventId, int Status, int userId);
         Task<ServiceResponse<List<EventDTO>>> GetAllEvents(CommonRequestDTO commonRequest);
     }
 }

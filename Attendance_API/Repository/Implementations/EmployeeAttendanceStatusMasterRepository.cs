@@ -6,6 +6,7 @@ using Attendance_API.Repository.Interfaces;
 using System.Data;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace Attendance_API.Repository.Implementations
 {
@@ -111,6 +112,20 @@ namespace Attendance_API.Repository.Implementations
 
         public async Task<ServiceResponse<string>> DeleteEmployeeAttendanceStatusMaster(int Employee_Attendance_Status_id)
         {
+            string query1 = @"
+                         SELECT COUNT(0)
+                         FROM [dbo].[tbl_EmployeeAttendanceMaster]
+                         WHERE Employee_Attendance_Status_id = @Employee_Attendance_Status_id"
+            ;
+
+            int count = await _connection.ExecuteScalarAsync<int>(query1, new { Employee_Attendance_Status_id });
+
+            if (count > 0)
+            {
+                return new ServiceResponse<string>(false, "There is a dependency in Employee Attendance, so it cannot be deleted.", string.Empty, 400);
+            }
+
+
             string sql = @"UPDATE [dbo].[tbl_EmployeeAttendanceStatusMaster]
                            SET isDelete = 1
                            WHERE Employee_Attendance_Status_id = @Employee_Attendance_Status_id";
