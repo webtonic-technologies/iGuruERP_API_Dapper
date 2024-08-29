@@ -12,5 +12,6 @@
         public string AcademicYear { get; set; }
         public int Class_id { get; set; }
         public int Section_id { get; set; }
+        public int InstituteId { get; set; }
     }
 }

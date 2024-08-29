@@ -7,7 +7,7 @@ namespace Student_API.Services.Interfaces
     public interface ITimetableServices
     {
         Task<ServiceResponse<int>> AddUpdateTimeTableGroup(TimeTableGroupDTO request);
-        Task<ServiceResponse<List<ResponseTimeTableGroupDTO>>> GetTimeTableGroup();
+        Task<ServiceResponse<List<ResponseTimeTableGroupDTO>>> GetTimeTableGroup(int InstituteId);
         Task<ServiceResponse<TimeTableGroupDTO>> GetTimeTableGroupById(int timetableGroupId);
         Task<ServiceResponse<int>> AddOrUpdateTimeTableDaysPlan(DaysSetupDTO daysSetupDTO);
         Task<ServiceResponse<List<TimeTableDaysPlanDTO>>> GetTimeTableDaysPlan();
