@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Student_API.DTOs;
 using Student_API.DTOs.ServiceResponse;
+using Student_API.Helper;
 using Student_API.Models;
 using Student_API.Repository.Interfaces;
 using System.Data;
@@ -32,12 +33,15 @@ namespace Student_API.Repository.Implementations
                     bool periodBreaksSuccess = true;
                     bool timetableClassMappingsSuccess = false;
 
+                    timeTableGroupDTO.StartTime = DateTimeHelper.ConvertToDateTime(timeTableGroupDTO.StartTime, "hh:mm").ToString("hh:mm:ss");
+                    timeTableGroupDTO.EndTime = DateTimeHelper.ConvertToDateTime(timeTableGroupDTO.EndTime, "hh:mm").ToString("hh:mm:ss");
+
                     if (timeTableGroupDTO.TimetableGroup_id == 0)
                     {
                         // Add new TimetableGroup
                         query = @"
-                    INSERT INTO [dbo].[tbl_TimetableGroup] (GroupName, StartTime, EndTime) 
-                    VALUES (@GroupName, @StartTime, @EndTime);
+                    INSERT INTO [dbo].[tbl_TimetableGroup] (GroupName, StartTime, EndTime,InstituteId) 
+                    VALUES (@GroupName, @StartTime, @EndTime,@InstituteId);
                     SELECT CAST(SCOPE_IDENTITY() as int)";
                         result = await _connection.ExecuteScalarAsync<int>(query, timeTableGroupDTO, transaction);
                         timeTableGroupDTO.TimetableGroup_id = result;
@@ -57,6 +61,8 @@ namespace Student_API.Repository.Implementations
                     // Handle Periods
                     foreach (var periodDTO in timeTableGroupDTO.periodDTOs)
                     {
+                        periodDTO.StartTime = DateTimeHelper.ConvertToDateTime(periodDTO.StartTime, "hh:mm").ToString("hh:mm:ss");
+                        periodDTO.EndTime = DateTimeHelper.ConvertToDateTime(periodDTO.EndTime, "hh:mm").ToString("hh:mm:ss");
                         periodDTO.TimetableGroup_id = timeTableGroupDTO.TimetableGroup_id;
                         if (periodDTO.Period_id == 0)
                         {
@@ -80,6 +86,8 @@ namespace Student_API.Repository.Implementations
                     // Handle PeriodBreaks
                     foreach (var periodBreakDTO in timeTableGroupDTO.periodBreakDTOs)
                     {
+                        periodBreakDTO.StartTime = DateTimeHelper.ConvertToDateTime(periodBreakDTO.StartTime, "hh:mm").ToString("hh:mm:ss");
+                        periodBreakDTO.EndTime = DateTimeHelper.ConvertToDateTime(periodBreakDTO.EndTime, "hh:mm").ToString("hh:mm:ss");
                         periodBreakDTO.TimetableGroup_id = timeTableGroupDTO.TimetableGroup_id;
                         if (periodBreakDTO.PeriodBreak_id == 0)
                         {
@@ -145,7 +153,7 @@ namespace Student_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<ResponseTimeTableGroupDTO>>> GetAllTimeTableGroups()
+        public async Task<ServiceResponse<List<ResponseTimeTableGroupDTO>>> GetAllTimeTableGroups(int InstituteId)
         {
             try
             {
@@ -159,6 +167,7 @@ namespace Student_API.Repository.Implementations
             FROM [dbo].[tbl_TimetableGroup] tg
             LEFT JOIN [dbo].[tbl_Period] p ON tg.TimetableGroup_id = p.TimetableGroup_id
             LEFT JOIN [dbo].[tbl_PeriodBreak] pb ON tg.TimetableGroup_id = pb.TimetableGroup_id
+            WHERE isDelete = 0
             GROUP BY tg.TimetableGroup_id, tg.GroupName, tg.StartTime, tg.EndTime";
 
                 var timetableGroups = await _connection.QueryAsync<ResponseTimeTableGroupDTO>(query);
@@ -183,11 +192,66 @@ namespace Student_API.Repository.Implementations
         }
 
 
+        //public async Task<ServiceResponse<TimeTableGroupDTO>> GetTimeTableGroupById(int timetableGroupId)
+        //{
+        //    try
+        //    {
+        //        string query = "SELECT * FROM [dbo].[tbl_TimetableGroup] WHERE TimetableGroup_id = @TimetableGroupId";
+        //        var timetableGroup = await _connection.QueryFirstOrDefaultAsync<TimeTableGroupDTO>(query, new { TimetableGroupId = timetableGroupId });
+
+        //        if (timetableGroup != null)
+        //        {
+        //            timetableGroup.periodDTOs = await GetPeriodsForTimeTableGroup(timetableGroupId);
+        //            timetableGroup.periodBreakDTOs = await GetPeriodBreaksForTimeTableGroup(timetableGroupId);
+        //            timetableGroup.timetableClassMappings = await GetTimetableClassMappingsForTimeTableGroup(timetableGroupId);
+        //            return new ServiceResponse<TimeTableGroupDTO>(true, "Operation successful", timetableGroup, 200);
+        //        }
+        //        else
+        //        {
+        //            return new ServiceResponse<TimeTableGroupDTO>(false, "Timetable group not found", null, 404);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return new ServiceResponse<TimeTableGroupDTO>(false, ex.Message, null, 500);
+        //    }
+        //}
+
+        //private async Task<List<PeriodDTO>> GetPeriodsForTimeTableGroup(int timetableGroupId)
+        //{
+        //    string query = "SELECT * FROM [dbo].[tbl_Period] WHERE TimetableGroup_id = @TimetableGroupId";
+        //    return (await _connection.QueryAsync<PeriodDTO>(query, new { TimetableGroupId = timetableGroupId })).ToList();
+        //}
+
+        //private async Task<List<PeriodBreakDTO>> GetPeriodBreaksForTimeTableGroup(int timetableGroupId)
+        //{
+        //    string query = "SELECT * FROM [dbo].[tbl_PeriodBreak] WHERE TimetableGroup_id = @TimetableGroupId";
+        //    return (await _connection.QueryAsync<PeriodBreakDTO>(query, new { TimetableGroupId = timetableGroupId })).ToList();
+        //}
+
+        //private async Task<List<TimetableClassMapping>> GetTimetableClassMappingsForTimeTableGroup(int timetableGroupId)
+        //{
+        //    string query = "SELECT TimetableClassMapping_id,TimetableGroup_id,tbl_TimetableClassMapping.Class_id , tbl_TimetableClassMapping.Section_id ,  class_name ,Section_name  FROM [dbo].[tbl_TimetableClassMapping]  LEFT JOIN   tbl_Class ON tbl_TimetableClassMapping.class_id = tbl_Class.Class_id LEFT JOIN    tbl_Section ON tbl_TimetableClassMapping.section_id = tbl_Section.section_idWHERE TimetableGroup_id = @TimetableGroupId";
+
+
+
+        //    return (await _connection.QueryAsync<TimetableClassMapping>(query, new { TimetableGroupId = timetableGroupId })).ToList();
+        //}
+
         public async Task<ServiceResponse<TimeTableGroupDTO>> GetTimeTableGroupById(int timetableGroupId)
         {
             try
             {
-                string query = "SELECT * FROM [dbo].[tbl_TimetableGroup] WHERE TimetableGroup_id = @TimetableGroupId";
+                string query = @"
+        SELECT 
+            TimetableGroup_id, 
+            GroupName, 
+            FORMAT(StartTime, 'HH:mm') AS StartTime, 
+            FORMAT(EndTime, 'HH:mm') AS EndTime, 
+            InstituteId 
+        FROM [dbo].[tbl_TimetableGroup] 
+        WHERE TimetableGroup_id = @TimetableGroupId AND isDelete = 0";
+
                 var timetableGroup = await _connection.QueryFirstOrDefaultAsync<TimeTableGroupDTO>(query, new { TimetableGroupId = timetableGroupId });
 
                 if (timetableGroup != null)
@@ -210,21 +274,48 @@ namespace Student_API.Repository.Implementations
 
         private async Task<List<PeriodDTO>> GetPeriodsForTimeTableGroup(int timetableGroupId)
         {
-            string query = "SELECT * FROM [dbo].[tbl_Period] WHERE TimetableGroup_id = @TimetableGroupId";
+            string query = @"
+    SELECT 
+        Period_id, 
+        TimetableGroup_id, 
+        PeriodName, 
+        FORMAT(StartTime, 'HH:mm') AS StartTime, 
+        FORMAT(EndTime, 'HH:mm') AS EndTime 
+    FROM [dbo].[tbl_Period] 
+    WHERE TimetableGroup_id = @TimetableGroupId";
+
             return (await _connection.QueryAsync<PeriodDTO>(query, new { TimetableGroupId = timetableGroupId })).ToList();
         }
 
         private async Task<List<PeriodBreakDTO>> GetPeriodBreaksForTimeTableGroup(int timetableGroupId)
         {
-            string query = "SELECT * FROM [dbo].[tbl_PeriodBreak] WHERE TimetableGroup_id = @TimetableGroupId";
+            string query = @"
+    SELECT 
+        PeriodBreak_id, 
+        TimetableGroup_id, 
+        BreakName, 
+        FORMAT(StartTime, 'HH:mm') AS StartTime, 
+        FORMAT(EndTime, 'HH:mm') AS EndTime 
+    FROM [dbo].[tbl_PeriodBreak] 
+    WHERE TimetableGroup_id = @TimetableGroupId";
+
             return (await _connection.QueryAsync<PeriodBreakDTO>(query, new { TimetableGroupId = timetableGroupId })).ToList();
         }
 
         private async Task<List<TimetableClassMapping>> GetTimetableClassMappingsForTimeTableGroup(int timetableGroupId)
         {
-            string query = "SELECT TimetableClassMapping_id,TimetableGroup_id,tbl_TimetableClassMapping.Class_id , tbl_TimetableClassMapping.Section_id ,  class_name ,Section_name  FROM [dbo].[tbl_TimetableClassMapping]  LEFT JOIN   tbl_Class ON tbl_TimetableClassMapping.class_id = tbl_Class.Class_id LEFT JOIN    tbl_Section ON tbl_TimetableClassMapping.section_id = tbl_Section.section_idWHERE TimetableGroup_id = @TimetableGroupId";
-
-
+            string query = @"
+    SELECT 
+        TimetableClassMapping_id, 
+        TimetableGroup_id, 
+        tbl_TimetableClassMapping.Class_id, 
+        tbl_TimetableClassMapping.Section_id, 
+        class_name, 
+        Section_name 
+    FROM [dbo].[tbl_TimetableClassMapping]  
+    LEFT JOIN tbl_Class ON tbl_TimetableClassMapping.class_id = tbl_Class.Class_id 
+    LEFT JOIN tbl_Section ON tbl_TimetableClassMapping.section_id = tbl_Section.section_id 
+    WHERE TimetableGroup_id = @TimetableGroupId";
 
             return (await _connection.QueryAsync<TimetableClassMapping>(query, new { TimetableGroupId = timetableGroupId })).ToList();
         }
@@ -237,20 +328,36 @@ namespace Student_API.Repository.Implementations
             {
                 try
                 {
+                    string query1 = @"
+                         SELECT COUNT(0)
+                         FROM [dbo].[tbl_DaysGroupMapping]
+                         WHERE TimetableGroup_id = @timetableGroupId";
+
+                    int count = await _connection.ExecuteScalarAsync<int>(query1, new { timetableGroupId });
+
+                    if (count > 0)
+                    {
+                        return new ServiceResponse<bool>(false, "There is a dependency in Days Group, so it cannot be deleted.", false, 400);
+                    }
+
+
                     // Delete from tbl_Period
-                    string query = "DELETE FROM [dbo].[tbl_Period] WHERE TimetableGroup_id = @TimetableGroupId";
-                    await _connection.ExecuteAsync(query, new { TimetableGroupId = timetableGroupId }, transaction);
+                    //string query = "DELETE FROM [dbo].[tbl_Period] WHERE TimetableGroup_id = @TimetableGroupId";
+                    //await _connection.ExecuteAsync(query, new { TimetableGroupId = timetableGroupId }, transaction);
 
-                    // Delete from tbl_PeriodBreak
-                    query = "DELETE FROM [dbo].[tbl_PeriodBreak] WHERE TimetableGroup_id = @TimetableGroupId";
-                    await _connection.ExecuteAsync(query, new { TimetableGroupId = timetableGroupId }, transaction);
+                    //// Delete from tbl_PeriodBreak
+                    //query = "DELETE FROM [dbo].[tbl_PeriodBreak] WHERE TimetableGroup_id = @TimetableGroupId";
+                    //await _connection.ExecuteAsync(query, new { TimetableGroupId = timetableGroupId }, transaction);
 
-                    // Delete from tbl_TimetableClassMapping
-                    query = "DELETE FROM [dbo].[tbl_TimetableClassMapping] WHERE TimetableGroup_id = @TimetableGroupId";
-                    await _connection.ExecuteAsync(query, new { TimetableGroupId = timetableGroupId }, transaction);
+                    //// Delete from tbl_TimetableClassMapping
+                    //query = "DELETE FROM [dbo].[tbl_TimetableClassMapping] WHERE TimetableGroup_id = @TimetableGroupId";
+                    //await _connection.ExecuteAsync(query, new { TimetableGroupId = timetableGroupId }, transaction);
 
-                    // Delete from TimetableGroup
-                    query = "DELETE FROM [dbo].[tbl_TimetableGroup] WHERE TimetableGroup_id = @TimetableGroupId";
+                    //// Delete from TimetableGroup
+                    //query = "DELETE FROM [dbo].[tbl_TimetableGroup] WHERE TimetableGroup_id = @TimetableGroupId";
+                    //int result = await _connection.ExecuteAsync(query, new { TimetableGroupId = timetableGroupId }, transaction);
+
+                    string query = "UPDATE [dbo].[tbl_TimetableGroup] SET isDelete = 1 WHERE TimetableGroup_id = @TimetableGroupId";
                     int result = await _connection.ExecuteAsync(query, new { TimetableGroupId = timetableGroupId }, transaction);
 
                     bool success = result > 0;
@@ -295,7 +402,7 @@ namespace Student_API.Repository.Implementations
 
                             string updateDaysSetupQuery = @"
                         UPDATE [dbo].[tbl_DaysSetup]
-                        SET PlanName = @PlanName, WorkingDays = @WorkingDays
+                        SET PlanName = @PlanName, WorkingDays = @WorkingDays 
                         WHERE DaysSetup_id = @DaysSetupId";
 
                             await _connection.ExecuteAsync(updateDaysSetupQuery, new
@@ -354,14 +461,15 @@ namespace Student_API.Repository.Implementations
                         {
                             // Insert new record
                             string addDaysSetupQuery = @"
-                        INSERT INTO [dbo].[tbl_DaysSetup] (PlanName, WorkingDays) 
-                        VALUES (@PlanName, @WorkingDays);
+                        INSERT INTO [dbo].[tbl_DaysSetup] (PlanName, WorkingDays,InstituteId) 
+                        VALUES (@PlanName, @WorkingDays,@InstituteId);
                         SELECT CAST(SCOPE_IDENTITY() as int)";
 
                             daysSetupId = await _connection.ExecuteScalarAsync<int>(addDaysSetupQuery, new
                             {
                                 PlanName = daysSetupDTO.PlanName,
-                                WorkingDays = daysSetupDTO.WorkingDays
+                                WorkingDays = daysSetupDTO.WorkingDays,
+                                InstituteId = daysSetupDTO.InstituteId
                             }, transaction);
 
                             // Insert mappings for the new record
@@ -447,7 +555,7 @@ namespace Student_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<TimeTableDaysPlanDTO>>> GetTimeTableDaysPlan()
+        public async Task<ServiceResponse<List<TimeTableDaysPlanDTO>>> GetTimeTableDaysPlan(int InstituteId)
         {
             try
             {
@@ -457,9 +565,10 @@ namespace Student_API.Repository.Implementations
                    tg.GroupName AS TimetableGroupName
             FROM [dbo].[tbl_DaysSetup] ds
             LEFT JOIN [dbo].[tbl_DaysGroupMapping] dgm ON ds.DaysSetup_id = dgm.DaysSetup_id
-            LEFT JOIN [dbo].[tbl_TimetableGroup] tg ON dgm.TimetableGroup_id = tg.TimetableGroup_id";
+            LEFT JOIN [dbo].[tbl_TimetableGroup] tg ON dgm.TimetableGroup_id = tg.TimetableGroup_id where ds.InstituteId = @InstituteId";
 
-                var result = await _connection.QueryAsync<TimeTableDaysPlanDTO>(query);
+
+                var result = await _connection.QueryAsync<TimeTableDaysPlanDTO>(query, new { InstituteId });
 
                 var groupedData = result.GroupBy(r => new { r.DaysSetupId, r.PlanName })
                                         .Select(g => new TimeTableDaysPlanDTO
@@ -483,8 +592,8 @@ namespace Student_API.Repository.Implementations
                 string addOrUpdateQuery = @"
             IF @Timetable_id = 0
             BEGIN
-                INSERT INTO [dbo].[tbl_Timetable] (TimetableGroup_id, PeriodBreak_id, Period_id, Subject_id, Employee_id, IsBreak, AcademicYear, Class_id,Section_id)
-                VALUES (@TimetableGroup_id, @PeriodBreak_id, @Period_id, @Subject_id, @Employee_id, @IsBreak, @AcademicYear, @Class_id, @Section_id);
+                INSERT INTO [dbo].[tbl_Timetable] (TimetableGroup_id, PeriodBreak_id, Period_id, Subject_id, Employee_id, IsBreak, AcademicYear, Class_id,Section_id,InstituteId)
+                VALUES (@TimetableGroup_id, @PeriodBreak_id, @Period_id, @Subject_id, @Employee_id, @IsBreak, @AcademicYear, @Class_id, @Section_id,@InstituteId);
                 SELECT CAST(SCOPE_IDENTITY() as int);
             END
             ELSE
@@ -527,7 +636,7 @@ namespace Student_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<Timetable>>> GetTimetablesByCriteria(string academicYear, int classId, int sectionId)
+        public async Task<ServiceResponse<List<Timetable>>> GetTimetablesByCriteria(string academicYear, int classId, int sectionId,int InstituteId)
         {
             try
             {
@@ -536,11 +645,11 @@ namespace Student_API.Repository.Implementations
             FROM [dbo].[tbl_Timetable] 
             WHERE AcademicYear = @AcademicYear 
             AND Class_id = @ClassId 
-            AND Section_id = @SectionId";
+            AND Section_id = @SectionId AND InstituteId = @InstituteId";
 
                 var timetables = await _connection.QueryAsync<Timetable>(
                     query,
-                    new { AcademicYear = academicYear, ClassId = classId, SectionId = sectionId }
+                    new { AcademicYear = academicYear, ClassId = classId, SectionId = sectionId, InstituteId = InstituteId }
                 );
 
                 return new ServiceResponse<List<Timetable>>(true, "Operation successful", timetables.ToList(), 200);

@@ -41,11 +41,11 @@ namespace Student_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<ResponseTimeTableGroupDTO>>> GetTimeTableGroup()
+        public async Task<ServiceResponse<List<ResponseTimeTableGroupDTO>>> GetTimeTableGroup(int InstituteId)
         {
             try
             {
-                var data = await _timetableRepository.GetAllTimeTableGroups();
+                var data = await _timetableRepository.GetAllTimeTableGroups(InstituteId);
                 return data;
             }
             catch (Exception ex)
@@ -67,11 +67,11 @@ namespace Student_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<TimeTableDaysPlanDTO>>> GetTimeTableDaysPlan()
+        public async Task<ServiceResponse<List<TimeTableDaysPlanDTO>>> GetTimeTableDaysPlan(int InstituteId)
         {
             try
             {
-                var data = await _timetableRepository.GetTimeTableDaysPlan();
+                var data = await _timetableRepository.GetTimeTableDaysPlan(InstituteId);
                 return data;
             }
             catch (Exception ex)
@@ -122,7 +122,7 @@ namespace Student_API.Services.Implementations
         {
             try
             {
-                var data = await _timetableRepository.GetTimetablesByCriteria(timetableParam.AcademicYear, timetableParam.ClassId, timetableParam.SectionId);
+                var data = await _timetableRepository.GetTimetablesByCriteria(timetableParam.AcademicYear, timetableParam.ClassId, timetableParam.SectionId , timetableParam.InstituteId);
                 return data;
             }
             catch (Exception ex)
