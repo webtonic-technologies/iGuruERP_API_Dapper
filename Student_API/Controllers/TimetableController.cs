@@ -129,11 +129,11 @@ namespace Student_API.Controllers
 
         [HttpGet]
         [Route("GetTimeTableDaysPlan")]
-        public async Task<IActionResult> GetTimeTableDaysPlan()
+        public async Task<IActionResult> GetTimeTableDaysPlan(int InstituteId)
         {
             try
             {
-                var data = await _timetableServices.GetTimeTableDaysPlan();
+                var data = await _timetableServices.GetTimeTableDaysPlan(InstituteId);
                 if (data.Success)
                 {
                     return Ok(data);

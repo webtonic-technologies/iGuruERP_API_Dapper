@@ -10,7 +10,7 @@ namespace Student_API.Repository.Interfaces
         Task<ServiceResponse<TimeTableGroupDTO>> GetTimeTableGroupById(int timetableGroupId);
         Task<ServiceResponse<List<ResponseTimeTableGroupDTO>>> GetAllTimeTableGroups(int InstituteId);
         Task<ServiceResponse<int>> AddOrUpdateTimeTableDaysPlan(DaysSetupDTO daysSetupDTO);
-        Task<ServiceResponse<List<TimeTableDaysPlanDTO>>> GetTimeTableDaysPlan();
+        Task<ServiceResponse<List<TimeTableDaysPlanDTO>>> GetTimeTableDaysPlan(int InstituteId);
         Task<ServiceResponse<int>> AddOrUpdateTimetable(Timetable timetable);
         Task<ServiceResponse<List<Timetable>>> GetTimetablesByTimetableGroupId(int timetableGroupId);
         Task<ServiceResponse<bool>> DeleteTimetableGroup(int timetableGroupId);
