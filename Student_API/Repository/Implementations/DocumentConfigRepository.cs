@@ -60,7 +60,7 @@ namespace Student_API.Repository.Implementations
             try
             {
                 string query = @"
-        SELECT Student_Document_id, Student_Document_Name, FORMAT([en_date], 'dd-MM-yyyy HH:mm tt') AS en_date,Institute_id
+        SELECT Student_Document_id, Student_Document_Name, FORMAT([en_date], 'dd-MM-yyyy') AS en_date,Institute_id
         FROM [dbo].[tbl_StudentDocumentMaster]
         WHERE Student_Document_id = @DocumentConfigtId AND  ISNULL(isDelete,0) = 0 ";
 
@@ -145,7 +145,7 @@ namespace Student_API.Repository.Implementations
 
                 // SQL queries
                 string queryAll = @"
-            SELECT Student_Document_id, Student_Document_Name,  FORMAT([en_date], 'dd-MM-yyyy HH:mm tt') AS en_date ,Institute_id
+            SELECT Student_Document_id, Student_Document_Name,  FORMAT([en_date], 'dd-MM-yyyy') AS en_date ,Institute_id
             FROM [dbo].[tbl_StudentDocumentMaster] where Institute_id = @Institute_id AND  ISNULL(isDelete,0) = 0 ";
 
                 string queryCount = @"
