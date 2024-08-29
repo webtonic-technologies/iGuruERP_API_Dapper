@@ -171,7 +171,7 @@ namespace Student_API.Controllers
             }
         }
 
-        [HttpGet]
+        [HttpPost]
         [Route("GetTimeTableMakerList")]
         public async Task<IActionResult> GetTimeTableMakerList(TimetableParam timetableParam)
         {

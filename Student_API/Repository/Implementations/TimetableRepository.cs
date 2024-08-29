@@ -162,6 +162,17 @@ namespace Student_API.Repository.Implementations
             GROUP BY tg.TimetableGroup_id, tg.GroupName, tg.StartTime, tg.EndTime";
 
                 var timetableGroups = await _connection.QueryAsync<ResponseTimeTableGroupDTO>(query);
+                if (timetableGroups != null)
+                {
+                    foreach (var t in timetableGroups)
+                    {
+                        string query1 = "SELECT TimetableClassMapping_id,TimetableGroup_id,tbl_TimetableClassMapping.Class_id , tbl_TimetableClassMapping.Section_id ,  class_name ,Section_name  FROM [dbo].[tbl_TimetableClassMapping]  LEFT JOIN   tbl_Class ON tbl_TimetableClassMapping.class_id = tbl_Class.Class_id LEFT JOIN    tbl_Section ON tbl_TimetableClassMapping.section_id = tbl_Section.section_idWHERE TimetableGroup_id = @TimetableGroupId";
+
+                        var data = (await _connection.QueryAsync<TimetableClassMappingDTO>(query1, new { TimetableGroupId = t.TimetableGroupId })).ToList();
+                        t.timetableClassMappingDTOs.AddRange(data);
+                    }
+
+                }
 
                 return new ServiceResponse<List<ResponseTimeTableGroupDTO>>(true, "Operation successful", timetableGroups.ToList(), 200);
             }
@@ -211,7 +222,10 @@ namespace Student_API.Repository.Implementations
 
         private async Task<List<TimetableClassMapping>> GetTimetableClassMappingsForTimeTableGroup(int timetableGroupId)
         {
-            string query = "SELECT * FROM [dbo].[tbl_TimetableClassMapping] WHERE TimetableGroup_id = @TimetableGroupId";
+            string query = "SELECT TimetableClassMapping_id,TimetableGroup_id,tbl_TimetableClassMapping.Class_id , tbl_TimetableClassMapping.Section_id ,  class_name ,Section_name  FROM [dbo].[tbl_TimetableClassMapping]  LEFT JOIN   tbl_Class ON tbl_TimetableClassMapping.class_id = tbl_Class.Class_id LEFT JOIN    tbl_Section ON tbl_TimetableClassMapping.section_id = tbl_Section.section_idWHERE TimetableGroup_id = @TimetableGroupId";
+
+
+
             return (await _connection.QueryAsync<TimetableClassMapping>(query, new { TimetableGroupId = timetableGroupId })).ToList();
         }
 

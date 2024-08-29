@@ -38,5 +38,7 @@
         public int TimetableGroup_id { get; set; }
         public int Class_id { get; set; }
         public int Section_id { get; set; }
+        public string class_name { get; set; }
+        public string Section_name { get; set; }
     }
 }

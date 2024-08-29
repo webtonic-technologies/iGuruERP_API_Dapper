@@ -1,9 +1,9 @@
 ﻿using Dapper;
 using Student_API.DTOs;
+using Student_API.DTOs.RequestDTO;
 using Student_API.DTOs.ServiceResponse;
 using Student_API.Repository.Interfaces;
 using System.Data;
-using System.Drawing.Printing;
 using static Student_API.Models.Enums.Enums;
 
 namespace Student_API.Repository.Implementations
@@ -17,7 +17,7 @@ namespace Student_API.Repository.Implementations
             _dbConnection = dbConnection;
         }
 
-        public async Task<ServiceResponse<List<PermissionSlipDTO>>> GetAllPermissionSlips(int Institute_id,int classId, int sectionId, int? pageNumber = null, int? pageSize = null)
+        public async Task<ServiceResponse<List<PermissionSlipDTO>>> GetAllPermissionSlips(int Institute_id, int classId, int sectionId, int? pageNumber = null, int? pageSize = null)
         {
             try
             {
@@ -42,7 +42,7 @@ namespace Student_API.Repository.Implementations
                 sec.Section_name AS SectionName,
                 g.Gender_Type AS GenderName,
                 p.first_name + ' ' + p.last_name AS ParentName,
-                FORMAT(ps.RequestedDateTime, 'dd-MM-yyyy HH:mm tt') AS RequestedDateTime ,
+                FORMAT(ps.RequestedDateTime, 'dd-MM-yyyy') AS RequestedDateTime ,
                 ps.Reason,
                 ps.Status,
                 ps.ModifiedDate
@@ -112,7 +112,8 @@ namespace Student_API.Repository.Implementations
                 return new ServiceResponse<string>(false, ex.Message, null, 500);
             }
         }
-        public async Task<ServiceResponse<List<PermissionSlipDTO>>> GetPermissionSlips(int Institute_id,int classId,int sectionId,DateTime? startDate,DateTime? endDate,bool isApproved,int? pageNumber = null,int? pageSize = null)
+
+        public async Task<ServiceResponse<List<PermissionSlipDTO>>> GetPermissionSlips(int Institute_id, int classId, int sectionId, string startDate, string endDate, bool isApproved, int? pageNumber = null, int? pageSize = null)
         {
             try
             {
@@ -137,7 +138,7 @@ namespace Student_API.Repository.Implementations
                 s.first_name + ' ' + s.last_name AS StudentName,
                 c.class_name AS ClassName,
                 sec.Section_name AS SectionName,
-                ps.RequestedDateTime AS ApprovalDate,
+                FORMAT(ps.RequestedDateTime, 'dd-MM-yyyy')  AS ApprovalDate,
                 pt.parent_type AS ParentType,
                 p.first_name + ' ' + p.last_name AS ParentName,
                 ps.Reason AS Remark,
@@ -153,8 +154,8 @@ namespace Student_API.Repository.Implementations
               AND (s.class_id = @ClassId OR  @ClassId=0)
               AND (s.section_id = @SectionId OR  @SectionId =0)
               AND ps.Status = @Status
-              AND (@StartDate IS NULL OR ps.ModifiedDate >= @StartDate)
-              AND (@EndDate IS NULL OR ps.ModifiedDate <= @EndDate);
+              AND (@StartDate IS NULL OR ps.ModifiedDate >= CONVERT(datetime, @StartDate, 105))
+              AND (@EndDate IS NULL OR ps.ModifiedDate <= CONVERT(datetime, @EndDate, 105));
 
             SELECT * 
             FROM #PermissionSlipTempTable
@@ -199,6 +200,73 @@ namespace Student_API.Repository.Implementations
             }
         }
 
+        public async Task<ServiceResponse<SinglePermissionSlipDTO>> GetPermissionSlipById(int permissionSlipId)
+        {
+            try
+            {
+                string sql = @"
+                SELECT 
+                    ps.PermissionSlip_Id,
+                    s.student_id AS Student_Id,
+                    s.first_name + ' ' + s.last_name AS StudentName,
+                    s.admission_number AS Admission_Number,
+                    c.class_name AS ClassName,
+                    sec.Section_name AS SectionName,
+                    FORMAT(ps.RequestedDateTime, 'dd-MM-yyyy') AS RequestedDateTime,
+                    ps.Reason,
+                    ps.Status,
+                    ps.ModifiedDate,
+                    ps.Qr_Code
+                FROM tbl_PermissionSlip ps
+                JOIN tbl_StudentMaster s ON ps.Student_Id = s.student_id
+                JOIN tbl_StudentParentsInfo p ON ps.Student_Parent_Info_id = p.student_parent_info_id
+                JOIN tbl_Class c ON s.class_id = c.class_id
+                JOIN tbl_section sec ON s.section_id = sec.section_id
+                WHERE ps.PermissionSlip_Id = @PermissionSlipId;";
+
+                var permissionSlip = await _dbConnection.QuerySingleOrDefaultAsync<SinglePermissionSlipDTO>(sql, new { PermissionSlipId = permissionSlipId });
+
+                if (permissionSlip != null)
+                {
+                    return new ServiceResponse<SinglePermissionSlipDTO>(true, "Permission slip retrieved successfully", permissionSlip, 200);
+                }
+                else
+                {
+                    return new ServiceResponse<SinglePermissionSlipDTO>(false, "Permission slip not found", null, 404);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<SinglePermissionSlipDTO>(false, ex.Message, null, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<string>> AddPermissionSlip(PermissionSlip permissionSlipDto)
+        {
+            try
+            {
+                string query = @"
+                INSERT INTO tbl_PermissionSlip (Student_Id, Student_Parent_Info_id, Institute_id, RequestedDateTime, Reason, Status,Qr_Code)
+                VALUES (@Student_Id, @Student_Parent_Info_id, @Institute_id, GETDATE(), @Reason, @Status,@Qr_Code);
+                SELECT CAST(SCOPE_IDENTITY() as int);";
+
+                var newPermissionSlipId = await _dbConnection.ExecuteScalarAsync<int>(query, new
+                {
+                    permissionSlipDto.Student_Id,
+                    permissionSlipDto.Student_Parent_Info_id,
+                    permissionSlipDto.Institute_id,
+                    permissionSlipDto.Reason,
+                    permissionSlipDto.Qr_Code,
+
+                    Status = (int)Permission_Status.Pending
+                });
+
+                return new ServiceResponse<string>(true, "Permission slip added successfully", newPermissionSlipId.ToString(), 201);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<string>(false, ex.Message, null, 500);
+            }
+        }
     }
 }
-
