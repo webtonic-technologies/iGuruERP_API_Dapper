@@ -3,6 +3,7 @@
     public class DaysSetupDTO
     {
         public int DaysSetupId { get; set; }
+        public int InstituteId { get; set; }
         public string PlanName { get; set; }
         public string WorkingDays { get; set; }
         public List<int> TimetableGroupIds { get; set; }
