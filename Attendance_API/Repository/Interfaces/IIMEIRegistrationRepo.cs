@@ -1,9 +1,11 @@
-﻿using Student_API.DTOs;
-using Student_API.DTOs.RequestDTO;
-using Student_API.DTOs.ServiceResponse;
+﻿using  System.Collections.Generic;
+using System.Threading.Tasks;
+using Attendance_API.DTOs.ServiceResponse;
+using Attendance_API.Models;
+using Attendance_API.DTOs;
 
 
-namespace Student_API.Repository.Interfaces
+namespace Attendance_API.Repository.Interfaces
 {
     public interface IIMEIRegistrationRepo
     {

@@ -1,11 +1,11 @@
-﻿using Student_API.DTOs.RequestDTO;
-using Student_API.Repository.Interfaces;
-using Student_API.DTOs.ServiceResponse;
+﻿
+using Attendance_API.Repository.Interfaces;
+using Attendance_API.DTOs.ServiceResponse;
 using System.Data;
 using Dapper;
-using Student_API.DTOs;
+using Attendance_API.DTOs;
 
-namespace Student_API.Repository.Implementations
+namespace Attendance_API.Repository.Implementations
 {
     public class IMEIRegistrationRepo : IIMEIRegistrationRepo
     {
