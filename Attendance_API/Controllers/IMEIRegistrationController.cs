@@ -1,11 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Student_API.Services.Interfaces;
-using Student_API.DTOs.ServiceResponse;
-using Student_API.DTOs.RequestDTO;
+
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using Attendance_API.Services.Interfaces;
+using Attendance_API.DTOs;
 
-namespace Student_API.Controllers
+namespace Attendance_API.Controllers
 {
     [Route("iGuru/[controller]")]
     [ApiController]

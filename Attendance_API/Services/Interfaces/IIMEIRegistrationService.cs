@@ -1,7 +1,6 @@
-﻿using Student_API.DTOs;
-using Student_API.DTOs.RequestDTO;
-using Student_API.DTOs.ServiceResponse;
-namespace Student_API.Services.Interfaces
+﻿using Attendance_API.DTOs;
+using Attendance_API.DTOs.ServiceResponse;
+namespace Attendance_API.Services.Interfaces
 {
     public interface IIMEIRegistrationService
     {

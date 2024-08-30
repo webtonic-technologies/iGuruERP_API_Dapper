@@ -28,7 +28,7 @@ namespace Student_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<TimeTableGroupDTO>> GetTimeTableGroupById(int timetableGroupId)
+        public async Task<ServiceResponse<TimeTableGroupDTOResponse>> GetTimeTableGroupById(int timetableGroupId)
         {
             try
             {
@@ -37,7 +37,7 @@ namespace Student_API.Services.Implementations
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<TimeTableGroupDTO>(false, ex.Message, null, 500);
+                return new ServiceResponse<TimeTableGroupDTOResponse>(false, ex.Message, null, 500);
             }
         }
 
