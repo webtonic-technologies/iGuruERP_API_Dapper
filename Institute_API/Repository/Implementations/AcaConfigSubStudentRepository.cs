@@ -32,7 +32,6 @@ namespace Institute_API.Repository.Implementations
 
                     foreach (var mapping in request.SubStudentMappingReqs)
                     {
-                        mapping.InstituteId = request.InstituteId;
                         string insertOrUpdateMappingSql = @"
                     IF EXISTS (SELECT * FROM tbl_StudentSubjectMapping WHERE SSMappingId = @SSMappingId)
                     BEGIN
@@ -50,8 +49,8 @@ namespace Institute_API.Repository.Implementations
                         await _connection.ExecuteAsync(insertOrUpdateMappingSql, new
                         {
                             mapping.SSMappingId,
-                            mapping.InstituteId,
-                            mapping.StudentId,
+                            request.InstituteId,
+                            request.StudentId,
                             mapping.SubjectId
                         }, transaction);
                     }
@@ -140,7 +139,92 @@ namespace Institute_API.Repository.Implementations
                 return new ServiceResponse<List<SubjectList>>(false, ex.Message, new List<SubjectList>(), 500);
             }
         }
-        public async Task<ServiceResponse<AcaConfigSubStudentRequest>> GetSubjectStudentMappingList(MappingListRequest request)
+        //public async Task<ServiceResponse<AcaConfigSubStudentResponse>> GetSubjectStudentMappingList(MappingListRequest request)
+        //{
+        //    try
+        //    {
+        //        // Base SQL query to get mappings
+        //        var sql = @"
+        //SELECT ssm.SSMappingId,
+        //       ssm.InstituteId,
+        //       ssm.StudentId,
+        //       ssm.SubjectId
+        //FROM tbl_StudentSubjectMapping ssm
+        //INNER JOIN tbl_ClassSectionSubjectMapping cssm ON ssm.SubjectId = cssm.SubjectId
+        //INNER JOIN tbl_Subjects s ON s.SubjectId = ssm.SubjectId
+        //WHERE ssm.InstituteId = @InstituteId
+        //  AND s.IsDeleted = 0
+        //  AND cssm.IsDeleted = 0";
+
+        //        // Initialize parameters
+        //        var parameters = new DynamicParameters();
+        //        parameters.Add("InstituteId", request.InstituteId);
+
+        //        // Conditionally apply filters
+        //        if (request.SubjectTypeId > 0)
+        //        {
+        //            sql += " AND s.subject_type_id = @SubjectTypeId";
+        //            parameters.Add("SubjectTypeId", request.SubjectTypeId);
+        //        }
+
+        //        // Execute the query to get mappings
+        //        var mappings = await _connection.QueryAsync<SubStudentMappingReq>(sql, parameters);
+
+        //        // Check if mappings are found
+        //        if (mappings != null && mappings.Any())
+        //        {
+        //            // Get unique student IDs from the mappings
+        //            var studentIds = mappings.Select(m => m.StudentId).Distinct().ToList();
+
+        //            // Fetch class and section IDs for the students
+        //            var studentClassSectionSql = @"
+        //    SELECT student_id, class_id, section_id
+        //    FROM tbl_StudentMaster
+        //    WHERE student_id IN @StudentIds";
+
+        //            var studentClassSections = await _connection.QueryAsync<dynamic>(studentClassSectionSql, new { StudentIds = studentIds });
+
+        //            // Create a dictionary for quick lookup of class and section by student ID
+        //            var studentClassSectionDict = studentClassSections.ToDictionary(s => s.student_id, s => new
+        //            {
+        //                ClassId = s.class_id,
+        //                SectionId = s.section_id
+        //            });
+
+        //            // Filter mappings based on request ClassId and SectionId
+        //            var filteredMappings = mappings
+        //                .Where(mapping =>
+        //                    studentClassSectionDict.TryGetValue(mapping.StudentId, out var classSection) &&
+        //                    classSection.ClassId == request.ClassId &&
+        //                    classSection.SectionId == request.SectionId
+        //                ).ToList();
+
+        //            var response = new AcaConfigSubStudentRequest
+        //            {
+        //                InstituteId = request.InstituteId,
+        //                SubStudentMappingReqs = filteredMappings
+        //            };
+
+        //            if (filteredMappings.Any())
+        //            {
+        //                return new ServiceResponse<AcaConfigSubStudentRequest>(true, "Records found", response, 200);
+        //            }
+        //            else
+        //            {
+        //                return new ServiceResponse<AcaConfigSubStudentRequest>(false, "No records found", response, 204);
+        //            }
+        //        }
+        //        else
+        //        {
+        //            return new ServiceResponse<AcaConfigSubStudentRequest>(false, "No records found", new AcaConfigSubStudentRequest(), 204);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return new ServiceResponse<AcaConfigSubStudentRequest>(false, ex.Message, new AcaConfigSubStudentRequest(), 500);
+        //    }
+        //}
+        public async Task<ServiceResponse<AcaConfigSubStudentResponse>> GetSubjectStudentMappingList(MappingListRequest request)
         {
             try
             {
@@ -149,7 +233,8 @@ namespace Institute_API.Repository.Implementations
         SELECT ssm.SSMappingId,
                ssm.InstituteId,
                ssm.StudentId,
-               ssm.SubjectId
+               ssm.SubjectId,
+               s.SubjectName
         FROM tbl_StudentSubjectMapping ssm
         INNER JOIN tbl_ClassSectionSubjectMapping cssm ON ssm.SubjectId = cssm.SubjectId
         INNER JOIN tbl_Subjects s ON s.SubjectId = ssm.SubjectId
@@ -169,13 +254,13 @@ namespace Institute_API.Repository.Implementations
                 }
 
                 // Execute the query to get mappings
-                var mappings = await _connection.QueryAsync<SubStudentMappingReq>(sql, parameters);
+                var mappings = await _connection.QueryAsync<dynamic>(sql, parameters);
 
                 // Check if mappings are found
                 if (mappings != null && mappings.Any())
                 {
                     // Get unique student IDs from the mappings
-                    var studentIds = mappings.Select(m => m.StudentId).Distinct().ToList();
+                    var studentIds = mappings.Select(m => (int)m.StudentId).Distinct().ToList();
 
                     // Fetch class and section IDs for the students
                     var studentClassSectionSql = @"
@@ -185,44 +270,58 @@ namespace Institute_API.Repository.Implementations
 
                     var studentClassSections = await _connection.QueryAsync<dynamic>(studentClassSectionSql, new { StudentIds = studentIds });
 
-                    // Create a dictionary for quick lookup of class and section by student ID
-                    var studentClassSectionDict = studentClassSections.ToDictionary(s => s.student_id, s => new
+                    // Create a list to store filtered mappings
+                    var filteredMappings = new List<dynamic>();
+
+                    // Iterate through each mapping to filter based on ClassId and SectionId
+                    foreach (var mapping in mappings)
                     {
-                        ClassId = s.class_id,
-                        SectionId = s.section_id
-                    });
+                        var studentDetail = studentClassSections.FirstOrDefault(s => s.student_id == mapping.StudentId);
 
-                    // Filter mappings based on request ClassId and SectionId
-                    var filteredMappings = mappings
-                        .Where(mapping =>
-                            studentClassSectionDict.TryGetValue(mapping.StudentId, out var classSection) &&
-                            classSection.ClassId == request.ClassId &&
-                            classSection.SectionId == request.SectionId
-                        ).ToList();
+                        if (studentDetail != null &&
+                            studentDetail.class_id == request.ClassId &&
+                            studentDetail.section_id == request.SectionId)
+                        {
+                            filteredMappings.Add(mapping);
+                        }
+                    }
 
-                    var response = new AcaConfigSubStudentRequest
+                    // Prepare response
+                    var response = new AcaConfigSubStudentResponse
                     {
                         InstituteId = request.InstituteId,
-                        SubStudentMappingReqs = filteredMappings
+                        StudentSubjectResponses = filteredMappings
+                            .GroupBy(m => m.SubjectId)
+                            .Select(g => new StudentSubjectResponse
+                            {
+                                subjectId = g.Key,
+                                SubjectName = g.First().SubjectName,
+                                Students = g.Select(m => new Students
+                                {
+                                    StudentId = m.StudentId,
+                                    StudentName = $"{m.First_Name} {m.Middle_Name} {m.Last_Name}".Trim()
+                                }).ToList()
+                            }).ToList()
                     };
 
+                    // Return appropriate response
                     if (filteredMappings.Any())
                     {
-                        return new ServiceResponse<AcaConfigSubStudentRequest>(true, "Records found", response, 200);
+                        return new ServiceResponse<AcaConfigSubStudentResponse>(true, "Records found", response, 200);
                     }
                     else
                     {
-                        return new ServiceResponse<AcaConfigSubStudentRequest>(false, "No records found", response, 204);
+                        return new ServiceResponse<AcaConfigSubStudentResponse>(false, "No records found", response, 204);
                     }
                 }
                 else
                 {
-                    return new ServiceResponse<AcaConfigSubStudentRequest>(false, "No records found", new AcaConfigSubStudentRequest(), 204);
+                    return new ServiceResponse<AcaConfigSubStudentResponse>(false, "No records found", new AcaConfigSubStudentResponse(), 204);
                 }
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<AcaConfigSubStudentRequest>(false, ex.Message, new AcaConfigSubStudentRequest(), 500);
+                return new ServiceResponse<AcaConfigSubStudentResponse>(false, ex.Message, new AcaConfigSubStudentResponse(), 500);
             }
         }
     }

@@ -27,60 +27,80 @@ namespace Institute_API.Repository.Implementations
                 {
                     try
                     {
-                        // SQL query to insert or update the subject and retrieve SubjectId
-                        string upsertSubjectSql = @"
-                DECLARE @OutputSubjectId INT;
-
-                IF EXISTS (SELECT 1 FROM tbl_Subjects WHERE SubjectId = @SubjectId)
-                BEGIN
-                    UPDATE tbl_Subjects
-                    SET SubjectName = @SubjectName,
-                        SubjectCode = @SubjectCode,
-                        subject_type_id = @subject_type_id,
-                        IsDeleted = @IsDeleted
-                    WHERE SubjectId = @SubjectId;
-
-                    -- Get the updated SubjectId
-                    SET @OutputSubjectId = @SubjectId;
-                END
-                ELSE
-                BEGIN
-                    INSERT INTO tbl_Subjects (InstituteId, SubjectName, SubjectCode, subject_type_id, IsDeleted)
-                    VALUES (@InstituteId, @SubjectName, @SubjectCode, @subject_type_id, @IsDeleted);
-                    
-                    -- Get the new SubjectId
-                    SET @OutputSubjectId = CAST(SCOPE_IDENTITY() AS INT);
-                END
-
-                SELECT @OutputSubjectId; -- Return the SubjectId
-                ";
-
-                        request.IsDeleted = false;
-                        if (request.SubjectId > 0)
+                        // Check if there are any subjects to process
+                        if (request.Subjects == null || request.Subjects.Count == 0)
                         {
-                            foreach (var data in request.SubjectSectionMappingRequests)
+                            return new ServiceResponse<string>(false, "No subjects provided.", string.Empty, 400);
+                        }
+
+                        // Process each subject
+                        foreach (var subject in request.Subjects)
+                        {
+                            // SQL query to insert or update the subject and retrieve SubjectId
+                            string upsertSubjectSql = @"
+                    DECLARE @OutputSubjectId INT;
+
+                    IF EXISTS (SELECT 1 FROM tbl_Subjects WHERE SubjectId = @SubjectId)
+                    BEGIN
+                        UPDATE tbl_Subjects
+                        SET SubjectName = @SubjectName,
+                            SubjectCode = @SubjectCode,
+                            subject_type_id = @subject_type_id,
+                            IsDeleted = @IsDeleted
+                        WHERE SubjectId = @SubjectId;
+
+                        -- Get the updated SubjectId
+                        SET @OutputSubjectId = @SubjectId;
+                    END
+                    ELSE
+                    BEGIN
+                        INSERT INTO tbl_Subjects (InstituteId, SubjectName, SubjectCode, subject_type_id, IsDeleted)
+                        VALUES (@InstituteId, @SubjectName, @SubjectCode, @subject_type_id, @IsDeleted);
+                        
+                        -- Get the new SubjectId
+                        SET @OutputSubjectId = CAST(SCOPE_IDENTITY() AS INT);
+                    END
+
+                    SELECT @OutputSubjectId; -- Return the SubjectId
+                    ";
+
+                            // Map the subject properties to the parameters
+                            var subjectParams = new
                             {
-                                data.SubjectId = request.SubjectId;
+                                request.InstituteId,
+                                subject.SubjectId,
+                                subject.SubjectName,
+                                subject.SubjectCode,
+                                subject.subject_type_id,
+                                subject.IsDeleted
+                            };
+
+                            // Execute the upsert and retrieve the SubjectId
+                            var subjectId = await connection.QuerySingleAsync<int>(upsertSubjectSql, subjectParams, transaction);
+
+                            // Update SubjectId for all mappings in the request
+                            if (request.SubjectSectionMappingRequests != null && request.SubjectSectionMappingRequests.Count > 0)
+                            {
+                                foreach (var mapping in request.SubjectSectionMappingRequests)
+                                {
+                                    mapping.SubjectId = subjectId;
+                                }
+
+                                // Handle subject section mappings
+                                int rowsInserted = await HandleSubjectMappings(request.SubjectSectionMappingRequests, subjectId, transaction);
+
+                                // If handling mappings failed, rollback the transaction and return an error
+                                if (rowsInserted < 0)
+                                {
+                                    transaction.Rollback();
+                                    return new ServiceResponse<string>(false, "Failed to save subject mappings.", string.Empty, 500);
+                                }
                             }
                         }
 
-                        // Execute the upsert and retrieve the SubjectId
-                        var subjectId = await connection.QuerySingleAsync<int>(upsertSubjectSql, request, transaction);
-
-                        // Handle subject section mappings
-                        int rowsInserted = await HandleSubjectMappings(request.SubjectSectionMappingRequests, subjectId, transaction);
-
                         // Commit transaction if all operations were successful
-                        if (rowsInserted >= 0)
-                        {
-                            transaction.Commit();
-                            return new ServiceResponse<string>(true, "Subject and mappings saved successfully.", "Operation successful", 200); // Return the SubjectId
-                        }
-                        else
-                        {
-                            transaction.Rollback();
-                            return new ServiceResponse<string>(false, "Failed to save subject mappings.", string.Empty, 500);
-                        }
+                        transaction.Commit();
+                        return new ServiceResponse<string>(true, "Subjects and mappings saved successfully.", "Operation successful", 200);
                     }
                     catch (Exception ex)
                     {
@@ -94,6 +114,115 @@ namespace Institute_API.Repository.Implementations
                 }
             }
         }
+
+        // Method to handle subject section mappings
+        private async Task<int> HandleSubjectMappings(List<SubjectSectionMappingRequest> mappings, int subjectId, IDbTransaction transaction)
+        {
+            if (mappings == null || mappings.Count == 0)
+            {
+                return 0; // No mappings to process
+            }
+
+            string insertMappingSql = @"
+    INSERT INTO tbl_SubjectSectionMapping (SubjectId, class_id, section_id, IsDeleted)
+    VALUES (@SubjectId, @class_id, @section_id, @IsDeleted)";
+
+            foreach (var mapping in mappings)
+            {
+                var mappingParams = new
+                {
+                    mapping.SubjectId,
+                    mapping.class_id,
+                    mapping.section_id,
+                    mapping.IsDeleted
+                };
+
+                await _connection.ExecuteAsync(insertMappingSql, mappingParams, transaction);
+            }
+
+            return mappings.Count; // Return the number of rows inserted
+        }
+
+        //public async Task<ServiceResponse<string>> AddUpdateAcademicConfigSubject(SubjectRequest request)
+        //{
+        //    if (_connection.State != ConnectionState.Open)
+        //    {
+        //        _connection.Open();
+        //    }
+
+        //    using (var connection = _connection)
+        //    {
+        //        using (var transaction = connection.BeginTransaction())
+        //        {
+        //            try
+        //            {
+        //                // SQL query to insert or update the subject and retrieve SubjectId
+        //                string upsertSubjectSql = @"
+        //        DECLARE @OutputSubjectId INT;
+
+        //        IF EXISTS (SELECT 1 FROM tbl_Subjects WHERE SubjectId = @SubjectId)
+        //        BEGIN
+        //            UPDATE tbl_Subjects
+        //            SET SubjectName = @SubjectName,
+        //                SubjectCode = @SubjectCode,
+        //                subject_type_id = @subject_type_id,
+        //                IsDeleted = @IsDeleted
+        //            WHERE SubjectId = @SubjectId;
+
+        //            -- Get the updated SubjectId
+        //            SET @OutputSubjectId = @SubjectId;
+        //        END
+        //        ELSE
+        //        BEGIN
+        //            INSERT INTO tbl_Subjects (InstituteId, SubjectName, SubjectCode, subject_type_id, IsDeleted)
+        //            VALUES (@InstituteId, @SubjectName, @SubjectCode, @subject_type_id, @IsDeleted);
+
+        //            -- Get the new SubjectId
+        //            SET @OutputSubjectId = CAST(SCOPE_IDENTITY() AS INT);
+        //        END
+
+        //        SELECT @OutputSubjectId; -- Return the SubjectId
+        //        ";
+
+        //                request.IsDeleted = false;
+        //                if (request.SubjectId > 0)
+        //                {
+        //                    foreach (var data in request.SubjectSectionMappingRequests)
+        //                    {
+        //                        data.SubjectId = request.SubjectId;
+        //                    }
+        //                }
+
+        //                // Execute the upsert and retrieve the SubjectId
+        //                var subjectId = await connection.QuerySingleAsync<int>(upsertSubjectSql, request, transaction);
+
+        //                // Handle subject section mappings
+        //                int rowsInserted = await HandleSubjectMappings(request.SubjectSectionMappingRequests, subjectId, transaction);
+
+        //                // Commit transaction if all operations were successful
+        //                if (rowsInserted >= 0)
+        //                {
+        //                    transaction.Commit();
+        //                    return new ServiceResponse<string>(true, "Subject and mappings saved successfully.", "Operation successful", 200); // Return the SubjectId
+        //                }
+        //                else
+        //                {
+        //                    transaction.Rollback();
+        //                    return new ServiceResponse<string>(false, "Failed to save subject mappings.", string.Empty, 500);
+        //                }
+        //            }
+        //            catch (Exception ex)
+        //            {
+        //                transaction.Rollback();
+        //                return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
+        //            }
+        //            finally
+        //            {
+        //                connection.Close();
+        //            }
+        //        }
+        //    }
+        //}
         public async Task<ServiceResponse<List<SubjectType>>> GetSubjectTypeList()
         {
             try
@@ -502,31 +631,31 @@ namespace Institute_API.Repository.Implementations
                 return new ServiceResponse<List<SubjectResponse>>(false, ex.Message, new List<SubjectResponse>(), 500);
             }
         }
-        private async Task<int> HandleSubjectMappings(List<SubjectSectionMappingRequest>? mappings, int subjectId, IDbTransaction transaction)
-        {
-            if (mappings == null || mappings.Count == 0) return 0;
+    //    private async Task<int> HandleSubjectMappings(List<SubjectSectionMappingRequest>? mappings, int subjectId, IDbTransaction transaction)
+    //    {
+    //        if (mappings == null || mappings.Count == 0) return 0;
 
-            // Delete existing mappings
-            string deleteMappingSql = "DELETE FROM tbl_ClassSectionSubjectMapping WHERE SubjectId = @SubjectId";
-            await _connection.ExecuteAsync(deleteMappingSql, new { SubjectId = subjectId }, transaction);
+    //        // Delete existing mappings
+    //        string deleteMappingSql = "DELETE FROM tbl_ClassSectionSubjectMapping WHERE SubjectId = @SubjectId";
+    //        await _connection.ExecuteAsync(deleteMappingSql, new { SubjectId = subjectId }, transaction);
 
-            // Insert new mappings
-            string insertMappingSql = @"
-        INSERT INTO tbl_ClassSectionSubjectMapping (SubjectId, class_id, section_id, IsDeleted)
-        VALUES (@SubjectId, @class_id, @section_id, @IsDeleted);
-    ";
+    //        // Insert new mappings
+    //        string insertMappingSql = @"
+    //    INSERT INTO tbl_ClassSectionSubjectMapping (SubjectId, class_id, section_id, IsDeleted)
+    //    VALUES (@SubjectId, @class_id, @section_id, @IsDeleted);
+    //";
 
-            var mappingParams = mappings.Select(mapping => new
-            {
-                SubjectId = subjectId,
-                mapping.class_id,
-                mapping.section_id,
-                IsDeleted = false
-            }).ToList();
+    //        var mappingParams = mappings.Select(mapping => new
+    //        {
+    //            SubjectId = subjectId,
+    //            mapping.class_id,
+    //            mapping.section_id,
+    //            IsDeleted = false
+    //        }).ToList();
 
-            int rowsInserted = await _connection.ExecuteAsync(insertMappingSql, mappingParams, transaction);
+    //        int rowsInserted = await _connection.ExecuteAsync(insertMappingSql, mappingParams, transaction);
 
-            return rowsInserted;
-        }
+    //        return rowsInserted;
+    //    }
     }
 }
