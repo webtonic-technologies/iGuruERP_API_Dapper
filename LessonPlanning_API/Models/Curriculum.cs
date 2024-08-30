@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Lesson_API.DTOs.Requests;
+using System.Collections.Generic;
 
 namespace Lesson_API.Models
 {
@@ -9,10 +10,10 @@ namespace Lesson_API.Models
         public int SubjectID { get; set; }
         public int InstituteID { get; set; }
         public bool IsActive { get; set; }
-        public List<CurriculumChapter> CurriculumChapters { get; set; }
+        public List<CurriculumChapter1> CurriculumChapters { get; set; }
     }
 
-    public class CurriculumChapter
+    public class CurriculumChapter1
     {
         public int CurriculumChapterID { get; set; }
         public string ChapterName { get; set; }
@@ -22,6 +23,7 @@ namespace Lesson_API.Models
         public int InstituteID { get; set; }
         public bool IsActive { get; set; }
         public List<CurriculumSubTopic> CurriculumSubTopics { get; set; }
+        public List<chapterDocs> chapterDocs { get; set; }
     }
 
     public class CurriculumSubTopic
@@ -34,6 +36,7 @@ namespace Lesson_API.Models
         public int InstituteID { get; set; }
         public bool IsActive { get; set; }
         public List<CurriculumResourceDetails> CurriculumResourceDetails { get; set; }
+        public List<SubtopicDocs> SubtopicDocs { get; set; }
     }
 
     public class CurriculumResourceDetails

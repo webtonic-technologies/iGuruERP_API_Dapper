@@ -22,24 +22,56 @@ namespace LibraryManagement_API.Repository.Implementations
             _connection = new SqlConnection(configuration.GetConnectionString("DefaultConnection"));
         }
 
-        public async Task<ServiceResponse<string>> AddUpdateAuthor(Author request)
+        public async Task<ServiceResponse<string>> AddUpdateAuthors(AddUpdateAuthorsRequest request)
         {
-            try
+            using (var connection = _connection)
             {
-                string sql = request.AuthorID == 0 ?
-                    @"INSERT INTO tblAuthor (InstituteID, AuthorName, IsActive) 
-                      VALUES (@InstituteID, @AuthorName, @IsActive)" :
-                    @"UPDATE tblAuthor SET InstituteID = @InstituteID, AuthorName = @AuthorName, 
-                      IsActive = @IsActive WHERE AuthorID = @AuthorID";
+                connection.Open();
+                using (var transaction = connection.BeginTransaction())
+                {
+                    try
+                    {
+                        foreach (var author in request.Authors)
+                        {
+                            string sql;
 
-                int rowsAffected = await _connection.ExecuteAsync(sql, request);
+                            if (author.AuthorID == 0)
+                            {
+                                sql = @"INSERT INTO tblAuthor (InstituteID, AuthorName, IsActive) 
+                                        VALUES (@InstituteID, @AuthorName, @IsActive)";
 
-                return new ServiceResponse<string>(rowsAffected > 0, rowsAffected > 0 ? "Success" : "Failure",
-                    rowsAffected > 0 ? "Author saved successfully" : "Failed to save author", rowsAffected > 0 ? 200 : 400);
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<string>(false, ex.Message, null, 500);
+                                await connection.ExecuteAsync(sql, new
+                                {
+                                    author.InstituteID,
+                                    author.AuthorName,
+                                    author.IsActive
+                                }, transaction);
+                            }
+                            else
+                            {
+                                sql = @"UPDATE tblAuthor 
+                                        SET InstituteID = @InstituteID, AuthorName = @AuthorName, IsActive = @IsActive
+                                        WHERE AuthorID = @AuthorID";
+
+                                await connection.ExecuteAsync(sql, new
+                                {
+                                    author.AuthorID,
+                                    author.InstituteID,
+                                    author.AuthorName,
+                                    author.IsActive
+                                }, transaction);
+                            }
+                        }
+
+                        transaction.Commit();
+                        return new ServiceResponse<string>(true, "Success", "Authors saved successfully", 200);
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        return new ServiceResponse<string>(false, ex.Message, null, 500);
+                    }
+                }
             }
         }
 
@@ -63,6 +95,24 @@ namespace LibraryManagement_API.Repository.Implementations
             catch (Exception ex)
             {
                 return new ServiceResponse<List<AuthorResponse>>(false, ex.Message, null, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<List<AuthorFetchResponse>>> GetAllAuthorsFetch(GetAllAuthorsFetchRequest request)
+        {
+            try
+            {
+                string sql = @"SELECT AuthorID, InstituteID, AuthorName, IsActive 
+                               FROM tblAuthor 
+                               WHERE InstituteID = @InstituteID AND IsActive = 1";
+
+                var authors = await _connection.QueryAsync<AuthorFetchResponse>(sql, new { request.InstituteID });
+
+                return new ServiceResponse<List<AuthorFetchResponse>>(true, "Records Found", authors.AsList(), 200);
+            }
+            catch (System.Exception ex)
+            {
+                return new ServiceResponse<List<AuthorFetchResponse>>(false, ex.Message, null, 500);
             }
         }
 

@@ -22,27 +22,52 @@ namespace LibraryManagement_API.Repository.Implementations
             _connection = new SqlConnection(configuration.GetConnectionString("DefaultConnection"));
         }
 
-        public async Task<ServiceResponse<string>> AddUpdateGenre(Genre request)
+        public async Task<ServiceResponse<string>> AddUpdateGenres(AddUpdateGenreRequest request)
         {
-            try
+            using (var connection = _connection)
             {
-                string sql = request.GenreID == 0 ?
-                    @"INSERT INTO tblGenre (InstituteID, GenreName, Description, IsActive) 
-                      VALUES (@InstituteID, @GenreName, @Description, @IsActive)" :
-                    @"UPDATE tblGenre SET InstituteID = @InstituteID, GenreName = @GenreName, Description = @Description, 
-                      IsActive = @IsActive WHERE GenreID = @GenreID";
+                connection.Open();
+                using (var transaction = connection.BeginTransaction())
+                {
+                    try
+                    {
+                        foreach (var genre in request.Genres)
+                        {
+                            string sql;
 
-                int rowsAffected = await _connection.ExecuteAsync(sql, request);
+                            if (genre.GenreID == 0)
+                            {
+                                sql = @"INSERT INTO tblGenre (InstituteID, GenreName, Description, IsActive) 
+                                        VALUES (@InstituteID, @GenreName, @Description, @IsActive)";
+                            }
+                            else
+                            {
+                                sql = @"UPDATE tblGenre 
+                                        SET InstituteID = @InstituteID, GenreName = @GenreName, Description = @Description, IsActive = @IsActive
+                                        WHERE GenreID = @GenreID";
+                            }
 
-                return new ServiceResponse<string>(rowsAffected > 0, rowsAffected > 0 ? "Success" : "Failure",
-                    rowsAffected > 0 ? "Genre saved successfully" : "Failed to save genre", rowsAffected > 0 ? 200 : 400);
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<string>(false, ex.Message, null, 500);
+                            await connection.ExecuteAsync(sql, new
+                            {
+                                genre.GenreID,
+                                genre.InstituteID,
+                                genre.GenreName,
+                                genre.Description,
+                                genre.IsActive
+                            }, transaction);
+                        }
+
+                        transaction.Commit();
+                        return new ServiceResponse<string>(true, "Success", "Genres saved successfully", 200);
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        return new ServiceResponse<string>(false, ex.Message, null, 500);
+                    }
+                }
             }
         }
-
         public async Task<ServiceResponse<List<GenreResponse>>> GetAllGenres(GetAllGenreRequest request)
         {
             try

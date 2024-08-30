@@ -10,8 +10,10 @@ namespace LibraryManagement_API.Repository.Interfaces
     public interface IAuthorRepository
     {
         Task<ServiceResponse<List<AuthorResponse>>> GetAllAuthors(GetAllAuthorsRequest request);
+        Task<ServiceResponse<List<AuthorFetchResponse>>> GetAllAuthorsFetch(GetAllAuthorsFetchRequest request);
+
         Task<ServiceResponse<Author>> GetAuthorById(int authorId);
-        Task<ServiceResponse<string>> AddUpdateAuthor(Author request);
+        Task<ServiceResponse<string>> AddUpdateAuthors(AddUpdateAuthorsRequest request);
         Task<ServiceResponse<bool>> DeleteAuthor(int authorId);
     }
 }

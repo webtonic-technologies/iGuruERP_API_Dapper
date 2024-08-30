@@ -4,6 +4,7 @@ using Attendance_API.Services.Implementations;
 using Attendance_API.Services.Interfaces;
 using Attendance_API.Repository.Implementations;
 using Attendance_API.Repository.Interfaces;
+using Student_API.Attendance_API.Implementations;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +33,9 @@ builder.Services.AddScoped<ISubjectAttendanceAnalysisRepo, SubjectAttendanceAnal
 builder.Services.AddScoped<IClassAttendanceAnalysisService, ClassAttendanceAnalysisService>();
 builder.Services.AddScoped<IStudentAttendanceDashboardService, StudentAttendanceDashboardService>();
 builder.Services.AddScoped<IStudentAttendanceDashboardRepo, StudentAttendanceDashboardRepo>();
+builder.Services.AddScoped<ISubjectAttendanceAnalysisService, SubjectAttendanceAnalysisService>();
+builder.Services.AddTransient<IIMEIRegistrationService, IMEIRegistrationService>();
+builder.Services.AddTransient<IIMEIRegistrationRepo, IMEIRegistrationRepo>();
 
 
 builder.Services.AddControllers();

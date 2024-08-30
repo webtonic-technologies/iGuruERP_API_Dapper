@@ -7,8 +7,9 @@ namespace HostelManagement_API.Repository.Interfaces
 {
     public interface IBuildingRepository
     {
-        Task<int> AddUpdateBuilding(AddUpdateBuildingRequest request);
+        Task<int> AddUpdateBuildings(AddUpdateBuildingsRequest request);
         Task<List<GetAllBuildingsResponse>> GetAllBuildings(GetAllBuildingsRequest request);  // Corrected return type
+        Task<IEnumerable<BuildingResponse>> GetAllBuildingsFetch();
         Task<BuildingResponse> GetBuildingById(int buildingId);
         Task<int> DeleteBuilding(int buildingId);
     }

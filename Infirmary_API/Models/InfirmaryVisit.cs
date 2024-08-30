@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Infirmary_API.DTOs.Requests;
+using System;
 using System.Collections.Generic;
 
 namespace Infirmary_API.Models
@@ -23,5 +24,6 @@ namespace Infirmary_API.Models
 
         // Add this property to fix the error
         public List<Medicine> Medicines { get; set; }
+        public List<InfirmaryVisitDocs>? InfirmaryVisitDocs { get; set; }
     }
 }

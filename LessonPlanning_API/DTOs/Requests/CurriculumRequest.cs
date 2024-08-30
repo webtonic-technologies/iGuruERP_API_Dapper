@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using Lesson_API.Models;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using Microsoft.AspNetCore.Http.HttpResults;
+using System.Collections.Generic;
 
 namespace Lesson_API.DTOs.Requests
 {
@@ -18,6 +21,7 @@ namespace Lesson_API.DTOs.Requests
         public int TotalSessions { get; set; }
         public string Attachment { get; set; }
         public List<CurriculumSubTopicRequest> CurriculumSubTopics { get; set; }
+        public List<chapterDocs> chapterDocs { get; set; }
     }
 
     public class CurriculumSubTopicRequest
@@ -27,6 +31,7 @@ namespace Lesson_API.DTOs.Requests
         public int TotalSession { get; set; }
         public string Attachment { get; set; }
         public List<CurriculumResourceDetailsRequest> CurriculumResourceDetails { get; set; }
+        public List<SubtopicDocs> SubtopicDocs { get; set; }
     }
 
     public class CurriculumResourceDetailsRequest
@@ -37,5 +42,17 @@ namespace Lesson_API.DTOs.Requests
         public string TeachingResouces { get; set; }
         public string TeachingMethod { get; set; }
         public string Criteria { get; set; }
+    }
+    public class chapterDocs
+    {
+        public int DocumentsId { get; set; }
+        public int CurriculumChapterID { get; set; }
+        public string DocFile { get; set; } = string.Empty;
+    }
+    public class SubtopicDocs
+    {
+        public int DocumentsId { get; set; }
+        public int CurriculumSubTopicID { get; set; }
+        public string DocFile { get; set; } = string.Empty;
     }
 }

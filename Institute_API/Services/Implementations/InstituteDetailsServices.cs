@@ -49,12 +49,11 @@ namespace Institute_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<City>>> GetCitiesByStateIdAsync(int stateId)
+        public async Task<ServiceResponse<List<City>>> GetCitiesByDistrictIdAsync(int districtId)
         {
-
             try
             {
-                return await _instituteDetailsRepository.GetCitiesByStateIdAsync(stateId);
+                return await _instituteDetailsRepository.GetCitiesByDistrictIdAsync(districtId);
             }
             catch (Exception ex)
             {
@@ -75,12 +74,11 @@ namespace Institute_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<District>>> GetDistrictsByCityIdAsync(int cityId)
+        public async Task<ServiceResponse<List<District>>> GetDistrictsByStateIdAsync(int stateId)
         {
-
             try
             {
-                return await _instituteDetailsRepository.GetDistrictsByCityIdAsync(cityId);
+                return await _instituteDetailsRepository.GetDistrictsByStateIdAsync(stateId);
             }
             catch (Exception ex)
             {

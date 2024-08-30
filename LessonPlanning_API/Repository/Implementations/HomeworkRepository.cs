@@ -9,8 +9,10 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace Lesson_API.Repository.Implementations
@@ -19,11 +21,12 @@ namespace Lesson_API.Repository.Implementations
     {
         private readonly IDbConnection _dbConnection;
         private readonly ILogger<HomeworkRepository> _logger;
-
-        public HomeworkRepository(IConfiguration configuration, ILogger<HomeworkRepository> logger)
+        private readonly IWebHostEnvironment _hostingEnvironment;
+        public HomeworkRepository(IConfiguration configuration, ILogger<HomeworkRepository> logger, IWebHostEnvironment hostingEnvironment)
         {
             _dbConnection = new SqlConnection(configuration.GetConnectionString("DefaultConnection"));
             _logger = logger;
+            _hostingEnvironment = hostingEnvironment;
         }
 
         public async Task<ServiceResponse<string>> AddUpdateHomework(HomeworkRequest request)
@@ -103,19 +106,17 @@ namespace Lesson_API.Repository.Implementations
                         }, transaction);
                     }
                 }
-
+                var docs = await AddUpdateHomeworkDocs(request.HomeworkDocs, request.HomeworkID);
                 transaction.Commit();
-                return new ServiceResponse<string>(request.HomeworkID.ToString(), true, "Homework added/updated successfully.");
+                return new ServiceResponse<string>(request.HomeworkID.ToString(), true, "Homework added/updated successfully.", 200, null);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while adding/updating homework.");
                 transaction.Rollback();
-                return new ServiceResponse<string>(null, false, "Operation failed: " + ex.Message);
+                return new ServiceResponse<string>(null, false, "Operation failed: " + ex.Message, 500, null);
             }
         }
-
-
         public async Task<ServiceResponse<List<GetAllHomeworkResponse>>> GetAllHomework(GetAllHomeworkRequest request)
         {
             try
@@ -201,18 +202,18 @@ namespace Lesson_API.Repository.Implementations
 
                     homeworkList.Add(homeworkResponse);
                 }
-
-                return new ServiceResponse<List<GetAllHomeworkResponse>>(homeworkList, true, "Homeworks retrieved successfully.");
+                foreach(var data in homeworkList)
+                {
+                    data.HomeworkDocs = await GetHomeworkDocuments(data.HomeworkID);
+                }
+                return new ServiceResponse<List<GetAllHomeworkResponse>>(homeworkList, true, "Homeworks retrieved successfully.", 200, homeworkList.Count);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while retrieving homeworks.");
-                return new ServiceResponse<List<GetAllHomeworkResponse>>(null, false, "Operation failed: " + ex.Message);
+                return new ServiceResponse<List<GetAllHomeworkResponse>>(null, false, "Operation failed: " + ex.Message, 500, null);
             }
         }
-
-
-
         public async Task<ServiceResponse<Homework>> GetHomeworkById(int id)
         {
             try
@@ -251,17 +252,17 @@ namespace Lesson_API.Repository.Implementations
                 if (homework != null)
                 {
                     homework.ClassSections = (await multi.ReadAsync<HomeworkClassSection>()).ToList();
+                    homework.HomeworkDocs = await GetHomeworkDocuments(id);
                 }
 
-                return new ServiceResponse<Homework>(homework, homework != null, homework != null ? "Homework found." : "Homework not found.");
+                return new ServiceResponse<Homework>(homework, homework != null, homework != null ? "Homework found." : "Homework not found.", 200, null);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while retrieving homework by ID.");
-                return new ServiceResponse<Homework>(null, false, "Operation failed: " + ex.Message);
+                return new ServiceResponse<Homework>(null, false, "Operation failed: " + ex.Message, 500, null);
             }
         }
-
         public async Task<ServiceResponse<bool>> DeleteHomework(int id)
         {
             try
@@ -269,13 +270,127 @@ namespace Lesson_API.Repository.Implementations
                 var sql = @"UPDATE tblHomework SET IsActive = 0 WHERE HomeworkID = @HomeworkID";
                 var rowsAffected = await _dbConnection.ExecuteAsync(sql, new { HomeworkID = id });
 
-                return new ServiceResponse<bool>(rowsAffected > 0, rowsAffected > 0, rowsAffected > 0 ? "Homework deleted successfully." : "Delete operation failed.");
+                return new ServiceResponse<bool>(rowsAffected > 0, rowsAffected > 0, rowsAffected > 0 ? "Homework deleted successfully." : "Delete operation failed.", 200, null);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while deleting homework.");
-                return new ServiceResponse<bool>(false, false, "Operation failed: " + ex.Message);
+                return new ServiceResponse<bool>(false, false, "Operation failed: " + ex.Message, 500, null);
             }
+        }
+        private async Task<ServiceResponse<int>> AddUpdateHomeworkDocs(List<HomeworkDocs> request, int homeworkId)
+        {
+            if (request == null || !request.Any())
+            {
+                return new ServiceResponse<int>(0, false, "No documents provided to update", 400);
+            }
+
+            try
+            {
+                // Step 1: Hard delete existing documents for the given HomeworkID
+                string deleteSql = @"
+        DELETE FROM tblHomeworkDocuments 
+        WHERE HomeworkID = @HomeworkID"
+                ;
+
+                await _dbConnection.ExecuteAsync(deleteSql, new { HomeworkID = homeworkId });
+
+                // Step 2: Insert new documents
+                string insertSql = @"
+        INSERT INTO tblHomeworkDocuments (HomeworkID, DocFile)
+        VALUES (@HomeworkID, @DocFile)";
+
+                foreach (var doc in request)
+                {
+                    doc.HomeworkID = homeworkId; // Ensure the HomeworkID is set for each document
+                    doc.DocFile = ImageUpload(doc.DocFile); // Assuming ImageUpload handles file uploads
+                    await _dbConnection.ExecuteAsync(insertSql, doc);
+                }
+
+                return new ServiceResponse<int>(request.Count, true, "Documents added/updated successfully", 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(0, false, ex.Message, 500);
+            }
+        }
+        private async Task<List<HomeworkDocs>> GetHomeworkDocuments(int homeworkId)
+        {
+            try
+            {
+                // SQL query to select homework documents for the given HomeworkID
+                string sql = @"
+        SELECT DocumentsId, HomeworkID, DocFile
+        FROM tblHomeworkDocuments
+        WHERE HomeworkID = @HomeworkID";
+
+                // Fetching the documents from the database
+                var documents = await _dbConnection.QueryAsync<HomeworkDocs>(sql, new { HomeworkID = homeworkId });
+
+                return documents.ToList(); // Convert to list and return
+            }
+            catch (Exception ex)
+            {
+                // Handle the exception as needed (logging, rethrowing, etc.)
+                throw new Exception("Error retrieving homework documents: " + ex.Message);
+            }
+        }
+        private string ImageUpload(string image)
+        {
+            if (string.IsNullOrEmpty(image) || image == "string")
+            {
+                return string.Empty;
+            }
+            byte[] imageData = Convert.FromBase64String(image);
+            string directoryPath = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "HomeworkDocs");
+
+            if (!Directory.Exists(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
+            string fileExtension = IsJpeg(imageData) == true ? ".jpg" : IsPng(imageData) == true ? ".png" : IsGif(imageData) == true ? ".gif" : IsPdf(imageData) == true ? ".pdf" : string.Empty;
+            string fileName = Guid.NewGuid().ToString() + fileExtension;
+            string filePath = Path.Combine(directoryPath, fileName);
+            if (string.IsNullOrEmpty(fileExtension))
+            {
+                throw new InvalidOperationException("Incorrect file uploaded");
+            }
+            // Write the byte array to the image file
+            File.WriteAllBytes(filePath, imageData);
+            return filePath;
+        }
+        private bool IsJpeg(byte[] bytes)
+        {
+            // JPEG magic number: 0xFF, 0xD8
+            return bytes.Length > 1 && bytes[0] == 0xFF && bytes[1] == 0xD8;
+        }
+        private bool IsPng(byte[] bytes)
+        {
+            // PNG magic number: 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A
+            return bytes.Length > 7 && bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47
+                && bytes[4] == 0x0D && bytes[5] == 0x0A && bytes[6] == 0x1A && bytes[7] == 0x0A;
+        }
+        private bool IsGif(byte[] bytes)
+        {
+            // GIF magic number: "GIF"
+            return bytes.Length > 2 && bytes[0] == 0x47 && bytes[1] == 0x49 && bytes[2] == 0x46;
+        }
+        private bool IsPdf(byte[] fileData)
+        {
+            return fileData.Length > 4 &&
+                   fileData[0] == 0x25 && fileData[1] == 0x50 && fileData[2] == 0x44 && fileData[3] == 0x46;
+        }
+        private string GetImage(string Filename)
+        {
+            var filePath = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "HomeworkDocs", Filename);
+
+            if (!File.Exists(filePath))
+            {
+                return string.Empty;
+            }
+            byte[] fileBytes = File.ReadAllBytes(filePath);
+            string base64String = Convert.ToBase64String(fileBytes);
+            return base64String;
         }
     }
 }

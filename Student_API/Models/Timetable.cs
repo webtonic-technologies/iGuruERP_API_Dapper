@@ -9,8 +9,9 @@
         public int? Subject_id { get; set; }
         public int? Employee_id { get; set; }
         public bool IsBreak { get; set; }
-        public string AcademicYear { get; set; }
+        public int AcademicYear { get; set; }
         public int Class_id { get; set; }
         public int Section_id { get; set; }
+        public int InstituteId { get; set; }
     }
 }

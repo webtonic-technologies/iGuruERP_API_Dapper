@@ -41,11 +41,11 @@ namespace Student_API.Controllers
 
         [HttpGet]
         [Route("GetTimeTableGroup")]
-        public async Task<IActionResult> GetTimeTableGroup()
+        public async Task<IActionResult> GetTimeTableGroup(int InstituteId)
         {
             try
             {
-                var data = await _timetableServices.GetTimeTableGroup();
+                var data = await _timetableServices.GetTimeTableGroup(InstituteId);
                 if (data.Success)
                 {
                     return Ok(data);
@@ -129,11 +129,11 @@ namespace Student_API.Controllers
 
         [HttpGet]
         [Route("GetTimeTableDaysPlan")]
-        public async Task<IActionResult> GetTimeTableDaysPlan()
+        public async Task<IActionResult> GetTimeTableDaysPlan(int InstituteId)
         {
             try
             {
-                var data = await _timetableServices.GetTimeTableDaysPlan();
+                var data = await _timetableServices.GetTimeTableDaysPlan(InstituteId);
                 if (data.Success)
                 {
                     return Ok(data);
@@ -171,7 +171,7 @@ namespace Student_API.Controllers
             }
         }
 
-        [HttpGet]
+        [HttpPost]
         [Route("GetTimeTableMakerList")]
         public async Task<IActionResult> GetTimeTableMakerList(TimetableParam timetableParam)
         {
@@ -190,7 +190,7 @@ namespace Student_API.Controllers
             catch (Exception e)
             {
                 return BadRequest(e.Message);
-            }
+            } 
         }
 
         [HttpDelete]

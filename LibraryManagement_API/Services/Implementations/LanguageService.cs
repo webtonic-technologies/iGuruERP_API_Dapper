@@ -4,6 +4,8 @@ using LibraryManagement_API.DTOs.ServiceResponses;
 using LibraryManagement_API.Models;
 using LibraryManagement_API.Repository.Interfaces;
 using LibraryManagement_API.Services.Interfaces;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace LibraryManagement_API.Services.Implementations
 {
@@ -16,7 +18,7 @@ namespace LibraryManagement_API.Services.Implementations
             _languageRepository = languageRepository;
         }
 
-        public async Task<ServiceResponse<string>> AddUpdateLanguage(Language request)
+        public async Task<ServiceResponse<string>> AddUpdateLanguage(AddUpdateLanguageRequest request)
         {
             return await _languageRepository.AddUpdateLanguage(request);
         }
@@ -25,6 +27,12 @@ namespace LibraryManagement_API.Services.Implementations
         {
             return await _languageRepository.GetAllLanguages(request);
         }
+
+        public async Task<ServiceResponse<List<LanguageFetchResponse>>> GetAllLanguageFetch(GetAllLanguageFetchRequest request)
+        {
+            return await _languageRepository.GetAllLanguageFetch(request);
+        }
+
 
         public async Task<ServiceResponse<Language>> GetLanguageById(int languageId)
         {

@@ -67,7 +67,7 @@ namespace Student_API.Repository.Implementations
             LEFT JOIN 
                 tbl_DocManager dm ON s.Student_id = dm.student_id AND dm.document_id = doc.Student_Document_id
             WHERE 
-                s.Institute_id = @Institute_id AND (s.Class_id = @ClassId OR @ClassId = 0)AND (s.Section_id = @SectionId OR @SectionId = 0)
+                s.Institute_id = @2 AND (s.Class_id = @ClassId OR @ClassId = 0)AND (s.Section_id = @SectionId OR @SectionId = 0)
                 AND s.isActive = 1 AND doc.isDelete = 0 ;
 
             SELECT 
@@ -154,7 +154,7 @@ namespace Student_API.Repository.Implementations
         }
 
 
-        public async Task<ServiceResponse<bool>> UpdateStudentDocumentStatuses(List<DocumentUpdateRequest> updates)
+        public async Task<ServiceResponse<bool>> UpdateStudentDocumentStatuses(List<DocumentUpdateRequest> updateList)
         {
             if (_connection.State != ConnectionState.Open)
                 _connection.Open();
@@ -162,47 +162,50 @@ namespace Student_API.Repository.Implementations
             {
                 try
                 {
-                    foreach (var update in updates)
+                    foreach (var document in updateList)
                     {
-                        if (update.IsSubmitted)
+                        foreach (var update in document.StudentDocuments)
                         {
-                            // Insert or update record
+                            if (update.IsSubmitted)
+                            {
+                                // Insert or update record
 
-                        //    IF EXISTS(SELECT 1 FROM tbl_DocManager WHERE student_id = @StudentId AND document_id = @DocumentId)
-                        //BEGIN
-                        //    UPDATE tbl_DocManager
-                        //    SET class_id = @ClassId, section_id = @SectionId
-                        //    WHERE student_id = @StudentId AND document_id = @DocumentId
-                        //END
-                        //ELSE
-                            string insertOrUpdateQuery = @"
+                                //    IF EXISTS(SELECT 1 FROM tbl_DocManager WHERE student_id = @StudentId AND document_id = @DocumentId)
+                                //BEGIN
+                                //    UPDATE tbl_DocManager
+                                //    SET class_id = @ClassId, section_id = @SectionId
+                                //    WHERE student_id = @StudentId AND document_id = @DocumentId
+                                //END
+                                //ELSE
+                                string insertOrUpdateQuery = @"
                        IF NOT EXISTS(SELECT 1 FROM tbl_DocManager WHERE student_id = @StudentId AND document_id = @DocumentId)
                         BEGIN
                             INSERT INTO tbl_DocManager (student_id, document_id, class_id, section_id)
                             VALUES (@StudentId, @DocumentId, @ClassId, @SectionId)
                         END";
 
-                            await _connection.ExecuteAsync(insertOrUpdateQuery, new
+                                await _connection.ExecuteAsync(insertOrUpdateQuery, new
+                                {
+                                    document.StudentId,
+                                    update.DocumentId,
+                                    ClassId = update.ClassId,
+                                    SectionId = update.SectionId,
+                                    //Institute_id = update.Institute_id
+                                }, transaction);
+                            }
+                            else
                             {
-                                update.StudentId,
-                                update.DocumentId,
-                                ClassId = update.ClassId,
-                                SectionId = update.SectionId,
-                                //Institute_id = update.Institute_id
-                            }, transaction);
-                        }
-                        else
-                        {
-                            // Delete record if unchecked
-                            string deleteQuery = @"
+                                // Delete record if unchecked
+                                string deleteQuery = @"
                         DELETE FROM tbl_DocManager
                         WHERE student_id = @StudentId AND document_id = @DocumentId";
 
-                            await _connection.ExecuteAsync(deleteQuery, new
-                            {
-                                update.StudentId,
-                                update.DocumentId
-                            }, transaction);
+                                await _connection.ExecuteAsync(deleteQuery, new
+                                {
+                                    document.StudentId,
+                                    update.DocumentId
+                                }, transaction);
+                            }
                         }
                     }
 

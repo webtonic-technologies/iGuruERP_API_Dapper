@@ -4,7 +4,7 @@
     {
         public int Student_Other_Info_id { get; set; }
         public int? student_id { get; set; }
-        public int? StudentType_id { get; set; }
+        //public int? StudentType_id { get; set; }
         public string email_id { get; set; }
         public string Hall_Ticket_Number { get; set; }
         public int? Exam_Board_id { get; set; }

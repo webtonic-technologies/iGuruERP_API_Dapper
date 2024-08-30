@@ -35,6 +35,7 @@ builder.Services.AddTransient<ITemplateService, TemplateService>();
 builder.Services.AddTransient<ITemplateRepository, TemplateRepository>();
 builder.Services.AddTransient<IStudentPromotionService, StudentPromotionService>();
 builder.Services.AddTransient<IStudentPromotionRepository, StudentPromotionRepository>();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

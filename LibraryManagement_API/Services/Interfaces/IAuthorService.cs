@@ -8,7 +8,9 @@ namespace LibraryManagement_API.Services.Interfaces
     public interface IAuthorService
     {
         Task<ServiceResponse<List<AuthorResponse>>> GetAllAuthors(GetAllAuthorsRequest request);
-        Task<ServiceResponse<string>> AddUpdateAuthor(Author request);
+        Task<ServiceResponse<List<AuthorFetchResponse>>> GetAllAuthorsFetch(GetAllAuthorsFetchRequest request);
+
+        Task<ServiceResponse<string>> AddUpdateAuthors(AddUpdateAuthorsRequest request);
         Task<ServiceResponse<Author>> GetAuthorById(int authorId);
         Task<ServiceResponse<bool>> DeleteAuthor(int authorId);
     }

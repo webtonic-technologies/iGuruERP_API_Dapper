@@ -42,6 +42,23 @@ builder.Services.AddTransient<IVisitorLogService, VisitorLogService>();
 
 builder.Services.AddTransient<ICautionDepositRepository, CautionDepositRepository>();
 builder.Services.AddTransient<ICautionDepositService, CautionDepositService>();
+
+builder.Services.AddTransient<IRoomFacilityRepository, RoomFacilityRepository>();
+builder.Services.AddTransient<IRoomFacilityService, RoomFacilityService>();
+
+builder.Services.AddTransient<IBuildingFacilityRepository, BuildingFacilityRepository>();
+builder.Services.AddTransient<IBuildingFacilityService, BuildingFacilityService>();
+
+builder.Services.AddTransient<IOtherFacilityRepository, OtherFacilityRepository>();
+builder.Services.AddTransient<IOtherFacilityService, OtherFacilityService>();
+
+builder.Services.AddTransient<IHostelTypeRepository, HostelTypeRepository>();
+builder.Services.AddTransient<IHostelTypeService, HostelTypeService>();
+
+builder.Services.AddTransient<IHostelFetchRepository, HostelFetchRepository>();
+builder.Services.AddTransient<IHostelFetchService, HostelFetchService>();
+
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

@@ -7,7 +7,7 @@ namespace Institute_API.Services.Interfaces
     {
         Task<ServiceResponse<int>> AddGalleryImage(GalleryDTO galleryDTO);
         Task<ServiceResponse<List<GalleryEventDTO>>> GetApprovedImagesByEvent(GetGalleryRequestModel model);
-        Task<ServiceResponse<bool>> UpdateGalleryImageApprovalStatus(int galleryId, bool isApproved, int userId);
+        Task<ServiceResponse<bool>> UpdateGalleryImageApprovalStatus(int galleryId, int Status, int userId);
         Task<ServiceResponse<List<GalleryEventDTO>>> GetAllGalleryImagesByEvent(GetGalleryRequestModel model);
         Task<ServiceResponse<bool>> DeleteGalleryImage(int Gallery_id);
     }

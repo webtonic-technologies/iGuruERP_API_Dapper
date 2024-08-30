@@ -16,7 +16,7 @@ namespace LibraryManagement_API.Services.Implementations
             _libraryRepository = libraryRepository;
         }
 
-        public async Task<ServiceResponse<string>> AddUpdateLibrary(Library request)
+        public async Task<ServiceResponse<string>> AddUpdateLibrary(AddUpdateLibraryRequest request)
         {
             return await _libraryRepository.AddUpdateLibrary(request);
         }
@@ -34,6 +34,16 @@ namespace LibraryManagement_API.Services.Implementations
         public async Task<ServiceResponse<bool>> DeleteLibrary(int libraryId)
         {
             return await _libraryRepository.DeleteLibrary(libraryId);
+        }
+
+        public async Task<ServiceResponse<List<LibraryInchargeResponse>>> GetAllLibraryIncharge(GetAllLibraryInchargeRequest request)
+        {
+            return await _libraryRepository.GetAllLibraryIncharge(request);
+        }
+
+        public async Task<ServiceResponse<List<LibraryFetchResponse>>> GetAllLibraryFetch(GetAllLibraryFetchRequest request)
+        {
+            return await _libraryRepository.GetAllLibraryFetch(request);
         }
     }
 }

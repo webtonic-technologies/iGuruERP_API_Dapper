@@ -15,10 +15,18 @@ namespace Institute_API.DTOs
         public List<InstitutePrinSignsResponse>? InstitutePrinSigns { get; set; }
         public InstituteAddressResponse? AddressResponse { get; set; }
         public List<SchoolContactResponse>? SchoolContacts { get; set; }
-        public List<InstituteSMMapping>? InstituteSMMappings { get; set; }
+        public List<InstituteSMMappingResponse>? InstituteSMMappings { get; set; }
         public InstituteDescription? InstituteDescription { get; set; }
         public List<AcademicInfo>? AcademicInfos { get; set; }
         public SemesterInfo? SemesterInfo { get; set; }
+    }
+    public class InstituteSMMappingResponse
+    {
+        public int SM_Mapping_Id { get; set; }
+        public int Institute_id { get; set; }
+        public int SM_Id { get; set; }
+        public string SM_Name { get; set; } = string.Empty;
+        public string URL { get; set; } = string.Empty;
     }
     public class InstituteLogosResponse
     {

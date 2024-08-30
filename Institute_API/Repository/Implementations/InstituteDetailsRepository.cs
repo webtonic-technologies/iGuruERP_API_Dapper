@@ -214,16 +214,16 @@ namespace Institute_API.Repository.Implementations
             var data = await _connection.QueryAsync<State>(query, new { Country_id = countryId });
             return new ServiceResponse<List<State>>(true, "Records found", data.ToList(), 200);
         }
-        public async Task<ServiceResponse<List<City>>> GetCitiesByStateIdAsync(int stateId)
+        public async Task<ServiceResponse<List<City>>> GetCitiesByDistrictIdAsync(int districtId)
         {
-            string query = "SELECT * FROM tbl_City WHERE State_id = @State_id";
-            var data = await _connection.QueryAsync<City>(query, new { State_id = stateId });
+            string query = "SELECT * FROM tbl_City WHERE district_id = @district_id";
+            var data = await _connection.QueryAsync<City>(query, new { district_id = districtId });
             return new ServiceResponse<List<City>>(true, "Records found", data.ToList(), 200);
         }
-        public async Task<ServiceResponse<List<District>>> GetDistrictsByCityIdAsync(int cityId)
+        public async Task<ServiceResponse<List<District>>> GetDistrictsByStateIdAsync(int stateId)
         {
-            string query = "SELECT * FROM tbl_District WHERE City_id = @City_id";
-            var data = await _connection.QueryAsync<District>(query, new { City_id = cityId });
+            string query = "SELECT * FROM tbl_District WHERE state_id = @state_id";
+            var data = await _connection.QueryAsync<District>(query, new { state_id = stateId });
             return new ServiceResponse<List<District>>(true, "Records found", data.ToList(), 200);
         }
         private async Task<List<InstituteLogosResponse>> GetInstituteLogos(int instituteId)
@@ -341,10 +341,15 @@ namespace Institute_API.Repository.Implementations
 
             return addressResponse;
         }
-        private async Task<List<InstituteSMMapping>> GetInstituteSMMappings(int instituteId)
+        private async Task<List<InstituteSMMappingResponse>> GetInstituteSMMappings(int instituteId)
         {
-            string query = "SELECT * FROM tbl_InstitueSMMapping WHERE Institute_id = @Institute_id";
-            var smMappings = await _connection.QueryAsync<InstituteSMMapping>(query, new { Institute_id = instituteId });
+            string query = @"
+        SELECT ism.SM_Mapping_Id, ism.Institute_id, ism.SM_Id, sm.Social_Media_Type AS SM_Name, ism.URL 
+        FROM tbl_InstitueSMMapping ism
+        JOIN tbl_SocialMediaMaster sm ON ism.SM_Id = sm.Social_Media_id
+        WHERE ism.Institute_id = @Institute_id";
+
+            var smMappings = await _connection.QueryAsync<InstituteSMMappingResponse>(query, new { Institute_id = instituteId });
             return smMappings.ToList();
         }
         private async Task<List<SchoolContactResponse>> GetSchoolContacts(int instituteId)
@@ -363,6 +368,10 @@ namespace Institute_API.Repository.Implementations
         {
             string query = "SELECT * FROM tbl_AcademicInfo WHERE Institute_id = @Institute_id";
             var academicInfos = await _connection.QueryAsync<AcademicInfo>(query, new { Institute_id = instituteId });
+            foreach (var data in academicInfos)
+            {
+                data.StatusName = data.Status == true ? "Active" : "InActive";
+            }
             return academicInfos.ToList();
         }
         private async Task<SemesterInfo> GetSemesterInfo(int instituteId)
@@ -584,8 +593,8 @@ namespace Institute_API.Repository.Implementations
                 if (rowsAffected > 0)
                 {
                     string insertQuery = @"
-                INSERT INTO [tbl_AcademicInfo] (Institute_id, [AcademicYearStartMonth], [AcademicYearEndMonth])
-                VALUES (@Institute_id, @AcademicYearStartMonth, @AcademicYearEndMonth)";
+                INSERT INTO [tbl_AcademicInfo] (Institute_id, [AcademicYearStartMonth], [AcademicYearEndMonth], Status)
+                VALUES (@Institute_id, @AcademicYearStartMonth, @AcademicYearEndMonth, @Status)";
                     // Execute the query with multiple parameterized sets of values
                     addedRecords = await _connection.ExecuteAsync(insertQuery, request);
                 }
@@ -593,8 +602,8 @@ namespace Institute_API.Repository.Implementations
             else
             {
                 string insertQuery = @"
-                INSERT INTO [tbl_AcademicInfo] (Institute_id, [AcademicYearStartMonth], [AcademicYearEndMonth])
-                VALUES (@Institute_id, @AcademicYearStartMonth, @AcademicYearEndMonth)";
+                INSERT INTO [tbl_AcademicInfo] (Institute_id, [AcademicYearStartMonth], [AcademicYearEndMonth], Status)
+                VALUES (@Institute_id, @AcademicYearStartMonth, @AcademicYearEndMonth, @Status)";
                 // Execute the query with multiple parameterized sets of values
                 addedRecords = await _connection.ExecuteAsync(insertQuery, request);
             }

@@ -17,7 +17,7 @@ namespace Student_API.Controllers
         }
 
         [HttpPost("AddUpdateDocument")]
-        public async Task<IActionResult> AddUpdateStudentDocument(List<StudentDocumentConfigDTO> studentDocumentDto)
+        public async Task<IActionResult> AddUpdateStudentDocument(List<StudentDocumentConfig> studentDocumentDto)
         {
             try
             {

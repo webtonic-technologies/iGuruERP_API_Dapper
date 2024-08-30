@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Attendance_API.DTOs;
 using Attendance_API.DTOs.ServiceResponse;
+using Attendance_API.Helper;
 using Attendance_API.Repository.Interfaces;
 using Dapper;
 
@@ -24,12 +25,13 @@ namespace Attendance_API.Repository.Implementations
 
         public async Task<ServiceResponse<EmployeeAttendanceMasterResponseDTO>> GetEmployeeAttendanceMasterList(EmployeeAttendanceMasterRequestDTO request)
         {
-            if (request == null || request.Date == DateTime.MinValue || request.Department_id == 0)
+            var date = DateTimeHelper.ConvertToDateTime(request.Date);
+            if (request == null || date == DateTime.MinValue || request.Department_id == 0)
             {
                 return new ServiceResponse<EmployeeAttendanceMasterResponseDTO>(false, "Invalid request", new EmployeeAttendanceMasterResponseDTO(), 400);
             }
             string sql = $"select eam.Employee_Attendance_Master_id, epm.First_Name + epm.Last_Name as Employee_Name, epm.Employee_id, d.Department_id, d.DepartmentName, eam.Employee_Attendance_Status_id, eam.Remarks, eas.Employee_Attendance_Status_Type, eas.Short_Name as Employee_Attendance_Status_Short_Name from tbl_EmployeeProfileMaster epm " +
-                         $"left join tbl_EmployeeAttendanceMaster eam on epm.Employee_id = eam.Employee_id and eam.Date = '{request.Date.ToString("yyyy-MM-dd")}' " +
+                         $"left join tbl_EmployeeAttendanceMaster eam on epm.Employee_id = eam.Employee_id and eam.Date = '{date.ToString("yyyy-MM-dd")}' " +
                          $"join tbl_Department d on epm.Department_id = d.Department_id " +
                          $"join tbl_EmployeeAttendanceStatusMaster eas on eas.Employee_Attendance_Status_id = eam.Employee_Attendance_Status_id " +
                          $"where epm.Department_id = {request.Department_id}";
@@ -39,7 +41,7 @@ namespace Attendance_API.Repository.Implementations
             }
             var result = await _connection.QueryAsync<EmployeeAttendanceMasterResponse>(sql);
             sql = $"select COUNT(*) from tbl_EmployeeProfileMaster epm " +
-                         $"left join tbl_EmployeeAttendanceMaster eam on epm.Employee_id = eam.Employee_id and eam.Date = '{request.Date.ToString("yyyy-MM-dd")}' " +
+                         $"left join tbl_EmployeeAttendanceMaster eam on epm.Employee_id = eam.Employee_id and eam.Date = '{date.ToString("yyyy-MM-dd")}' " +
                          $"join tbl_Department d on epm.Department_id = d.Department_id " +
                          $"join tbl_EmployeeAttendanceStatusMaster eas on eas.Employee_Attendance_Status_id = eam.Employee_Attendance_Status_id " +
                          $"where epm.Department_id = {request.Department_id}";
@@ -58,15 +60,15 @@ namespace Attendance_API.Repository.Implementations
             if (employeeAttendanceMaster.Employee_Attendance_Master_id == 0)
             {
                 // Insert new record
-                string insertSql = $"INSERT INTO tbl_EmployeeAttendanceMaster (Employee_id, Employee_Attendance_Status_id, Remarks, Date) " +
-                                  $"VALUES (@Employee_id, @Employee_Attendance_Status_id, @Remarks, @Date)";
+                string insertSql = $"INSERT INTO tbl_EmployeeAttendanceMaster (Employee_id, Employee_Attendance_Status_id, Remarks, Date ,TimeSlot_id , isHoliday) " +
+                                  $"VALUES (@Employee_id, @Employee_Attendance_Status_id, @Remarks, @Date,@TimeSlot_id , @isHoliday)";
                 await _connection.ExecuteAsync(insertSql, employeeAttendanceMaster);
             }
             else
             {
                 // Update existing record
                 string updateSql = $"UPDATE tbl_EmployeeAttendanceMaster " +
-                                  $"SET Employee_id = @Employee_id, Employee_Attendance_Status_id = @Employee_Attendance_Status_id, Remarks = @Remarks, Date = @Date " +
+                                  $"SET Employee_id = @Employee_id, Employee_Attendance_Status_id = @Employee_Attendance_Status_id, Remarks = @Remarks, TimeSlot_id = @TimeSlot_id , isHoliday =@isHoliday" +
                                   $"WHERE Employee_Attendance_Master_id = @Employee_Attendance_Master_id";
                 await _connection.ExecuteAsync(updateSql, employeeAttendanceMaster);
             }
@@ -171,7 +173,7 @@ ORDER BY
     Employee_Name;
 ';
 
-EXEC sp_executesql @query, N'@StartDate DATE, @EndDate DATE , @InstituteId', @StartDate, @EndDate,@InstituteId;";
+EXEC sp_executesql @query, N'@StartDate DATE, @EndDate DATE , @InstituteId INT', @StartDate, @EndDate,@InstituteId;";
 
                 var parameters = new { StartDate = request.StartDate, EndDate = request.EndDate, InstituteId = request.instituteId };
 

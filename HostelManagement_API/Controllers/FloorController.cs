@@ -20,12 +20,12 @@ namespace HostelManagement_API.Controllers
         }
 
         [HttpPost("AddUpdateFloors")]
-        public async Task<IActionResult> AddUpdateFloor([FromBody] AddUpdateFloorRequest request)
+        public async Task<IActionResult> AddUpdateFloors([FromBody] AddUpdateFloorsRequest request)
         {
-            _logger.LogInformation("AddUpdateFloor Request Received: {@Request}", request);
-            var response = await _floorService.AddUpdateFloor(request);
-            _logger.LogInformation("AddUpdateFloor Response: {@Response}", response);
-            return StatusCode(response.StatusCode, response);
+            _logger.LogInformation("AddUpdateFloors Request Received: {@Request}", request);
+            var result = await _floorService.AddUpdateFloors(request);
+            _logger.LogInformation("AddUpdateFloors Response: {@Response}", result);
+            return Ok(result);
         }
 
         [HttpPost("GetAllFloors")]

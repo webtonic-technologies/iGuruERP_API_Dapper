@@ -1,4 +1,6 @@
-﻿namespace Lesson_API.DTOs.Responses
+﻿using Lesson_API.DTOs.Requests;
+
+namespace Lesson_API.DTOs.Responses
 {
     public class GetAllHomeworkResponse
     {
@@ -10,5 +12,6 @@
         public string Attachments { get; set; }
         public bool IsActive { get; set; }
         public List<ClassSectionResponse> ClassSections { get; set; }
+        public List<HomeworkDocs> HomeworkDocs { get; set; }
     }
 }

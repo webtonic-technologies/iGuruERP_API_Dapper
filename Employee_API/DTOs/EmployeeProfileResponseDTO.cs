@@ -15,12 +15,12 @@ namespace Employee_API.DTOs
         public int Designation_id { get; set; }
         public string DesignationName { get; set; } = string.Empty;
         public string mobile_number { get; set; } = string.Empty;
-        public DateTime? Date_of_Joining { get; set; }
+        public string Date_of_Joining { get; set; } = string.Empty;
         public int Nationality_id { get; set; }
         public string NationalityName { get; set; } = string.Empty;
         public int Religion_id { get; set; }
         public string ReligionName { get; set; } = string.Empty;
-        public DateTime? Date_of_Birth { get; set; }
+        public string Date_of_Birth { get; set; } = string.Empty;
         public string EmailID { get; set; } = string.Empty;
         public string Employee_code_id { get; set; } = string.Empty;
         public int marrital_status_id { get; set; }
@@ -40,7 +40,12 @@ namespace Employee_API.DTOs
         public List<EmployeeWorkExperience>? EmployeeWorkExperiences { get; set; }
         public List<EmployeeBankDetails>? EmployeeBankDetails { get; set; }
         public EmployeeFamily? Family { get; set; }
-        public EmployeeAddressDetailsResponse? EmployeeAddressDetails { get; set; }
+        public EmployeeAddressResponse? EmployeeAddressDetails { get; set; }
+    }
+    public class EmployeeAddressResponse
+    {
+        public List<EmployeeAddressDetailsResponse>? PresentAddress { get; set; }
+        public List<EmployeeAddressDetailsResponse>? PermanentAddress { get; set; }
     }
     public class EmployeeAddressDetailsResponse
     {
@@ -57,5 +62,5 @@ namespace Employee_API.DTOs
         public string Pin_code { get; set; } = string.Empty;
         public int AddressTypeId { get; set; }
         public int Employee_id { get; set; }
-    }
+    }       
 }

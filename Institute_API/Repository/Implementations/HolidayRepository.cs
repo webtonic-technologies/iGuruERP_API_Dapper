@@ -1,9 +1,11 @@
 ﻿using Dapper;
 using Institute_API.DTOs;
 using Institute_API.DTOs.ServiceResponse;
+using Institute_API.Helper;
 using Institute_API.Repository.Interfaces;
 using System.Data;
 using System.Data.Common;
+using static Institute_API.Models.Enums;
 
 namespace Institute_API.Repository.Implementations
 {
@@ -19,6 +21,8 @@ namespace Institute_API.Repository.Implementations
         {
             try
             {
+                var StartDate = DateTimeHelper.ConvertToDateTime(holidayDTO.StartDate);
+                var EndDate = DateTimeHelper.ConvertToDateTime(holidayDTO.EndDate);
                 _connection.Open();
                 using (var transaction = _connection.BeginTransaction())
                 {
@@ -43,14 +47,24 @@ namespace Institute_API.Repository.Implementations
                     else
                     {
                         holidayQuery = @"
-                    INSERT INTO [dbo].[tbl_Holiday] (HolidayName, StartDate, EndDate, Description,Institute_id,Academic_year_id)
-                    VALUES (@HolidayName, @StartDate, @EndDate, @Description,@Institute_id,@Academic_year_id);
+                    INSERT INTO [dbo].[tbl_Holiday] (HolidayName, StartDate, EndDate, Description,Institute_id,Academic_year_id,CreatedBy,CreatedTime)
+                    VALUES (@HolidayName, @StartDate, @EndDate, @Description,@Institute_id,@Academic_year_id,@CreatedBy,GETDATE());
                     SELECT SCOPE_IDENTITY();
                 ";
                     }
 
                     // Execute holiday query and retrieve the holiday ID
-                    holidayId = await _connection.ExecuteScalarAsync<int>(holidayQuery, holidayDTO, transaction);
+                    holidayId = await _connection.ExecuteScalarAsync<int>(holidayQuery, new
+                    {
+                        holidayDTO.HolidayName,
+                        StartDate,
+                        EndDate,
+                        holidayDTO.Description,
+                        holidayDTO.Institute_id,
+                        holidayDTO.Academic_year_id,
+                        holidayDTO.Holiday_id,
+                        holidayDTO.CreatedBy
+                    }, transaction);
 
                     // Insert or update class session mappings
                     foreach (var mapping in holidayDTO.ClassSessionMappings)
@@ -102,12 +116,13 @@ namespace Institute_API.Repository.Implementations
             try
             {
                 string holidayQuery = @"
-            SELECT Holiday_id, HolidayName, StartDate, EndDate, Description, IsApproved, ApprovedBy,Institute_id,Academic_year_id,YearName
+            SELECT Holiday_id, HolidayName, StartDate, EndDate, Description, IsApproved, ApprovedBy,Institute_id,tbl_Holiday.Academic_year_id,YearName
+            LEFT JOIN tbl_AcademicYear on tbl_AcademicYear.Academic_year_id = tbl_Holiday.Academic_year_id
             FROM [dbo].[tbl_Holiday]
             WHERE Holiday_id = @HolidayId ;
         ";
 
-                var holiday = await _connection.QueryFirstOrDefaultAsync<HolidayDTO>(holidayQuery, new { HolidayId = holidayId});
+                var holiday = await _connection.QueryFirstOrDefaultAsync<HolidayDTO>(holidayQuery, new { HolidayId = holidayId });
 
                 if (holiday == null)
                 {
@@ -226,7 +241,7 @@ namespace Institute_API.Repository.Implementations
         }
 
 
-        public async Task<ServiceResponse<List<HolidayDTO>>> GetApprovedHolidays(int Institute_id, int Academic_year_id, string sortColumn, string sortDirection, int? pageSize = null, int? pageNumber = null)
+        public async Task<ServiceResponse<List<HolidayDTO>>> GetApprovedHolidays(int Institute_id, int Academic_year_id, int Status,string sortColumn, string sortDirection, int? pageSize = null, int? pageNumber = null)
         {
             try
             {
@@ -255,12 +270,12 @@ namespace Institute_API.Repository.Implementations
                 string queryAll = @"
     SELECT Holiday_id, HolidayName, StartDate, EndDate, Description, IsApproved, ApprovedBy, Institute_id
     FROM [dbo].[tbl_Holiday]
-    WHERE IsApproved = 1 AND Institute_id = @Institute_id AND isDelete = 0 AND (@Academic_year_id = 0 OR Academic_year_id = @Academic_year_id)";
+    WHERE IsApproved = 1 AND Status =@Status AND Institute_id = @Institute_id AND isDelete = 0 AND (@Academic_year_id = 0 OR Academic_year_id = @Academic_year_id)";
 
                 string queryCount = @"
     SELECT COUNT(*)
     FROM [dbo].[tbl_Holiday]
-    WHERE IsApproved = 1 AND Institute_id = @Institute_id AND isDelete = 0 AND (@Academic_year_id = 0 OR Academic_year_id = @Academic_year_id)";
+    WHERE IsApproved = 1 AND Status =@Status AND  Institute_id = @Institute_id AND isDelete = 0 AND (@Academic_year_id = 0 OR Academic_year_id = @Academic_year_id)";
 
                 List<HolidayDTO> holidays;
                 int totalRecords = 0;
@@ -324,15 +339,15 @@ namespace Institute_API.Repository.Implementations
                 _connection.Open();
                 using (var transaction = _connection.BeginTransaction())
                 {
-            //        string deleteMappingQuery = @"
-            //    DELETE FROM [dbo].[tbl_HolidayClassSessionMapping] WHERE Holiday_id = @HolidayId;
-            //";
+                    //        string deleteMappingQuery = @"
+                    //    DELETE FROM [dbo].[tbl_HolidayClassSessionMapping] WHERE Holiday_id = @HolidayId;
+                    //";
 
-            //        await _connection.ExecuteAsync(deleteMappingQuery, new { HolidayId = holidayId }, transaction);
+                    //        await _connection.ExecuteAsync(deleteMappingQuery, new { HolidayId = holidayId }, transaction);
 
-            //        string deleteHolidayQuery = @"
-            //    DELETE FROM [dbo].[tbl_Holiday] WHERE Holiday_id = @HolidayId;
-            //";
+                    //        string deleteHolidayQuery = @"
+                    //    DELETE FROM [dbo].[tbl_Holiday] WHERE Holiday_id = @HolidayId;
+                    //";
 
                     string deleteHolidayQuery = @"
                 UPDATE [dbo].[tbl_Holiday] SET isDelete = 1  WHERE Holiday_id = @HolidayId;
@@ -357,18 +372,23 @@ namespace Institute_API.Repository.Implementations
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
-        public async Task<ServiceResponse<bool>> UpdateHolidayApprovalStatus(int holidayId, bool isApproved, int approvedBy)
+        public async Task<ServiceResponse<bool>> UpdateHolidayApprovalStatus(int holidayId, int Status, int approvedBy)
         {
             try
             {
+
+                if (!Enum.IsDefined(typeof(Status_Enum), Status))
+                {
+                    return new ServiceResponse<bool>(false, "Invalid status value", false, 400);
+                }
                 string query = @"
             UPDATE [dbo].[tbl_Holiday]
-            SET IsApproved = @IsApproved,
+            SET Status = @Status,
                 ApprovedBy = @ApprovedBy
             WHERE Holiday_id = @HolidayId;
         ";
 
-                int affectedRows = await _connection.ExecuteAsync(query, new { IsApproved = isApproved, ApprovedBy = approvedBy, HolidayId = holidayId });
+                int affectedRows = await _connection.ExecuteAsync(query, new { Status = Status, ApprovedBy = approvedBy, HolidayId = holidayId });
 
                 if (affectedRows > 0)
                 {

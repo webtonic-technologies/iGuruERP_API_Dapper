@@ -31,7 +31,7 @@ namespace Institute_API.Controllers
             }
         }
 
-        [HttpGet("GetApprovedImagesByEvent")]
+        [HttpPost("GetApprovedImagesByEvent")]
         public async Task<IActionResult> GetApprovedImagesByEvent(GetGalleryRequestModel model)
         {
             try
@@ -50,7 +50,7 @@ namespace Institute_API.Controllers
         {
             try
             {
-                var response = await _galleryService.UpdateGalleryImageApprovalStatus(obj.GalleryId, obj.isApproved, obj.UserId);
+                var response = await _galleryService.UpdateGalleryImageApprovalStatus(obj.GalleryId, obj.Status, obj.UserId);
                 return StatusCode(response.StatusCode, response);
             }
             catch (Exception ex)
@@ -59,7 +59,7 @@ namespace Institute_API.Controllers
             }
         }
 
-        [HttpGet("GetAllGalleryImagesByEvent")]
+        [HttpPost("GetAllGalleryImagesByEvent")]
         public async Task<IActionResult> GetAllGalleryImagesByEvent(GetGalleryRequestModel model)
         {
             try

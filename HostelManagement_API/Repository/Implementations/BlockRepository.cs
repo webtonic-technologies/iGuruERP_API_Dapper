@@ -20,17 +20,39 @@ namespace HostelManagement_API.Repository.Implementations
             _connectionString = configuration.GetConnectionString("DefaultConnection");
         }
 
-        public async Task<int> AddUpdateBlock(AddUpdateBlockRequest request)
+        public async Task<int> AddUpdateBlocks(AddUpdateBlocksRequest request)
         {
             using (IDbConnection db = new SqlConnection(_connectionString))
             {
-                string sqlQuery = request.BlockID == 0
-                    ? @"INSERT INTO tblBlock (BlockName, InstituteID, IsActive) VALUES (@BlockName, @InstituteID, 1); SELECT CAST(SCOPE_IDENTITY() as int)"
-                    : @"UPDATE tblBlock SET BlockName = @BlockName, InstituteID = @InstituteID WHERE BlockID = @BlockID";
+                db.Open();
+                using (var transaction = db.BeginTransaction())
+                {
+                    try
+                    {
+                        foreach (var block in request.Blocks)
+                        {
+                            string sqlQuery = block.BlockID == 0
+                                ? @"INSERT INTO tblBlock (BlockName, InstituteID, IsActive) 
+                                    VALUES (@BlockName, @InstituteID, @IsActive); 
+                                    SELECT CAST(SCOPE_IDENTITY() as int)"
+                                : @"UPDATE tblBlock 
+                                    SET BlockName = @BlockName, InstituteID = @InstituteID, IsActive = @IsActive
+                                    WHERE BlockID = @BlockID";
 
-                return request.BlockID == null
-                    ? await db.ExecuteScalarAsync<int>(sqlQuery, new { request.BlockName, request.InstituteID })
-                    : await db.ExecuteAsync(sqlQuery, new { request.BlockName, request.InstituteID, request.BlockID });
+                            var blockId = block.BlockID == 0
+                                ? await db.ExecuteScalarAsync<int>(sqlQuery, new { block.BlockName, block.InstituteID, block.IsActive }, transaction)
+                                : await db.ExecuteAsync(sqlQuery, new { block.BlockName, block.InstituteID, block.IsActive, block.BlockID }, transaction);
+                        }
+
+                        transaction.Commit();
+                        return 1; // Success code, can be improved to return meaningful result
+                    }
+                    catch
+                    {
+                        transaction.Rollback();
+                        throw;
+                    }
+                }
             }
         }
 
@@ -53,6 +75,20 @@ namespace HostelManagement_API.Repository.Implementations
                 });
 
                 return new PagedResponse<BlockResponse>(blocks, request.PageNumber, request.PageSize, totalCount);
+            }
+        }
+        public async Task<IEnumerable<BlockResponse>> GetAllBlocksFetch()
+        {
+            using (IDbConnection db = new SqlConnection(_connectionString))
+            {
+                string sqlQuery = @"
+                    SELECT 
+                        BlockID, BlockName, InstituteID, IsActive
+                    FROM tblBlock
+                    ORDER BY BlockName";
+
+                var blocks = await db.QueryAsync<BlockResponse>(sqlQuery);
+                return blocks;
             }
         }
 

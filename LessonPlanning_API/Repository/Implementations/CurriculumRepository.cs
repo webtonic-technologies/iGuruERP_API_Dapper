@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
@@ -18,11 +19,12 @@ namespace Lesson_API.Repository.Implementations
     {
         private readonly IDbConnection _dbConnection;
         private readonly ILogger<CurriculumRepository> _logger;
-
-        public CurriculumRepository(IConfiguration configuration, ILogger<CurriculumRepository> logger)
+        private readonly IWebHostEnvironment _hostingEnvironment;
+        public CurriculumRepository(IConfiguration configuration, ILogger<CurriculumRepository> logger, IWebHostEnvironment hostingEnvironment)
         {
             _dbConnection = new SqlConnection(configuration.GetConnectionString("DefaultConnection"));
             _logger = logger;
+            _hostingEnvironment = hostingEnvironment;
         }
 
         public async Task<ServiceResponse<string>> AddUpdateCurriculum(CurriculumRequest request)
@@ -96,6 +98,7 @@ namespace Lesson_API.Repository.Implementations
                             chapter.Attachment,
                             chapter.CurriculumChapterID
                         }, transaction);
+                        var docs = await AddUpdateChapterDocs(chapter.chapterDocs, chapter.CurriculumChapterID);
                     }
 
                     // Insert or Update Curriculum SubTopics
@@ -130,7 +133,7 @@ namespace Lesson_API.Repository.Implementations
                                 subTopic.CurriculumSubTopicID
                             }, transaction);
                         }
-
+                        var docs = await AddUpdateSubtopicDocs(subTopic.SubtopicDocs, subTopic.CurriculumSubTopicID);
                         // Insert or Update Curriculum Resource Details
                         foreach (var resourceDetail in subTopic.CurriculumResourceDetails)
                         {
@@ -173,16 +176,15 @@ namespace Lesson_API.Repository.Implementations
                 }
 
                 transaction.Commit();
-                return new ServiceResponse<string>(request.CurriculumID.ToString(), true, "Curriculum added/updated successfully.");
+                return new ServiceResponse<string>(request.CurriculumID.ToString(), true, "Curriculum added/updated successfully.", 200);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while adding/updating curriculum.");
                 transaction.Rollback();
-                return new ServiceResponse<string>(null, false, "Operation failed: " + ex.Message);
+                return new ServiceResponse<string>(null, false, "Operation failed: " + ex.Message, 500);
             }
         }
-
         public async Task<ServiceResponse<List<GetAllCurriculumResponse>>> GetAllCurriculum(GetAllCurriculumRequest request)
         {
             try
@@ -211,38 +213,43 @@ namespace Lesson_API.Repository.Implementations
                     request.PageSize
                 });
 
-                return new ServiceResponse<List<GetAllCurriculumResponse>>(result.ToList(), true, "Curriculums retrieved successfully.");
+                return new ServiceResponse<List<GetAllCurriculumResponse>>(result.ToList(), true, "Curriculums retrieved successfully.", 200);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while retrieving curriculums.");
-                return new ServiceResponse<List<GetAllCurriculumResponse>>(null, false, "Operation failed: " + ex.Message);
+                return new ServiceResponse<List<GetAllCurriculumResponse>>(null, false, "Operation failed: " + ex.Message, 500);
             }
         }
-
         public async Task<ServiceResponse<Curriculum>> GetCurriculumById(int id)
         {
             try
             {
                 var sql = @"SELECT * FROM tblCurriculum WHERE CurriculumID = @CurriculumID AND IsActive = 1";
                 var curriculum = await _dbConnection.QueryFirstOrDefaultAsync<Curriculum>(sql, new { CurriculumID = id });
-
+                foreach (var data in curriculum.CurriculumChapters)
+                {
+                    data.chapterDocs = GetChapterDocs(data.CurriculumChapterID);
+                    foreach (var item in data.CurriculumSubTopics)
+                    {
+                        item.SubtopicDocs = GetSubtopicDocs(item.CurriculumSubTopicID);
+                    }
+                }
                 if (curriculum != null)
                 {
-                    return new ServiceResponse<Curriculum>(curriculum, true, "Curriculum found.");
+                    return new ServiceResponse<Curriculum>(curriculum, true, "Curriculum found.", 200);
                 }
                 else
                 {
-                    return new ServiceResponse<Curriculum>(null, false, "Curriculum not found.");
+                    return new ServiceResponse<Curriculum>(null, false, "Curriculum not found.", 404);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while retrieving curriculum by ID.");
-                return new ServiceResponse<Curriculum>(null, false, "Operation failed: " + ex.Message);
+                return new ServiceResponse<Curriculum>(null, false, "Operation failed: " + ex.Message, 500);
             }
         }
-
         public async Task<ServiceResponse<bool>> DeleteCurriculum(int id)
         {
             try
@@ -252,17 +259,235 @@ namespace Lesson_API.Repository.Implementations
 
                 if (rowsAffected > 0)
                 {
-                    return new ServiceResponse<bool>(true, true, "Curriculum deleted successfully.");
+                    return new ServiceResponse<bool>(true, true, "Curriculum deleted successfully.", 200);
                 }
                 else
                 {
-                    return new ServiceResponse<bool>(false, false, "Delete operation failed.");
+                    return new ServiceResponse<bool>(false, false, "Delete operation failed.", 404);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while deleting curriculum.");
-                return new ServiceResponse<bool>(false, false, "Operation failed: " + ex.Message);
+                return new ServiceResponse<bool>(false, false, "Operation failed: " + ex.Message, 500);
+            }
+        }
+        public async Task<ServiceResponse<int>> HardDeleteChapterDoc(int documentId)
+        {
+            try
+            {
+                string deleteSql = @"
+        DELETE FROM tblChapterDocuments 
+        WHERE DocumentsId = @DocumentsId";
+
+                var affectedRows = await _dbConnection.ExecuteAsync(deleteSql, new { DocumentsId = documentId });
+
+                if (affectedRows > 0)
+                {
+                    return new ServiceResponse<int>(affectedRows, true, "Document deleted successfully", 200);
+                }
+                else
+                {
+                    return new ServiceResponse<int>(0, false, "Document not found", 404);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(0, false, ex.Message, 500);
+            }
+        }
+        public async Task<ServiceResponse<int>> HardDeleteSubtopicDoc(int documentId)
+        {
+            try
+            {
+                string deleteSql = @"
+        DELETE FROM tblSubtopicDocuments 
+        WHERE DocumentsId = @DocumentsId";
+
+                var affectedRows = await _dbConnection.ExecuteAsync(deleteSql, new { DocumentsId = documentId });
+
+                if (affectedRows > 0)
+                {
+                    return new ServiceResponse<int>(affectedRows, true, "Document deleted successfully", 200);
+                }
+                else
+                {
+                    return new ServiceResponse<int>(0, false, "Document not found", 404);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(0, false, ex.Message, 500);
+            }
+        }
+        private async Task<ServiceResponse<int>> AddUpdateChapterDocs(List<chapterDocs> request, int chapterId)
+        {
+            if (request == null || !request.Any())
+            {
+                return new ServiceResponse<int>(0, false, "No documents provided to update", 500);
+            }
+
+            try
+            {
+                // Step 1: Hard delete existing documents for the given Chapter ID
+                string deleteSql = @"
+        DELETE FROM tblChapterDocuments 
+        WHERE CurriculumChapterID = @CurriculumChapterID"
+                ;
+
+                await _dbConnection.ExecuteAsync(deleteSql, new { CurriculumChapterID = chapterId });
+
+                // Step 2: Insert new documents
+                string insertSql = @"
+        INSERT INTO tblChapterDocuments (CurriculumChapterID, DocFile)
+        VALUES (@CurriculumChapterID, @DocFile)";
+
+                foreach (var doc in request)
+                {
+                    doc.CurriculumChapterID = chapterId; // Ensure the Chapter ID is set for each document
+                    doc.DocFile = ImageUpload(doc.DocFile); // Assuming ImageUpload handles the file upload
+                    await _dbConnection.ExecuteAsync(insertSql, doc);
+                }
+
+                return new ServiceResponse<int>(request.Count,true, "Documents added/updated successfully", 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(0, false, ex.Message, 500);
+            }
+        }
+        private string ImageUpload(string image)
+        {
+            if (string.IsNullOrEmpty(image) || image == "string")
+            {
+                return string.Empty;
+            }
+            byte[] imageData = Convert.FromBase64String(image);
+            string directoryPath = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "CurriculumDocs");
+
+            if (!Directory.Exists(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
+            string fileExtension = IsJpeg(imageData) == true ? ".jpg" : IsPng(imageData) == true ? ".png" : IsGif(imageData) == true ? ".gif" : IsPdf(imageData) == true ? ".pdf" : string.Empty;
+            string fileName = Guid.NewGuid().ToString() + fileExtension;
+            string filePath = Path.Combine(directoryPath, fileName);
+            if (string.IsNullOrEmpty(fileExtension))
+            {
+                throw new InvalidOperationException("Incorrect file uploaded");
+            }
+            // Write the byte array to the image file
+            File.WriteAllBytes(filePath, imageData);
+            return filePath;
+        }
+        private bool IsJpeg(byte[] bytes)
+        {
+            // JPEG magic number: 0xFF, 0xD8
+            return bytes.Length > 1 && bytes[0] == 0xFF && bytes[1] == 0xD8;
+        }
+        private bool IsPng(byte[] bytes)
+        {
+            // PNG magic number: 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A
+            return bytes.Length > 7 && bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47
+                && bytes[4] == 0x0D && bytes[5] == 0x0A && bytes[6] == 0x1A && bytes[7] == 0x0A;
+        }
+        private bool IsGif(byte[] bytes)
+        {
+            // GIF magic number: "GIF"
+            return bytes.Length > 2 && bytes[0] == 0x47 && bytes[1] == 0x49 && bytes[2] == 0x46;
+        }
+        private bool IsPdf(byte[] fileData)
+        {
+            return fileData.Length > 4 &&
+                   fileData[0] == 0x25 && fileData[1] == 0x50 && fileData[2] == 0x44 && fileData[3] == 0x46;
+        }
+        private string GetImage(string Filename)
+        {
+            var filePath = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "CurriculumDocs", Filename);
+
+            if (!File.Exists(filePath))
+            {
+                return string.Empty;
+            }
+            byte[] fileBytes = File.ReadAllBytes(filePath);
+            string base64String = Convert.ToBase64String(fileBytes);
+            return base64String;
+        }
+        private async Task<ServiceResponse<int>> AddUpdateSubtopicDocs(List<SubtopicDocs> request, int subtopicId)
+        {
+            if (request == null || !request.Any())
+            {
+                return new ServiceResponse<int>(0, false, "No documents provided to update", 500);
+            }
+
+            try
+            {
+                // Step 1: Hard delete existing documents for the given Subtopic ID
+                string deleteSql = @"
+        DELETE FROM tblSubtopicDocuments 
+        WHERE CurriculumSubTopicID = @CurriculumSubTopicID";
+
+                await _dbConnection.ExecuteAsync(deleteSql, new { CurriculumSubTopicID = subtopicId });
+
+                // Step 2: Insert new documents
+                string insertSql = @"
+        INSERT INTO tblSubtopicDocuments (CurriculumSubTopicID, DocFile)
+        VALUES (@CurriculumSubTopicID, @DocFile)";
+
+                foreach (var doc in request)
+                {
+                    doc.CurriculumSubTopicID = subtopicId; // Ensure the Subtopic ID is set for each document
+                    doc.DocFile = ImageUpload(doc.DocFile); // Assuming ImageUpload handles the file upload
+                    await _dbConnection.ExecuteAsync(insertSql, doc);
+                }
+
+                return new ServiceResponse<int>(request.Count, true, "Documents added/updated successfully", 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(0, false, ex.Message, 500);
+            }
+        }
+        private List<chapterDocs> GetChapterDocs(int chapterId)
+        {
+            try
+            {
+                string sql = @"
+        SELECT DocumentsId, CurriculumChapterID, DocFile 
+        FROM tblChapterDocuments 
+        WHERE CurriculumChapterID = @CurriculumChapterID";
+
+                var documents =  _dbConnection.Query<chapterDocs>(sql, new { CurriculumChapterID = chapterId });
+                foreach(var data in documents)
+                {
+                    data.DocFile = GetImage(data.DocFile);
+                }
+                return documents.ToList();
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+        }
+        private List<SubtopicDocs> GetSubtopicDocs(int subtopicId)
+        {
+            try
+            {
+                string sql = @"
+        SELECT DocumentsId, CurriculumSubTopicID, DocFile 
+        FROM tblSubtopicDocuments 
+        WHERE CurriculumSubTopicID = @CurriculumSubTopicID";
+
+                var documents =  _dbConnection.Query<SubtopicDocs>(sql, new { CurriculumSubTopicID = subtopicId });
+                foreach (var data in documents)
+                {
+                    data.DocFile = GetImage(data.DocFile);
+                }
+                return documents.ToList();
+            }
+            catch (Exception ex)
+            {
+                return null;
             }
         }
     }

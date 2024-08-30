@@ -6,5 +6,7 @@
         public int Institute_id { get; set; }
         public DateTime AcademicYearStartMonth { get; set; }
         public DateTime AcademicYearEndMonth { get; set; }
+        public bool Status { get; set; }
+        public string StatusName { get; set; } = string.Empty;
     }
 }

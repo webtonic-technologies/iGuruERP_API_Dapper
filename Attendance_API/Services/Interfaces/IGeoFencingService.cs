@@ -10,8 +10,7 @@ namespace Attendance_API.Services.Interfaces
     {
         Task<ServiceResponse<GeoFencingResponseDTO>> GetGeoFencingById(int id);
         Task<ServiceResponse<GeoFencingResponseDTO>> GetAllGeoFencings(GeoFencingQueryParams request);
-        Task<ServiceResponse<bool>> AddGeoFencing(GeoFencingDTO geoFencing);
-        Task<ServiceResponse<bool>> UpdateGeoFencing(GeoFencingDTO geoFencing);
+        Task<ServiceResponse<bool>> AddOrUpdateGeoFencing(List<GeoFencingDTO> geoFencings);
         Task<ServiceResponse<bool>> DeleteGeoFencing(int id);
     }
 }

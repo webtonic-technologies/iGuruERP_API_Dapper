@@ -24,7 +24,7 @@ namespace Attendance_API.Services.Implementations
             return await _subjectAttendanceAnalysisRepo.GetMonthlyAttendanceAnalysis(academicYearId, classId, sectionId, subjectId, instituteId);
         }
 
-        public async Task<ServiceResponse<List<MonthlyAttendanceAnalysisDTO>>> GetAttendanceRangeAnalysis(int academicYearId, int classId, int sectionId, int subjectId, int instituteId)
+        public async Task<ServiceResponse<List<AttendanceRangeDTO>>> GetAttendanceRangeAnalysis(int academicYearId, int classId, int sectionId, int subjectId, int instituteId)
         {
             return await _subjectAttendanceAnalysisRepo.GetAttendanceRangeAnalysis(academicYearId, classId, sectionId, subjectId, instituteId);
         }

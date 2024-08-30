@@ -65,8 +65,8 @@ namespace Student_API.Repository.Implementations
             INNER JOIN 
                 tbl_Section ON tbl_StudentMaster.section_id = tbl_Section.section_id
             WHERE 
-                tbl_StudentMaster.class_id = @classId 
-                AND tbl_StudentMaster.section_id = @sectionId;
+                (@classId  = 0 OR tbl_StudentMaster.class_id = @classId )
+                AND (@sectionId = 0 OR tbl_StudentMaster.section_id = @sectionId);
 
             -- Select sorted and paginated data
             SELECT * 

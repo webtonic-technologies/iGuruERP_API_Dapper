@@ -16,16 +16,16 @@ namespace Attendance_API.Repository.Implementations
             _connection = connection;
         }
 
-        public async Task<ServiceResponse<List<StudentAttendanceStatusDTO>>> GetStudentAttendanceStatusList()
+        public async Task<ServiceResponse<List<StudentAttendanceStatusDTO>>> GetStudentAttendanceStatusList(int InstituteId)
         {
             try
             {
                 var response = new List<StudentAttendanceStatusDTO>();
                 string sql = @"SELECT *
-                       FROM [dbo].[tbl_StudentAttendanceStatus]";
+                       FROM [dbo].[tbl_StudentAttendanceStatus] where isDelete = 0 AND InstituteId = @InstituteId";
 
                 // Execute the query and retrieve the student attendance status
-                var data = await _connection.QueryAsync<StudentAttendanceStatus>(sql);
+                var data = await _connection.QueryAsync<StudentAttendanceStatus>(sql, new { InstituteId });
                 if (data != null)
                 {
                     foreach (var item in data)
@@ -58,7 +58,7 @@ namespace Attendance_API.Repository.Implementations
                 var response = new StudentAttendanceStatusDTO();
                 string sql = @"SELECT *
                        FROM [dbo].[tbl_StudentAttendanceStatus]
-                       WHERE Student_Attendance_Status_id = @Student_Attendance_Status_id";
+                       WHERE Student_Attendance_Status_id = @Student_Attendance_Status_id and isDelete = 0";
 
                 // Execute the query and retrieve the student attendance status
                 var data = await _connection.QueryFirstOrDefaultAsync<StudentAttendanceStatus>(sql, new { Student_Attendance_Status_id });
@@ -80,59 +80,41 @@ namespace Attendance_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<string>> AddStudentAttendanceStatus(StudentAttendanceStatusDTO request)
+        public async Task<ServiceResponse<string>> SaveStudentAttendanceStatus(List<StudentAttendanceStatusDTO> request)
         {
             try
             {
-                string sql = @"INSERT INTO [dbo].[tbl_StudentAttendanceStatus] (Student_Attendance_Status_Type, Short_Name)
-                       VALUES (@Student_Attendance_Status_Type, @Short_Name);
-                       SELECT SCOPE_IDENTITY();"; // Retrieve the inserted id
+                string insertSql = @"INSERT INTO [dbo].[tbl_StudentAttendanceStatus] (Student_Attendance_Status_Type, Short_Name, InstituteId)
+                                     VALUES (@Student_Attendance_Status_Type, @Short_Name, @InstituteId);";
+                
+                string updateSql = @"UPDATE [dbo].[tbl_StudentAttendanceStatus]
+                                     SET Student_Attendance_Status_Type = @Student_Attendance_Status_Type,
+                                         Short_Name = @Short_Name
+                                     WHERE Student_Attendance_Status_id = @Student_Attendance_Status_id;";
 
-                // Execute the query and retrieve the inserted id
-                int insertedId = await _connection.ExecuteScalarAsync<int>(sql, new
+                foreach (var item in request)
                 {
-                    Student_Attendance_Status_Type = request.Student_Attendance_Status_Type,
-                    Short_Name = request.Short_Name
-                });
-                if (insertedId > 0)
-                {
-                    return new ServiceResponse<string>(true, "Operation successful", "Data added successfully", 200);
+                    if (item.Student_Attendance_Status_id == 0)
+                    {
+                        await _connection.ExecuteAsync(insertSql, new
+                        {
+                            Student_Attendance_Status_Type = item.Student_Attendance_Status_Type,
+                            Short_Name = item.Short_Name,
+                            InstituteId = item.InstituteId
+                        });
+                    }
+                    else
+                    {
+                        await _connection.ExecuteAsync(updateSql, new
+                        {
+                            Student_Attendance_Status_Type = item.Student_Attendance_Status_Type,
+                            Short_Name = item.Short_Name,
+                            Student_Attendance_Status_id = item.Student_Attendance_Status_id
+                        });
+                    }
                 }
-                else
-                {
-                    return new ServiceResponse<string>(false, "Some error occured", string.Empty, 500);
-                }
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
-            }
-        }
 
-        public async Task<ServiceResponse<string>> UpdateStudentAttendanceStatus(StudentAttendanceStatusDTO request)
-        {
-            try
-            {
-                string sql = @"UPDATE [dbo].[tbl_StudentAttendanceStatus]
-                       SET Student_Attendance_Status_Type = @Student_Attendance_Status_Type,
-                           Short_Name = @Short_Name
-                       WHERE Student_Attendance_Status_id = @Student_Attendance_Status_id";
-
-                // Execute the query and retrieve the number of affected rows
-                int affectedRows = await _connection.ExecuteAsync(sql, new
-                {
-                    Student_Attendance_Status_Type = request.Student_Attendance_Status_Type,
-                    Short_Name = request.Short_Name,
-                    Student_Attendance_Status_id = request.Student_Attendance_Status_id
-                });
-                if (affectedRows > 0)
-                {
-                    return new ServiceResponse<string>(true, "Operation successful", "Data updated successfully", 200);
-                }
-                else
-                {
-                    return new ServiceResponse<string>(false, "Some error occured", string.Empty, 500);
-                }
+                return new ServiceResponse<string>(true, "Operation successful", "Data processed successfully", 200);
             }
             catch (Exception ex)
             {
@@ -144,7 +126,22 @@ namespace Attendance_API.Repository.Implementations
         {
             try
             {
-                string sql = @"DELETE FROM [dbo].[tbl_StudentAttendanceStatus]
+
+
+                string query1 = @"
+                         SELECT COUNT(0)
+                         FROM [dbo].[tbl_StudentAttendanceMaster]
+                         WHERE Student_Attendance_Status_id = @Student_Attendance_Status_id"
+          ;
+
+                int count = await _connection.ExecuteScalarAsync<int>(query1, new { Student_Attendance_Status_id });
+
+                if (count > 0)
+                {
+                    return new ServiceResponse<string>(false, "There is a dependency in Student Attendance, so it cannot be deleted.", string.Empty, 400);
+                }
+                string sql = @"update  [dbo].[tbl_StudentAttendanceStatus]
+                        set isDelete = 1
                        WHERE Student_Attendance_Status_id = @Student_Attendance_Status_id";
 
                 // Execute the query and retrieve the number of affected rows

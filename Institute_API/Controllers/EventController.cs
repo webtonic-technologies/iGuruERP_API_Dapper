@@ -112,7 +112,7 @@ namespace Institute_API.Controllers
         {
             try
             {
-                var data = await _eventService.ToggleEventActiveStatus(toggleEvent.EventId, toggleEvent.IsActive, toggleEvent.UserId);
+                var data = await _eventService.ToggleEventActiveStatus(toggleEvent.EventId, toggleEvent.Status, toggleEvent.UserId);
                 if (data != null)
                 {
                     return Ok(data);

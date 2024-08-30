@@ -8,6 +8,7 @@ namespace LibraryManagement_API.Services.Interfaces
     public interface IPublisherService
     {
         Task<ServiceResponse<List<PublisherResponse>>> GetAllPublishers(GetAllPublishersRequest request);
+        Task<ServiceResponse<List<PublisherFetchResponse>>> GetAllPublishersFetch(GetAllPublishersFetchRequest request);
         Task<ServiceResponse<string>> AddUpdatePublisher(Publisher request);
         Task<ServiceResponse<Publisher>> GetPublisherById(int publisherId);
         Task<ServiceResponse<bool>> DeletePublisher(int publisherId);

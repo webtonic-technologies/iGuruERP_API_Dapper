@@ -14,7 +14,7 @@
         public int Institute_id { get; set; }
         public int Academic_year_id { get; set; }
         public string YearName { get; set; }
-
+        public List<EventFileMapping> AttachmentFiles {  get; set; }    
         public List<EventEmployeeMapping> EmployeeMappings { get; set; }
         public List<EventClassSessionMapping> ClassSessionMappings { get; set; }
     }
@@ -34,5 +34,11 @@
         public int Section_id { get; set; }
         public string? section_name { get; set; }
         public string? class_name { get; set; }
+    }
+    public class EventFileMapping
+    {
+        public int EventFileMapping_Id { get; set; }
+        public int Event_id { get; set; }
+        public string attachment { get; set; }
     }
 }

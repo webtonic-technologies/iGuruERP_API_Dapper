@@ -16,10 +16,11 @@ namespace LibraryManagement_API.Services.Implementations
             _genreRepository = genreRepository;
         }
 
-        public async Task<ServiceResponse<string>> AddUpdateGenre(Genre request)
+        public async Task<ServiceResponse<string>> AddUpdateGenres(AddUpdateGenreRequest request)
         {
-            return await _genreRepository.AddUpdateGenre(request);
+            return await _genreRepository.AddUpdateGenres(request);
         }
+
 
         public async Task<ServiceResponse<List<GenreResponse>>> GetAllGenres(GetAllGenreRequest request)
         {
