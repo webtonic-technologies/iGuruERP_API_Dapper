@@ -22,15 +22,20 @@ builder.Services.AddTransient<IModuleService, ModuleService>();
 
 builder.Services.AddTransient<ISubModuleRepository, SubModuleRepository>();
 builder.Services.AddTransient<ISubModuleService, SubModuleService>();
-
-builder.Services.AddTransient<ICreatePackageRepository, CreatePackageRepository>();
-builder.Services.AddTransient<ICreatePackageService, CreatePackageService>();
-
+   
 builder.Services.AddTransient<IInstituteOnboardRepository, InstituteOnboardRepository>();
 builder.Services.AddTransient<IInstituteOnboardService, InstituteOnboardService>();
 
 builder.Services.AddTransient<IFunctionalityRepository, FunctionalityRepository>();
 builder.Services.AddTransient<IFunctionalityService, FunctionalityService>();
+
+builder.Services.AddTransient<IPackageRepository, PackageRepository>();
+builder.Services.AddTransient<IPackageService, PackageService>();
+
+builder.Services.AddTransient<IPackageRepository_Institute, PackageRepository_Institute>();
+builder.Services.AddTransient<IPackageService_Institute, PackageService_Institute>();
+
+builder.Services.AddTransient<IInstituteOnboardService_Credentials, InstituteOnboardService_Credentials>();
 
 
 var app = builder.Build();
