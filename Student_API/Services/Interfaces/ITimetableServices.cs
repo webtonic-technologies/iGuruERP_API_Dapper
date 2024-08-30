@@ -8,7 +8,7 @@ namespace Student_API.Services.Interfaces
     {
         Task<ServiceResponse<int>> AddUpdateTimeTableGroup(TimeTableGroupDTO request);
         Task<ServiceResponse<List<ResponseTimeTableGroupDTO>>> GetTimeTableGroup(int InstituteId);
-        Task<ServiceResponse<TimeTableGroupDTO>> GetTimeTableGroupById(int timetableGroupId);
+        Task<ServiceResponse<TimeTableGroupDTOResponse>> GetTimeTableGroupById(int timetableGroupId);
         Task<ServiceResponse<int>> AddOrUpdateTimeTableDaysPlan(DaysSetupDTO daysSetupDTO);
         Task<ServiceResponse<List<TimeTableDaysPlanDTO>>> GetTimeTableDaysPlan(int InstituteId);
         Task<ServiceResponse<List<Timetable>>> GetTimetablesByTimetableGroupId(int timetableGroupId);

@@ -1,12 +1,12 @@
-﻿using Student_API.Repository.Interfaces;
-using Student_API.Services.Interfaces;
-using Student_API.DTOs.ServiceResponse;
-using Student_API.DTOs.RequestDTO;
+﻿using Attendance_API.Repository.Interfaces;
+using Attendance_API.Services.Interfaces;
+using Attendance_API.DTOs.ServiceResponse;
+
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using Student_API.DTOs;
+using Attendance_API.DTOs;
 
-namespace Student_API.Services.Implementations
+namespace Student_API.Attendance_API.Implementations
 {
     public class IMEIRegistrationService : IIMEIRegistrationService
     {
