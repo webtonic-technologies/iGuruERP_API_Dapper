@@ -204,8 +204,8 @@ namespace Attendance_API.Repository.Implementations
                 var query = @"
                     SELECT st.Shift_Timing_id, st.Clock_In, st.Clock_Out, st.Late_Coming, st.Applicable_Date, d.Designation_id, d.DesignationName
                     FROM tbl_ShiftTimingMaster st
-                    JOIN tbl_ShiftTimingDesignationMapping stm ON st.Shift_Timing_id = stm.Shift_Timing_id
-                    JOIN tbl_Designation d ON stm.Designation_id = d.Designation_id;";
+                   LEFT JOIN tbl_ShiftTimingDesignationMapping stm ON st.Shift_Timing_id = stm.Shift_Timing_id
+                    LEFT JOIN tbl_Designation d ON stm.Designation_id = d.Designation_id";
 
                 if (request.pageNumber != null && request.pageSize != null)
                 {

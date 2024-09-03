@@ -216,12 +216,15 @@ namespace Student_API.Repository.Implementations
                     ps.Reason,
                     ps.Status,
                     ps.ModifiedDate,
-                    ps.Qr_Code
+                    ps.Qr_Code,
+                    p.first_name + ' ' + p.last_name AS ParentName,
+                    g.Gender_Type AS GenderName
                 FROM tbl_PermissionSlip ps
                 JOIN tbl_StudentMaster s ON ps.Student_Id = s.student_id
                 JOIN tbl_StudentParentsInfo p ON ps.Student_Parent_Info_id = p.student_parent_info_id
                 JOIN tbl_Class c ON s.class_id = c.class_id
                 JOIN tbl_section sec ON s.section_id = sec.section_id
+                JOIN tbl_Gender g ON s.Gender_id = g.Gender_id
                 WHERE ps.PermissionSlip_Id = @PermissionSlipId;";
 
                 var permissionSlip = await _dbConnection.QuerySingleOrDefaultAsync<SinglePermissionSlipDTO>(sql, new { PermissionSlipId = permissionSlipId });
