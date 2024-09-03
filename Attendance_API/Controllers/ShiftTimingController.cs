@@ -27,8 +27,8 @@ namespace Attendance_API.Controllers
                 return BadRequest(result);
         }
 
-        [HttpGet("GetAllShiftTimings")]
-        public async Task<IActionResult> GetAllShiftTimings([FromQuery]ShiftTimingFilterDTO request)
+        [HttpPost("GetAllShiftTimings")]
+        public async Task<IActionResult> GetAllShiftTimings(ShiftTimingFilterDTO request)
         {
             var result = await _shiftTimingService.GetAllShiftTimings(request);
             if (result.Success)
