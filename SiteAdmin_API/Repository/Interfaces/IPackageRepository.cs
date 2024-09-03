@@ -4,11 +4,10 @@ using SiteAdmin_API.Models;
 
 namespace SiteAdmin_API.Repository.Interfaces
 {
-    public interface ICreatePackageRepository
+    public interface IPackageRepository
     {
-        Task<ServiceResponse<Package>> CreatePackage(CreatePackageRequest request);
-        Task<ServiceResponse<Package>> UpdatePackage(UpdatePackageRequest request);
+        Task<ServiceResponse<Package>> AddUpdatePackage(AddUpdatePackageRequest request);
+        Task<ServiceResponse<List<Package>>> GetAllPackages();
         Task<ServiceResponse<bool>> UpdatePackageStatus(int packageId);
-
     }
 }

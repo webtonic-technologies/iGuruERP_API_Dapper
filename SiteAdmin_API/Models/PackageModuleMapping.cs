@@ -1,6 +1,6 @@
 ﻿namespace SiteAdmin_API.Models
 {
-    public class PackageModuleMapping
+    public class PackageModuleMapping1
     {
         public int PMMID { get; set; }
         public int PackageID { get; set; }

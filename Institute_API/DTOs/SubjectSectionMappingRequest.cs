@@ -2,13 +2,18 @@
 {
     public class SubjectRequest
     {
-        public int SubjectId { get; set; }
+
         public int InstituteId { get; set; }
+        public List<Subjects>? Subjects { get; set; }
+        public List<SubjectSectionMappingRequest>? SubjectSectionMappingRequests { get; set; }
+    }
+    public class Subjects
+    {
+        public int SubjectId { get; set; }
         public string SubjectName { get; set; } = string.Empty;
         public string SubjectCode { get; set; } = string.Empty;
         public int subject_type_id { get; set; }
-        public bool IsDeleted {  get; set; }
-        public List<SubjectSectionMappingRequest>? SubjectSectionMappingRequests { get; set; }
+        public bool IsDeleted { get; set; }
     }
     public class SubjectSectionMappingRequest
     {
