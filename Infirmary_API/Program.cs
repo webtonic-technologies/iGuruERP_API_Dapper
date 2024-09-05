@@ -1,7 +1,13 @@
+using Infirmary_API.Repositories.Implementations;
+using Infirmary_API.Repositories.Interfaces;
 using Infirmary_API.Repository.Implementations;
 using Infirmary_API.Repository.Interfaces;
 using Infirmary_API.Services.Implementations;
 using Infirmary_API.Services.Interfaces;
+using InfirmaryVisit_API.Repositories.Implementations;
+using InfirmaryVisit_API.Repositories.Interfaces;
+using InfirmaryVisit_API.Services.Implementations;
+using InfirmaryVisit_API.Services.Interfaces;
 using System.Data;
 using System.Data.SqlClient;
 
@@ -42,6 +48,13 @@ builder.Services.AddTransient<IItemTypeFetchService, ItemTypeFetchService>();
 
 builder.Services.AddTransient<IInfirmaryVisitorTypeRepository, InfirmaryVisitorTypeRepository>();
 builder.Services.AddTransient<IInfirmaryVisitorTypeService, InfirmaryVisitorTypeService>();
+
+builder.Services.AddScoped<IStudentVaccinationFetchService, StudentVaccinationFetchService>();
+builder.Services.AddScoped<IStudentVaccinationFetchRepository, StudentVaccinationFetchRepository>();
+
+builder.Services.AddScoped<IInfirmaryVisitFetchRepository, InfirmaryVisitFetchRepository>();
+builder.Services.AddScoped<IInfirmaryVisitFetchService, InfirmaryVisitFetchService>();
+
 
 
 var app = builder.Build();

@@ -49,7 +49,7 @@ namespace Institute_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<AcaConfigSubStudentRequest>> GetSubjectStudentMappingList(MappingListRequest request)
+        public async Task<ServiceResponse<AcaConfigSubStudentResponse>> GetSubjectStudentMappingList(MappingListRequest request)
         {
             try
             {
@@ -57,7 +57,7 @@ namespace Institute_API.Services.Implementations
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<AcaConfigSubStudentRequest>(false, ex.Message, new AcaConfigSubStudentRequest(), 500);
+                return new ServiceResponse<AcaConfigSubStudentResponse>(false, ex.Message, new AcaConfigSubStudentResponse(), 500);
             }
         }
     }
