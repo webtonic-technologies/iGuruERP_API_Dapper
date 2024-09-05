@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using Student_API.DTOs.RequestDTO;
 using Student_API.Models;
 using Student_API.Helper;
+using Microsoft.AspNetCore.Http;
 
 namespace Student_API.Repository.Implementations
 {
@@ -1203,7 +1204,7 @@ namespace Student_API.Repository.Implementations
             FROM 
                 #TempStudentDetails;";
 
-                using (var multi = await _connection.QueryMultipleAsync(sql, new { InstituteId = obj.Institute_id, Offset = offset, PageSize = actualPageSize, class_id = obj.class_id, section_id = obj.section_id , Academic_year_id  =obj.Academic_year_id, isActive=obj.isActive, StudentType_id = obj.StudentType_id }))
+                using (var multi = await _connection.QueryMultipleAsync(sql, new { InstituteId = obj.Institute_id, Offset = offset, PageSize = actualPageSize, class_id = obj.class_id, section_id = obj.section_id, Academic_year_id = obj.Academic_year_id, isActive = obj.isActive, StudentType_id = obj.StudentType_id }))
                 {
                     var studentList = multi.Read<StudentDetailsDTO>().ToList();
                     int? totalRecords = (obj.pageSize.HasValue && obj.pageNumber.HasValue) == true ? multi.ReadSingle<int>() : null;
@@ -1329,6 +1330,302 @@ namespace Student_API.Repository.Implementations
                 return new ServiceResponse<int>(false, "Some error occured", 0, 500);
             }
         }
+
+        public async Task<ServiceResponse<List<StudentInformationDTO>>> GetAllStudentDetailsData(GetStudentRequestModel obj)
+        {
+            try
+            {
+                const int MaxPageSize = int.MaxValue;
+                int actualPageSize = obj.pageSize ?? MaxPageSize;
+                int actualPageNumber = obj.pageNumber ?? 1;
+                int offset = (actualPageNumber - 1) * actualPageSize;
+                var allowedSortFields = new List<string> { "First_Name", "Admission_Number", "Date_of_Joining", "Roll_Number" };
+                var allowedSortDirections = new List<string> { "ASC", "DESC" };
+
+                // Validate sort field and direction
+                if (!allowedSortFields.Contains(obj.sortField))
+                {
+                    obj.sortField = "First_Name";
+                }
+
+                obj.sortDirection = obj.sortDirection?.ToUpper() ?? "ASC";
+                if (!allowedSortDirections.Contains(obj.sortDirection))
+                {
+                    obj.sortDirection = "ASC";
+                }
+
+                // SQL query with joins to retrieve the required data
+                string sql = $@"
+        -- Base query for fetching student details with filters, sorting, and pagination
+IF OBJECT_ID('tempdb..#TempStudentDetails') IS NOT NULL DROP TABLE #TempStudentDetails;
+
+SELECT 
+    tbl_StudentMaster.student_id, 
+    tbl_StudentMaster.First_Name, 
+    tbl_StudentMaster.Middle_Name, 
+    tbl_StudentMaster.Last_Name, 
+    tbl_StudentMaster.gender_id, 
+    Gender_Type, 
+    tbl_Class.class_id, 
+    class_name AS class_course, 
+    tbl_Section.section_id, 
+    section_name AS Section, 
+    [Admission_Number], 
+    [Roll_Number],
+    FORMAT([Date_of_Joining], 'dd-MM-yyyy') AS Date_of_Joining, 
+    Academic_year_id, 
+    tbl_AcademicYear.YearName, 
+    tbl_StudentMaster.Nationality_id, 
+    Nationality_Type, 
+    tbl_Religion.Religion_id, 
+    Religion_Type, 
+    FORMAT(tbl_StudentMaster.Date_of_Birth, 'dd-MM-yyyy') AS Date_of_Birth, 
+    tbl_StudentMaster.Mother_Tongue_id, 
+    Mother_Tongue_Name, 
+    tbl_StudentMaster.Caste_id, 
+    caste_type,
+    tbl_StudentMaster.Blood_Group_id, 
+    Blood_Group_Type, 
+    [Aadhar_Number], 
+    [PEN], 
+    [QR_code], 
+    [IsPhysicallyChallenged],
+    [IsSports], 
+    [IsAided], 
+    [IsNCC], 
+    [IsNSS], 
+    [IsScout], 
+    tbl_StudentMaster.File_Name, 
+    [isActive], 
+    tbl_StudentMaster.StudentType_id, 
+    Student_Type_Name,
+    tbl_InstituteHouse.Institute_House_id AS Student_House_id, 
+    tbl_InstituteHouse.HouseName AS Student_House_Name
+INTO 
+    #TempStudentDetails
+FROM 
+    tbl_StudentMaster
+LEFT JOIN 
+    tbl_Class ON tbl_StudentMaster.class_id = tbl_Class.class_id
+LEFT JOIN 
+    tbl_Section ON tbl_StudentMaster.section_id = tbl_Section.section_id
+LEFT JOIN 
+    tbl_Gender ON tbl_StudentMaster.gender_id = tbl_Gender.Gender_id
+LEFT JOIN 
+    tbl_Religion ON tbl_StudentMaster.Religion_id = tbl_Religion.Religion_id
+LEFT JOIN 
+    tbl_Nationality ON tbl_Nationality.Nationality_id = tbl_StudentMaster.Nationality_id 
+LEFT JOIN 
+    tbl_MotherTongue ON tbl_StudentMaster.Mother_Tongue_id = tbl_MotherTongue.Mother_Tongue_id
+LEFT JOIN 
+    tbl_BloodGroup ON tbl_BloodGroup.Blood_Group_id = tbl_StudentMaster.Blood_Group_id
+LEFT JOIN 
+    tbl_CasteMaster ON tbl_CasteMaster.caste_id = tbl_StudentMaster.Caste_id
+LEFT JOIN 
+    tbl_InstituteDetails ON tbl_InstituteDetails.Institute_id = tbl_StudentMaster.Institute_id
+LEFT JOIN 
+    tbl_AcademicYear ON tbl_AcademicYear.Id = tbl_StudentMaster.Academic_year_id
+LEFT JOIN 
+    tbl_InstituteHouse ON tbl_InstituteHouse.Institute_house_id = tbl_StudentMaster.Institute_house_id
+LEFT JOIN 
+    tbl_StudentType ON tbl_StudentType.Student_Type_id = tbl_StudentMaster.StudentType_id
+WHERE 
+    tbl_StudentMaster.Institute_id = @InstituteId
+    AND (tbl_StudentMaster.Class_id = @class_id OR @class_id = 0)
+    AND (tbl_StudentMaster.Section_id = @section_id OR @section_id = 0) 
+    AND (tbl_StudentMaster.Academic_year_id = @Academic_year_id OR @Academic_year_id = 0)
+    AND (tbl_StudentMaster.StudentType_id = @StudentType_id OR @StudentType_id = 0)
+    AND tbl_StudentMaster.isActive = @isActive;
+
+-- Query the temporary table with sorting and pagination
+SELECT 
+    *
+FROM 
+    #TempStudentDetails
+ORDER BY 
+    {obj.sortField} {obj.sortDirection}, 
+    student_id
+OFFSET 
+    @Offset ROWS
+FETCH NEXT 
+    @PageSize ROWS ONLY;
+
+
+SELECT 
+    [Student_Other_Info_id], 
+    [student_id], 
+    [email_id], 
+    [Identification_Mark_1],
+    [Identification_Mark_2], 
+    FORMAT([Admission_Date], 'dd-MM-yyyy') AS Admission_Date, 
+    FORMAT([Register_Date], 'dd-MM-yyyy') AS Register_Date, 
+    [Register_Number], 
+    [samagra_ID], 
+    [Place_of_Birth], 
+    [comments], 
+    [language_known] 
+FROM 
+    [dbo].[tbl_StudentOtherInfo] 
+WHERE 
+    student_id IN (SELECT student_id FROM #TempStudentDetails);
+
+
+SELECT 
+    [Student_Parent_Info_id], 
+    [Student_id], 
+    tbl_StudentParentsInfo.Parent_Type_id, 
+    [First_Name], 
+    [Middle_Name], 
+    [Last_Name], 
+    [Contact_Number],
+    [Bank_Account_no], 
+    [Bank_IFSC_Code], 
+    [Family_Ration_Card_Type], 
+    [Family_Ration_Card_no], 
+    [Mobile_Number], 
+    FORMAT([Date_of_Birth], 'dd-MM-yyyy') AS Date_of_Birth, 
+    [Aadhar_no], 
+    [PAN_card_no], 
+    [Residential_Address], 
+    tbl_StudentParentsInfo.Occupation_id, 
+    [Designation], 
+    [Name_of_the_Employer], 
+    [Office_no], 
+    [Email_id], 
+    [Annual_Income], 
+    [File_Name], 
+    tbl_Occupation.Occupation_Type, 
+    tbl_ParentType.parent_type
+FROM 
+    [dbo].[tbl_StudentParentsInfo]
+INNER JOIN 
+    tbl_Occupation ON tbl_Occupation.Occupation_id = tbl_StudentParentsInfo.Occupation_id
+INNER JOIN 
+    tbl_ParentType ON tbl_ParentType.Parent_Type_id = tbl_StudentParentsInfo.Parent_Type_id
+WHERE 
+    student_id IN (SELECT student_id FROM #TempStudentDetails);
+
+
+SELECT 
+    ss.[Student_Siblings_id], 
+    ss.Name, 
+    ss.Last_Name, 
+    ss.Middle_Name, 
+    ss.[Student_id], 
+    ss.[Admission_Number], 
+    FORMAT(ss.[Date_of_Birth], 'dd-MM-yyyy') AS Date_of_Birth, 
+    ss.[Class], 
+    ss.[section],
+    ss.[Institute_Name], 
+    ss.[Aadhar_no]
+FROM 
+    [tbl_StudentSiblings] ss
+WHERE 
+    ss.[Student_id] IN (SELECT student_id FROM #TempStudentDetails);
+
+
+SELECT 
+    [Student_Prev_School_id], 
+    [student_id], 
+    [Previous_School_Name], 
+    [Previous_Board], 
+    [Previous_Medium], 
+    [Previous_School_Address], 
+    [previous_School_Course], 
+    [Previous_Class], 
+    [TC_number], 
+    FORMAT([TC_date], 'dd-MM-yyyy') AS TC_date, 
+    [isTC_Submitted]
+FROM 
+    [dbo].[tbl_StudentPreviousSchool] 
+WHERE 
+    student_id IN (SELECT student_id FROM #TempStudentDetails);
+
+
+SELECT 
+    * 
+FROM 
+    [dbo].[tbl_StudentHealthInfo] 
+WHERE 
+    student_id IN (SELECT student_id FROM #TempStudentDetails);
+
+SELECT 
+    Student_Parent_Office_Info_id, 
+    Student_id, 
+    Parents_Type_id, 
+    Office_Building_no, 
+    Street, 
+    Area, 
+    Pincode, 
+    tbl_StudentParentsOfficeInfo.City_id, 
+    city_name, 
+    tbl_StudentParentsOfficeInfo.State_id, 
+    state_name 
+FROM 
+    tbl_StudentParentsOfficeInfo
+INNER JOIN 
+    tbl_State ON tbl_State.state_id = tbl_StudentParentsOfficeInfo.state_id
+INNER JOIN 
+    tbl_City ON tbl_City.city_id = tbl_StudentParentsOfficeInfo.city_id 
+WHERE 
+    tbl_StudentParentsOfficeInfo.student_id IN (SELECT student_id FROM #TempStudentDetails);
+
+
+
+  SELECT * FROM [dbo].[tbl_StudentDocuments] WHERE student_id IN (SELECT student_id FROM #TempStudentDetails) AND isDelete = 0;
+
+
+-- Get the total count of records
+SELECT 
+    COUNT(1) 
+FROM 
+    #TempStudentDetails;
+
+";
+
+                using (var result = await _connection.QueryMultipleAsync(sql, new { InstituteId = obj.Institute_id, Offset = offset, PageSize = actualPageSize, class_id = obj.class_id, section_id = obj.section_id, Academic_year_id = obj.Academic_year_id, isActive = obj.isActive, StudentType_id = obj.StudentType_id }))
+                {
+                    var studentDetailsList = (await result.ReadAsync<StudentInformationDTO>()).ToList();
+                    var studentOtherInfoList = (await result.ReadAsync<StudentOtherInfoDTO>()).ToList();
+                    var studentParentInfoList = (await result.ReadAsync<StudentParentInfoDTO>()).ToList();
+                    var studentSiblingsList = (await result.ReadAsync<StudentSiblings>()).ToList();
+                    var studentPreviousSchoolList = (await result.ReadAsync<StudentPreviousSchool>()).ToList();
+                    var studentHealthInfoList = (await result.ReadAsync<StudentHealthInfo>()).ToList();
+                    var studentParentOfficeInfoList = (await result.ReadAsync<StudentParentOfficeInfo>()).ToList();
+                    var studentDocumentsList = (await result.ReadAsync<StudentDocumentListDTO>()).ToList();
+                    int? totalRecords = (obj.pageSize.HasValue && obj.pageNumber.HasValue) == true ? result.ReadSingle<int>() : null;
+
+                    var studentDetailsDict = studentDetailsList.ToDictionary(sd => sd.student_id);
+
+                    foreach (var student in studentDetailsList)
+                    {
+                        if (studentOtherInfoList.Any(o => o.student_id == student.student_id))
+                        {
+                            student.studentOtherInfoDTO = studentOtherInfoList.First(o => o.student_id == student.student_id);
+                        }
+                        student.studentParentInfos = studentParentInfoList.Where(p => p.Student_id == student.student_id).ToList();
+                        student.studentSiblings = studentSiblingsList.Where(s => s.Student_id == student.student_id).ToList();
+                        student.studentPreviousSchool = studentPreviousSchoolList.FirstOrDefault(p => p.student_id == student.student_id);
+                        student.studentHealthInfo = studentHealthInfoList.FirstOrDefault(h => h.Student_id == student.student_id);
+                        student.studentDocumentListDTOs = studentDocumentsList.Where(d => d.Student_id == student.student_id).ToList();
+
+                        foreach (var parentInfo in student.studentParentInfos)
+                        {
+                            parentInfo.studentParentOfficeInfo = studentParentOfficeInfoList
+                                .Where(officeInfo => officeInfo.Parents_Type_id == parentInfo.Parent_Type_id && officeInfo.Student_id == student.student_id)
+                                .FirstOrDefault();
+                        }
+                    }
+                    return new ServiceResponse<List<StudentInformationDTO>>(true, "Operation successful", studentDetailsList, 200, totalRecords);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<StudentInformationDTO>>(false, "Some error occured", null, 500);
+
+            }
+        }
+
     }
 }
 

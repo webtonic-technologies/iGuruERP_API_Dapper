@@ -356,7 +356,8 @@ namespace Institute_API.Repository.Implementations
             {
                 // Get event details from tbl_CreateEvent
                 string eventQuery = @"
-            SELECT Event_id,EventName,StartDate,EndDate,Description,Location,ScheduleTime AS ScheduleDate,Time AS ScheduleTime,AttachmentFile,isApproved,approvedBy,Academic_year_id
+            SELECT Event_id,EventName,FORMAT([StartDate], 'dd-MM-yyyy hh:mm tt') AS StartDate, 
+                   FORMAT([EndDate], 'dd-MM-yyyy hh:mm tt') AS EndDate,,Description,Location,ScheduleTime AS ScheduleDate,Time AS ScheduleTime,AttachmentFile,isApproved,approvedBy,Academic_year_id
             FROM tbl_CreateEvent
             WHERE Event_id = @EventId";
 
@@ -458,8 +459,8 @@ namespace Institute_API.Repository.Implementations
                 string queryAll = @"
     SELECT Event_id,
            EventName,
-           StartDate,
-           EndDate,
+          FORMAT([StartDate], 'dd-MM-yyyy hh:mm tt') AS StartDate, 
+                   FORMAT([EndDate], 'dd-MM-yyyy hh:mm tt') AS EndDate,
            Description,
            Location,
            AttachmentFile
@@ -541,8 +542,8 @@ namespace Institute_API.Repository.Implementations
                 string queryAll = @"
             SELECT Event_id,
                    EventName,
-                   StartDate,
-                   EndDate,
+FORMAT([StartDate], 'dd-MM-yyyy hh:mm tt') AS StartDate, 
+                   FORMAT([EndDate], 'dd-MM-yyyy hh:mm tt') AS EndDate,
                    Description,
                    Location,
                    AttachmentFile
