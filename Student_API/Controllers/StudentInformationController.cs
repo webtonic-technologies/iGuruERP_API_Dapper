@@ -97,6 +97,23 @@ namespace Student_API.Controllers
         }
 
         [HttpPost]
+        [Route("StudentDetails/GetAllStudentDetailsData")]
+        public async Task<IActionResult> GetAllStudentDetailsData(GetStudentRequestModel obj)
+        {
+            try
+            {
+                obj.sortField = obj.sortField ?? "First_Name";
+                obj.sortDirection = obj.sortDirection ?? "ASC";
+                var data = await _studentInformationService.GetAllStudentDetailsData(obj);
+                return Ok(data);
+            }
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
+        }
+
+        [HttpPost]
         [Route("StudentStatus/ChangeStudentStatus")]
         public async Task<IActionResult> ChangeStudentStatus([FromBody] StudentStatusDTO statusDTO)
         {

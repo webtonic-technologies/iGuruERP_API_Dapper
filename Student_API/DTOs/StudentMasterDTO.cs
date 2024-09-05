@@ -168,7 +168,7 @@ namespace Student_API.DTOs
         public string Admission_Number { get; set; }
         public string Date_of_Birth { get; set; }
         public string Class { get; set; }
-        public int section { get; set; }
+        public string section { get; set; }
         [MaxLength(30)]
         public string Institute_Name { get; set; }
         [MaxLength(20)]

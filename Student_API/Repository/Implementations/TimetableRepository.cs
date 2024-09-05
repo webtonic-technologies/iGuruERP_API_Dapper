@@ -441,7 +441,7 @@ namespace Student_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<int>> AddOrUpdateTimeTableDaysPlan(DaysSetupDTO daysSetupDTO)
+        public async Task<ServiceResponse<int>> AddOrUpdateTimeTableDaysPlan(DaysSetupDTO daysSetupDTO) 
         {
             try
             {

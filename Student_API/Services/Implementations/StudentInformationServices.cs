@@ -351,5 +351,18 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
+
+        public async Task<ServiceResponse<List<StudentInformationDTO>>> GetAllStudentDetailsData(GetStudentRequestModel obj)
+        {
+
+            try
+            {
+                return await _studentInformationRepository.GetAllStudentDetailsData(obj);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<StudentInformationDTO>>(false, ex.Message, null, 500);
+            }
+        }
     }
 }
