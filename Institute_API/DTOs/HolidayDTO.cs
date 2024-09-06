@@ -4,8 +4,8 @@
     {
         public int Holiday_id { get; set; }
         public string HolidayName { get; set; }
-        public DateTime StartDate { get; set; }
-        public DateTime EndDate { get; set; }
+        public string StartDate { get; set; }
+        public string EndDate { get; set; }
         public string Description { get; set; }
         public bool IsApproved { get; set; }
         public int? ApprovedBy { get; set; }

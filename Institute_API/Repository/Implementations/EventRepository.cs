@@ -465,12 +465,12 @@ namespace Institute_API.Repository.Implementations
            Location,
            AttachmentFile
     FROM tbl_CreateEvent 
-    WHERE  isApproved = 1 AND  Status = @Status AND isDelete = 0 AND Institute_id = @Institute_id AND (@Academic_year_id = 0 OR Academic_year_id=@Academic_year_id)";
+    WHERE    Status = @Status AND isDelete = 0 AND Institute_id = @Institute_id AND (@Academic_year_id = 0 OR Academic_year_id=@Academic_year_id)";
 
                 string queryCount = @"
     SELECT COUNT(*)
     FROM tbl_CreateEvent 
-    WHERE  isApproved = 1 AND Status = @Status AND isDelete = 0 AND Institute_id = @Institute_id AND (@Academic_year_id = 0 OR Academic_year_id=@Academic_year_id)";
+    WHERE   Status = @Status AND isDelete = 0 AND Institute_id = @Institute_id AND (@Academic_year_id = 0 OR Academic_year_id=@Academic_year_id)";
 
                 List<EventDTO> events;
                 int totalRecords = 0;

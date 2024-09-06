@@ -18,16 +18,16 @@ namespace Student_API.Services.Implementations
         public PermissionSlipService(IPermissionSlipRepository repository, IImageService imageService)
         {
             _repository = repository;
-            _imageService = imageService;   
+            _imageService = imageService;
         }
 
-        public async Task<ServiceResponse<List<PermissionSlipDTO>>> GetAllPermissionSlips(int Institute_id ,int classId, int sectionId, int? pageNumber = null, int? pageSize = null)
+        public async Task<ServiceResponse<List<PermissionSlipDTO>>> GetAllPermissionSlips(int Institute_id, int classId, int sectionId, int? pageNumber = null, int? pageSize = null)
         {
-            return await _repository.GetAllPermissionSlips(Institute_id,classId, sectionId,pageNumber,pageSize);
+            return await _repository.GetAllPermissionSlips(Institute_id, classId, sectionId, pageNumber, pageSize);
         }
-        public async Task<ServiceResponse<List<PermissionSlipDTO>>> GetPermissionSlips(int Institute_id , int classId, int sectionId, string startDate, string endDate, bool isApproved, int? pageNumber = null, int? pageSize = null)
+        public async Task<ServiceResponse<List<PermissionSlipDTO>>> GetPermissionSlips(int Institute_id, int classId, int sectionId, string startDate, string endDate, bool isApproved, int? pageNumber = null, int? pageSize = null)
         {
-            return await _repository.GetPermissionSlips( Institute_id , classId, sectionId, startDate, endDate, isApproved,pageNumber, pageSize);
+            return await _repository.GetPermissionSlips(Institute_id, classId, sectionId, startDate, endDate, isApproved, pageNumber, pageSize);
         }
         public async Task<ServiceResponse<string>> UpdatePermissionSlipStatus(int permissionSlipId, bool isApproved)
         {
@@ -60,11 +60,14 @@ namespace Student_API.Services.Implementations
         public async Task<ServiceResponse<SinglePermissionSlipDTO>> GetPermissionSlipById(int permissionSlipId)
         {
             var data = await _repository.GetPermissionSlipById(permissionSlipId);
-            if (!string.IsNullOrEmpty(data.Data.Qr_Code) && File.Exists(data.Data.Qr_Code))
+            if (data != null)
             {
-                data.Data.Qr_Code = _imageService.GetImageAsBase64(data.Data.Qr_Code);
+                if (!string.IsNullOrEmpty(data.Data.Qr_Code) && File.Exists(data.Data.Qr_Code))
+                {
+                    data.Data.Qr_Code = _imageService.GetImageAsBase64(data.Data.Qr_Code);
+                }
             }
-            return data;    
+            return data;
         }
     }
 
