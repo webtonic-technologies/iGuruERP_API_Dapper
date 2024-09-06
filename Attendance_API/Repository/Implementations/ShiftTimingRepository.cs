@@ -234,8 +234,8 @@ namespace Attendance_API.Repository.Implementations
                 query = @"
                     SELECT COUNT(*)
                     FROM tbl_ShiftTimingMaster st
-                    JOIN tbl_ShiftTimingDesignationMapping stm ON st.Shift_Timing_id = stm.Shift_Timing_id
-                    JOIN tbl_Designation d ON stm.Designation_id = d.Designation_id;";
+                    LEFT JOIN tbl_ShiftTimingDesignationMapping stm ON st.Shift_Timing_id = stm.Shift_Timing_id
+                     LEFT JOIN tbl_Designation d ON stm.Designation_id = d.Designation_id;";
 
                 var countRes = await _connection.QueryAsync<long>(query);
                 var count = countRes.FirstOrDefault();

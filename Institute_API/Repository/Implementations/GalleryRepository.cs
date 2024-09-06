@@ -125,11 +125,11 @@ namespace Institute_API.Repository.Implementations
             try
             {
                 string query = @"
-            SELECT tbl_Gallery.Event_id, tbl_Gallery.FileName, tbl_Gallery.isApproved,tbl_Gallery.Status,ScheduleTime AS EventDateTime
+            SELECT tbl_Gallery.Event_id, tbl_Gallery.FileName, tbl_Gallery.isApproved,tbl_Gallery.Status,FORMAT([StartDate], 'dd-MM-yyyy hh:mm tt') AS EventDateTime
             FROM [dbo].[tbl_Gallery]
 INNER JOIN tbl_CreateEvent ON tbl_CreateEvent.Event_id = tbl_Gallery.Event_id
-            WHERE Institute_id = @Institute_id AND Status = @Status AND isDelete = 0
-            ORDER BY Event_id";
+            WHERE tbl_Gallery.Institute_id = @Institute_id AND Status = @Status AND tbl_Gallery.isDelete = 0
+            ORDER BY tbl_Gallery.Event_id";
 
                 if (pageSize.HasValue && pageNumber.HasValue)
                 {
@@ -165,11 +165,11 @@ INNER JOIN tbl_CreateEvent ON tbl_CreateEvent.Event_id = tbl_Gallery.Event_id
             try
             {
                 string query = @"
-          SELECT tbl_Gallery.Event_id, tbl_Gallery.FileName, tbl_Gallery.isApproved,tbl_Gallery.Status,ScheduleTime AS EventDateTime
+          SELECT tbl_Gallery.Event_id, tbl_Gallery.FileName, tbl_Gallery.isApproved,tbl_Gallery.Status,FORMAT([StartDate], 'dd-MM-yyyy hh:mm tt') AS EventDateTime
             FROM [dbo].[tbl_Gallery]
 INNER JOIN tbl_CreateEvent ON tbl_CreateEvent.Event_id = tbl_Gallery.Event_id
             WHERE tbl_Gallery.Institute_id = @Institute_id  AND tbl_Gallery.isDelete = 0 AND tbl_CreateEvent.isDelete = 0
-            ORDER BY Event_id";
+            ORDER BY tbl_Gallery.Event_id";
 
 
                 if (pageSize.HasValue && pageNumber.HasValue)

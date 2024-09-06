@@ -116,7 +116,7 @@ namespace Institute_API.Repository.Implementations
             try
             {
                 string holidayQuery = @"
-            SELECT Holiday_id, HolidayName, StartDate, EndDate, Description, IsApproved, ApprovedBy,Institute_id,tbl_Holiday.Academic_year_id,YearName
+            SELECT Holiday_id, HolidayName,FORMAT([StartDate], 'dd-MM-yyyy hh:mm tt') AS StartDate, FORMAT([EndDate], 'dd-MM-yyyy hh:mm tt') AS EndDate, Description, IsApproved, ApprovedBy,Institute_id,tbl_Holiday.Academic_year_id,YearName
             LEFT JOIN tbl_AcademicYear on tbl_AcademicYear.Academic_year_id = tbl_Holiday.Academic_year_id
             FROM [dbo].[tbl_Holiday]
             WHERE Holiday_id = @HolidayId ;
@@ -176,7 +176,7 @@ namespace Institute_API.Repository.Implementations
 
                 // SQL queries
                 string queryAll = @"
-            SELECT Holiday_id, HolidayName, StartDate, EndDate, Description, IsApproved, ApprovedBy, Institute_id
+            SELECT Holiday_id, HolidayName, FORMAT([StartDate], 'dd-MM-yyyy hh:mm tt') AS StartDate, FORMAT([EndDate], 'dd-MM-yyyy hh:mm tt') AS EndDate, Description, IsApproved, ApprovedBy, Institute_id
             FROM [dbo].[tbl_Holiday]
             WHERE Institute_id = @Institute_id AND isDelete = 0 AND (@Academic_year_id = 0 OR Academic_year_id = @Academic_year_id)";
 
@@ -268,7 +268,7 @@ namespace Institute_API.Repository.Implementations
 
                 // SQL queries
                 string queryAll = @"
-    SELECT Holiday_id, HolidayName, StartDate, EndDate, Description, IsApproved, ApprovedBy, Institute_id
+    SELECT Holiday_id, HolidayName, FORMAT([StartDate], 'dd-MM-yyyy hh:mm tt') AS StartDate, FORMAT([EndDate], 'dd-MM-yyyy hh:mm tt') AS EndDate, Description, IsApproved, ApprovedBy, Institute_id
     FROM [dbo].[tbl_Holiday]
     WHERE IsApproved = 1 AND Status =@Status AND Institute_id = @Institute_id AND isDelete = 0 AND (@Academic_year_id = 0 OR Academic_year_id = @Academic_year_id)";
 
