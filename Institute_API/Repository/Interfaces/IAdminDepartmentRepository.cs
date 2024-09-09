@@ -10,5 +10,6 @@ namespace Institute_API.Repository.Interfaces
         Task<ServiceResponse<string>> DeleteAdminDepartment(int Department_id);
         Task<ServiceResponse<AdminDepartment>> GetAdminDepartmentById(int Department_id);
         Task<ServiceResponse<List<AdminDepartment>>> GetAdminDepartmentList(GetListRequest request);
+        Task<ServiceResponse<byte[]>> DownloadExcelSheet(int InstituteId);
     }
 }

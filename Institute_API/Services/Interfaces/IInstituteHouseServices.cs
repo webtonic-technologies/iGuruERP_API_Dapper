@@ -10,5 +10,6 @@ namespace Institute_API.Services.Interfaces
         Task<ServiceResponse<InstituteHouseDTO>> GetInstituteHouseById(int instituteHouseId);
         Task<ServiceResponse<bool>> SoftDeleteInstituteHouse(int instituteHouseId);
         Task<ServiceResponse<bool>> DeleteInstituteHouseImage(int instituteHouseId);
+        Task<ServiceResponse<byte[]>> DownloadExcelSheet(int InstituteId);
     }
 }

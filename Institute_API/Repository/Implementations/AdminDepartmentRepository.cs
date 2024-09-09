@@ -3,7 +3,9 @@ using Institute_API.DTOs;
 using Institute_API.DTOs.ServiceResponse;
 using Institute_API.Models;
 using Institute_API.Repository.Interfaces;
+using OfficeOpenXml;
 using System.Data;
+using System.Data.Common;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Institute_API.Repository.Implementations
@@ -168,6 +170,67 @@ namespace Institute_API.Repository.Implementations
             catch (Exception ex)
             {
                 return new ServiceResponse<List<AdminDepartment>>(false, ex.Message, new List<AdminDepartment>(), 500);
+            }
+        }
+
+        public async Task<ServiceResponse<byte[]>> DownloadExcelSheet(int InstituteId)
+        {
+            try
+            {
+                ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+                // SQL query to fetch Department data for the given InstituteId
+                string sql = @"
+            SELECT DepartmentName
+            FROM tbl_Department
+            WHERE Institute_id = @InstituteId AND IsDeleted = 0";
+
+                // Execute the query and fetch the department data
+                var departmentData = await _connection.QueryAsync<dynamic>(sql, new { InstituteId });
+
+                // Check if any data is returned
+                if (departmentData == null || !departmentData.Any())
+                {
+                    return new ServiceResponse<byte[]>(false, "No data found for the given Institute ID", null, 404);
+                }
+
+                // Create a new Excel package
+                using (var package = new ExcelPackage())
+                {
+                    // Add a new worksheet
+                    var worksheet = package.Workbook.Worksheets.Add("Departments");
+
+                    // Add headers to the Excel sheet
+                    worksheet.Cells[1, 1].Value = "Sr No.";
+                    worksheet.Cells[1, 2].Value = "Department Name";
+
+                    // Add the department data to the Excel sheet
+                    int row = 2;
+                    int srNo = 1;
+                    foreach (var department in departmentData)
+                    {
+                        worksheet.Cells[row, 1].Value = srNo;  // Sr No.
+                        worksheet.Cells[row, 2].Value = department.DepartmentName;  // Department Name
+                        row++;
+                        srNo++;
+                    }
+
+                    // Auto-fit columns for better readability
+                    worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+
+                    // Save the Excel package to a memory stream
+                    using (var stream = new MemoryStream())
+                    {
+                        package.SaveAs(stream);
+                        var fileBytes = stream.ToArray();
+
+                        // Return the Excel file as a byte array
+                        return new ServiceResponse<byte[]>(true, "Excel sheet generated successfully", fileBytes, 200);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<byte[]>(false, ex.Message, null, 500);
             }
         }
     }

@@ -36,6 +36,18 @@ namespace Institute_API.Services.Implementations
             }
         }
 
+        public async Task<ServiceResponse<byte[]>> DownloadExcelSheet(int InstituteId)
+        {
+            try
+            {
+                return await _academicConfigRepository.DownloadExcelSheet(InstituteId);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<byte[]>(false, ex.Message, [], 500);
+            }
+        }
+
         public async Task<ServiceResponse<Class>> GetAcademicConfigById(int ClassId)
         {
             try

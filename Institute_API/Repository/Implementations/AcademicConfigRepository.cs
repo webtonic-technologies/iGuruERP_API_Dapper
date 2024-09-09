@@ -2,6 +2,7 @@
 using Institute_API.DTOs;
 using Institute_API.DTOs.ServiceResponse;
 using Institute_API.Repository.Interfaces;
+using OfficeOpenXml;
 using System.Data;
 
 namespace Institute_API.Repository.Implementations
@@ -233,6 +234,67 @@ namespace Institute_API.Repository.Implementations
             catch (Exception ex)
             {
                 return new ServiceResponse<List<Class>>(false, ex.Message, new List<Class>(), 500);
+            }
+        }
+        public async Task<ServiceResponse<byte[]>> DownloadExcelSheet(int InstituteId)
+        {
+            try
+            {
+                ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+                // SQL query to get class and section details
+                string sql = @"
+            SELECT c.class_id, c.class_name, s.section_name
+            FROM tbl_Class c
+            LEFT JOIN tbl_Section s ON c.class_id = s.class_id
+            WHERE c.institute_id = @InstituteId AND c.IsDeleted = 0 AND s.IsDeleted = 0";
+
+                var classSectionData = await _connection.QueryAsync<dynamic>(sql, new { InstituteId });
+
+                // Group the sections by class and concatenate section names
+                var groupedData = classSectionData
+                    .GroupBy(cs => new { cs.class_id, cs.class_name })
+                    .Select(g => new
+                    {
+                        ClassName = g.Key.class_name,
+                        Sections = string.Join(",", g.Select(s => s.section_name))
+                    })
+                    .ToList();
+
+                // Initialize EPPlus and create an Excel package
+                using (var package = new ExcelPackage())
+                {
+                    var worksheet = package.Workbook.Worksheets.Add("Class and Sections");
+
+                    // Add headers
+                    worksheet.Cells[1, 1].Value = "Sr No";
+                    worksheet.Cells[1, 2].Value = "Class/Course Name";
+                    worksheet.Cells[1, 3].Value = "Sections";
+
+                    // Add data to the Excel sheet
+                    int row = 2;
+                    int serialNumber = 1;
+
+                    foreach (var data in groupedData)
+                    {
+                        worksheet.Cells[row, 1].Value = serialNumber++;
+                        worksheet.Cells[row, 2].Value = data.ClassName;
+                        worksheet.Cells[row, 3].Value = data.Sections;
+                        row++;
+                    }
+
+                    // Auto-fit columns for better visibility
+                    worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+
+                    // Convert Excel package to byte array
+                    var excelData = package.GetAsByteArray();
+
+                    // Return the byte array as a response
+                    return new ServiceResponse<byte[]>(true, "Excel file generated successfully", excelData, 200);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<byte[]>(false, $"Error generating Excel file: {ex.Message}", null, 500);
             }
         }
         private async Task<int> AddUpdateSections(List<Section> sections, int classId)
