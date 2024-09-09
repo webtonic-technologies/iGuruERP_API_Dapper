@@ -2,6 +2,7 @@
 using Institute_API.DTOs;
 using Institute_API.DTOs.ServiceResponse;
 using Institute_API.Repository.Interfaces;
+using OfficeOpenXml;
 using System.Data;
 
 namespace Institute_API.Repository.Implementations
@@ -322,6 +323,122 @@ namespace Institute_API.Repository.Implementations
             catch (Exception ex)
             {
                 return new ServiceResponse<AcaConfigSubStudentResponse>(false, ex.Message, new AcaConfigSubStudentResponse(), 500);
+            }
+        }
+        public async Task<ServiceResponse<byte[]>> DownloadExcelSheet(int InstituteId)
+        {
+            try
+            {
+                ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+                // SQL to fetch all students for the given InstituteId
+                string studentSql = @"
+            SELECT student_id, Admission_Number, First_Name, Middle_Name, Last_Name 
+            FROM tbl_StudentMaster 
+            WHERE Institute_id = @InstituteId AND isActive = 1";
+
+                // SQL to fetch all subjects for the given InstituteId
+                string subjectSql = @"
+            SELECT SubjectId, SubjectName 
+            FROM tbl_Subjects 
+            WHERE InstituteId = @InstituteId AND IsDeleted = 0";
+
+                // SQL to fetch the student-subject mappings
+                string studentSubjectMappingSql = @"
+            SELECT StudentId, SubjectId 
+            FROM tbl_StudentSubjectMapping 
+            WHERE InstituteId = @InstituteId";
+
+                // Execute queries
+                var students = await _connection.QueryAsync<dynamic>(studentSql, new { InstituteId });
+                var subjects = await _connection.QueryAsync<dynamic>(subjectSql, new { InstituteId });
+                var studentSubjectMappings = await _connection.QueryAsync<dynamic>(studentSubjectMappingSql, new { InstituteId });
+
+                // Group subject mappings by student
+                var studentToSubjectsMap = studentSubjectMappings
+                    .GroupBy(mapping => mapping.StudentId)
+                    .ToDictionary(group => group.Key, group => group.Select(mapping => (dynamic)mapping.SubjectId).ToList());
+
+                // Initialize EPPlus Excel package
+                using (var package = new ExcelPackage())
+                {
+                    // Add a worksheet
+                    var worksheet = package.Workbook.Worksheets.Add("Student Subject Mapping");
+
+                    // Add headers
+                    worksheet.Cells[1, 1].Value = "Sr No";
+                    worksheet.Cells[1, 2].Value = "Admission Number";
+                    worksheet.Cells[1, 3].Value = "Student Name";
+
+                    // Dynamically add headers for each subject
+                    int subjectColumnStart = 4;
+                    var subjectIds = subjects.Select(s => (int)s.SubjectId).ToList(); // Cast dynamic to int
+                    int currentColumn = subjectColumnStart;
+
+                    foreach (var subject in subjects)
+                    {
+                        worksheet.Cells[1, currentColumn].Value = subject.SubjectName;
+                        currentColumn++;
+                    }
+
+                    // Populate student rows
+                    int rowNumber = 2;
+                    int serialNumber = 1;
+
+                    foreach (var student in students)
+                    {
+                        // Set basic student info
+                        worksheet.Cells[rowNumber, 1].Value = serialNumber++;
+                        worksheet.Cells[rowNumber, 2].Value = student.Admission_Number;
+                        worksheet.Cells[rowNumber, 3].Value = $"{student.First_Name} {student.Middle_Name} {student.Last_Name}";
+
+                        // Get the subjects for this student, if any
+                        if (studentToSubjectsMap.TryGetValue(student.student_id, out List<dynamic> assignedSubjectsDynamic))
+                        {
+                            // Convert dynamic subjects to int
+                            var assignedSubjects = assignedSubjectsDynamic.Select(s => (int)s).ToList();
+
+                            for (int i = 0; i < subjectIds.Count; i++)
+                            {
+                                var subjectId = subjectIds[i];
+                                var cell = worksheet.Cells[rowNumber, subjectColumnStart + i];
+
+                                if (assignedSubjects.Contains(subjectId))
+                                {
+                                    cell.Value = "Yes";
+                                    // Apply color if the subject is assigned
+                                    cell.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                                    cell.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGreen); // Set the cell background color
+                                }
+                                else
+                                {
+                                    cell.Value = "No";
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // If no subjects are assigned, mark all as "No"
+                            for (int i = 0; i < subjectIds.Count; i++)
+                            {
+                                worksheet.Cells[rowNumber, subjectColumnStart + i].Value = "No";
+                            }
+                        }
+
+                        rowNumber++;
+                    }
+
+                    // Auto-fit the columns for better visibility
+                    worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+
+                    // Convert the package to a byte array and return it
+                    var excelData = package.GetAsByteArray();
+                    return new ServiceResponse<byte[]>(true, "Excel file generated successfully", excelData, 200);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Handle exceptions
+                return new ServiceResponse<byte[]>(false, $"Error generating Excel file: {ex.Message}", null, 500);
             }
         }
     }

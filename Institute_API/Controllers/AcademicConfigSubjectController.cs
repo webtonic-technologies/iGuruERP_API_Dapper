@@ -1,4 +1,5 @@
 using Institute_API.DTOs;
+using Institute_API.Services.Implementations;
 using Institute_API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -142,6 +143,16 @@ namespace Institute_API.Controllers
             {
                 return this.BadRequest(e.Message);
             }
+        }
+        [HttpGet("DownloadExcel/{instituteId}")]
+        public async Task<IActionResult> DownloadExcelSheet(int instituteId)
+        {
+            var response = await _academicConfigSubjectsServices.DownloadExcelSheet(instituteId);
+            if (response.Success)
+            {
+                return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Subjects.xlsx");
+            }
+            return StatusCode(response.StatusCode, response.Message);
         }
     }
 }

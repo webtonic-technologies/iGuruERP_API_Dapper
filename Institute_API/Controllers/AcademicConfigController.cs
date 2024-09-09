@@ -87,5 +87,15 @@ namespace Institute_API.Controllers
                 return this.BadRequest(e.Message);
             }
         }
+        [HttpGet("DownloadExcel/{instituteId}")]
+        public async Task<IActionResult> DownloadExcelSheet(int instituteId)
+        {
+            var response = await _academicConfigServices.DownloadExcelSheet(instituteId);
+            if (response.Success)
+            {
+                return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Class/Course.xlsx");
+            }
+            return StatusCode(response.StatusCode, response.Message);
+        }
     }
 }
