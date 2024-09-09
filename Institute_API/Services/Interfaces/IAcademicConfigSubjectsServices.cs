@@ -12,5 +12,6 @@ namespace Institute_API.Services.Interfaces
         Task<ServiceResponse<string>> AddUpdateSubjectType(SubjectType request);
         Task<ServiceResponse<List<SubjectType>>> GetSubjectTypeList();
         Task<ServiceResponse<SubjectType>> GetSubjectTypeById(int subjectTypeId);
+        Task<ServiceResponse<byte[]>> DownloadExcelSheet(int InstituteId);
     }
 }

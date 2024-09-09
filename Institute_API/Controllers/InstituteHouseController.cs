@@ -89,5 +89,15 @@ namespace Institute_API.Controllers
                 return BadRequest(ex.Message);
             }
         }
+        [HttpGet("DownloadExcel/{instituteId}")]
+        public async Task<IActionResult> DownloadExcelSheet(int instituteId)
+        {
+            var response = await _instituteHouseServices.DownloadExcelSheet(instituteId);
+            if (response.Success)
+            {
+                return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Institute Houses.xlsx");
+            }
+            return StatusCode(response.StatusCode, response.Message);
+        }
     }
 }
