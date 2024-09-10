@@ -25,6 +25,18 @@ namespace Institute_API.Services.Implementations
             }
         }
 
+        public async Task<ServiceResponse<byte[]>> DownloadExcelSheet(int InstituteId)
+        {
+            try
+            {
+                return await _acaConfigSubStudentRepository.DownloadExcelSheet(InstituteId);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<byte[]>(false, ex.Message, [], 500);
+            }
+        }
+
         public async Task<ServiceResponse<List<StudentListResponse>>> GetInstituteStudentsList(StudentListRequest request)
         {
             try

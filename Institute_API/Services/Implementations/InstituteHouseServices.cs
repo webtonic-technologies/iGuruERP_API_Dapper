@@ -1,6 +1,6 @@
 ﻿using Institute_API.DTOs;
 using Institute_API.DTOs.ServiceResponse;
-using Institute_API.Repository.Implementations;
+using Institute_API.Models;
 using Institute_API.Repository.Interfaces;
 using Institute_API.Services.Interfaces;
 
@@ -37,6 +37,18 @@ namespace Institute_API.Services.Implementations
             catch (Exception ex)
             {
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<byte[]>> DownloadExcelSheet(int InstituteId)
+        {
+            try
+            {
+                return await _instituteHouseRepository.DownloadExcelSheet(InstituteId);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<byte[]>(false, ex.Message, [], 500);
             }
         }
 
