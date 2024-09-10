@@ -10,5 +10,6 @@ namespace Student_API.Services.Interfaces
         Task<ServiceResponse<bool>> PromoteStudents(List<int> studentIds, int nextClassId, int sectionId);
         Task<ServiceResponse<bool>> PromoteClasses(ClassPromotionDTO classPromotionDTO);
         Task<ServiceResponse<List<ClassPromotionLogDTO>>> GetClassPromotionLog(GetClassPromotionLogParam obj);
+        Task<ServiceResponse<string>> ExportClassPromotionLogToExcel(GetClassPromotionLogParam obj);
     }
 }
