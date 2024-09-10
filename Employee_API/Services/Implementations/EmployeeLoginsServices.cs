@@ -7,18 +7,18 @@ namespace Employee_API.Services.Implementations
 {
     public class EmployeeLoginsServices: IEmployeeLoginsServices
     {
-        private readonly IEmployeeLoginsServices  _employeeLoginsServices;
+        private readonly IEmployeeLoginsRepository _employeeLoginsRepository;
 
-        public EmployeeLoginsServices(IEmployeeLoginsServices employeeLoginsServices)
+        public EmployeeLoginsServices(IEmployeeLoginsRepository employeeLoginsRepository)
         {
-            _employeeLoginsServices = employeeLoginsServices;
+            _employeeLoginsRepository = employeeLoginsRepository;
         }
 
         public async Task<ServiceResponse<byte[]>> DownloadExcelSheet(int InstituteId)
         {
             try
             {
-                return await _employeeLoginsServices.DownloadExcelSheet(InstituteId);
+                return await _employeeLoginsRepository.DownloadExcelSheet(InstituteId);
             }
             catch (Exception ex)
             {
@@ -30,7 +30,7 @@ namespace Employee_API.Services.Implementations
         {
             try
             {
-                return await _employeeLoginsServices.DownloadExcelSheetEmployeeActivity(InstituteId);
+                return await _employeeLoginsRepository.DownloadExcelSheetEmployeeActivity(InstituteId);
             }
             catch (Exception ex)
             {
@@ -42,7 +42,7 @@ namespace Employee_API.Services.Implementations
         {
             try
             {
-                return await _employeeLoginsServices.DownloadExcelSheetNonAppUsers(InstituteId);
+                return await _employeeLoginsRepository.DownloadExcelSheetNonAppUsers(InstituteId);
             }
             catch (Exception ex)
             {
@@ -54,7 +54,7 @@ namespace Employee_API.Services.Implementations
         {
             try
             {
-                return await _employeeLoginsServices.GetAllEmployeeActivity(request);
+                return await _employeeLoginsRepository.GetAllEmployeeActivity(request);
             }
             catch (Exception ex)
             {
@@ -66,7 +66,7 @@ namespace Employee_API.Services.Implementations
         {
             try
             {
-                return await _employeeLoginsServices.GetAllEmployeeLoginCred(request);
+                return await _employeeLoginsRepository.GetAllEmployeeLoginCred(request);
             }
             catch (Exception ex)
             {
@@ -78,7 +78,7 @@ namespace Employee_API.Services.Implementations
         {
             try
             {
-                return await _employeeLoginsServices.GetAllEmployeeNonAppUsers(request);
+                return await _employeeLoginsRepository.GetAllEmployeeNonAppUsers(request);
             }
             catch (Exception ex)
             {
