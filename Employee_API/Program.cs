@@ -15,6 +15,8 @@ builder.Services.AddScoped<IEmployeeProfileRepository, EmployeeProfileRepository
 builder.Services.AddScoped<IEmployeeProfileServices, EmployeeProfileServices>();
 builder.Services.AddScoped<IEmployeeDashboardRepository, EmployeeDashboardRepository>();
 builder.Services.AddScoped<IEmployeeDashboardServices, EmployeeDashboardServices>();
+builder.Services.AddScoped<IEmployeeLoginsRepository, EmployeeLoginsRepository>();
+builder.Services.AddScoped<IEmployeeLoginsServices, EmployeeLoginsServices>();
 builder.Services.AddTransient<IDbConnection>(c => new SqlConnection(connectionString));
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

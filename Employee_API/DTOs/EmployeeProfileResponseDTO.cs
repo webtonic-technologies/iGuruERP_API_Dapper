@@ -62,5 +62,35 @@ namespace Employee_API.DTOs
         public string Pin_code { get; set; } = string.Empty;
         public int AddressTypeId { get; set; }
         public int Employee_id { get; set; }
-    }       
+    }  
+    public class EmployeeCredentialsResponse
+    {
+        public int EmployeeId {  get; set; }
+        public string EmployeeName { get; set; } = string.Empty;
+        public string Designation {  get; set; } = string.Empty;
+        public string Departemnt {  get; set; } = string.Empty;
+        public string Gender { get; set; } = string.Empty;
+        public string LoginId { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public DateTime? LastActivity {  get; set; }
+    }
+    public class EmployeeNonAppUsersResponse
+    {
+        public int EmployeeId { get; set; }
+        public string EmployeeName { get; set; } = string.Empty;
+        public string Designation { get; set; } = string.Empty;
+        public string Departemnt { get; set; } = string.Empty;
+        public string Gender { get; set; } = string.Empty;
+        public string MobileNumber { get; set; } = string.Empty;
+    }
+    public class EmployeeActivityResponse
+    {
+        public int EmployeeId { get; set; }
+        public string EmployeeName { get; set; } = string.Empty;
+        public string Designation { get; set; } = string.Empty;
+        public string Departemnt { get; set; } = string.Empty;
+        public string MobileNumber { get; set; } = string.Empty;
+        public string LastActionTaken {  get; set; } = string.Empty;
+        public string Version {  get; set; } = string.Empty;
+    }
 }

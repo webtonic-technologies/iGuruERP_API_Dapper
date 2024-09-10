@@ -24,5 +24,6 @@ namespace Employee_API.Services.Interfaces
         Task<ServiceResponse<List<BloodGroup>>> GetBloodGroupList();
         Task<ServiceResponse<List<Department>>> GetDepartmentList(int InstituteId);
         Task<ServiceResponse<List<Designation>>> GetDesignationList(int DepartmentId);
+        Task<ServiceResponse<bool>> UpdatePassword(int userId, int userType, string Password);
     }
 }
