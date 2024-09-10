@@ -48,11 +48,11 @@ namespace Student_API.Repository.Implementations
                FORMAT(ps.ModifiedDate, 'dd-MM-yyyy') AS ModifiedDate
             INTO #PermissionSlipTempTable
             FROM tbl_PermissionSlip ps
-            JOIN tbl_StudentMaster s ON ps.Student_Id = s.student_id
-            JOIN tbl_StudentParentsInfo p ON ps.Student_Parent_Info_id = p.student_parent_info_id
-            JOIN tbl_Class c ON s.class_id = c.class_id
-            JOIN tbl_section sec ON s.section_id = sec.section_id
-            JOIN tbl_Gender g ON s.gender_id = g.Gender_Id
+            INNER JOIN tbl_StudentMaster s ON ps.Student_Id = s.student_id
+           LEFT JOIN tbl_StudentParentsInfo p ON ps.Student_Parent_Info_id = p.student_parent_info_id
+            LEFT JOIN tbl_Class c ON s.class_id = c.class_id
+            LEFT JOIN tbl_section sec ON s.section_id = sec.section_id
+            LEFT JOIN tbl_Gender g ON s.gender_id = g.Gender_Id
             WHERE ps.Institute_id = @Institute_id AND (s.class_id = @ClassId OR @ClassId =0)
               AND (s.section_id = @SectionId OR @SectionId = 0)AND Status = 1;
 

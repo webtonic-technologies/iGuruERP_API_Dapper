@@ -85,7 +85,7 @@ namespace Student_API.Services.Implementations
                 }
 
                 var permissionSlips = permissionSlipsResponse.Data;
-
+                ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
                 // Create an Excel package using EPPlus
                 using (var package = new ExcelPackage())
                 {
@@ -166,7 +166,7 @@ namespace Student_API.Services.Implementations
                 }
 
                 var permissionSlips = permissionSlipsResponse.Data;
-
+                ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
                 // Create an Excel package using EPPlus
                 using (var package = new ExcelPackage())
                 {
