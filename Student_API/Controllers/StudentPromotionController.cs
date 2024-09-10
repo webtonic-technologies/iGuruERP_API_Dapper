@@ -107,5 +107,25 @@ namespace Student_API.Controllers
             }
         }
 
+        [HttpPost("ExportClassPromotionLogToExcel")]
+        public async Task<IActionResult> ExportClassPromotionLogToExcel( GetClassPromotionLogParam obj)
+        {
+            var response = await _studentPromotionService.ExportClassPromotionLogToExcel(obj);
+
+            if (response.Success)
+            {
+                var filePath = response.Data;
+                var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+
+                // Return the Excel file for download
+                return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", Path.GetFileName(filePath));
+            }
+            else
+            {
+                return BadRequest(response.Message);
+            }
+        }
+
+
     }
 }

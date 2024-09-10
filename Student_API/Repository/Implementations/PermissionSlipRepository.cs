@@ -45,7 +45,7 @@ namespace Student_API.Repository.Implementations
                 FORMAT(ps.RequestedDateTime, 'dd-MM-yyyy') AS RequestedDateTime ,
                 ps.Reason,
                 ps.Status,
-                ps.ModifiedDate
+               FORMAT(ps.ModifiedDate, 'dd-MM-yyyy') AS ModifiedDate
             INTO #PermissionSlipTempTable
             FROM tbl_PermissionSlip ps
             JOIN tbl_StudentMaster s ON ps.Student_Id = s.student_id

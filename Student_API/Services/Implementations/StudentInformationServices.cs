@@ -1,4 +1,5 @@
-﻿using QRCoder;
+﻿using OfficeOpenXml;
+using QRCoder;
 using Student_API.DTOs;
 using Student_API.DTOs.RequestDTO;
 using Student_API.DTOs.ServiceResponse;
@@ -364,5 +365,81 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<List<StudentInformationDTO>>(false, ex.Message, null, 500);
             }
         }
+
+        public async Task<ServiceResponse<string>> GetAllStudentDetailsAsExcel(GetStudentRequestModel obj)
+        {
+            try
+            {
+                // Call the existing method to get the data
+                var studentDetailsResponse = await _studentInformationRepository.GetAllStudentDetails(obj);
+
+                if ( studentDetailsResponse.Data.Any())
+                {
+                    // Create an Excel package using EPPlus
+                    using (var package = new ExcelPackage())
+                    {
+                        // Create a worksheet in the Excel workbook
+                        var worksheet = package.Workbook.Worksheets.Add("StudentDetails");
+
+                        // Add headers
+                        worksheet.Cells[1, 1].Value = "Student Name";
+                        worksheet.Cells[1, 2].Value = "Class";
+                        worksheet.Cells[1, 3].Value = "Section";
+                        worksheet.Cells[1, 4].Value = "Admission Number";
+                        worksheet.Cells[1, 5].Value = "Roll Number";
+                        worksheet.Cells[1, 6].Value = "Date of Joining";
+                        worksheet.Cells[1, 7].Value = "Date of Birth";
+                        worksheet.Cells[1, 8].Value = "Religion";
+                        worksheet.Cells[1, 9].Value = "Gender";
+                        worksheet.Cells[1, 10].Value = "Father's Name";
+
+                        // Add data rows
+                        var rowIndex = 2; // Start from row 2 as row 1 contains headers
+                        foreach (var student in studentDetailsResponse.Data)
+                        {
+                            worksheet.Cells[rowIndex, 1].Value = student.Student_Name;
+                            worksheet.Cells[rowIndex, 2].Value = student.class_course;
+                            worksheet.Cells[rowIndex, 3].Value = student.Section;
+                            worksheet.Cells[rowIndex, 4].Value = student.Admission_Number;
+                            worksheet.Cells[rowIndex, 5].Value = student.Roll_Number;
+                            worksheet.Cells[rowIndex, 6].Value = student.Date_of_Joining;
+                            worksheet.Cells[rowIndex, 7].Value = student.Date_of_Birth;
+                            worksheet.Cells[rowIndex, 8].Value = student.Religion_Type;
+                            worksheet.Cells[rowIndex, 9].Value = student.Gender_Type;
+                            worksheet.Cells[rowIndex, 10].Value = student.Father_Name;
+                            rowIndex++;
+                        }
+
+                        // Auto-fit columns for better readability
+                        worksheet.Cells.AutoFitColumns();
+
+                        // Generate Excel file as a byte array
+                        var excelFile = package.GetAsByteArray();
+
+                        // Save the file to a specific location or return the file content as a downloadable response
+                        var fileName = $"StudentDetails_{DateTime.Now.ToString("yyyyMMddHHmmss")}.xlsx";
+                        var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "exports", fileName);
+
+                        // Ensure the directory exists
+                        Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+
+                        // Write file to the disk
+                        await File.WriteAllBytesAsync(filePath, excelFile);
+
+                        // Return the file path as a response
+                        return new ServiceResponse<string>(true, "Excel file generated successfully", filePath, 200);
+                    }
+                }
+                else
+                {
+                    return new ServiceResponse<string>(false, "No student data found", null, 404);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<string>(false, ex.Message, null, 500);
+            }
+        }
+
     }
 }
