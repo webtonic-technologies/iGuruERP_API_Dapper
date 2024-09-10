@@ -3,8 +3,8 @@ using Employee_API.DTOs;
 using Employee_API.DTOs.ServiceResponse;
 using Employee_API.Models;
 using Employee_API.Repository.Interfaces;
+using OfficeOpenXml;
 using System.Data;
-using System.Security.Cryptography.X509Certificates;
 
 namespace Employee_API.Repository.Implementations
 {
@@ -16,6 +16,7 @@ namespace Employee_API.Repository.Implementations
         {
             _connection = connection;
             _hostingEnvironment = hostingEnvironment;
+            ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
         }
         public async Task<ServiceResponse<int>> AddUpdateEmployeeProfile(EmployeeProfile request)
         {
@@ -69,6 +70,7 @@ namespace Employee_API.Repository.Implementations
                         var empwork = await AddUpdateEmployeeWorkExp(request.EmployeeWorkExperiences ??= [], employeeId);
                         var empbank = await AddUpdateEmployeeBankDetails(request.EmployeeBankDetails ??= [], employeeId);
                         var empadd = await AddUpdateEmployeeAddressDetails(request.EmployeeAddressDetails, employeeId);
+                        var userlog = await CreateUserLoginInfo(employeeId, 1, request.Institute_id);
                         return new ServiceResponse<int>(true, "operation successful", employeeId, 200);
                     }
                     else
@@ -817,7 +819,6 @@ WHERE ep.Institute_id = @InstituteId;
                 return new ServiceResponse<List<EmployeeProfileResponseDTO>>(false, ex.Message, new List<EmployeeProfileResponseDTO>(), 500);
             }
         }
-
         public async Task<ServiceResponse<List<EmployeeDocument>>> GetEmployeeDocuments(int employee_id)
         {
             try
@@ -1126,6 +1127,145 @@ WHERE ep.Institute_id = @InstituteId;
             {
                 return new ServiceResponse<List<Department>>(false, ex.Message, new List<Department>(), 500);
             }
+        }
+        public async Task<ServiceResponse<bool>> UpdatePassword(int userId, int userType, string Password)
+        {
+            try
+            {
+                // SQL query to update user activity
+                string updateActivitySql = @"
+            UPDATE [tblLoginInformationMaster]
+            SET [UserActivity] = @ActivityDescription, Password = @Password
+            WHERE [UserId] = @UserId AND UserType = @UserType";
+
+                // Update user activity in the database
+                int rowsAffected = await _connection.ExecuteAsync(updateActivitySql, new
+                {
+                    UserId = userId,
+                    ActivityDescription = DateTime.Now,
+                    UserType = userType,
+                    Password = @Password
+                });
+
+                // Return true if one or more rows were updated
+                if (rowsAffected > 0)
+                {
+                    return new ServiceResponse<bool>(true, "Operation successful", true, 200);
+                }
+                else
+                {
+
+                    return new ServiceResponse<bool>(false, "Operation failed", false, 500);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<bool>(false, ex.Message, false, 500);
+            }
+        }
+        private async Task<bool> CreateUserLoginInfo(int userId, int userType, int instituteId)
+        {
+            try
+            {
+                // Define common password
+                string commonPassword = "iGuru@1234";
+
+                // SQL queries for fetching user details based on UserType
+                string employeeSql = @"
+        SELECT TOP (1) [Employee_id], [First_Name], [Last_Name], [mobile_number]
+        FROM [tbl_EmployeeProfileMaster]
+        WHERE [Employee_id] = @UserId";
+
+                string studentSql = @"
+        SELECT TOP (1) [student_id], [First_Name], [Last_Name], [Admission_Number]
+        FROM [tbl_StudentMaster]
+        WHERE [student_id] = @UserId";
+
+                // Initialize variables
+                string username = null;
+                dynamic userDetails = null;
+
+                // Fetch user details based on the UserType
+                if (userType == 1) // Employee
+                {
+                    userDetails = await _connection.QueryFirstOrDefaultAsync<dynamic>(employeeSql, new { UserId = userId });
+                    if (userDetails != null)
+                    {
+                        // Construct username for employee
+                        string firstName = userDetails.First_Name;
+                        string lastName = userDetails.Last_Name;
+                        string phoneNumber = userDetails.mobile_number;
+
+                        username = $"{firstName.Substring(0, 3)}{lastName.Substring(0, 3)}{phoneNumber.Substring(phoneNumber.Length - 4)}";
+                    }
+                }
+                else if (userType == 2) // Student
+                {
+                    userDetails = await _connection.QueryFirstOrDefaultAsync<dynamic>(studentSql, new { UserId = userId });
+                    if (userDetails != null)
+                    {
+                        // Construct username for student
+                        string firstName = userDetails.First_Name;
+                        string lastName = userDetails.Last_Name;
+                        string admissionNumber = userDetails.Admission_Number;
+
+                        username = $"{firstName.Substring(0, 3)}{lastName.Substring(0, 3)}{admissionNumber.Substring(admissionNumber.Length - 4)}";
+                    }
+                }
+
+                if (username != null)
+                {
+                    // Ensure the username is unique
+                    username = await EnsureUniqueUsername(username);
+
+                    // SQL query to insert login information
+                    string insertLoginSql = @"
+            INSERT INTO [tblLoginInformationMaster] 
+            ([UserId], [UserType], [UserName], [Password], [InstituteId], [UserActivity])
+            VALUES (@UserId, @UserType, @UserName, @Password, @InstituteId, NULL)";
+
+                    // Insert login information into the database
+                    await _connection.ExecuteAsync(insertLoginSql, new
+                    {
+                        UserId = userId,
+                        UserType = userType,
+                        UserName = username,
+                        Password = commonPassword,
+                        InstituteId = instituteId
+                    });
+
+                    return true; // Operation successful
+                }
+
+                return false; // User details not found or unable to create login info
+            }
+            catch (Exception ex)
+            {
+                // Log the exception and return false to indicate failure
+                Console.WriteLine($"Error creating user login info: {ex.Message}");
+                return false;
+            }
+        }
+        private async Task<string> EnsureUniqueUsername(string baseUsername)
+        {
+            // Define the SQL query to check if the username exists
+            string checkUsernameSql = @"
+    SELECT COUNT(1)
+    FROM [tblLoginInformationMaster]
+    WHERE [UserName] = @UserName";
+
+            string uniqueUsername = baseUsername;
+            int suffix = 1;
+
+            // Check if the username already exists
+            while (await _connection.ExecuteScalarAsync<int>(checkUsernameSql, new { UserName = uniqueUsername }) > 0)
+            {
+                // Append a numeric suffix to make the username unique
+                uniqueUsername = $"{baseUsername}{suffix}";
+                suffix++;
+            }
+
+            return uniqueUsername; // Return the unique username
         }
         private string ImageUpload(string image)
         {

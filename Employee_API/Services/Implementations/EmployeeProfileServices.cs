@@ -230,5 +230,17 @@ namespace Employee_API.Services.Implementations
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
+
+        public async Task<ServiceResponse<bool>> UpdatePassword(int userId, int userType, string Password)
+        {
+            try
+            {
+                return await _employeeProfileRepository.UpdatePassword(userId, userType, Password);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<bool>(false, ex.Message, false, 500);
+            }
+        }
     }
 }

@@ -394,5 +394,28 @@ namespace Employee_API.Controllers
             }
 
         }
+        [HttpPut("ChangePassword")]
+        public async Task<IActionResult> UpdatePassword(int userId, string Password)
+        {
+            try
+            {
+                var data = await _employeeProfileServices.UpdatePassword(userId, 1, Password);
+                if (data != null)
+                {
+                    return Ok(data);
+
+                }
+                else
+                {
+                    return BadRequest("Bad Request");
+                }
+
+            }
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
+
+        }
     }
 }
