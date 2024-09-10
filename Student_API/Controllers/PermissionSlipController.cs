@@ -78,5 +78,60 @@ namespace Student_API.Controllers
             }
             return StatusCode(response.StatusCode, response);
         }
+
+        [HttpPost("ExportPermissionSlipsToExcel")]
+        public async Task<IActionResult> ExportPermissionSlipsToExcel(GetAllPermissionSlips obj)
+        {
+            var response = await _permissionSlipService.ExportPermissionSlipsToExcel(obj.Institute_id, obj.classId, obj.sectionId, obj.pageNumber, obj.pageSize);
+
+            if (response.Success)
+            {
+                var filePath = response.Data;
+                var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+
+                // Return the Excel file for download
+                return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", Path.GetFileName(filePath));
+            }
+            else
+            {
+                return BadRequest(response.Message);
+            }
+        }
+
+        [HttpPost("ExportStudentApprovedToExcel")]
+        public async Task<IActionResult> ExportStudentApprovedToExcel(GetAllPermissionSlipsByStatus obj)
+        {
+            var response = await _permissionSlipService.ExportPermissionSlipsToExcel(obj.Institute_id, obj.classId, obj.sectionId, obj.startDate, obj.endDate, true, obj.pageNumber, obj.pageSize);
+            if (response.Success)
+            {
+                var filePath = response.Data;
+                var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+
+                // Return the Excel file for download
+                return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", Path.GetFileName(filePath));
+            }
+            else
+            {
+                return BadRequest(response.Message);
+            }
+        }
+        [HttpPost("ExportStudentRejectedToExcel")]
+        public async Task<IActionResult> ExportStudentRejectedToExcel(GetAllPermissionSlipsByStatus obj)
+        {
+            var response = await _permissionSlipService.ExportPermissionSlipsToExcel(obj.Institute_id, obj.classId, obj.sectionId, obj.startDate, obj.endDate, false, obj.pageNumber, obj.pageSize);
+            if (response.Success)
+            {
+                var filePath = response.Data;
+                var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+
+                // Return the Excel file for download
+                return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", Path.GetFileName(filePath));
+            }
+            else
+            {
+                return BadRequest(response.Message);
+            }
+        }
+
     }
 }

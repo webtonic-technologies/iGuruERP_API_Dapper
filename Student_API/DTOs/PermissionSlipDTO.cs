@@ -11,6 +11,7 @@
         public string GenderName { get; set; }
         public string ParentName { get; set; }
         public string RequestedDateTime { get; set; }
+        public string ModifiedDate { get; set; }
         public string Reason { get; set; }
         public int Status { get; set; }
     }
