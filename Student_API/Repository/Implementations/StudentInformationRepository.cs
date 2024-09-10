@@ -1159,7 +1159,7 @@ namespace Student_API.Repository.Implementations
                 Admission_Number, 
                 Roll_Number,
                 FORMAT([Date_of_Joining], 'dd-MM-yyyy') AS Date_of_Joining,
-                FORMAT([tbl_StudentMaster.Date_of_Birth], 'dd-MM-yyyy') AS Date_of_Birth ,
+                FORMAT(tbl_StudentMaster.Date_of_Birth, 'dd-MM-yyyy') AS Date_of_Birth ,
                 Religion_Type, 
                 Gender_Type,
                 CONCAT(tbl_StudentParentsInfo.First_Name, ' ', tbl_StudentParentsInfo.Last_Name) AS Father_Name 

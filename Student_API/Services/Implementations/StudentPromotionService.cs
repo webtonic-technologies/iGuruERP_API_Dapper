@@ -80,7 +80,7 @@ namespace Student_API.Services.Implementations
                 }
 
                 var logs = logsResponse.Data;
-
+                ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
                 // Create an Excel package using EPPlus
                 using (var package = new ExcelPackage())
                 {
