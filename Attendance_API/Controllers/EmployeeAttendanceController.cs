@@ -4,6 +4,7 @@ using Attendance_API.Services.Interfaces;
 using Attendance_API.DTOs;
 using Attendance_API.DTOs.ServiceResponse;
 using System.Threading.Tasks;
+using Attendance_API.Services.Implementations;
 
 namespace Attendance_API.Controllers
 {
@@ -44,6 +45,26 @@ namespace Attendance_API.Controllers
         {
             var res = await _employeeAttendanceService.GetEmployeeAttendanceReport(request);
             return Ok(res);
+        }
+
+        [HttpPost("ExportEmployeeAttendanceReportToExcel")]
+        public async Task<IActionResult> ExportEmployeeAttendanceReportToExcel(EmployeeAttendanceReportRequestDTO request)
+        {
+
+            var response = await _employeeAttendanceService.ExportEmployeeAttendanceReportToExcel(request);
+
+            if (response.Success)
+            {
+                var filePath = response.Data;
+                var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+
+                // Return the Excel file for download
+                return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", Path.GetFileName(filePath));
+            }
+            else
+            {
+                return BadRequest(response.Message);
+            }
         }
     }
 }

@@ -11,5 +11,7 @@ namespace Institute_API.Services.Interfaces
         Task<ServiceResponse<List<EventDTO>>> GetApprovedEvents(CommonRequestDTO commonRequest);
         Task<ServiceResponse<bool>> ToggleEventActiveStatus(int eventId, int Status, int userId);
         Task<ServiceResponse<List<EventDTO>>> GetAllEvents(CommonRequestDTO commonRequest);
+        Task<ServiceResponse<string>> ExportApprovedEventsToExcel(CommonRequestDTO commonRequest);
+        Task<ServiceResponse<string>> ExportAllEventsToExcel(CommonRequestDTO commonRequest);
     }
 }

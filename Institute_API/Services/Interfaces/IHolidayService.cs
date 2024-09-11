@@ -11,5 +11,7 @@ namespace Institute_API.Services.Interfaces
         Task<ServiceResponse<List<HolidayDTO>>> GetApprovedHolidays(CommonRequestDTO commonRequest);
         Task<ServiceResponse<bool>> DeleteHoliday(int holidayId);
         Task<ServiceResponse<bool>> UpdateHolidayApprovalStatus(int holidayId, int Status, int approvedBy);
+        Task<ServiceResponse<string>> ExportAllHolidaysToExcel(CommonRequestDTO commonRequest);
+        Task<ServiceResponse<string>> ExportApprovedHolidaysToExcel(CommonRequestDTO commonRequest);
     }
 }

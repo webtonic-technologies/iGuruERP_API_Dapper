@@ -2,6 +2,7 @@
 using Institute_API.DTOs;
 using Institute_API.Services.Interfaces;
 using Institute_API.Repository.Interfaces;
+using OfficeOpenXml;
 
 namespace Institute_API.Services.Implementations
 {
@@ -129,7 +130,146 @@ namespace Institute_API.Services.Implementations
                 return new ServiceResponse<EventDTO>(false, ex.Message, null, 500);
             }
         }
+        public async Task<ServiceResponse<string>> ExportApprovedEventsToExcel(CommonRequestDTO commonRequest)
+        {
+            try
+            {
+                // Fetch approved events from the repository
+                var eventsResponse = await _eventRepository.GetApprovedEvents(commonRequest.Institute_id, commonRequest.Academic_year_id, commonRequest.Status, commonRequest.sortColumn, commonRequest.sortDirection, commonRequest.pageSize, commonRequest.pageNumber);
 
+                // Check if events were retrieved successfully
+                if (!eventsResponse.Success)
+                {
+                    return new ServiceResponse<string>(false, "No approved events found", null, 404);
+                }
+
+                var events = eventsResponse.Data;
+                ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
+                // Create an Excel package using EPPlus
+                using (var package = new ExcelPackage())
+                {
+                    // Add a worksheet
+                    var worksheet = package.Workbook.Worksheets.Add("ApprovedEvents");
+
+                    // Add headers
+                    worksheet.Cells[1, 1].Value = "Event ID";
+                    worksheet.Cells[1, 2].Value = "Event Name";
+                    worksheet.Cells[1, 3].Value = "Start Date";
+                    worksheet.Cells[1, 4].Value = "End Date";
+                    worksheet.Cells[1, 5].Value = "Description";
+                    worksheet.Cells[1, 6].Value = "Location";
+                    worksheet.Cells[1, 7].Value = "Attachment File";
+
+                    // Add data rows
+                    var rowIndex = 2; // Start from row 2 as row 1 contains headers
+                    foreach (var eventDto in events)
+                    {
+                        worksheet.Cells[rowIndex, 1].Value = eventDto.Event_id;
+                        worksheet.Cells[rowIndex, 2].Value = eventDto.EventName;
+                        worksheet.Cells[rowIndex, 3].Value = eventDto.StartDate;
+                        worksheet.Cells[rowIndex, 4].Value = eventDto.EndDate;
+                        worksheet.Cells[rowIndex, 5].Value = eventDto.Description;
+                        worksheet.Cells[rowIndex, 6].Value = eventDto.Location;
+                        worksheet.Cells[rowIndex, 7].Value = eventDto.AttachmentFile;
+                        rowIndex++;
+                    }
+
+                    // Auto-fit columns for better readability
+                    worksheet.Cells.AutoFitColumns();
+
+                    // Generate the Excel file as a byte array
+                    var excelFile = package.GetAsByteArray();
+
+                    // Save the file to a specific location or return the file content as a downloadable response
+                    var fileName = $"ApprovedEvents_{DateTime.Now:yyyyMMddHHmmss}.xlsx";
+                    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "exports", fileName);
+
+                    // Ensure the directory exists
+                    Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+
+                    // Write file to disk
+                    await File.WriteAllBytesAsync(filePath, excelFile);
+
+                    // Return the file path as a response
+                    return new ServiceResponse<string>(true, "Excel file generated successfully", filePath, 200);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<string>(false, ex.Message, null, 500);
+            }
+        }
+        public async Task<ServiceResponse<string>> ExportAllEventsToExcel(CommonRequestDTO commonRequest)
+        {
+            try
+            {
+                // Fetch all events from the repository
+                var eventsResponse = await _eventRepository.GetAllEvents(commonRequest.Institute_id, commonRequest.Academic_year_id, commonRequest.sortColumn, commonRequest.sortDirection, commonRequest.pageSize, commonRequest.pageNumber);
+
+                // Check if events were retrieved successfully
+                if (!eventsResponse.Success)
+                {
+                    return new ServiceResponse<string>(false, "No events found", null, 404);
+                }
+
+                var events = eventsResponse.Data;
+                ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
+                // Create an Excel package using EPPlus
+                using (var package = new ExcelPackage())
+                {
+                    // Add a worksheet
+                    var worksheet = package.Workbook.Worksheets.Add("AllEvents");
+
+                    // Add headers
+                    worksheet.Cells[1, 1].Value = "Event ID";
+                    worksheet.Cells[1, 2].Value = "Event Name";
+                    worksheet.Cells[1, 3].Value = "Start Date";
+                    worksheet.Cells[1, 4].Value = "End Date";
+                    worksheet.Cells[1, 5].Value = "Description";
+                    worksheet.Cells[1, 6].Value = "Location";
+                    worksheet.Cells[1, 7].Value = "Attachment File";
+
+                    // Add data rows
+                    var rowIndex = 2; // Start from row 2 as row 1 contains headers
+                    foreach (var eventDto in events)
+                    {
+                        worksheet.Cells[rowIndex, 1].Value = eventDto.Event_id;
+                        worksheet.Cells[rowIndex, 2].Value = eventDto.EventName;
+                        worksheet.Cells[rowIndex, 3].Value = eventDto.StartDate;
+                        worksheet.Cells[rowIndex, 4].Value = eventDto.EndDate;
+                        worksheet.Cells[rowIndex, 5].Value = eventDto.Description;
+                        worksheet.Cells[rowIndex, 6].Value = eventDto.Location;
+                        worksheet.Cells[rowIndex, 7].Value = eventDto.AttachmentFile;
+                        rowIndex++;
+                    }
+
+                    // Auto-fit columns for better readability
+                    worksheet.Cells.AutoFitColumns();
+
+                    // Generate the Excel file as a byte array
+                    var excelFile = package.GetAsByteArray();
+
+                    // Save the file to a specific location or return the file content as a downloadable response
+                    var fileName = $"AllEvents_{DateTime.Now:yyyyMMddHHmmss}.xlsx";
+                    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "exports", fileName);
+
+                    // Ensure the directory exists
+                    Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+
+                    // Write file to disk
+                    await File.WriteAllBytesAsync(filePath, excelFile);
+
+                    // Return the file path as a response
+                    return new ServiceResponse<string>(true, "Excel file generated successfully", filePath, 200);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<string>(false, ex.Message, null, 500);
+            }
+        }
 
     }
 }

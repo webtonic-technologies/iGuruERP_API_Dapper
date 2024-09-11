@@ -11,6 +11,7 @@ namespace Attendance_API.Services.Interfaces
         Task<ServiceResponse<EmployeeAttendanceMasterDTO>> InsertOrUpdateEmployeeAttendanceMaster(EmployeeAttendanceMasterDTO employeeAttendanceMaster);
         Task<ServiceResponse<bool>> DeleteEmployeeAttendanceMaster(int employeeAttendanceId);
         Task<ServiceResponse<dynamic>> GetEmployeeAttendanceReport(EmployeeAttendanceReportRequestDTO request);
+        Task<ServiceResponse<string>> ExportEmployeeAttendanceReportToExcel(EmployeeAttendanceReportRequestDTO request);
     }
 }
 
