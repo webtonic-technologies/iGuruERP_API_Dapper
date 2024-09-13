@@ -37,8 +37,8 @@ namespace Student_API.Repository.Implementations
                logs.LastActionTaken,
                logs.AppVersion
         FROM tbl_StudentMaster stu
-        LEFT JOIN tblClassMaster cls ON stu.class_id = cls.ClassId
-        LEFT JOIN tblSectionMaster sec ON stu.section_id = sec.SectionId
+        LEFT JOIN tblClass cls ON stu.class_id = cls.ClassId
+        LEFT JOIN tblSection sec ON stu.section_id = sec.SectionId
         LEFT JOIN tblUserLogs logs ON stu.App_User_id = logs.UserId
         WHERE stu.Institute_id = @InstituteId";
 
@@ -105,8 +105,8 @@ namespace Student_API.Repository.Implementations
                sec.SectionName AS Section,
                stu.MobileNumber
         FROM tbl_StudentMaster stu
-        LEFT JOIN tblClassMaster cls ON stu.class_id = cls.ClassId
-        LEFT JOIN tblSectionMaster sec ON stu.section_id = sec.SectionId
+        LEFT JOIN tblClass cls ON stu.class_id = cls.ClassId
+        LEFT JOIN tblSection sec ON stu.section_id = sec.SectionId
         WHERE stu.Institute_id = @InstituteId
         AND stu.App_User_id IS NULL";  // Assumes non-app users have a NULL App_User_id
 
@@ -167,8 +167,8 @@ namespace Student_API.Repository.Implementations
                logs.LastActionTaken,
                logs.AppVersion
         FROM tbl_StudentMaster stu
-        LEFT JOIN tblClassMaster cls ON stu.class_id = cls.ClassId
-        LEFT JOIN tblSectionMaster sec ON stu.section_id = sec.SectionId
+        LEFT JOIN tblClass cls ON stu.class_id = cls.ClassId
+        LEFT JOIN tblSection sec ON stu.section_id = sec.SectionId
         LEFT JOIN tblUserLogs logs ON stu.App_User_id = logs.UserId
         WHERE stu.Institute_id = @InstituteId";
 
@@ -245,8 +245,8 @@ namespace Student_API.Repository.Implementations
                logs.appVersion AS AppVersion
         FROM LatestStudentLogs logs
         INNER JOIN tbl_StudentMaster stu ON logs.UserId = stu.student_id
-        LEFT JOIN tblClassMaster cls ON stu.class_id = cls.ClassId
-        LEFT JOIN tblSectionMaster sec ON stu.section_id = sec.SectionId
+        LEFT JOIN tblClass cls ON stu.class_id = cls.ClassId
+        LEFT JOIN tblSection sec ON stu.section_id = sec.SectionId
         WHERE stu.Institute_id = @InstituteId
         AND (@ClassId = 0 OR stu.class_id = @ClassId)
         AND (@SectionId = 0 OR stu.section_id = @SectionId)
@@ -331,8 +331,8 @@ namespace Student_API.Repository.Implementations
         FROM tbl_StudentMaster stu
         LEFT JOIN LatestStudentLogs logs ON stu.student_id = logs.UserId AND logs.RowNum = 1
         LEFT JOIN tblUserLogin login ON stu.App_User_id = login.UserId  -- Assuming App_User_id links to user login table
-        LEFT JOIN tblClassMaster cls ON stu.class_id = cls.ClassId
-        LEFT JOIN tblSectionMaster sec ON stu.section_id = sec.SectionId
+        LEFT JOIN tblClass cls ON stu.class_id = cls.ClassId
+        LEFT JOIN tblSection sec ON stu.section_id = sec.SectionId
         LEFT JOIN tblGenderMaster gen ON stu.gender_id = gen.GenderId
         WHERE stu.Institute_id = @InstituteId
         AND (@ClassId = 0 OR stu.class_id = @ClassId)
@@ -403,8 +403,8 @@ namespace Student_API.Repository.Implementations
                stu.MobileNumber AS MobileNumber
         FROM tbl_StudentMaster stu
         LEFT JOIN tblUserLogs logs ON stu.App_User_id = logs.UserId AND logs.IsAppUser = 0
-        LEFT JOIN tblClassMaster cls ON stu.class_id = cls.ClassId
-        LEFT JOIN tblSectionMaster sec ON stu.section_id = sec.SectionId
+        LEFT JOIN tblClass cls ON stu.class_id = cls.ClassId
+        LEFT JOIN tblSection sec ON stu.section_id = sec.SectionId
         WHERE stu.Institute_id = @InstituteId
         AND (@ClassId = 0 OR stu.class_id = @ClassId)
         AND (@SectionId = 0 OR stu.section_id = @SectionId)
