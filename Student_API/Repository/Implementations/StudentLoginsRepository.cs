@@ -96,9 +96,9 @@ namespace Student_API.Repository.Implementations
         {
             try
             {
-                // SQL query to fetch non-app users data
+                // SQL query to fetch non-app users data by checking the IsAppUser column
                 string sqlQuery = @"
-        SELECT stu.Admission_Number AS AdmissionNumber,
+        SELECT DISTINCT stu.Admission_Number AS AdmissionNumber,
                stu.student_id AS StudentId,
                stu.First_Name + ' ' + ISNULL(stu.Middle_Name, '') + ' ' + stu.Last_Name AS Name,
                cls.ClassName AS Class,
@@ -107,8 +107,9 @@ namespace Student_API.Repository.Implementations
         FROM tbl_StudentMaster stu
         LEFT JOIN tbl_Class cls ON stu.class_id = cls.ClassId
         LEFT JOIN tbl_Section sec ON stu.section_id = sec.SectionId
+        LEFT JOIN tblUserLogs logs ON stu.App_User_id = logs.UserId
         WHERE stu.Institute_id = @InstituteId
-        AND stu.App_User_id IS NULL";  // Assumes non-app users have a NULL App_User_id
+        AND logs.IsAppUser = 0";  // Fetching non-app users by checking IsAppUser flag
 
                 // Fetch the data from the database
                 var nonAppUsersData = await _connection.QueryAsync<StudentsNonAppUsersResponse>(sqlQuery, new { InstituteId });
@@ -156,8 +157,13 @@ namespace Student_API.Repository.Implementations
         {
             try
             {
-                // SQL query to fetch student activity data for the given InstituteId
+                // SQL query to fetch student activity data with the most recent logs from tblUserLogs
                 string sqlQuery = @"
+        WITH RecentLogs AS (
+            SELECT logs.*,
+                   ROW_NUMBER() OVER (PARTITION BY logs.UserId ORDER BY logs.LoginTime DESC) AS rn
+            FROM [iGuruERP].[dbo].[tblUserLogs] logs
+        )
         SELECT stu.Admission_Number AS AdmissionNumber,
                stu.student_id AS StudentId,
                stu.First_Name + ' ' + ISNULL(stu.Middle_Name, '') + ' ' + stu.Last_Name AS Name,
@@ -169,7 +175,7 @@ namespace Student_API.Repository.Implementations
         FROM tbl_StudentMaster stu
         LEFT JOIN tbl_Class cls ON stu.class_id = cls.ClassId
         LEFT JOIN tbl_Section sec ON stu.section_id = sec.SectionId
-        LEFT JOIN tblUserLogs logs ON stu.App_User_id = logs.UserId
+        LEFT JOIN (SELECT * FROM RecentLogs WHERE rn = 1) logs ON stu.App_User_id = logs.UserId
         WHERE stu.Institute_id = @InstituteId";
 
                 // Fetch the data from the database
@@ -243,7 +249,7 @@ namespace Student_API.Repository.Implementations
                stu.Mobile AS Mobile,
                logs.LoginTime AS LastActionTaken,  -- Latest login action
                logs.appVersion AS AppVersion
-        FROM LatestStudentLogs logs
+        FROM tblUserLogs logs
         INNER JOIN tbl_StudentMaster stu ON logs.UserId = stu.student_id
         LEFT JOIN tbl_Class cls ON stu.class_id = cls.ClassId
         LEFT JOIN tbl_Section sec ON stu.section_id = sec.SectionId
@@ -330,7 +336,6 @@ namespace Student_API.Repository.Implementations
                logs.appVersion AS AppVersion
         FROM tbl_StudentMaster stu
         LEFT JOIN LatestStudentLogs logs ON stu.student_id = logs.UserId AND logs.RowNum = 1
-        LEFT JOIN tblUserLogin login ON stu.App_User_id = login.UserId  -- Assuming App_User_id links to user login table
         LEFT JOIN tbl_Class cls ON stu.class_id = cls.ClassId
         LEFT JOIN tbl_Section sec ON stu.section_id = sec.SectionId
         LEFT JOIN tblGenderMaster gen ON stu.gender_id = gen.GenderId
@@ -345,7 +350,6 @@ namespace Student_API.Repository.Implementations
                 string countQuery = @"
         SELECT COUNT(DISTINCT stu.student_id)
         FROM tbl_StudentMaster stu
-        LEFT JOIN tblUserLogin login ON stu.App_User_id = login.UserId
         WHERE stu.Institute_id = @InstituteId
         AND (@ClassId = 0 OR stu.class_id = @ClassId)
         AND (@SectionId = 0 OR stu.section_id = @SectionId)
@@ -395,34 +399,48 @@ namespace Student_API.Repository.Implementations
 
                 // SQL query to fetch students who are non-app users
                 string sqlQuery = @"
-        SELECT stu.Admission_Number AS AdmissionNumber,
-               stu.student_id AS StudentId,
-               stu.First_Name + ' ' + ISNULL(stu.Middle_Name, '') + ' ' + stu.Last_Name AS Name,
-               cls.ClassName AS Class,
-               sec.SectionName AS Section,
-               stu.MobileNumber AS MobileNumber
-        FROM tbl_StudentMaster stu
-        LEFT JOIN tblUserLogs logs ON stu.App_User_id = logs.UserId AND logs.IsAppUser = 0
-        LEFT JOIN tbl_Class cls ON stu.class_id = cls.ClassId
-        LEFT JOIN tbl_Section sec ON stu.section_id = sec.SectionId
-        WHERE stu.Institute_id = @InstituteId
-        AND (@ClassId = 0 OR stu.class_id = @ClassId)
-        AND (@SectionId = 0 OR stu.section_id = @SectionId)
-        AND (stu.First_Name + ' ' + ISNULL(stu.Middle_Name, '') + ' ' + stu.Last_Name LIKE '%' + @SearchText + '%' OR @SearchText = '')
-        AND (stu.App_User_id IS NULL OR logs.UserId IS NULL)  -- Non-app users
-        ORDER BY stu.student_id
-        OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";  // Pagination
+    WITH NonAppUserLogs AS (
+        SELECT logs.UserId,
+               logs.IsAppUser,
+               ROW_NUMBER() OVER (PARTITION BY logs.UserId ORDER BY logs.LoginTime DESC) AS rn
+        FROM tblUserLogs logs
+        WHERE logs.IsAppUser = 0
+    )
+    SELECT stu.Admission_Number AS AdmissionNumber,
+           stu.student_id AS StudentId,
+           stu.First_Name + ' ' + ISNULL(stu.Middle_Name, '') + ' ' + stu.Last_Name AS Name,
+           cls.ClassName AS Class,
+           sec.SectionName AS Section,
+           stu.MobileNumber AS MobileNumber
+    FROM tbl_StudentMaster stu
+    LEFT JOIN tbl_Class cls ON stu.class_id = cls.ClassId
+    LEFT JOIN tbl_Section sec ON stu.section_id = sec.SectionId
+    LEFT JOIN (SELECT * FROM NonAppUserLogs WHERE rn = 1) logs ON stu.App_User_id = logs.UserId
+    WHERE stu.Institute_id = @InstituteId
+    AND (@ClassId = 0 OR stu.class_id = @ClassId)
+    AND (@SectionId = 0 OR stu.section_id = @SectionId)
+    AND (stu.First_Name + ' ' + ISNULL(stu.Middle_Name, '') + ' ' + stu.Last_Name LIKE '%' + @SearchText + '%' OR @SearchText = '')
+    AND (stu.App_User_id IS NULL OR logs.UserId IS NULL OR logs.IsAppUser = 0)  -- Non-app users
+    ORDER BY stu.student_id
+    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";  // Pagination
 
                 // SQL query to count total non-app user student records without pagination
                 string countQuery = @"
-        SELECT COUNT(DISTINCT stu.student_id)
-        FROM tbl_StudentMaster stu
-        LEFT JOIN tblUserLogs logs ON stu.App_User_id = logs.UserId AND logs.IsAppUser = 0
-        WHERE stu.Institute_id = @InstituteId
-        AND (@ClassId = 0 OR stu.class_id = @ClassId)
-        AND (@SectionId = 0 OR stu.section_id = @SectionId)
-        AND (stu.First_Name + ' ' + ISNULL(stu.Middle_Name, '') + ' ' + stu.Last_Name LIKE '%' + @SearchText + '%' OR @SearchText = '')
-        AND (stu.App_User_id IS NULL OR logs.UserId IS NULL)";  // Non-app users
+    WITH NonAppUserLogs AS (
+        SELECT logs.UserId,
+               logs.IsAppUser,
+               ROW_NUMBER() OVER (PARTITION BY logs.UserId ORDER BY logs.LoginTime DESC) AS rn
+        FROM tblUserLogs logs
+        WHERE logs.IsAppUser = 0
+    )
+    SELECT COUNT(DISTINCT stu.student_id)
+    FROM tbl_StudentMaster stu
+    LEFT JOIN (SELECT * FROM NonAppUserLogs WHERE rn = 1) logs ON stu.App_User_id = logs.UserId
+    WHERE stu.Institute_id = @InstituteId
+    AND (@ClassId = 0 OR stu.class_id = @ClassId)
+    AND (@SectionId = 0 OR stu.section_id = @SectionId)
+    AND (stu.First_Name + ' ' + ISNULL(stu.Middle_Name, '') + ' ' + stu.Last_Name LIKE '%' + @SearchText + '%' OR @SearchText = '')
+    AND (stu.App_User_id IS NULL OR logs.UserId IS NULL OR logs.IsAppUser = 0)";  // Non-app users
 
                 // Execute the count query to get total records
                 int totalRecords = await _connection.ExecuteScalarAsync<int>(countQuery, new
@@ -459,6 +477,5 @@ namespace Student_API.Repository.Implementations
                 return new ServiceResponse<List<StudentsNonAppUsersResponse>>(false, ex.Message, new List<StudentsNonAppUsersResponse>(), 500);
             }
         }
-      
     }
 }
