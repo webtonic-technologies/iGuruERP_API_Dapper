@@ -64,7 +64,7 @@ namespace Employee_API.Repository.Implementations
                         worksheet.Cells[row, 4].Value = employee.DesignationName;
                         worksheet.Cells[row, 5].Value = employee.Gender_Type;
                         worksheet.Cells[row, 6].Value = employee.mobile_number;
-                        worksheet.Cells[row, 7].Value = employee.Date_of_Birth.ToString("yyyy-MM-dd");
+                        worksheet.Cells[row, 7].Value = employee.Date_of_Birth;
                         worksheet.Cells[row, 8].Value = employee.EmailID;
                         row++;
                     }
