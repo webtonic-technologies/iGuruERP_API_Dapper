@@ -107,5 +107,68 @@ namespace Employee_API.Controllers
             }
             return StatusCode(response.StatusCode, response.Message);
         }
+        [HttpPost("UserLogin")]
+        public async Task<IActionResult> UserLogin(string username)
+        {
+            try
+            {
+                var data = await _employeeLoginsServices.UserLogin(username);
+                if (data != null)
+                {
+                    return Ok(data);
+                }
+                else
+                {
+                    return BadRequest("Bad Request");
+                }
+
+            }
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
+        }
+        [HttpPost("UserLoginPasswordScreen")]
+        public async Task<IActionResult> UserLoginPasswordScreen(UserLoginRequest request)
+        {
+            try
+            {
+                var data = await _employeeLoginsServices.UserLoginPasswordScreen(request);
+                if (data != null)
+                {
+                    return Ok(data);
+                }
+                else
+                {
+                    return BadRequest("Bad Request");
+                }
+
+            }
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
+        }
+        [HttpPost("UserLogout")]
+        public async Task<IActionResult> UserLogout(string username)
+        {
+            try
+            {
+                var data = await _employeeLoginsServices.UserLogout(username);
+                if (data != null)
+                {
+                    return Ok(data);
+                }
+                else
+                {
+                    return BadRequest("Bad Request");
+                }
+
+            }
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
+        }
     }
 }

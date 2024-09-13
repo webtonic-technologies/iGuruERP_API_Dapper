@@ -9,7 +9,7 @@ namespace Employee_API.DTOs
         public string Middle_Name { get; set; } = string.Empty;
         public string Last_Name { get; set; } = string.Empty;
         public int Gender_id { get; set; }
-        public string GenderName {  get; set; } = string.Empty;
+        public string GenderName { get; set; } = string.Empty;
         public int Department_id { get; set; }
         public string DepartmentName { get; set; } = string.Empty;
         public int Designation_id { get; set; }
@@ -34,7 +34,7 @@ namespace Employee_API.DTOs
         public int Institute_id { get; set; }
         public string EmpPhoto { get; set; } = string.Empty;
         public string uan_no { get; set; } = string.Empty;
-        public bool Status {  get; set; }
+        public bool Status { get; set; }
         public List<EmployeeDocument>? EmployeeDocuments { get; set; }
         public List<EmployeeQualification>? EmployeeQualifications { get; set; }
         public List<EmployeeWorkExperience>? EmployeeWorkExperiences { get; set; }
@@ -54,25 +54,25 @@ namespace Employee_API.DTOs
         public int Country_id { get; set; }
         public string CountryName { get; set; } = string.Empty;
         public int State_id { get; set; }
-        public string StateName {  get; set; } = string.Empty;
+        public string StateName { get; set; } = string.Empty;
         public int City_id { get; set; }
         public string CityName { get; set; } = string.Empty;
         public int District_id { get; set; }
-        public string DistrictName {  get; set; } = string.Empty;
+        public string DistrictName { get; set; } = string.Empty;
         public string Pin_code { get; set; } = string.Empty;
         public int AddressTypeId { get; set; }
         public int Employee_id { get; set; }
-    }  
+    }
     public class EmployeeCredentialsResponse
     {
-        public int EmployeeId {  get; set; }
+        public int EmployeeId { get; set; }
         public string EmployeeName { get; set; } = string.Empty;
-        public string Designation {  get; set; } = string.Empty;
-        public string Departemnt {  get; set; } = string.Empty;
+        public string Designation { get; set; } = string.Empty;
+        public string Departemnt { get; set; } = string.Empty;
         public string Gender { get; set; } = string.Empty;
         public string LoginId { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
-        public DateTime? LastActivity {  get; set; }
+        public DateTime? LastActivity { get; set; }
     }
     public class EmployeeNonAppUsersResponse
     {
@@ -90,7 +90,20 @@ namespace Employee_API.DTOs
         public string Designation { get; set; } = string.Empty;
         public string Departemnt { get; set; } = string.Empty;
         public string MobileNumber { get; set; } = string.Empty;
-        public string LastActionTaken {  get; set; } = string.Empty;
-        public string Version {  get; set; } = string.Empty;
+        public string LastActionTaken { get; set; } = string.Empty;
+        public string Version { get; set; } = string.Empty;
+    }
+    public class EmployeeLoginResposne
+    {
+        public string Username { get; set; } = string.Empty;
+        public string InstituteLogo { get; set; } = string.Empty;
+        public int InstituteId { get; set; }
+    }
+    public class LoginResposne
+    {
+        public string Username { get; set; } = string.Empty;
+        public string UserType { get; set; } = string.Empty;
+        public int UserId {  get; set; }
+        public int InstituteId { get; set; }
     }
 }

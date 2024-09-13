@@ -195,7 +195,7 @@ namespace Student_API.Repository.Implementations
                         SELECT CAST(SCOPE_IDENTITY() as int);";
 
                             studentId = await _connection.ExecuteScalarAsync<int>(insertStudentSql, request, transaction);
-
+                            var userlog = await CreateUserLoginInfo(studentId, 2, request.Institute_id);
                             if (studentId <= 0)
                             {
                                 transaction.Rollback();
@@ -1624,6 +1624,110 @@ FROM
                 return new ServiceResponse<List<StudentInformationDTO>>(false, "Some error occured", null, 500);
 
             }
+        }
+        private async Task<bool> CreateUserLoginInfo(int userId, int userType, int instituteId)
+        {
+            try
+            {
+                // Define common password
+                string commonPassword = "iGuru@1234";
+
+                // SQL queries for fetching user details based on UserType
+                string employeeSql = @"
+        SELECT TOP (1) [Employee_id], [First_Name], [Last_Name], [mobile_number]
+        FROM [tbl_EmployeeProfileMaster]
+        WHERE [Employee_id] = @UserId";
+
+                string studentSql = @"
+        SELECT TOP (1) [student_id], [First_Name], [Last_Name], [Admission_Number]
+        FROM [tbl_StudentMaster]
+        WHERE [student_id] = @UserId";
+
+                // Initialize variables
+                string username = null;
+                dynamic userDetails = null;
+
+                // Fetch user details based on the UserType
+                if (userType == 1) // Employee
+                {
+                    userDetails = await _connection.QueryFirstOrDefaultAsync<dynamic>(employeeSql, new { UserId = userId });
+                    if (userDetails != null)
+                    {
+                        // Construct username for employee
+                        string firstName = userDetails.First_Name;
+                        string lastName = userDetails.Last_Name;
+                        string phoneNumber = userDetails.mobile_number;
+
+                        username = $"{firstName.Substring(0, 3)}{lastName.Substring(0, 3)}{phoneNumber.Substring(phoneNumber.Length - 4)}";
+                    }
+                }
+                else if (userType == 2) // Student
+                {
+                    userDetails = await _connection.QueryFirstOrDefaultAsync<dynamic>(studentSql, new { UserId = userId });
+                    if (userDetails != null)
+                    {
+                        // Construct username for student
+                        string firstName = userDetails.First_Name;
+                        string lastName = userDetails.Last_Name;
+                        string admissionNumber = userDetails.Admission_Number;
+
+                        username = $"{firstName.Substring(0, 3)}{lastName.Substring(0, 3)}{admissionNumber.Substring(admissionNumber.Length - 4)}";
+                    }
+                }
+
+                if (username != null)
+                {
+                    // Ensure the username is unique
+                    username = await EnsureUniqueUsername(username);
+
+                    // SQL query to insert login information
+                    string insertLoginSql = @"
+            INSERT INTO [tblLoginInformationMaster] 
+            ([UserId], [UserType], [UserName], [Password], [InstituteId], [UserActivity])
+            VALUES (@UserId, @UserType, @UserName, @Password, @InstituteId, NULL)";
+
+                    // Insert login information into the database
+                    await _connection.ExecuteAsync(insertLoginSql, new
+                    {
+                        UserId = userId,
+                        UserType = userType,
+                        UserName = username,
+                        Password = commonPassword,
+                        InstituteId = instituteId
+                    });
+
+                    return true; // Operation successful
+                }
+
+                return false; // User details not found or unable to create login info
+            }
+            catch (Exception ex)
+            {
+                // Log the exception and return false to indicate failure
+                Console.WriteLine($"Error creating user login info: {ex.Message}");
+                return false;
+            }
+        }
+        private async Task<string> EnsureUniqueUsername(string baseUsername)
+        {
+            // Define the SQL query to check if the username exists
+            string checkUsernameSql = @"
+    SELECT COUNT(1)
+    FROM [tblLoginInformationMaster]
+    WHERE [UserName] = @UserName";
+
+            string uniqueUsername = baseUsername;
+            int suffix = 1;
+
+            // Check if the username already exists
+            while (await _connection.ExecuteScalarAsync<int>(checkUsernameSql, new { UserName = uniqueUsername }) > 0)
+            {
+                // Append a numeric suffix to make the username unique
+                uniqueUsername = $"{baseUsername}{suffix}";
+                suffix++;
+            }
+
+            return uniqueUsername; // Return the unique username
         }
 
     }

@@ -85,5 +85,34 @@ namespace Employee_API.Services.Implementations
                 return new ServiceResponse<List<EmployeeNonAppUsersResponse>>(false, ex.Message, [], 500);
             }
         }
+
+        public async Task<ServiceResponse<EmployeeLoginResposne>> UserLogin(string username)
+        {
+            try
+            {
+                return await _employeeLoginsRepository.UserLogin(username);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<EmployeeLoginResposne>(false, ex.Message, new EmployeeLoginResposne(), 500);
+            }
+        }
+
+        public async Task<ServiceResponse<LoginResposne>> UserLoginPasswordScreen(UserLoginRequest request)
+        {
+            try
+            {
+                return await _employeeLoginsRepository.UserLoginPasswordScreen(request);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<LoginResposne>(false, ex.Message, new LoginResposne(), 500);
+            }
+        }
+
+        public async Task<ServiceResponse<string>> UserLogout(string username)
+        {
+            return await _employeeLoginsRepository.UserLogout(username);
+        }
     }
 }

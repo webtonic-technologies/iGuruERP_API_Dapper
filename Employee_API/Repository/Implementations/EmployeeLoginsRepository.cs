@@ -1,9 +1,9 @@
-﻿using Employee_API.Repository.Interfaces;
-using OfficeOpenXml;
-using Employee_API.DTOs.ServiceResponse; 
-using System.Data;
-using Dapper;
+﻿using Dapper;
 using Employee_API.DTOs;
+using Employee_API.DTOs.ServiceResponse;
+using Employee_API.Repository.Interfaces;
+using OfficeOpenXml;
+using System.Data;
 
 namespace Employee_API.Repository.Implementations
 {
@@ -377,36 +377,43 @@ namespace Employee_API.Repository.Implementations
 
                 // Define SQL query to fetch employee activity with filters and pagination
                 string sqlQuery = @"
-            SELECT emp.Employee_id AS EmployeeId,
-                   emp.First_Name + ' ' + emp.Last_Name AS EmployeeName,
-                   des.DesignationName AS Designation,
-                   dep.DepartmentName AS Department,
-                   emp.MobileNo AS MobileNumber,
-                   MAX(logs.LoginTime) AS LastActionTaken,  -- Get the most recent login action
-                   logs.version_sdkInt AS Version
+        WITH LatestUserLogs AS (
+            SELECT logs.UserId,
+                   logs.LoginTime,
+                   logs.version_sdkInt,
+                   ROW_NUMBER() OVER (PARTITION BY logs.UserId ORDER BY logs.LoginTime DESC) AS RowNum
             FROM tblUserLogs logs
-            INNER JOIN tbl_EmployeeProfileMaster emp ON logs.UserId = emp.Employee_id
-            LEFT JOIN tblDesignationMaster des ON emp.Designation_id = des.Designation_id
-            LEFT JOIN tblDepartmentMaster dep ON emp.Department_id = dep.Department_id
-            WHERE emp.InstituteId = @InstituteId
-            AND (@DepartmentId = 0 OR emp.Department_id = @DepartmentId)
-            AND (@DesignationId = 0 OR emp.Designation_id = @DesignationId)
-            AND (emp.First_Name + ' ' + emp.Last_Name LIKE '%' + @SearchText + '%' OR @SearchText = '')
-            AND logs.UserTypeId = 1  -- Assuming UserTypeId = 1 is for Employees
-            GROUP BY emp.Employee_id, emp.First_Name, emp.Last_Name, des.DesignationName, dep.DepartmentName, emp.MobileNo, logs.version_sdkInt
-            ORDER BY emp.Employee_id
-            OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";  // Pagination
+            WHERE logs.UserTypeId = 1  -- Assuming UserTypeId = 1 is for Employees
+        )
+        SELECT emp.Employee_id AS EmployeeId,
+               emp.First_Name + ' ' + emp.Last_Name AS EmployeeName,
+               des.DesignationName AS Designation,
+               dep.DepartmentName AS Department,
+               emp.MobileNo AS MobileNumber,
+               logs.LoginTime AS LastActionTaken,  -- Latest login action
+               logs.version_sdkInt AS Version
+        FROM LatestUserLogs logs
+        INNER JOIN tbl_EmployeeProfileMaster emp ON logs.UserId = emp.Employee_id
+        LEFT JOIN tblDesignationMaster des ON emp.Designation_id = des.Designation_id
+        LEFT JOIN tblDepartmentMaster dep ON emp.Department_id = dep.Department_id
+        WHERE emp.InstituteId = @InstituteId
+        AND (@DepartmentId = 0 OR emp.Department_id = @DepartmentId)
+        AND (@DesignationId = 0 OR emp.Designation_id = @DesignationId)
+        AND (emp.First_Name + ' ' + emp.Last_Name LIKE '%' + @SearchText + '%' OR @SearchText = '')
+        AND logs.RowNum = 1  -- Ensure we only take the latest log per user
+        ORDER BY emp.Employee_id
+        OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";  // Pagination
 
                 // Define SQL query to count total records without pagination
                 string countQuery = @"
-            SELECT COUNT(DISTINCT emp.Employee_id)
-            FROM tblUserLogs logs
-            INNER JOIN tbl_EmployeeProfileMaster emp ON logs.UserId = emp.Employee_id
-            WHERE emp.InstituteId = @InstituteId
-            AND (@DepartmentId = 0 OR emp.Department_id = @DepartmentId)
-            AND (@DesignationId = 0 OR emp.Designation_id = @DesignationId)
-            AND (emp.First_Name + ' ' + emp.Last_Name LIKE '%' + @SearchText + '%' OR @SearchText = '')
-            AND logs.UserTypeId = 1";  // Assuming UserTypeId = 1 is for Employees
+        SELECT COUNT(DISTINCT emp.Employee_id)
+        FROM tblUserLogs logs
+        INNER JOIN tbl_EmployeeProfileMaster emp ON logs.UserId = emp.Employee_id
+        WHERE emp.InstituteId = @InstituteId
+        AND (@DepartmentId = 0 OR emp.Department_id = @DepartmentId)
+        AND (@DesignationId = 0 OR emp.Designation_id = @DesignationId)
+        AND (emp.First_Name + ' ' + emp.Last_Name LIKE '%' + @SearchText + '%' OR @SearchText = '')
+        AND logs.UserTypeId = 1";  // Assuming UserTypeId = 1 is for Employees
 
                 // Execute the count query to get total records
                 int totalRecords = await _connection.ExecuteScalarAsync<int>(countQuery, new
@@ -427,18 +434,236 @@ namespace Employee_API.Repository.Implementations
                     Offset = offset,
                     PageSize = request.PageSize
                 });
+
                 if (totalRecords > 0)
                 {
                     return new ServiceResponse<List<EmployeeActivityResponse>>(true, "Employee activity fetched successfully.", employeeActivity.ToList(), 200, totalRecords);
                 }
                 else
                 {
-                    return new ServiceResponse<List<EmployeeActivityResponse>>(false, "No records.", [], 500);
+                    return new ServiceResponse<List<EmployeeActivityResponse>>(false, "No records.", new List<EmployeeActivityResponse>(), 500);
                 }
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<List<EmployeeActivityResponse>>(false, ex.Message, [], 500);
+                return new ServiceResponse<List<EmployeeActivityResponse>>(false, ex.Message, new List<EmployeeActivityResponse>(), 500);
+            }
+        }
+        public async Task<ServiceResponse<EmployeeLoginResposne>> UserLogin(string username)
+        {
+            try
+            {
+                // Ensure the connection is open
+                if (_connection.State == ConnectionState.Closed)
+                {
+                    _connection.Open();
+                }
+
+                // Query to get user login info
+                var loginInfoQuery = @"
+            SELECT TOP 1 [LoginInfoId], [UserId], [UserType], [UserName], [Password], [InstituteId], [UserActivity]
+            FROM [tblLoginInformationMaster]
+            WHERE [UserName] = @Username";
+
+                var loginInfo = await _connection.QueryFirstOrDefaultAsync<dynamic>(loginInfoQuery, new { Username = username });
+
+                if (loginInfo == null)
+                {
+                    return new ServiceResponse<EmployeeLoginResposne>(false, "Invalid Username.", new EmployeeLoginResposne(), 500);
+                }
+                var response = new EmployeeLoginResposne
+                {
+                    Username = loginInfo.UserName,
+                    InstituteId = loginInfo.InstituteId
+                };
+                // Query to get institute logo based on InstituteId
+                var instituteLogoQuery = @"
+            SELECT TOP 1 [InstituteLogoId], [InstituteId], [InstituteLogo]
+            FROM [tbl_InstituteLogo]
+            WHERE [InstituteId] = @InstituteId";
+
+                var instituteLogo = await _connection.QueryFirstOrDefaultAsync<dynamic>(instituteLogoQuery, new { InstituteId = loginInfo.InstituteId });
+
+                if (instituteLogo != null)
+                {
+                    response.InstituteLogo = instituteLogo.InstituteLogo;
+                }
+
+                // Set success response
+                return new ServiceResponse<EmployeeLoginResposne>(true, "Login successful.", response, 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<EmployeeLoginResposne>(false, ex.Message, new EmployeeLoginResposne(), 500);
+            }
+            finally
+            {
+                // Ensure the connection is closed
+                if (_connection.State == ConnectionState.Open)
+                {
+                    _connection.Close();
+                }
+            }
+        }
+        public async Task<ServiceResponse<LoginResposne>> UserLoginPasswordScreen(UserLoginRequest request)
+        {
+            try
+            {
+                var response = new LoginResposne();
+                // Ensure the connection is open
+                if (_connection.State == ConnectionState.Closed)
+                {
+                    _connection.Open();
+                }
+
+                // Step 1: Check the login credentials
+                var loginInfoQuery = @"
+            SELECT TOP 1 [UserId], [UserType], [UserName], [Password], [InstituteId]
+            FROM tblLoginInformationMaster
+            WHERE [UserName] = @Username AND [Password] = @Password";
+
+                var loginInfo = await _connection.QueryFirstOrDefaultAsync<dynamic>(loginInfoQuery, new { Username = request.Username, Password = request.Password });
+
+                if (loginInfo == null)
+                {
+                    return new ServiceResponse<LoginResposne>(false, "Invalid username or password.", new LoginResposne(), 500);
+                }
+
+                // Step 2: Fetch user-specific information based on UserType
+                if (loginInfo.UserType == 1) // Employee
+                {
+                    var employeeQuery = @"
+                SELECT TOP 1 [First_Name], [Last_Name], [Institute_id]
+                FROM tbl_EmployeeProfileMaster
+                WHERE [Employee_id] = @UserId";
+
+                    var employeeInfo = await _connection.QueryFirstOrDefaultAsync<dynamic>(employeeQuery, new { UserId = loginInfo.UserId });
+
+                    if (employeeInfo != null)
+                    {
+                        response = new LoginResposne
+                        {
+                            Username = $"{employeeInfo.First_Name} {employeeInfo.Last_Name}",
+                            InstituteId = employeeInfo.Institute_id,
+                            UserType = "Employee",
+                            UserId = loginInfo.UserId
+                        };
+                    }
+                }
+                else if (loginInfo.UserType == 2) // Student
+                {
+                    var studentQuery = @"
+                SELECT TOP 1 [First_Name], [Last_Name], [Institute_id]
+                FROM tbl_StudentMaster
+                WHERE [student_id] = @UserId";
+
+                    var studentInfo = await _connection.QueryFirstOrDefaultAsync<dynamic>(studentQuery, new { UserId = loginInfo.UserId });
+
+                    if (studentInfo != null)
+                    {
+                        response = new LoginResposne
+                        {
+                            Username = $"{studentInfo.First_Name} {studentInfo.Last_Name}",
+                            InstituteId = studentInfo.Institute_id,
+                            UserType = "Student",
+                            UserId = loginInfo.UserId
+                        };
+                    }
+                }
+                else
+                {
+                    return new ServiceResponse<LoginResposne>(false, "Unknown user type.", new LoginResposne(), 500);
+                }
+
+                // Step 3: Log the login details in tblUserLogs
+                var insertLogQuery = @"
+            INSERT INTO tblUserLogs 
+            ([UserId], [UserTypeId], [LoginTime], [IsAppUser], [brand], [device], [fingerprint], [model], [serialNumber], [type], [version_sdkInt], [version_securityPatch], [build_id], [isPhysicalDevice], [systemName], [systemVersion], [utsname_version], [operSysName], [browserName], [appName], [appVersion], [deviceMemory], [platform], [kernelVersion], [computerName], [systemGUID])
+            VALUES (@UserId, @UserTypeId, @LoginTime, @IsAppUser, @Brand, @Device, @Fingerprint, @Model, @SerialNumber, @Type, @VersionSdkInt, @VersionSecurityPatch, @BuildId, @IsPhysicalDevice, @SystemName, @SystemVersion, @UtsnameVersion, @OperSysName, @BrowserName, @AppName, @AppVersion, @DeviceMemory, @Platform, @KernelVersion, @ComputerName, @SystemGUID)";
+
+                var logParams = new
+                {
+                    UserId = loginInfo.UserId,
+                    UserTypeId = loginInfo.UserType,
+                    LoginTime = DateTime.Now,
+                    IsAppUser = false, // You can update this based on your requirement
+                    Brand = "Unknown", // Placeholder values
+                    Device = "Unknown",
+                    Fingerprint = "Unknown",
+                    Model = "Unknown",
+                    SerialNumber = "Unknown",
+                    Type = "Unknown",
+                    VersionSdkInt = "Unknown",
+                    VersionSecurityPatch = "Unknown",
+                    BuildId = "Unknown",
+                    IsPhysicalDevice = false,
+                    SystemName = "Unknown",
+                    SystemVersion = "Unknown",
+                    UtsnameVersion = "Unknown",
+                    OperSysName = "Unknown",
+                    BrowserName = "Unknown",
+                    AppName = "Unknown",
+                    AppVersion = "Unknown",
+                    DeviceMemory = "Unknown",
+                    Platform = "Unknown",
+                    KernelVersion = "Unknown",
+                    ComputerName = "Unknown",
+                    SystemGUID = Guid.NewGuid().ToString() // Generate a unique system GUID
+                };
+
+                await _connection.ExecuteAsync(insertLogQuery, logParams);
+
+                return new ServiceResponse<LoginResposne>(true, "Login successful.", response, 500);
+            }
+            catch (Exception ex)
+            {
+                // Handle any exceptions and return failure response
+
+                return new ServiceResponse<LoginResposne>(false, ex.Message, new LoginResposne(), 500);
+            }
+            finally
+            {
+                // Ensure the connection is closed
+                if (_connection.State == ConnectionState.Open)
+                {
+                    _connection.Close();
+                }
+            }
+        }
+        public async Task<ServiceResponse<string>> UserLogout(string username)
+        {
+            try
+            {
+                // SQL query to fetch the user logs based on the username (assuming username is unique)
+                string selectQuery = @"
+        SELECT LogsId 
+        FROM tblUserLogs 
+        WHERE UserId = (SELECT App_User_id FROM tbl_StudentMaster WHERE Admission_Number = @username)
+          AND LogoutTime IS NULL
+        ORDER BY LoginTime DESC";
+
+                // Fetch the most recent log entry where the user is currently logged in (LogoutTime is null)
+                var logsId = await _connection.QueryFirstOrDefaultAsync<int?>(selectQuery, new { username });
+
+                if (logsId == null)
+                {
+                    return new ServiceResponse<string>(false, "No active session found for this user", null, 404);
+                }
+
+                // SQL query to update the logout time for the fetched log entry
+                string updateQuery = @"
+        UPDATE tblUserLogs
+        SET LogoutTime = @LogoutTime
+        WHERE LogsId = @LogsId";
+
+                // Execute the update query with the current timestamp
+                await _connection.ExecuteAsync(updateQuery, new { LogoutTime = DateTime.Now, LogsId = logsId });
+
+                return new ServiceResponse<string>(true, "User successfully logged out", null, 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<string>(false, ex.Message, null, 500);
             }
         }
     }
