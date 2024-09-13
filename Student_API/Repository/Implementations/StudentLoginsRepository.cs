@@ -15,6 +15,7 @@ namespace Student_API.Repository.Implementations
         public StudentLoginsRepository(IDbConnection connection)
         {
             _connection = connection;
+            ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
         }
 
         public async Task<ServiceResponse<byte[]>> DownloadExcelSheet(int InstituteId)
@@ -91,8 +92,6 @@ namespace Student_API.Repository.Implementations
                 return new ServiceResponse<byte[]>(false, ex.Message, null, 500);
             }
         }
-
-
         public async Task<ServiceResponse<byte[]>> DownloadExcelSheetNonAppUsers(int InstituteId)
         {
             try
@@ -153,8 +152,6 @@ namespace Student_API.Repository.Implementations
                 return new ServiceResponse<byte[]>(false, ex.Message, null, 500);
             }
         }
-
-
         public async Task<ServiceResponse<byte[]>> DownloadExcelSheetStudentActivity(int InstituteId)
         {
             try
@@ -221,8 +218,6 @@ namespace Student_API.Repository.Implementations
                 return new ServiceResponse<byte[]>(false, ex.Message, null, 500);
             }
         }
-
-
         public async Task<ServiceResponse<List<StudentActivityResponse>>> GetAllStudentActivity(StudentLoginRequest request)
         {
             try
