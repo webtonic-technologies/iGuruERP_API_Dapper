@@ -41,6 +41,7 @@ namespace Employee_API.DTOs
         public List<EmployeeBankDetails>? EmployeeBankDetails { get; set; }
         public EmployeeFamily? Family { get; set; }
         public EmployeeAddressResponse? EmployeeAddressDetails { get; set; }
+        public EmployeeStaffMappingResponse EmployeeStaffMappingResponse {  get; set; }
     }
     public class EmployeeAddressResponse
     {
@@ -105,5 +106,39 @@ namespace Employee_API.DTOs
         public string UserType { get; set; } = string.Empty;
         public int UserId {  get; set; }
         public int InstituteId { get; set; }
+    }
+    public class EmployeeStaffMappingResponse
+    {
+        public int EmployeeId { get; set; }
+        public EmployeeStaffMapClassTeacherResponse? EmployeeStaffMappingsClassTeacher { get; set; }
+        public EmployeeStappMapClassSectionResponse? EmployeeStappMappingsClassSection { get; set; }
+    }
+    public class EmployeeStaffMapClassTeacherResponse
+    {
+        public int MappingId { get; set; }
+        public int ClassId { get; set; }
+        public string ClassName { get; set; } = string.Empty;
+        public int SectionId { get; set; }
+        public string SectionName {  get; set; } = string.Empty;
+        public List<Subjects>? subjects { get; set; }
+    }
+    public class Subjects 
+    {
+        public int SubjectId { get; set; }
+        public string SubjectName { get; set; } = string.Empty;
+    }
+    public class EmployeeStappMapClassSectionResponse
+    {
+        public int ClassSectionMapId { get; set; }
+        public int SubjectId { get; set; }
+        public string SubjectName { get; set; } = string.Empty;
+        public int ClassId { get; set; }
+        public string ClassName { get; set; } = string.Empty;
+        public List<Sections>? sections { get; set; }
+    }
+    public class Sections
+    {
+        public int SectionId { get; set; }
+        public string SectionName {  get; set; } = string.Empty;
     }
 }

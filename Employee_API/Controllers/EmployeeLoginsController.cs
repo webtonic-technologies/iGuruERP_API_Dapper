@@ -77,30 +77,30 @@ namespace Employee_API.Controllers
                 return this.BadRequest(e.Message);
             }
         }
-        [HttpGet("DownloadExcelSheet/{InstituteId}")]
-        public async Task<IActionResult> DownloadExcelSheet(int InstituteId)
+        [HttpPost("DownloadExcelSheet")]
+        public async Task<IActionResult> DownloadExcelSheet(DownloadExcelRequest request)
         {
-            var response = await _employeeLoginsServices.DownloadExcelSheet(InstituteId);
+            var response = await _employeeLoginsServices.DownloadExcelSheet(request);
             if (response.Success)
             {
                 return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "EmployeeCredentials.xlsx");
             }
             return StatusCode(response.StatusCode, response.Message);
         }
-        [HttpGet("DownloadExcelSheetNonAppUsers/{InstituteId}")]
-        public async Task<IActionResult> DownloadExcelSheetNonAppUsers(int InstituteId)
+        [HttpPost("DownloadExcelSheetNonAppUsers")]
+        public async Task<IActionResult> DownloadExcelSheetNonAppUsers(DownloadExcelRequest request)
         {
-            var response = await _employeeLoginsServices.DownloadExcelSheetNonAppUsers(InstituteId);
+            var response = await _employeeLoginsServices.DownloadExcelSheetNonAppUsers(request);
             if (response.Success)
             {
                 return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "EmployeeNonAppUsers.xlsx");
             }
             return StatusCode(response.StatusCode, response.Message);
         }
-        [HttpGet("DownloadExcelSheetEmployeeActivity/{InstituteId}")]
-        public async Task<IActionResult> DownloadExcelSheetEmployeeActivity(int InstituteId)
+        [HttpPost("DownloadExcelSheetEmployeeActivity")]
+        public async Task<IActionResult> DownloadExcelSheetEmployeeActivity(DownloadExcelRequest request)
         {
-            var response = await _employeeLoginsServices.DownloadExcelSheetEmployeeActivity(InstituteId);
+            var response = await _employeeLoginsServices.DownloadExcelSheetEmployeeActivity(request);
             if (response.Success)
             {
                 return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "EmployeeActivity.xlsx");

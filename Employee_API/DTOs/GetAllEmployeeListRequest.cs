@@ -23,4 +23,16 @@
         public string Username { set; get; } = string.Empty;
         public string Password { get; set; } = string.Empty;
     }
+    public class DownloadExcelRequest
+    {
+        public int InstituteId { set; get; }
+        public int DepartmentId { set; get; }
+        public int DesignationId { set; get; }
+    }
+    public class ExcelDownloadRequest
+    {
+        public int InstituteId { set; get; }
+        public int DesignationId { set; get; }
+        public int DepartmetnId {  set; get; }
+    }
 }

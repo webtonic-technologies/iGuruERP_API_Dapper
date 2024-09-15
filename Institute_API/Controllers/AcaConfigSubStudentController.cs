@@ -1,6 +1,4 @@
 using Institute_API.DTOs;
-using Institute_API.Repository.Interfaces;
-using Institute_API.Services.Implementations;
 using Institute_API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -39,21 +37,6 @@ namespace Institute_API.Controllers
             }
 
         }
-
-        [HttpPost("GetSubjectStudentMappingList")]
-        public async Task<IActionResult> GetSubjectStudentMappingList(MappingListRequest request)
-        {
-            try
-            {
-                var data = await _acaConfigSubStudentServices.GetSubjectStudentMappingList(request);
-                return Ok(data);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
-
         [HttpPost("GetInstituteStudentsList")]
         public async Task<IActionResult> GetInstituteStudentsList(StudentListRequest request)
         {
@@ -67,13 +50,22 @@ namespace Institute_API.Controllers
                 return BadRequest(ex.Message);
             }
         }
-
-        [HttpGet("GetInstituteSubjectsList/{SubjectType}")]
-        public async Task<IActionResult> GetInstituteSubjectsList(int SubjectType)
+        [HttpPost("DownloadExcel")]
+        public async Task<IActionResult> DownloadExcelSheet(ExcelDownloadSubStudentMappingRequest request)
+        {
+            var response = await _acaConfigSubStudentServices.DownloadExcelSheet(request);
+            if (response.Success)
+            {
+                return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Subject Mapping.xlsx");
+            }
+            return StatusCode(response.StatusCode, response.Message);
+        }
+        [HttpPost("GetSubjectsAndStudentMappings")]
+        public async Task<IActionResult> GetSubjectsAndStudentMappings(MappingListRequest request)
         {
             try
             {
-                var data = await _acaConfigSubStudentServices.GetInstituteSubjectsList(SubjectType);
+                var data = await _acaConfigSubStudentServices.GetSubjectsAndStudentMappings(request);
                 if (data != null)
                 {
                     return Ok(data);
@@ -88,16 +80,6 @@ namespace Institute_API.Controllers
             {
                 return this.BadRequest(e.Message);
             }
-        }
-        [HttpGet("DownloadExcel/{instituteId}")]
-        public async Task<IActionResult> DownloadExcelSheet(int instituteId)
-        {
-            var response = await _acaConfigSubStudentServices.DownloadExcelSheet(instituteId);
-            if (response.Success)
-            {
-                return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Subject Mapping.xlsx");
-            }
-            return StatusCode(response.StatusCode, response.Message);
         }
     }
 }

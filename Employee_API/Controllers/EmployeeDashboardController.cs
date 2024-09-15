@@ -169,5 +169,25 @@ namespace Employee_API.Controllers
             }
 
         }
+        [HttpGet("GetAppUsersNonAppUsersEmployees/{instituteId}")]
+        public async Task<IActionResult> GetAppUsersNonAppUsersEmployees(int instituteId)
+        {
+            try
+            {
+                var data = await _employeeDashboardServices.GetAppUsersNonAppUsersEmployees(instituteId);
+                if (data != null)
+                {
+                    return Ok(data);
+                }
+                else
+                {
+                    return BadRequest("Bad Request");
+                }
+            }
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
+        }
     }
 }

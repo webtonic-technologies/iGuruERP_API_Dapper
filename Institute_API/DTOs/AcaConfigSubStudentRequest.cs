@@ -3,14 +3,16 @@
     public class AcaConfigSubStudentRequest
     {
         public int InstituteId { get; set; }
+        public List<Studentssubject> Studentssubjects { get; set; }
+    }
+    public class Studentssubject
+    {
         public int StudentId { get; set; }
         public List<SubStudentMappingReq>? SubStudentMappingReqs { get; set; }
     }
     public class SubStudentMappingReq
     {
         public int SSMappingId { get; set; }
-        //  public int InstituteId { get; set; }
-        //  public int StudentId { get; set; }
         public int SubjectId { get; set; }
     }
     public class SubjectList
@@ -45,13 +47,13 @@
     public class AcaConfigSubStudentResponse
     {
         public int InstituteId { get; set; }
-        public List<StudentSubjectResponse>? StudentSubjectResponses {  get; set; }
+        public List<StudentSubjectResponse>? StudentSubjectResponses { get; set; }
     }
     public class StudentSubjectResponse
     {
         public int subjectId { get; set; }
         public string SubjectName { get; set; } = string.Empty;
-        public List<Students>? Students {  get; set; }
+        public List<Students>? Students { get; set; }
     }
     public class Students
     {

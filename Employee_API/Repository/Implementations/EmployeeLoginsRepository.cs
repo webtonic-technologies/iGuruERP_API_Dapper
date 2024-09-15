@@ -17,27 +17,29 @@ namespace Employee_API.Repository.Implementations
             _hostingEnvironment = hostingEnvironment;
             ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
         }
-        public async Task<ServiceResponse<byte[]>> DownloadExcelSheet(int InstituteId)
+        public async Task<ServiceResponse<byte[]>> DownloadExcelSheet(DownloadExcelRequest request)
         {
             try
             {
-                // SQL query to fetch employee details, department, designation, and gender
+                // SQL query to fetch employee details, handling optional filters for DepartmentId and DesignationId
                 string sql = @"
-            SELECT emp.Employee_id, emp.First_Name, emp.Middle_Name, emp.Last_Name, emp.Gender_id, 
-                   emp.Department_id, emp.Designation_id, emp.mobile_number, emp.Date_of_Birth, emp.EmailID,
-                   dep.DepartmentName, des.DesignationName, gen.Gender_Type
-            FROM tbl_EmployeeProfileMaster emp
-            LEFT JOIN tbl_Department dep ON emp.Department_id = dep.Department_id
-            LEFT JOIN tbl_Designation des ON emp.Designation_id = des.Designation_id
-            LEFT JOIN tbl_Gender gen ON emp.Gender_id = gen.Gender_id
-            WHERE emp.Institute_id = @InstituteId AND emp.Status = 1";
+        SELECT emp.Employee_id, emp.First_Name, emp.Middle_Name, emp.Last_Name, emp.Gender_id, 
+               emp.Department_id, emp.Designation_id, emp.mobile_number, emp.Date_of_Birth, emp.EmailID,
+               dep.DepartmentName, des.DesignationName, gen.Gender_Type
+        FROM tbl_EmployeeProfileMaster emp
+        LEFT JOIN tbl_Department dep ON emp.Department_id = dep.Department_id
+        LEFT JOIN tbl_Designation des ON emp.Designation_id = des.Designation_id
+        LEFT JOIN tbl_Gender gen ON emp.Gender_id = gen.Gender_id
+        WHERE emp.Institute_id = @InstituteId AND emp.Status = 1
+        AND (@DepartmentId = 0 OR emp.Department_id = @DepartmentId)
+        AND (@DesignationId = 0 OR emp.Designation_id = @DesignationId)";
 
-                var employees = await _connection.QueryAsync<dynamic>(sql, new { InstituteId });
+                // Execute the query, using optional filters
+                var employees = await _connection.QueryAsync<dynamic>(sql, new { request.InstituteId, request.DepartmentId, request.DesignationId });
 
-                // Initialize EPPlus package to create Excel
+                // Initialize EPPlus package to create the Excel sheet
                 using (var package = new ExcelPackage())
                 {
-                    // Add a worksheet
                     var worksheet = package.Workbook.Worksheets.Add("Employee Details");
 
                     // Add headers
@@ -50,27 +52,43 @@ namespace Employee_API.Repository.Implementations
                     worksheet.Cells[1, 7].Value = "Date of Birth";
                     worksheet.Cells[1, 8].Value = "Email";
 
-                    // Fill the worksheet with employee data
-                    int row = 2;
-
-                    foreach (var employee in employees)
+                    // Check if there are employees returned from the query
+                    if (employees.Any())
                     {
-                        // Combine first name, middle name, and last name into employee name
-                        string employeeName = $"{employee.First_Name} {employee.Middle_Name} {employee.Last_Name}".Trim();
+                        // Fill the worksheet with employee data
+                        int row = 2;
 
-                        worksheet.Cells[row, 1].Value = employee.Employee_id;
-                        worksheet.Cells[row, 2].Value = employeeName;
-                        worksheet.Cells[row, 3].Value = employee.DepartmentName;
-                        worksheet.Cells[row, 4].Value = employee.DesignationName;
-                        worksheet.Cells[row, 5].Value = employee.Gender_Type;
-                        worksheet.Cells[row, 6].Value = employee.mobile_number;
-                        worksheet.Cells[row, 7].Value = employee.Date_of_Birth;
-                        worksheet.Cells[row, 8].Value = employee.EmailID;
-                        row++;
+                        foreach (var employee in employees)
+                        {
+                            // Combine first name, middle name, and last name into employee name
+                            string employeeName = $"{employee.First_Name} {employee.Middle_Name} {employee.Last_Name}".Trim();
+
+                            worksheet.Cells[row, 1].Value = employee.Employee_id;
+                            worksheet.Cells[row, 2].Value = employeeName;
+                            worksheet.Cells[row, 3].Value = employee.DepartmentName;
+                            worksheet.Cells[row, 4].Value = employee.DesignationName;
+                            worksheet.Cells[row, 5].Value = employee.Gender_Type;
+                            worksheet.Cells[row, 6].Value = employee.mobile_number;
+                            worksheet.Cells[row, 7].Value = employee.Date_of_Birth;
+                            worksheet.Cells[row, 8].Value = employee.EmailID;
+                            row++;
+                        }
+
+                        // Auto-fit the columns for better visibility
+                        worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
                     }
-
-                    // Auto-fit the columns to make the content visible
-                    worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+                    else
+                    {
+                        // If no data is found, return an empty Excel with only headers
+                        worksheet.Cells[1, 1].Value = "Employee ID";
+                        worksheet.Cells[1, 2].Value = "Employee Name";
+                        worksheet.Cells[1, 3].Value = "Department";
+                        worksheet.Cells[1, 4].Value = "Designation";
+                        worksheet.Cells[1, 5].Value = "Gender";
+                        worksheet.Cells[1, 6].Value = "Mobile";
+                        worksheet.Cells[1, 7].Value = "Date of Birth";
+                        worksheet.Cells[1, 8].Value = "Email";
+                    }
 
                     // Convert the worksheet into a byte array
                     var excelData = package.GetAsByteArray();
@@ -85,29 +103,31 @@ namespace Employee_API.Repository.Implementations
                 return new ServiceResponse<byte[]>(false, $"Error generating Excel file: {ex.Message}", null, 500);
             }
         }
-        public async Task<ServiceResponse<byte[]>> DownloadExcelSheetNonAppUsers(int InstituteId)
+        public async Task<ServiceResponse<byte[]>> DownloadExcelSheetNonAppUsers(DownloadExcelRequest request)
         {
             try
             {
-                // SQL query to fetch non-app users (IsAppUser = false) based on InstituteId and UserTypeId for employees (UserTypeId = 1)
+                // SQL query to fetch non-app users (IsAppUser = false) based on InstituteId and optional filters for DepartmentId and DesignationId
                 string sql = @"
-            SELECT emp.Employee_id, emp.First_Name, emp.Middle_Name, emp.Last_Name, emp.Gender_id, 
-                   emp.Department_id, emp.Designation_id, emp.mobile_number, 
-                   dep.DepartmentName, des.DesignationName, gen.Gender_Type
-            FROM tbl_EmployeeProfileMaster emp
-            LEFT JOIN tbl_Department dep ON emp.Department_id = dep.Department_id
-            LEFT JOIN tbl_Designation des ON emp.Designation_id = des.Designation_id
-            LEFT JOIN tbl_Gender gen ON emp.Gender_id = gen.Gender_id
-            LEFT JOIN tblUserLogs logs ON logs.UserId = emp.Employee_id
-            WHERE emp.Institute_id = @InstituteId
-              AND logs.UserTypeId = 1
-              AND logs.IsAppUser = 0
-              AND emp.Status = 1";
+        SELECT emp.Employee_id, emp.First_Name, emp.Middle_Name, emp.Last_Name, emp.Gender_id, 
+               emp.Department_id, emp.Designation_id, emp.mobile_number, 
+               dep.DepartmentName, des.DesignationName, gen.Gender_Type
+        FROM tbl_EmployeeProfileMaster emp
+        LEFT JOIN tbl_Department dep ON emp.Department_id = dep.Department_id
+        LEFT JOIN tbl_Designation des ON emp.Designation_id = des.Designation_id
+        LEFT JOIN tbl_Gender gen ON emp.Gender_id = gen.Gender_id
+        LEFT JOIN tblUserLogs logs ON logs.UserId = emp.Employee_id
+        WHERE emp.Institute_id = @InstituteId
+          AND logs.UserTypeId = 1
+          AND logs.IsAppUser = 0
+          AND emp.Status = 1
+          AND (@DepartmentId = 0 OR emp.Department_id = @DepartmentId)
+          AND (@DesignationId = 0 OR emp.Designation_id = @DesignationId)";
 
-                // Fetching non-app users from the database
-                var nonAppUsers = await _connection.QueryAsync<dynamic>(sql, new { InstituteId });
+                // Fetching non-app users from the database with optional filters
+                var nonAppUsers = await _connection.QueryAsync<dynamic>(sql, new { request.InstituteId, request.DepartmentId, request.DesignationId });
 
-                // Initialize the EPPlus Excel package
+                // Initialize EPPlus package to create the Excel file
                 using (var package = new ExcelPackage())
                 {
                     // Add a worksheet
@@ -121,23 +141,37 @@ namespace Employee_API.Repository.Implementations
                     worksheet.Cells[1, 5].Value = "Gender";
                     worksheet.Cells[1, 6].Value = "Mobile Number";
 
-                    // Populate the worksheet with data from the query
-                    int row = 2;
-                    foreach (var user in nonAppUsers)
+                    // Check if there are any non-app users to include in the Excel sheet
+                    if (nonAppUsers.Any())
                     {
-                        // Combine first name, middle name, and last name for the full employee name
-                        string employeeName = $"{user.First_Name} {user.Middle_Name} {user.Last_Name}".Trim();
+                        // Populate the worksheet with data from the query
+                        int row = 2;
+                        foreach (var user in nonAppUsers)
+                        {
+                            // Combine first name, middle name, and last name for the full employee name
+                            string employeeName = $"{user.First_Name} {user.Middle_Name} {user.Last_Name}".Trim();
 
-                        worksheet.Cells[row, 1].Value = user.Employee_id;
-                        worksheet.Cells[row, 2].Value = employeeName;
-                        worksheet.Cells[row, 3].Value = user.DesignationName;
-                        worksheet.Cells[row, 4].Value = user.DepartmentName;
-                        worksheet.Cells[row, 5].Value = user.Gender_Type;
-                        worksheet.Cells[row, 6].Value = user.mobile_number;
-                        row++;
+                            worksheet.Cells[row, 1].Value = user.Employee_id;
+                            worksheet.Cells[row, 2].Value = employeeName;
+                            worksheet.Cells[row, 3].Value = user.DesignationName;
+                            worksheet.Cells[row, 4].Value = user.DepartmentName;
+                            worksheet.Cells[row, 5].Value = user.Gender_Type;
+                            worksheet.Cells[row, 6].Value = user.mobile_number;
+                            row++;
+                        }
+                    }
+                    else
+                    {
+                        // If no data is found, just return headers
+                        worksheet.Cells[1, 1].Value = "Employee ID";
+                        worksheet.Cells[1, 2].Value = "Employee Name";
+                        worksheet.Cells[1, 3].Value = "Designation";
+                        worksheet.Cells[1, 4].Value = "Department";
+                        worksheet.Cells[1, 5].Value = "Gender";
+                        worksheet.Cells[1, 6].Value = "Mobile Number";
                     }
 
-                    // Adjust column width for readability
+                    // Auto-fit columns for better readability
                     worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
 
                     // Convert the worksheet to a byte array
@@ -153,28 +187,35 @@ namespace Employee_API.Repository.Implementations
                 return new ServiceResponse<byte[]>(false, $"Error generating Excel sheet: {ex.Message}", null, 500);
             }
         }
-        public async Task<ServiceResponse<byte[]>> DownloadExcelSheetEmployeeActivity(int InstituteId)
+        public async Task<ServiceResponse<byte[]>> DownloadExcelSheetEmployeeActivity(DownloadExcelRequest request)
         {
             try
             {
-                // SQL query to fetch employee activity logs and relevant employee details
+                // SQL query to fetch employee activity logs with optional filters
                 string sql = @"
-            SELECT emp.Employee_id, emp.First_Name, emp.Middle_Name, emp.Last_Name, 
-                   emp.Designation_id, emp.Department_id, 
-                   dep.DepartmentName, des.DesignationName, 
-                   logs.LoginTime, logs.appVersion
-            FROM tblUserLogs logs
-            LEFT JOIN tbl_EmployeeProfileMaster emp ON logs.UserId = emp.Employee_id
-            LEFT JOIN tbl_Department dep ON emp.Department_id = dep.Department_id
-            LEFT JOIN tbl_Designation des ON emp.Designation_id = des.Designation_id
-            WHERE emp.Institute_id = @InstituteId
-              AND logs.UserTypeId = 1
-              AND emp.Status = 1";  // Only active employees
+        SELECT emp.Employee_id, emp.First_Name, emp.Middle_Name, emp.Last_Name, 
+               emp.Designation_id, emp.Department_id, 
+               dep.DepartmentName, des.DesignationName, 
+               logs.LoginTime, logs.appVersion
+        FROM tblUserLogs logs
+        LEFT JOIN tbl_EmployeeProfileMaster emp ON logs.UserId = emp.Employee_id
+        LEFT JOIN tbl_Department dep ON emp.Department_id = dep.Department_id
+        LEFT JOIN tbl_Designation des ON emp.Designation_id = des.Designation_id
+        WHERE emp.Institute_id = @InstituteId
+          AND logs.UserTypeId = 1
+          AND emp.Status = 1
+          AND (@DepartmentId = 0 OR emp.Department_id = @DepartmentId)
+          AND (@DesignationId = 0 OR emp.Designation_id = @DesignationId)";
 
-                // Fetching employee activity data from the database
-                var employeeActivityLogs = await _connection.QueryAsync<dynamic>(sql, new { InstituteId });
+                // Fetching employee activity data from the database with optional filters
+                var employeeActivityLogs = await _connection.QueryAsync<dynamic>(sql, new
+                {
+                    InstituteId = request.InstituteId,
+                    DepartmentId = request.DepartmentId,
+                    DesignationId = request.DesignationId
+                });
 
-                // Initialize the EPPlus Excel package
+                // Initialize EPPlus package to create the Excel file
                 using (var package = new ExcelPackage())
                 {
                     // Add a worksheet
@@ -188,23 +229,37 @@ namespace Employee_API.Repository.Implementations
                     worksheet.Cells[1, 5].Value = "Last Action Taken (Login Time)";
                     worksheet.Cells[1, 6].Value = "App Version";
 
-                    // Populate the worksheet with data from the query
-                    int row = 2;
-                    foreach (var log in employeeActivityLogs)
+                    // Check if there are any logs to include in the Excel sheet
+                    if (employeeActivityLogs.Any())
                     {
-                        // Combine first name, middle name, and last name for the full employee name
-                        string employeeName = $"{log.First_Name} {log.Middle_Name} {log.Last_Name}".Trim();
+                        // Populate the worksheet with data from the query
+                        int row = 2;
+                        foreach (var log in employeeActivityLogs)
+                        {
+                            // Combine first name, middle name, and last name for the full employee name
+                            string employeeName = $"{log.First_Name} {log.Middle_Name} {log.Last_Name}".Trim();
 
-                        worksheet.Cells[row, 1].Value = log.Employee_id;
-                        worksheet.Cells[row, 2].Value = employeeName;
-                        worksheet.Cells[row, 3].Value = log.DesignationName;
-                        worksheet.Cells[row, 4].Value = log.DepartmentName;
-                        worksheet.Cells[row, 5].Value = log.LoginTime?.ToString("yyyy-MM-dd HH:mm:ss");  // Format login time
-                        worksheet.Cells[row, 6].Value = log.appVersion;
-                        row++;
+                            worksheet.Cells[row, 1].Value = log.Employee_id;
+                            worksheet.Cells[row, 2].Value = employeeName;
+                            worksheet.Cells[row, 3].Value = log.DesignationName;
+                            worksheet.Cells[row, 4].Value = log.DepartmentName;
+                            worksheet.Cells[row, 5].Value = log.LoginTime?.ToString("yyyy-MM-dd HH:mm:ss");  // Format login time
+                            worksheet.Cells[row, 6].Value = log.appVersion;
+                            row++;
+                        }
+                    }
+                    else
+                    {
+                        // If no data is found, just return headers
+                        worksheet.Cells[1, 1].Value = "Employee ID";
+                        worksheet.Cells[1, 2].Value = "Employee Name";
+                        worksheet.Cells[1, 3].Value = "Designation";
+                        worksheet.Cells[1, 4].Value = "Department";
+                        worksheet.Cells[1, 5].Value = "Last Action Taken (Login Time)";
+                        worksheet.Cells[1, 6].Value = "App Version";
                     }
 
-                    // Adjust column width for readability
+                    // Auto-fit columns for better readability
                     worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
 
                     // Convert the worksheet to a byte array

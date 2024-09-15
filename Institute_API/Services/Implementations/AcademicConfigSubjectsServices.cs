@@ -49,11 +49,11 @@ namespace Institute_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<byte[]>> DownloadExcelSheet(int InstituteId)
+        public async Task<ServiceResponse<byte[]>> DownloadExcelSheet(ExcelDownloadRequest request)
         {
             try
             {
-                return await _academicConfigSubjectsRepository.DownloadExcelSheet(InstituteId);
+                return await _academicConfigSubjectsRepository.DownloadExcelSheet(request);
             }
             catch (Exception ex)
             {

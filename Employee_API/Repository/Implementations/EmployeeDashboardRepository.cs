@@ -55,88 +55,94 @@ namespace Employee_API.Repository.Implementations
                 return new ServiceResponse<EmployeeGenderStatsResponse>(false, ex.Message, null, 500);
             }
         }
-        public async Task<ServiceResponse<AgeGroupStatsResponse>> GetEmployeeAgeGroupStats(int instituteId)
+        public async Task<ServiceResponse<List<AgeGroupStatsResponse>>> GetEmployeeAgeGroupStats(int instituteId)
         {
             try
             {
                 string sql = @"
-                SELECT 
-                    SUM(CASE WHEN DATEDIFF(YEAR, Date_of_Birth, GETDATE()) BETWEEN 18 AND 30 THEN 1 ELSE 0 END) AS Age_18_30,
-                    SUM(CASE WHEN DATEDIFF(YEAR, Date_of_Birth, GETDATE()) BETWEEN 30 AND 45 THEN 1 ELSE 0 END) AS Age_30_45,
-                    SUM(CASE WHEN DATEDIFF(YEAR, Date_of_Birth, GETDATE()) BETWEEN 45 AND 60 THEN 1 ELSE 0 END) AS Age_45_60,
-                    SUM(CASE WHEN DATEDIFF(YEAR, Date_of_Birth, GETDATE()) > 60 THEN 1 ELSE 0 END) AS Age_60_Plus
-                FROM tbl_EmployeeProfileMaster
-                WHERE Institute_id = @InstituteId;
-            ";
+        SELECT 
+            SUM(CASE WHEN DATEDIFF(YEAR, Date_of_Birth, GETDATE()) BETWEEN 18 AND 25 THEN 1 ELSE 0 END) AS Age_18_25,
+            SUM(CASE WHEN DATEDIFF(YEAR, Date_of_Birth, GETDATE()) BETWEEN 26 AND 30 THEN 1 ELSE 0 END) AS Age_26_30,
+            SUM(CASE WHEN DATEDIFF(YEAR, Date_of_Birth, GETDATE()) BETWEEN 31 AND 35 THEN 1 ELSE 0 END) AS Age_31_35,
+            SUM(CASE WHEN DATEDIFF(YEAR, Date_of_Birth, GETDATE()) BETWEEN 36 AND 40 THEN 1 ELSE 0 END) AS Age_36_40,
+            SUM(CASE WHEN DATEDIFF(YEAR, Date_of_Birth, GETDATE()) BETWEEN 41 AND 45 THEN 1 ELSE 0 END) AS Age_41_45,
+            SUM(CASE WHEN DATEDIFF(YEAR, Date_of_Birth, GETDATE()) BETWEEN 46 AND 50 THEN 1 ELSE 0 END) AS Age_46_50,
+            SUM(CASE WHEN DATEDIFF(YEAR, Date_of_Birth, GETDATE()) BETWEEN 51 AND 55 THEN 1 ELSE 0 END) AS Age_51_55,
+            SUM(CASE WHEN DATEDIFF(YEAR, Date_of_Birth, GETDATE()) BETWEEN 56 AND 60 THEN 1 ELSE 0 END) AS Age_56_60,
+            SUM(CASE WHEN DATEDIFF(YEAR, Date_of_Birth, GETDATE()) > 60 THEN 1 ELSE 0 END) AS Age_60_Plus
+        FROM tbl_EmployeeProfileMaster
+        WHERE Institute_id = @InstituteId;
+        ";
 
                 var result = await _connection.QueryFirstOrDefaultAsync<AgeGroupStats>(sql, new { InstituteId = instituteId });
 
                 if (result == null)
                 {
-                    return new ServiceResponse<AgeGroupStatsResponse>(false, "No data found", null, 204);
+                    return new ServiceResponse<List<AgeGroupStatsResponse>>(false, "No data found", null, 204);
                 }
 
-                var response = new AgeGroupStatsResponse
-                {
-                    Age_18_30 = result.Age_18_30,
-                    Age_30_45 = result.Age_30_45,
-                    Age_45_60 = result.Age_45_60,
-                    Age_60_Plus = result.Age_60_Plus
-                };
+                // Preparing the response in the required format
+                var response = new List<AgeGroupStatsResponse>
+        {
+            new AgeGroupStatsResponse { AgeGroup = "18-25", AgeCount = result.Age_18_25 },
+            new AgeGroupStatsResponse { AgeGroup = "26-30", AgeCount = result.Age_26_30 },
+            new AgeGroupStatsResponse { AgeGroup = "31-35", AgeCount = result.Age_31_35 },
+            new AgeGroupStatsResponse { AgeGroup = "36-40", AgeCount = result.Age_36_40 },
+            new AgeGroupStatsResponse { AgeGroup = "41-45", AgeCount = result.Age_41_45 },
+            new AgeGroupStatsResponse { AgeGroup = "46-50", AgeCount = result.Age_46_50 },
+            new AgeGroupStatsResponse { AgeGroup = "51-55", AgeCount = result.Age_51_55 },
+            new AgeGroupStatsResponse { AgeGroup = "56-60", AgeCount = result.Age_56_60 },
+            new AgeGroupStatsResponse { AgeGroup = "60+", AgeCount = result.Age_60_Plus }
+        };
 
-                return new ServiceResponse<AgeGroupStatsResponse>(true, "Data found", response, 200);
+                return new ServiceResponse<List<AgeGroupStatsResponse>>(true, "Data found", response, 200);
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<AgeGroupStatsResponse>(false, ex.Message, null, 500);
+                return new ServiceResponse<List<AgeGroupStatsResponse>>(false, ex.Message, null, 500);
             }
         }
-        public async Task<ServiceResponse<ExperienceStatsResponse>> GetEmployeeExperienceStats(int instituteId)
+        public async Task<ServiceResponse<List<ExperienceRangeResponse>>> GetEmployeeExperienceStats(int instituteId)
         {
             try
             {
                 string sql = @"
-                SELECT 
-                    SUM(CASE WHEN DATEDIFF(MONTH, Date_of_Joining, GETDATE()) BETWEEN 0 AND 11 THEN 1 ELSE 0 END) AS Experience_0_1,
-                    SUM(CASE WHEN DATEDIFF(MONTH, Date_of_Joining, GETDATE()) BETWEEN 12 AND 23 THEN 1 ELSE 0 END) AS Experience_1_2,
-                    SUM(CASE WHEN DATEDIFF(MONTH, Date_of_Joining, GETDATE()) BETWEEN 24 AND 35 THEN 1 ELSE 0 END) AS Experience_2_3,
-                    SUM(CASE WHEN DATEDIFF(MONTH, Date_of_Joining, GETDATE()) BETWEEN 36 AND 47 THEN 1 ELSE 0 END) AS Experience_3_4,
-                    SUM(CASE WHEN DATEDIFF(MONTH, Date_of_Joining, GETDATE()) BETWEEN 48 AND 59 THEN 1 ELSE 0 END) AS Experience_4_5,
-                    SUM(CASE WHEN DATEDIFF(MONTH, Date_of_Joining, GETDATE()) BETWEEN 60 AND 71 THEN 1 ELSE 0 END) AS Experience_5_6,
-                    SUM(CASE WHEN DATEDIFF(MONTH, Date_of_Joining, GETDATE()) >= 72 THEN 1 ELSE 0 END) AS Experience_6_7,
-                    MAX(DATEDIFF(MONTH, Date_of_Joining, GETDATE())) AS MaxExperience,
-                    MIN(DATEDIFF(MONTH, Date_of_Joining, GETDATE())) AS MinExperience,
-                    AVG(DATEDIFF(MONTH, Date_of_Joining, GETDATE())) AS AvgExperience
-                FROM tbl_EmployeeProfileMaster
-                WHERE Institute_id = @InstituteId;
-            ";
+        SELECT 
+            SUM(CASE WHEN DATEDIFF(MONTH, Date_of_Joining, GETDATE()) BETWEEN 0 AND 11 THEN 1 ELSE 0 END) AS Experience_0_1,
+            SUM(CASE WHEN DATEDIFF(MONTH, Date_of_Joining, GETDATE()) BETWEEN 12 AND 23 THEN 1 ELSE 0 END) AS Experience_1_2,
+            SUM(CASE WHEN DATEDIFF(MONTH, Date_of_Joining, GETDATE()) BETWEEN 24 AND 35 THEN 1 ELSE 0 END) AS Experience_2_3,
+            SUM(CASE WHEN DATEDIFF(MONTH, Date_of_Joining, GETDATE()) BETWEEN 36 AND 47 THEN 1 ELSE 0 END) AS Experience_3_4,
+            SUM(CASE WHEN DATEDIFF(MONTH, Date_of_Joining, GETDATE()) BETWEEN 48 AND 59 THEN 1 ELSE 0 END) AS Experience_4_5,
+            SUM(CASE WHEN DATEDIFF(MONTH, Date_of_Joining, GETDATE()) BETWEEN 60 AND 71 THEN 1 ELSE 0 END) AS Experience_5_6,
+            SUM(CASE WHEN DATEDIFF(MONTH, Date_of_Joining, GETDATE()) >= 72 THEN 1 ELSE 0 END) AS Experience_6_7
+        FROM tbl_EmployeeProfileMaster
+        WHERE Institute_id = @InstituteId;
+        ";
 
                 var result = await _connection.QueryFirstOrDefaultAsync<ExperienceStats>(sql, new { InstituteId = instituteId });
 
                 if (result == null)
                 {
-                    return new ServiceResponse<ExperienceStatsResponse>(false, "No data found", null, 204);
+                    return new ServiceResponse<List<ExperienceRangeResponse>>(false, "No data found", null, 204);
                 }
 
-                var response = new ExperienceStatsResponse
-                {
-                    Experience_0_1 = result.Experience_0_1,
-                    Experience_1_2 = result.Experience_1_2,
-                    Experience_2_3 = result.Experience_2_3,
-                    Experience_3_4 = result.Experience_3_4,
-                    Experience_4_5 = result.Experience_4_5,
-                    Experience_5_6 = result.Experience_5_6,
-                    Experience_6_7 = result.Experience_6_7,
-                    MaxExperience = $"{result.MaxExperience / 12} years {result.MaxExperience % 12} months",
-                    MinExperience = $"{result.MinExperience / 12} years {result.MinExperience % 12} months",
-                    AvgExperience = $"{Math.Floor(result.AvgExperience / 12)} years {Math.Floor(result.AvgExperience % 12)} months"
-                };
+                // Prepare the response with the format requested
+                var response = new List<ExperienceRangeResponse>
+        {
+            new ExperienceRangeResponse { Experience = "0-1", Count = result.Experience_0_1 },
+            new ExperienceRangeResponse { Experience = "1-2", Count = result.Experience_1_2 },
+            new ExperienceRangeResponse { Experience = "2-3", Count = result.Experience_2_3 },
+            new ExperienceRangeResponse { Experience = "3-4", Count = result.Experience_3_4 },
+            new ExperienceRangeResponse { Experience = "4-5", Count = result.Experience_4_5 },
+            new ExperienceRangeResponse { Experience = "5-6", Count = result.Experience_5_6 },
+            new ExperienceRangeResponse { Experience = "6+", Count = result.Experience_6_7 }
+        };
 
-                return new ServiceResponse<ExperienceStatsResponse>(true, "Data found", response, 200);
+                return new ServiceResponse<List<ExperienceRangeResponse>>(true, "Data found", response, 200);
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<ExperienceStatsResponse>(false, ex.Message, null, 500);
+                return new ServiceResponse<List<ExperienceRangeResponse>>(false, ex.Message, null, 500);
             }
         }
         public async Task<ServiceResponse<DepartmentEmployeeResponse>> GetEmployeeDepartmentCounts(int instituteId)
@@ -257,15 +263,15 @@ namespace Employee_API.Repository.Implementations
             try
             {
                 string sql = @"
-                SELECT 
-                    SUM(CASE WHEN Status = 1 THEN 1 ELSE 0 END) AS ActiveCount,
-                    SUM(CASE WHEN Status = 0 THEN 1 ELSE 0 END) AS InactiveCount,
-                    COUNT(*) AS TotalCount
-                FROM 
-                    tbl_EmployeeProfileMaster
-                WHERE 
-                    Institute_id = @InstituteId;
-            ";
+        SELECT 
+            SUM(CASE WHEN Status = 1 THEN 1 ELSE 0 END) AS ActiveCount,
+            SUM(CASE WHEN Status = 0 THEN 1 ELSE 0 END) AS InactiveCount,
+            COUNT(*) AS TotalCount
+        FROM 
+            tbl_EmployeeProfileMaster
+        WHERE 
+            Institute_id = @InstituteId;
+        ";
 
                 var result = await _connection.QueryFirstOrDefaultAsync<EmployeeStatusData>(sql, new { InstituteId = instituteId });
 
@@ -278,8 +284,8 @@ namespace Employee_API.Repository.Implementations
                 {
                     ActiveCount = result.ActiveCount,
                     InactiveCount = result.InactiveCount,
-                    ActivePercentage = (double)result.ActiveCount / result.TotalCount * 100,
-                    InactivePercentage = (double)result.InactiveCount / result.TotalCount * 100
+                    ActivePercentage = Math.Round((double)result.ActiveCount / result.TotalCount * 100, 0),
+                    InactivePercentage = Math.Round((double)result.InactiveCount / result.TotalCount * 100, 0)
                 };
 
                 return new ServiceResponse<ActiveInactiveEmployeesResponse>(true, "Data found", response, 200);
@@ -287,6 +293,39 @@ namespace Employee_API.Repository.Implementations
             catch (Exception ex)
             {
                 return new ServiceResponse<ActiveInactiveEmployeesResponse>(false, ex.Message, null, 500);
+            }
+        }
+        public async Task<ServiceResponse<AppUserNonAppUserResponse>> GetAppUsersNonAppUsersEmployees(int instituteId)
+        {
+            try
+            {
+                // SQL query to fetch the count of app users and non-app users
+                string sql = @"
+        SELECT 
+            SUM(CASE WHEN IsAppUser = 1 THEN 1 ELSE 0 END) AS AppUsers,
+            SUM(CASE WHEN IsAppUser = 0 THEN 1 ELSE 0 END) AS NonAppUsers
+        FROM 
+            tblUserLogs
+        WHERE 
+            UserTypeId = 1
+            AND Institute_id = @InstituteId;";
+
+                // Execute the query and get the result
+                var result = await _connection.QueryFirstOrDefaultAsync<AppUserNonAppUserResponse>(sql, new { InstituteId = instituteId });
+
+                // If no data is found, initialize with zero values
+                if (result == null)
+                {
+                    result = new AppUserNonAppUserResponse { AppUsers = 0, NonAppUsers = 0 };
+                }
+
+                // Return the response with success
+                return new ServiceResponse<AppUserNonAppUserResponse>(true, "Data fetched successfully", result, 200);
+            }
+            catch (Exception ex)
+            {
+                // Return an error response in case of exceptions
+                return new ServiceResponse<AppUserNonAppUserResponse>(false, $"Error fetching data: {ex.Message}", null, 500);
             }
         }
     }
