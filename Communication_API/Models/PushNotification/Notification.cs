@@ -2,14 +2,20 @@
 {
     public class Notification
     {
-        public int PushNotificationID { get; set; }
-        public int PredefinedTemplateID { get; set; }
-        public string? NotificationMessage { get; set; }
-        public int UserTypeID { get; set; }
-        public int GroupID { get; set; }
+        // For students
+        public int? StudentID { get; set; }
+        public string StudentName { get; set; }
+        public string ClassSection { get; set; }
+
+        // For employees
+        public int? EmployeeID { get; set; }
+        public string EmployeeName { get; set; }
+        public string DepartmentDesignation { get; set; }
+
+        // Common fields
+        public DateTime DateTime { get; set; }
+        public string Message { get; set; }
         public bool Status { get; set; }
-        public bool ScheduleNow { get; set; }
-        public DateTime ScheduleDate { get; set; }
-        public DateTime ScheduleTime { get; set; }
     }
+
 }

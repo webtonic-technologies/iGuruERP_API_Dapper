@@ -1,4 +1,5 @@
 ﻿using Communication_API.DTOs.Requests.Email;
+using Communication_API.DTOs.Responses.Email;
 using Communication_API.DTOs.ServiceResponse;
 using Communication_API.Models.Email;
 using Communication_API.Repository.Interfaces.Email;
@@ -36,40 +37,128 @@ namespace Communication_API.Repository.Implementations.Email
 
         public async Task<ServiceResponse<string>> SendNewEmail(SendNewEmailRequest request)
         {
-            var query = "INSERT INTO [tblEmailMaster] (EmailSubject, EmailBody, UserTypeID, GroupID, Status, ScheduleNow, ScheduleDate, ScheduleTime) VALUES (@EmailSubject, @EmailBody, @UserTypeID, @GroupID, @Status, @ScheduleNow, @ScheduleDate, @ScheduleTime)";
-
-            var parameters = new
+            // Validate that userTypeID and the IDs provided match
+            if (request.UserTypeID == 1 && (request.StudentIDs == null || request.StudentIDs.Count == 0))
             {
-                request.EmailSubject,
-                request.EmailBody,
-                request.UserTypeID,
-                request.GroupID,
-                Status = request.ScheduleNow,
-                request.ScheduleNow,
-                request.ScheduleDate,
-                request.ScheduleTime
-            };
+                return new ServiceResponse<string>(false, "StudentIDs are required when userTypeID is 1", null, 400);
+            }
+            if (request.UserTypeID == 2 && (request.EmployeeIDs == null || request.EmployeeIDs.Count == 0))
+            {
+                return new ServiceResponse<string>(false, "EmployeeIDs are required when userTypeID is 2", null, 400);
+            }
 
-            var result = await _connection.ExecuteAsync(query, parameters);
-            return new ServiceResponse<string>(true, "Operation Successful", result > 0 ? "Success" : "Failure", result > 0 ? 201 : 400);
+            // Further validate that userTypeID is not mismatched
+            if (request.UserTypeID == 1 && request.EmployeeIDs != null)
+            {
+                return new ServiceResponse<string>(false, "userTypeID 1 cannot be used with EmployeeIDs", null, 400);
+            }
+            if (request.UserTypeID == 2 && request.StudentIDs != null)
+            {
+                return new ServiceResponse<string>(false, "userTypeID 2 cannot be used with StudentIDs", null, 400);
+            }
+
+            // Insert or update the Email
+            var query = @"INSERT INTO [tblEmailMaster] (EmailSubject, EmailBody, UserTypeID, GroupID, Status, ScheduleNow, ScheduleDate, ScheduleTime) 
+                  VALUES (@EmailSubject, @EmailBody, @UserTypeID, @GroupID, @Status, @ScheduleNow, @ScheduleDate, @ScheduleTime);
+                  SELECT CAST(SCOPE_IDENTITY() as int);";
+
+            // Execute the query and get the EmailSendID
+            var emailSendID = await _connection.ExecuteScalarAsync<int>(query, request);
+
+            // Proceed with student or employee mappings
+            if (emailSendID > 0)
+            {
+                // Handle student mapping
+                if (request.UserTypeID == 1)
+                {
+                    // Insert into tblEmailStudentMapping
+                    string insertStudentMappingSql = "INSERT INTO tblEmailStudentMapping (EmailSendID, StudentID) VALUES (@EmailSendID, @StudentID)";
+                    foreach (var studentID in request.StudentIDs)
+                    {
+                        await _connection.ExecuteAsync(insertStudentMappingSql, new { EmailSendID = emailSendID, StudentID = studentID });
+                    }
+                }
+                // Handle employee mapping
+                else if (request.UserTypeID == 2)
+                {
+                    // Insert into tblEmailEmployeeMapping
+                    string insertEmployeeMappingSql = "INSERT INTO tblEmailEmployeeMapping (EmailSendID, EmployeeID) VALUES (@EmailSendID, @EmployeeID)";
+                    foreach (var employeeID in request.EmployeeIDs)
+                    {
+                        await _connection.ExecuteAsync(insertEmployeeMappingSql, new { EmailSendID = emailSendID, EmployeeID = employeeID });
+                    }
+                }
+
+                return new ServiceResponse<string>(true, "Email added successfully", "Email added/updated successfully", 201);
+            }
+            else
+            {
+                return new ServiceResponse<string>(false, "Operation Failed", "Error adding/updating email", 400);
+            }
         }
 
-        public async Task<ServiceResponse<List<EmailReport>>> GetEmailReports(GetEmailReportsRequest request)
+        public async Task<ServiceResponse<List<EmailReportResponse>>> GetEmailReports(GetEmailReportsRequest request)
         {
-            var countSql = "SELECT COUNT(*) FROM [tblEmailMaster]";
-            var totalCount = await _connection.ExecuteScalarAsync<int>(countSql);
+            string sql = string.Empty;
 
-            var sql = @"SELECT * FROM [tblEmailMaster]
-                        ORDER BY EmailSendID OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
-
-            var parameters = new
+            // Query for students
+            if (request.UserTypeID == 1)
             {
-                Offset = (request.PageNumber - 1) * request.PageSize,
-                PageSize = request.PageSize
-            };
+                sql = @"
+        SELECT 
+            s.student_id AS StudentID,
+            s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name AS StudentName,
+            CONCAT(c.class_name, '-', sec.section_name) AS ClassSection,
+            em.ScheduleDate AS [DateTime],
+            em.EmailSubject,
+            em.Status
+        FROM tblEmailMaster em
+        INNER JOIN tblEmailStudentMapping esm ON em.EmailSendID = esm.EmailSendID
+        INNER JOIN tbl_StudentMaster s ON esm.StudentID = s.student_id
+        INNER JOIN tblGroupClassSectionMapping gcsm ON gcsm.GroupID = em.GroupID
+        INNER JOIN tbl_Class c ON gcsm.ClassID = c.class_id
+        INNER JOIN tbl_Section sec ON gcsm.SectionID = sec.section_id
+        WHERE em.ScheduleDate BETWEEN @StartDate AND @EndDate
+        ORDER BY em.ScheduleDate
+        OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+            }
+            // Query for employees
+            else if (request.UserTypeID == 2)
+            {
+                sql = @"
+        SELECT 
+            e.Employee_id AS EmployeeID,
+            e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name AS EmployeeName,
+            CONCAT(d.DepartmentName, '-', des.DesignationName) AS DepartmentDesignation,
+            em.ScheduleDate AS [DateTime],
+            em.EmailSubject,
+            em.Status
+        FROM tblEmailMaster em
+        INNER JOIN tblEmailEmployeeMapping eem ON em.EmailSendID = eem.EmailSendID
+        INNER JOIN tbl_EmployeeMaster e ON eem.EmployeeID = e.Employee_id
+        INNER JOIN tbl_Department d ON e.Department_id = d.Department_id
+        INNER JOIN tbl_Designation des ON e.Designation_id = des.Designation_id
+        WHERE em.ScheduleDate BETWEEN @StartDate AND @EndDate
+        ORDER BY em.ScheduleDate
+        OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+            }
 
-            var reports = await _connection.QueryAsync<EmailReport>(sql, parameters);
-            return new ServiceResponse<List<EmailReport>>(true, "Records Found", reports.ToList(), 302, totalCount);
+            // Calculate the offset for pagination
+            int offset = (request.PageNumber - 1) * request.PageSize;
+
+            // Execute the query and map results to EmailReportResponse class
+            var result = await _connection.QueryAsync<EmailReportResponse>(sql, new { request.StartDate, request.EndDate, Offset = offset, PageSize = request.PageSize });
+
+            // Return the response
+            if (result != null && result.Any())
+            {
+                return new ServiceResponse<List<EmailReportResponse>>(true, "Email Reports Found", result.ToList(), 200);
+            }
+            else
+            {
+                return new ServiceResponse<List<EmailReportResponse>>(false, "No records found", null, 404);
+            }
         }
+
     }
 }

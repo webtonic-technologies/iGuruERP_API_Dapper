@@ -1,4 +1,5 @@
 ﻿using Communication_API.DTOs.Requests.WhatsApp;
+using Communication_API.DTOs.Responses.WhatsApp;
 using Communication_API.DTOs.ServiceResponse;
 using Communication_API.Models.WhatsApp;
 using Communication_API.Repository.Interfaces.WhatsApp;
@@ -77,39 +78,111 @@ namespace Communication_API.Repository.Implementations.WhatsApp
 
         public async Task<ServiceResponse<string>> Send(SendWhatsAppRequest request)
         {
-            var query = "INSERT INTO [tblWhatsAppMessage] (PredefinedTemplateID, WhatsAppMessage, UserTypeID, GroupID, ScheduleNow, ScheduleDate, ScheduleTime) VALUES (@PredefinedTemplateID, @WhatsAppMessage, @UserTypeID, @GroupID, @ScheduleNow, @ScheduleDate, @ScheduleTime)";
+            // Step 1: Insert the WhatsApp message into tblWhatsAppMessage
+            string sql = @"
+                INSERT INTO [tblWhatsAppMessage] 
+                (PredefinedTemplateID, WhatsAppMessage, UserTypeID, GroupID, ScheduleNow, ScheduleDate, ScheduleTime) 
+                VALUES (@PredefinedTemplateID, @WhatsAppMessage, @UserTypeID, @GroupID, @ScheduleNow, @ScheduleDate, @ScheduleTime);
+                SELECT CAST(SCOPE_IDENTITY() as int);"; // Get the newly inserted ID
 
-            var parameters = new
+            // Execute the query and get the WhatsAppMessageID
+            var whatsAppMessageID = await _connection.ExecuteScalarAsync<int>(sql, request);
+
+            // Step 2: Proceed with student or employee mappings
+            if (whatsAppMessageID > 0)
             {
-                request.PredefinedTemplateID,
-                request.WhatsAppMessage,
-                request.UserTypeID,
-                request.GroupID,
-                request.ScheduleNow,
-                request.ScheduleDate,
-                request.ScheduleTime
-            };
+                // Handle student mapping
+                if (request.UserTypeID == 1 && request.StudentIDs != null && request.StudentIDs.Count > 0)
+                {
+                    // Insert into tblWhatsAppStudentMapping
+                    string insertStudentMappingSql = "INSERT INTO tblWhatsAppStudentMapping (WhatsAppMessageID, StudentID) VALUES (@WhatsAppMessageID, @StudentID)";
+                    foreach (var studentID in request.StudentIDs)
+                    {
+                        await _connection.ExecuteAsync(insertStudentMappingSql, new { WhatsAppMessageID = whatsAppMessageID, StudentID = studentID });
+                    }
+                }
+                // Handle employee mapping
+                else if (request.UserTypeID == 2 && request.EmployeeIDs != null && request.EmployeeIDs.Count > 0)
+                {
+                    // Insert into tblWhatsAppEmployeeMapping
+                    string insertEmployeeMappingSql = "INSERT INTO tblWhatsAppEmployeeMapping (WhatsAppMessageID, EmployeeID) VALUES (@WhatsAppMessageID, @EmployeeID)";
+                    foreach (var employeeID in request.EmployeeIDs)
+                    {
+                        await _connection.ExecuteAsync(insertEmployeeMappingSql, new { WhatsAppMessageID = whatsAppMessageID, EmployeeID = employeeID });
+                    }
+                }
 
-            var result = await _connection.ExecuteAsync(query, parameters);
-            return new ServiceResponse<string>(true, "Operation Successful", result > 0 ? "Success" : "Failure", result > 0 ? 201 : 400);
+                return new ServiceResponse<string>(true, "WhatsApp message sent successfully", "WhatsApp message added/updated successfully", 201);
+            }
+            else
+            {
+                return new ServiceResponse<string>(false, "Operation Failed", "Error adding/updating WhatsApp message", 400);
+            }
         }
 
-        public async Task<ServiceResponse<List<WhatsAppReport>>> GetWhatsAppReport(GetWhatsAppReportRequest request)
+
+        public async Task<ServiceResponse<List<WhatsAppReportResponse>>> GetWhatsAppReport(GetWhatsAppReportRequest request)
         {
-            var countSql = "SELECT COUNT(*) FROM [tblWhatsAppMessage]";
-            var totalCount = await _connection.ExecuteScalarAsync<int>(countSql);
+            string sql = string.Empty;
 
-            var sql = @"SELECT * FROM [tblWhatsAppMessage]
-                        ORDER BY WhatsAppMessageID OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
-
-            var parameters = new
+            // Query for students
+            if (request.UserTypeID == 1)
             {
-                Offset = (request.PageNumber - 1) * request.PageSize,
-                PageSize = request.PageSize
-            };
+                sql = @"
+        SELECT 
+            s.student_id AS StudentID,
+            s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name AS StudentName,
+            CONCAT(c.class_name, '-', sec.section_name) AS ClassSection,
+            wm.ScheduleDate AS DateTime,
+            wm.WhatsAppMessage,
+            wm.Status
+        FROM tblWhatsAppMessage wm
+        INNER JOIN tblWhatsAppStudentMapping wsm ON wm.WhatsAppMessageID = wsm.WhatsAppMessageID
+        INNER JOIN tbl_StudentMaster s ON wsm.StudentID = s.student_id
+        INNER JOIN tblGroupClassSectionMapping gcsm ON gcsm.GroupID = wm.GroupID
+        INNER JOIN tbl_Class c ON gcsm.ClassID = c.class_id
+        INNER JOIN tbl_Section sec ON gcsm.SectionID = sec.section_id
+        WHERE wm.ScheduleDate BETWEEN @StartDate AND @EndDate
+        ORDER BY wm.ScheduleDate
+        OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+            }
+            // Query for employees
+            else if (request.UserTypeID == 2)
+            {
+                sql = @"
+        SELECT 
+            e.Employee_id AS EmployeeID,
+            e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name AS EmployeeName,
+            CONCAT(d.DepartmentName, '-', des.DesignationName) AS DepartmentDesignation,
+            wm.ScheduleDate AS DateTime,
+            wm.WhatsAppMessage,
+            wm.Status
+        FROM tblWhatsAppMessage wm
+        INNER JOIN tblWhatsAppEmployeeMapping wem ON wm.WhatsAppMessageID = wem.WhatsAppMessageID
+        INNER JOIN tbl_EmployeeMaster e ON wem.EmployeeID = e.Employee_id
+        INNER JOIN tbl_Department d ON e.Department_id = d.Department_id
+        INNER JOIN tbl_Designation des ON e.Designation_id = des.Designation_id
+        WHERE wm.ScheduleDate BETWEEN @StartDate AND @EndDate
+        ORDER BY wm.ScheduleDate
+        OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+            }
 
-            var reports = await _connection.QueryAsync<WhatsAppReport>(sql, parameters);
-            return new ServiceResponse<List<WhatsAppReport>>(true, "Records Found", reports.ToList(), 302, totalCount);
+            // Calculate the offset for pagination
+            int offset = (request.PageNumber - 1) * request.PageSize;
+
+            // Execute the query and map results to WhatsAppReportResponse class
+            var result = await _connection.QueryAsync<WhatsAppReportResponse>(sql, new { request.StartDate, request.EndDate, Offset = offset, PageSize = request.PageSize });
+
+            // Return the response
+            if (result != null && result.Any())
+            {
+                return new ServiceResponse<List<WhatsAppReportResponse>>(true, "WhatsApp Reports Found", result.ToList(), 200);
+            }
+            else
+            {
+                return new ServiceResponse<List<WhatsAppReportResponse>>(false, "No records found", null, 404);
+            }
         }
+
     }
 }

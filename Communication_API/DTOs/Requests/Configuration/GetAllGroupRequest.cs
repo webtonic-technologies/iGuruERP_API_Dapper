@@ -2,7 +2,9 @@
 {
     public class GetAllGroupRequest
     {
-        public int PageNumber { get; set; }
-        public int PageSize { get; set; }
+        public int AcademicYearID { get; set; }
+        public int InstituteID { get; set; }
+        public int PageNumber { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
     }
 }

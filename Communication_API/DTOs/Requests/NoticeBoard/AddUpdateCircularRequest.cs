@@ -14,5 +14,11 @@
         public bool ScheduleNow { get; set; }
         public DateTime ScheduleDate { get; set; }
         public DateTime ScheduleTime { get; set; }
+        public int InstituteID { get; set; } // New field for InstituteID
+
+        // Mappings
+        public List<StudentMapping>? StudentMappings { get; set; }
+        public List<EmployeeMapping>? EmployeeMappings { get; set; }
     }
+
 }

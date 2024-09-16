@@ -1,4 +1,5 @@
 ﻿using Communication_API.DTOs.Requests.DigitalDiary;
+using Communication_API.DTOs.Responses.DigitalDiary;
 using Communication_API.DTOs.ServiceResponse;
 using Communication_API.Models.DigitalDiary;
 using Communication_API.Repository.Interfaces.DigitalDiary;
@@ -20,7 +21,7 @@ namespace Communication_API.Services.Implementations.DigitalDiary
             return await _digitalDiaryRepository.AddUpdateDiary(request);
         }
 
-        public async Task<ServiceResponse<List<Communication_API.Models.DigitalDiary.DigitalDiary>>> GetAllDiary(GetAllDiaryRequest request)
+        public async Task<ServiceResponse<List<DiaryResponse>>> GetAllDiary(GetAllDiaryRequest request)
         {
             return await _digitalDiaryRepository.GetAllDiary(request);
         }

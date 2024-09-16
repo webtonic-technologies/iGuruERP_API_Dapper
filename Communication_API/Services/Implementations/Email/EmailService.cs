@@ -1,4 +1,5 @@
 ﻿using Communication_API.DTOs.Requests.Email;
+using Communication_API.DTOs.Responses.Email;
 using Communication_API.DTOs.ServiceResponse;
 using Communication_API.Models.Email;
 using Communication_API.Repository.Interfaces.Email;
@@ -25,9 +26,10 @@ namespace Communication_API.Services.Implementations.Email
             return await _emailRepository.SendNewEmail(request);
         }
 
-        public async Task<ServiceResponse<List<EmailReport>>> GetEmailReports(GetEmailReportsRequest request)
+        public async Task<ServiceResponse<List<EmailReportResponse>>> GetEmailReports(GetEmailReportsRequest request)
         {
             return await _emailRepository.GetEmailReports(request);
         }
+
     }
 }

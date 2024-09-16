@@ -1,4 +1,6 @@
-﻿using Communication_API.DTOs.Requests.Configuration;
+﻿using Communication_API.DTOs.Requests;
+using Communication_API.DTOs.Requests.Configuration;
+using Communication_API.DTOs.Responses.Configuration;
 using Communication_API.DTOs.ServiceResponse;
 using Communication_API.Models.Configuration;
 using Communication_API.Repository.Interfaces.Configuration;
@@ -20,7 +22,7 @@ namespace Communication_API.Services.Implementations.Configuration
             return await _groupRepository.AddUpdateGroup(request);
         }
 
-        public async Task<ServiceResponse<List<Group>>> GetAllGroup(GetAllGroupRequest request)
+        public async Task<ServiceResponse<List<GetAllGroupResponse>>> GetAllGroup(GetAllGroupRequest request)
         {
             return await _groupRepository.GetAllGroup(request);
         }
@@ -34,5 +36,18 @@ namespace Communication_API.Services.Implementations.Configuration
         {
             return await _groupRepository.DeleteGroup(GroupID);
         }
+
+        public async Task<ServiceResponse<List<GetGroupUserTypeResponse>>> GetGroupUserTypes()
+        {
+            return await _groupRepository.GetGroupUserTypes();
+        }
+
+        public async Task<ServiceResponse<GetGroupMembersResponse>> GetGroupMembers(GetGroupMembersRequest request)
+        {
+            return await _groupRepository.GetGroupMembers(request);
+        }
+
+
+
     }
 }
