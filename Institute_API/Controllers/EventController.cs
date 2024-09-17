@@ -128,5 +128,44 @@ namespace Institute_API.Controllers
                 return this.BadRequest(e.Message);
             }
         }
+
+        [HttpPost("ExportApprovedEventsToExcel")]
+        public async Task<IActionResult> ExportApprovedEventsToExcel(CommonExportRequest commonRequest)
+        {
+            var response = await _eventService.ExportApprovedEventsToExcel(commonRequest);
+
+            if (response.Success)
+            {
+                var filePath = response.Data;
+                var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+
+                // Return the Excel file for download
+                return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", Path.GetFileName(filePath));
+            }
+            else
+            {
+                return BadRequest(response.Message);
+            }
+        }
+
+        [HttpPost("ExportAllEventsToExcel")]
+        public async Task<IActionResult> ExportAllEventsToExcel(CommonExportRequest commonRequest)
+        {
+
+            var response = await _eventService.ExportAllEventsToExcel(commonRequest);
+
+            if (response.Success)
+            {
+                var filePath = response.Data;
+                var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+
+                // Return the Excel file for download
+                return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", Path.GetFileName(filePath));
+            }
+            else
+            {
+                return BadRequest(response.Message);
+            }
+        }
     }
 }

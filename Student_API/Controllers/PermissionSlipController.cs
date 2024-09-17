@@ -80,9 +80,9 @@ namespace Student_API.Controllers
         }
 
         [HttpPost("ExportPermissionSlipsToExcel")]
-        public async Task<IActionResult> ExportPermissionSlipsToExcel(GetAllPermissionSlips obj)
+        public async Task<IActionResult> ExportPermissionSlipsToExcel(GetAllPermissionSlip obj)
         {
-            var response = await _permissionSlipService.ExportPermissionSlipsToExcel(obj.Institute_id, obj.classId, obj.sectionId, obj.pageNumber, obj.pageSize);
+            var response = await _permissionSlipService.ExportPermissionSlipsToExcel(obj.Institute_id, obj.classId, obj.sectionId);
 
             if (response.Success)
             {
@@ -99,9 +99,9 @@ namespace Student_API.Controllers
         }
 
         [HttpPost("ExportStudentApprovedToExcel")]
-        public async Task<IActionResult> ExportStudentApprovedToExcel(GetAllPermissionSlipsByStatus obj)
+        public async Task<IActionResult> ExportStudentApprovedToExcel(GetAllPermissionSlipsByStatusExport obj)
         {
-            var response = await _permissionSlipService.ExportPermissionSlipsToExcel(obj.Institute_id, obj.classId, obj.sectionId, obj.startDate, obj.endDate, true, obj.pageNumber, obj.pageSize);
+            var response = await _permissionSlipService.ExportPermissionSlipsToExcel(obj.Institute_id, obj.classId, obj.sectionId, obj.startDate, obj.endDate, true);
             if (response.Success)
             {
                 var filePath = response.Data;
@@ -116,9 +116,9 @@ namespace Student_API.Controllers
             }
         }
         [HttpPost("ExportStudentRejectedToExcel")]
-        public async Task<IActionResult> ExportStudentRejectedToExcel(GetAllPermissionSlipsByStatus obj)
+        public async Task<IActionResult> ExportStudentRejectedToExcel(GetAllPermissionSlipsByStatusExport obj)
         {
-            var response = await _permissionSlipService.ExportPermissionSlipsToExcel(obj.Institute_id, obj.classId, obj.sectionId, obj.startDate, obj.endDate, false, obj.pageNumber, obj.pageSize);
+            var response = await _permissionSlipService.ExportPermissionSlipsToExcel(obj.Institute_id, obj.classId, obj.sectionId, obj.startDate, obj.endDate, false);
             if (response.Success)
             {
                 var filePath = response.Data;

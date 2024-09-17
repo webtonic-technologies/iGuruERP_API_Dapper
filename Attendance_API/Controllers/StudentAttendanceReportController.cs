@@ -28,5 +28,44 @@ namespace Attendance_API.Controllers
             var data = await _studentAttendanceReportService.GetStudentSubjectwiseReport(request);
             return Ok(data);
         }
+
+        [HttpPost("ExportStudentAttendanceDatewiseReportToExcel")]
+        public async Task<IActionResult> ExportStudentAttendanceDatewiseReportToExcel(StudentAttendanceDatewiseReportRequestDTO request)
+        {
+            var response = await _studentAttendanceReportService.ExportStudentAttendanceDatewiseReportToExcel(request);
+
+            if (response.Success)
+            {
+                var filePath = response.Data;
+                var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+
+                // Return the Excel file for download
+                return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", Path.GetFileName(filePath));
+            }
+            else
+            {
+                return BadRequest(response.Message);
+            }
+        }
+
+        [HttpPost("ExportStudentSubjectwiseReportToExcel")]
+        public async Task<IActionResult> ExportStudentSubjectwiseReportToExcel(SubjectwiseAttendanceReportRequestExport request)
+        {
+
+            var response = await _studentAttendanceReportService.ExportStudentSubjectwiseReportToExcel(request);
+
+            if (response.Success)
+            {
+                var filePath = response.Data;
+                var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+
+                // Return the Excel file for download
+                return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", Path.GetFileName(filePath));
+            }
+            else
+            {
+                return BadRequest(response.Message);
+            }
+        }
     }
 }

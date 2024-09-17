@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Student_API.DTOs;
 using Student_API.DTOs.RequestDTO;
+using Student_API.Services.Implementations;
 using Student_API.Services.Interfaces;
 
 namespace Student_API.Controllers
@@ -288,7 +289,7 @@ namespace Student_API.Controllers
         }
 
         [HttpPost("DownloadStudentDetails")]
-        public async Task<IActionResult> DownloadStudentDetails(GetStudentRequestModel obj)
+        public async Task<IActionResult> DownloadStudentDetails(getStudentRequest obj)
         {
             var response = await _studentInformationService.GetAllStudentDetailsAsExcel(obj);
 
