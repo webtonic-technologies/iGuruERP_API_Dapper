@@ -76,12 +76,12 @@ namespace Student_API.Services.Implementations
             return data;
         }
 
-        public async Task<ServiceResponse<string>> ExportPermissionSlipsToExcel(int instituteId, int classId, int sectionId, int? pageNumber = null, int? pageSize = null)
+        public async Task<ServiceResponse<string>> ExportPermissionSlipsToExcel(int instituteId, int classId, int sectionId)
         {
             try
             {
                 // Fetch permission slips from the repository
-                var permissionSlipsResponse = await GetAllPermissionSlips(instituteId, classId, sectionId, pageNumber, pageSize);
+                var permissionSlipsResponse = await GetAllPermissionSlips(instituteId, classId, sectionId, 1, int.MaxValue);
 
                 // Check if permission slips were retrieved successfully
                 if (!permissionSlipsResponse.Success || permissionSlipsResponse.Data == null || !permissionSlipsResponse.Data.Any())
@@ -157,12 +157,12 @@ namespace Student_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<string>> ExportPermissionSlipsToExcel(int instituteId, int classId, int sectionId, string startDate, string endDate, bool isApproved, int? pageNumber = null, int? pageSize = null)
+        public async Task<ServiceResponse<string>> ExportPermissionSlipsToExcel(int instituteId, int classId, int sectionId, string startDate, string endDate, bool isApproved)
         {
             try
             {
                 // Fetch the filtered permission slips from the repository
-                var permissionSlipsResponse = await GetPermissionSlips(instituteId, classId, sectionId, startDate, endDate, isApproved, pageNumber, pageSize);
+                var permissionSlipsResponse = await GetPermissionSlips(instituteId, classId, sectionId, startDate, endDate, isApproved, 1, int.MaxValue);
 
                 // Check if permission slips were retrieved successfully
                 if (!permissionSlipsResponse.Success || permissionSlipsResponse.Data == null || !permissionSlipsResponse.Data.Any())

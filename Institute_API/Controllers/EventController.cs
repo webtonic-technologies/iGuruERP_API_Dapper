@@ -130,7 +130,7 @@ namespace Institute_API.Controllers
         }
 
         [HttpPost("ExportApprovedEventsToExcel")]
-        public async Task<IActionResult> ExportApprovedEventsToExcel(CommonRequestDTO commonRequest)
+        public async Task<IActionResult> ExportApprovedEventsToExcel(CommonExportRequest commonRequest)
         {
             var response = await _eventService.ExportApprovedEventsToExcel(commonRequest);
 
@@ -149,7 +149,7 @@ namespace Institute_API.Controllers
         }
 
         [HttpPost("ExportAllEventsToExcel")]
-        public async Task<IActionResult> ExportAllEventsToExcel(CommonRequestDTO commonRequest)
+        public async Task<IActionResult> ExportAllEventsToExcel(CommonExportRequest commonRequest)
         {
 
             var response = await _eventService.ExportAllEventsToExcel(commonRequest);

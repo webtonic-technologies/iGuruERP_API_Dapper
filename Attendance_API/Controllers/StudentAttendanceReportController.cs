@@ -49,7 +49,7 @@ namespace Attendance_API.Controllers
         }
 
         [HttpPost("ExportStudentSubjectwiseReportToExcel")]
-        public async Task<IActionResult> ExportStudentSubjectwiseReportToExcel(SubjectwiseAttendanceReportRequest request)
+        public async Task<IActionResult> ExportStudentSubjectwiseReportToExcel(SubjectwiseAttendanceReportRequestExport request)
         {
 
             var response = await _studentAttendanceReportService.ExportStudentSubjectwiseReportToExcel(request);

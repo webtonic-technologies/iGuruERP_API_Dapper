@@ -366,12 +366,22 @@ namespace Student_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<string>> GetAllStudentDetailsAsExcel(GetStudentRequestModel obj)
+        public async Task<ServiceResponse<string>> GetAllStudentDetailsAsExcel(getStudentRequest obj)
         {
             try
             {
+                GetStudentRequestModel model = new GetStudentRequestModel();    
+                model.Academic_year_id = obj.Academic_year_id;
+                model.section_id = obj.section_id;  
+                model.class_id = obj.class_id;
+                model.Institute_id = obj.Institute_id;
+                model.isActive = obj.isActive;
+                model.pageSize = int.MaxValue;
+                model.pageNumber = 1;
+                model.sortField = null;
+                model.sortDirection = null; 
                 // Call the existing method to get the data
-                var studentDetailsResponse = await _studentInformationRepository.GetAllStudentDetails(obj);
+                var studentDetailsResponse = await _studentInformationRepository.GetAllStudentDetails(model);
 
                 if ( studentDetailsResponse.Data.Any())
                 {
