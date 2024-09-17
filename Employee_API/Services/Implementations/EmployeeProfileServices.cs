@@ -87,6 +87,11 @@ namespace Employee_API.Services.Implementations
             }
         }
 
+        public async Task<ServiceResponse<byte[]>> ExcelDownload(ExcelDownloadRequest request)
+        {
+            return await _employeeProfileRepository.ExcelDownload(request);
+        }
+
         public async Task<ServiceResponse<List<BloodGroup>>> GetBloodGroupList()
         {
             try

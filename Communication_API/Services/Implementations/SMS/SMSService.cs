@@ -1,4 +1,5 @@
 ﻿using Communication_API.DTOs.Requests.SMS;
+using Communication_API.DTOs.Responses.SMS;
 using Communication_API.DTOs.ServiceResponse;
 using Communication_API.Models.SMS;
 using Communication_API.Repository.Interfaces.SMS;
@@ -40,7 +41,7 @@ namespace Communication_API.Services.Implementations.SMS
             return await _smsRepository.SendNewSMS(request);
         }
 
-        public async Task<ServiceResponse<List<SMSReport>>> GetSMSReport(GetSMSReportRequest request)
+        public async Task<ServiceResponse<List<NotificationReport>>> GetSMSReport(GetSMSReportRequest request)
         {
             return await _smsRepository.GetSMSReport(request);
         }

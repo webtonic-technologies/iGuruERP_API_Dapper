@@ -9,16 +9,20 @@ using Student_API.DTOs.RequestDTO;
 using Student_API.Models;
 using Student_API.Helper;
 using Microsoft.AspNetCore.Http;
+using System.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
 
 namespace Student_API.Repository.Implementations
 {
     public class StudentInformationRepository : IStudentInformationRepository
     {
         private readonly IDbConnection _connection;
+        private readonly string _connectionString;
 
-        public StudentInformationRepository(IDbConnection connection)
+        public StudentInformationRepository(IDbConnection connection, IConfiguration configuration)
         {
             _connection = connection;
+            _connectionString = configuration.GetConnectionString("DefaultConnection");
         }
 
         public async Task<ServiceResponse<string>> GetStudentInfoImageById(int studentId)
@@ -115,10 +119,12 @@ namespace Student_API.Repository.Implementations
 
                     SELECT * FROM [dbo].[tbl_StudentHealthInfo] WHERE student_id = @studentId;
 
-                    SELECT Student_Parent_Office_Info_id, Student_id, Parents_Type_id, Office_Building_no, Street, Area, Pincode, tbl_StudentParentsOfficeInfo.City_id, city_name, tbl_StudentParentsOfficeInfo.State_id, state_name 
+                    //SELECT Student_Parent_Office_Info_id, Student_id, Parents_Type_id, Office_Building_no, Street, Area, Pincode, tbl_StudentParentsOfficeInfo.City_id, city_name, tbl_StudentParentsOfficeInfo.State_id, state_name 
+                    //FROM tbl_StudentParentsOfficeInfo
+                    //INNER JOIN tbl_State ON tbl_State.state_id = tbl_StudentParentsOfficeInfo.state_id
+                    //INNER JOIN tbl_City ON tbl_City.city_id = tbl_StudentParentsOfficeInfo.city_id
+  SELECT Student_Parent_Office_Info_id, Student_id, Parents_Type_id, Office_Building_no, Street, Area, Pincode, tbl_StudentParentsOfficeInfo.City, tbl_StudentParentsOfficeInfo.State
                     FROM tbl_StudentParentsOfficeInfo
-                    INNER JOIN tbl_State ON tbl_State.state_id = tbl_StudentParentsOfficeInfo.state_id
-                    INNER JOIN tbl_City ON tbl_City.city_id = tbl_StudentParentsOfficeInfo.city_id 
                     WHERE tbl_StudentParentsOfficeInfo.student_id = @studentId;
 
                     SELECT * FROM [dbo].[tbl_StudentDocuments] WHERE student_id = @studentId AND isDelete = 0;";
@@ -195,7 +201,7 @@ namespace Student_API.Repository.Implementations
                         SELECT CAST(SCOPE_IDENTITY() as int);";
 
                             studentId = await _connection.ExecuteScalarAsync<int>(insertStudentSql, request, transaction);
-
+                            var userlog = await CreateUserLoginInfo(studentId, 2, request.Institute_id);
                             if (studentId <= 0)
                             {
                                 transaction.Rollback();
@@ -318,8 +324,8 @@ namespace Student_API.Repository.Implementations
 
                                 // Insert Student Parent Office Info
                                 var addOfficeSql = @"
-                    INSERT INTO [dbo].[tbl_StudentParentsOfficeInfo] ([Student_id],[Parents_Type_id],[Office_Building_no],[Street],[Area],[City_id],[State_id],[Pincode])
-                    VALUES (@Student_id,@Parents_Type_id,@Office_Building_no,@Street,@Area,@City_id,@State_id,@Pincode);";
+                    INSERT INTO [dbo].[tbl_StudentParentsOfficeInfo] ([Student_id],[Parents_Type_id],[Office_Building_no],[Street],[Area],[City],[State],[Pincode])
+                    VALUES (@Student_id,@Parents_Type_id,@Office_Building_no,@Street,@Area,@City,@State,@Pincode);";
                                 await _connection.ExecuteAsync(addOfficeSql, parentInfo.studentParentOfficeInfo, transaction);
 
                                 if (insertedId <= 0)
@@ -365,8 +371,8 @@ namespace Student_API.Repository.Implementations
                         [Office_Building_no] = @Office_Building_no,
                         [Street] = @Street,
                         [Area] = @Area,
-                        [City_id] = @City_id,
-                        [State_id] = @State_id,
+                        [City] = @City,
+                        [State] = @State,
                         [Pincode] = @Pincode
                     WHERE [Student_Parent_Office_Info_id] = @Student_Parent_Office_Info_id;";
                                 int affectedRowsOffice = await _connection.ExecuteAsync(updateOfficeSql, parentInfo.studentParentOfficeInfo, transaction);
@@ -1624,6 +1630,114 @@ FROM
                 return new ServiceResponse<List<StudentInformationDTO>>(false, "Some error occured", null, 500);
 
             }
+        }
+        private async Task<bool> CreateUserLoginInfo(int userId, int userType, int instituteId)
+        {
+            try
+            {
+                var connection = new SqlConnection(_connectionString);
+                connection.Open();
+                // Define common password
+                string commonPassword = "iGuru@1234";
+
+                // SQL queries for fetching user details based on UserType
+                string employeeSql = @"
+        SELECT TOP (1) [Employee_id], [First_Name], [Last_Name], [mobile_number]
+        FROM [tbl_EmployeeProfileMaster]
+        WHERE [Employee_id] = @UserId";
+
+                string studentSql = @"
+        SELECT TOP (1) [student_id], [First_Name], [Last_Name], [Admission_Number]
+        FROM [tbl_StudentMaster]
+        WHERE [student_id] = @UserId";
+
+                // Initialize variables
+                string username = null;
+                dynamic userDetails = null;
+
+                // Fetch user details based on the UserType
+                if (userType == 1) // Employee
+                {
+                    userDetails = await _connection.QueryFirstOrDefaultAsync<dynamic>(employeeSql, new { UserId = userId });
+                    if (userDetails != null)
+                    {
+                        // Construct username for employee
+                        string firstName = userDetails.First_Name;
+                        string lastName = userDetails.Last_Name;
+                        string phoneNumber = userDetails.mobile_number;
+
+                        username = $"{firstName.Substring(0, 3)}{lastName.Substring(0, 3)}{phoneNumber.Substring(phoneNumber.Length - 4)}";
+                    }
+                }
+                else if (userType == 2) // Student
+                {
+                    userDetails = await _connection.QueryFirstOrDefaultAsync<dynamic>(studentSql, new { UserId = userId });
+                    if (userDetails != null)
+                    {
+                        // Construct username for student
+                        string firstName = userDetails.First_Name;
+                        string lastName = userDetails.Last_Name;
+                        string admissionNumber = userDetails.Admission_Number;
+
+                        username = $"{firstName.Substring(0, 3)}{lastName.Substring(0, 3)}{admissionNumber.Substring(admissionNumber.Length - 4)}";
+                    }
+                }
+
+                if (username != null)
+                {
+                    // Ensure the username is unique
+                    username = await EnsureUniqueUsername(username);
+
+                    // SQL query to insert login information
+                    string insertLoginSql = @"
+            INSERT INTO [tblLoginInformationMaster] 
+            ([UserId], [UserType], [UserName], [Password], [InstituteId], [UserActivity])
+            VALUES (@UserId, @UserType, @UserName, @Password, @InstituteId, NULL)";
+
+                    // Insert login information into the database
+                    await _connection.ExecuteAsync(insertLoginSql, new
+                    {
+                        UserId = userId,
+                        UserType = userType,
+                        UserName = username,
+                        Password = commonPassword,
+                        InstituteId = instituteId
+                    });
+
+                    return true; // Operation successful
+                }
+
+                return false; // User details not found or unable to create login info
+            }
+            catch (Exception ex)
+            {
+                // Log the exception and return false to indicate failure
+                Console.WriteLine($"Error creating user login info: {ex.Message}");
+                return false;
+            }
+        }
+        private async Task<string> EnsureUniqueUsername(string baseUsername)
+        {
+            var connection = new SqlConnection(_connectionString);
+            connection.Open();
+            // Define the SQL query to check if the username exists
+            string checkUsernameSql = @"
+    SELECT COUNT(1)
+    FROM [tblLoginInformationMaster]
+    WHERE [UserName] = @UserName";
+
+            string uniqueUsername = baseUsername;
+            int suffix = 1;
+
+            // Check if the username already exists
+            while (await _connection.ExecuteScalarAsync<int>(checkUsernameSql, new { UserName = uniqueUsername }) > 0)
+            {
+                // Append a numeric suffix to make the username unique
+                uniqueUsername = $"{baseUsername}{suffix}";
+                suffix++;
+            }
+
+            return uniqueUsername; // Return the unique username
         }
 
     }

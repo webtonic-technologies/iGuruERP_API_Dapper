@@ -144,10 +144,10 @@ namespace Institute_API.Controllers
                 return this.BadRequest(e.Message);
             }
         }
-        [HttpGet("DownloadExcel/{instituteId}")]
-        public async Task<IActionResult> DownloadExcelSheet(int instituteId)
+        [HttpPost("DownloadExcel")]
+        public async Task<IActionResult> DownloadExcelSheet(ExcelDownloadRequest request)
         {
-            var response = await _academicConfigSubjectsServices.DownloadExcelSheet(instituteId);
+            var response = await _academicConfigSubjectsServices.DownloadExcelSheet(request);
             if (response.Success)
             {
                 return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Subjects.xlsx");

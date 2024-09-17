@@ -1,9 +1,12 @@
-﻿using Communication_API.DTOs.Requests.Configuration;
+﻿using Communication_API.DTOs.Requests;
+using Communication_API.DTOs.Requests.Configuration;
+using Communication_API.DTOs.Responses.Configuration;
 using Communication_API.DTOs.ServiceResponse;
 using Communication_API.Models.Configuration;
 using Communication_API.Repository.Interfaces.Configuration;
 using Dapper;
 using System.Data;
+using System.Data.Common;
 using System.Data.SqlClient;
 
 namespace Communication_API.Repository.Implementations.Configuration
@@ -17,41 +20,144 @@ namespace Communication_API.Repository.Implementations.Configuration
             _connection = new SqlConnection(configuration.GetConnectionString("DefaultConnection"));
         }
 
+
+
         public async Task<ServiceResponse<string>> AddUpdateGroup(AddUpdateGroupRequest request)
         {
-            var query = request.GroupID == 0
-                ? "INSERT INTO [tblCommunicationGroup] (GroupName, AcadamicYearID, TypeID) VALUES (@GroupName, @AcadamicYearID, @TypeID)"
-                : "UPDATE [tblCommunicationGroup] SET GroupName = @GroupName, AcadamicYearID = @AcadamicYearID, TypeID = @TypeID WHERE GroupID = @GroupID";
-
-            var parameters = new
+            string sql;
+            if (request.GroupID == 0)
             {
-                request.GroupID,
-                request.GroupName,
-                request.AcadamicYearID,
-                request.TypeID
-            };
+                sql = @"INSERT INTO [tblCommunicationGroup] (GroupName, AcadamicYearID, TypeID, InstituteID, IsActive) 
+                        VALUES (@GroupName, @AcadamicYearID, @TypeID, @InstituteID, 1)
+                        SELECT CAST(SCOPE_IDENTITY() as int);";
 
-            var result = await _connection.ExecuteAsync(query, parameters);
-            return new ServiceResponse<string>(true, "Operation Successful", result > 0 ? "Success" : "Failure", result > 0 ? 201 : 400);
+            }
+            else
+            {
+                var GroupData = await _connection.QueryFirstOrDefaultAsync<dynamic>("Select * from tblCommunicationGroup where GroupID = @GroupID", new { GroupID = request.GroupID });
+
+                if(GroupData == null)
+                {
+                    return new ServiceResponse<string>(false, "Operation Failed", "Record Not Found", 400);
+                }
+
+                sql = @"UPDATE [tblCommunicationGroup] 
+                        SET GroupName = @GroupName, AcadamicYearID = @AcadamicYearID, TypeID = @TypeID, InstituteID = @InstituteID, IsActive = 1
+                        WHERE GroupID = @GroupID";
+            }
+
+            var groupId = await _connection.ExecuteScalarAsync<int>(sql, request);
+            if (groupId > 0 || request.GroupID != 0)
+            {
+                var groupID = request.GroupID == 0 ? groupId : request.GroupID;
+
+                // Process student-related data only if TypeID = 1
+                if (request.TypeID == 1 && request.ClassSectionMappings != null && request.StudentIDs != null)
+                {
+                    foreach (var mapping in request.ClassSectionMappings)
+                    {
+                        string classSectionSql = @"INSERT INTO [tblGroupClassSectionMapping] (GroupID, ClassID, SectionID) 
+                                                   VALUES (@GroupID, @ClassID, @SectionID)";
+                        await _connection.ExecuteAsync(classSectionSql, new
+                        {
+                            GroupID = groupID,
+                            ClassID = mapping.ClassID,
+                            SectionID = mapping.SectionID
+                        });
+                    }
+
+                    foreach (var studentId in request.StudentIDs)
+                    {
+                        string studentCommSql = @"INSERT INTO [StudentCommGroup] (GroupID, StudentID) 
+                                                  VALUES (@GroupID, @StudentID)";
+                        await _connection.ExecuteAsync(studentCommSql, new
+                        {
+                            GroupID = groupID,
+                            StudentID = studentId
+                        });
+                    }
+                }
+
+                // Process employee-related data only if TypeID = 2
+                if (request.TypeID == 2 && request.DepartmentDesignationMappings != null && request.EmployeeIDs != null)
+                {
+                    foreach (var mapping in request.DepartmentDesignationMappings)
+                    {
+                        string employeeMappingSql = @"INSERT INTO [tblGroupEmployeeMapping] (GroupID, DepartmentID, DesignationID) 
+                                                      VALUES (@GroupID, @DepartmentID, @DesignationID)";
+                        await _connection.ExecuteAsync(employeeMappingSql, new
+                        {
+                            GroupID = groupID,
+                            DepartmentID = mapping.DepartmentID,
+                            DesignationID = mapping.DesignationID
+                        });
+                    }
+
+                    foreach (var employeeId in request.EmployeeIDs)
+                    {
+                        string employeeCommSql = @"INSERT INTO [EmployeeCommGroup] (GroupID, EmployeeID) 
+                                                   VALUES (@GroupID, @EmployeeID)";
+                        await _connection.ExecuteAsync(employeeCommSql, new
+                        {
+                            GroupID = groupID,
+                            EmployeeID = employeeId
+                        });
+                    }
+                }
+
+                return new ServiceResponse<string>(true, "Operation Successful", "Group Added/Updated Successfully", 201);
+            }
+            return new ServiceResponse<string>(false, "Operation Failed", null, 400);
         }
 
-        public async Task<ServiceResponse<List<Group>>> GetAllGroup(GetAllGroupRequest request)
+        public async Task<ServiceResponse<List<GetAllGroupResponse>>> GetAllGroup(GetAllGroupRequest request)
         {
-            var countSql = "SELECT COUNT(*) FROM [tblCommunicationGroup]";
-            var totalCount = await _connection.ExecuteScalarAsync<int>(countSql);
+            // Query to count the total number of groups for pagination or metadata
+            var countSql = @"SELECT COUNT(*) 
+                     FROM [tblCommunicationGroup] 
+                     WHERE AcadamicYearID = @AcademicYearID AND InstituteID = @InstituteID";
 
-            var sql = @"SELECT * FROM [tblCommunicationGroup]
-                        ORDER BY GroupID OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+            var totalCount = await _connection.ExecuteScalarAsync<int>(countSql, new
+            {
+                request.AcademicYearID,
+                request.InstituteID
+            });
+
+            // Query to fetch the group information with Type and corresponding count (students/employees)
+            var sql = @"
+        SELECT 
+            cg.GroupID,
+            cg.AcadamicYearID AS AcademicYear,
+            cg.GroupName,
+            gut.UserType,
+            ISNULL(
+                CASE 
+                    WHEN gut.UserType = 'Student' THEN 
+                        (SELECT COUNT(*) FROM [StudentCommGroup] scg WHERE scg.GroupID = cg.GroupID)
+                    WHEN gut.UserType = 'Employee' THEN 
+                        (SELECT COUNT(*) FROM [EmployeeCommGroup] ecg WHERE ecg.GroupID = cg.GroupID)
+                    ELSE 0
+                END, 0) AS Count
+        FROM [tblCommunicationGroup] cg
+        INNER JOIN [tblGroupUserType] gut ON gut.UserTypeID = cg.TypeID
+        WHERE cg.AcadamicYearID = @AcademicYearID AND cg.InstituteID = @InstituteID
+        ORDER BY cg.GroupID
+        OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 
             var parameters = new
             {
+                AcademicYearID = request.AcademicYearID,
+                InstituteID = request.InstituteID,
                 Offset = (request.PageNumber - 1) * request.PageSize,
                 PageSize = request.PageSize
             };
 
-            var groups = await _connection.QueryAsync<Group>(sql, parameters);
-            return new ServiceResponse<List<Group>>(true, "Records Found", groups.ToList(), 302, totalCount);
+            var groups = await _connection.QueryAsync<GetAllGroupResponse>(sql, parameters);
+
+            // Returning the results with a service response
+            return new ServiceResponse<List<GetAllGroupResponse>>(true, "Records Found", groups.ToList(), 302, totalCount);
         }
+
 
         public async Task<ServiceResponse<Group>> GetGroup(int GroupID)
         {
@@ -62,9 +168,115 @@ namespace Communication_API.Repository.Implementations.Configuration
 
         public async Task<ServiceResponse<string>> DeleteGroup(int GroupID)
         {
-            var sql = "DELETE FROM [tblCommunicationGroup] WHERE GroupID = @GroupID";
-            var result = await _connection.ExecuteAsync(sql, new { GroupID });
-            return new ServiceResponse<string>(true, "Operation Successful", result > 0 ? "Success" : "Failure", result > 0 ? 200 : 400);
+            string query = "UPDATE [tblCommunicationGroup] SET IsActive = 0 WHERE GroupID = @GroupID";
+            var result = await _connection.ExecuteAsync(query, new { GroupID });
+
+            if (result > 0)
+            {
+                return new ServiceResponse<string>(true, "Group has been deactivated successfully.", "Success", 200);
+            }
+            else
+            {
+                return new ServiceResponse<string>(false, "Group deactivation failed.", "Failure", 400);
+            }
         }
+
+
+        public async Task<ServiceResponse<List<GetGroupUserTypeResponse>>> GetGroupUserTypes()
+        {
+            string sql = @"SELECT UserTypeID, UserType FROM tblGroupUserType";
+            var result = await _connection.QueryAsync<GetGroupUserTypeResponse>(sql);
+
+            var groupUserTypes = result.ToList();
+
+            if (groupUserTypes.Count > 0)
+            {
+                return new ServiceResponse<List<GetGroupUserTypeResponse>>(true, "Records Found", groupUserTypes, 302, groupUserTypes.Count);
+            }
+            else
+            {
+                return new ServiceResponse<List<GetGroupUserTypeResponse>>(false, "No Records Found", new List<GetGroupUserTypeResponse>(), 404);
+            }
+        }
+
+
+        public async Task<ServiceResponse<GetGroupMembersResponse>> GetGroupMembers(GetGroupMembersRequest request)
+        {
+            // Determine if the group is for Students or Employees
+            string groupTypeQuery = @"SELECT gut.UserType 
+                              FROM tblCommunicationGroup cg 
+                              INNER JOIN tblGroupUserType gut ON cg.TypeID = gut.UserTypeID 
+                              WHERE cg.GroupID = @GroupID AND cg.InstituteID = @InstituteID";
+
+            var groupType = await _connection.ExecuteScalarAsync<string>(groupTypeQuery, new { GroupID = request.GroupID, InstituteID = request.InstituteID });
+
+            GetGroupMembersResponse response = new GetGroupMembersResponse();
+            response.GroupID = request.GroupID;
+
+            // Fetch the group name
+            string groupNameQuery = @"SELECT GroupName FROM tblCommunicationGroup WHERE GroupID = @GroupID";
+            response.GroupName = await _connection.ExecuteScalarAsync<string>(groupNameQuery, new { GroupID = request.GroupID });
+
+            // Prepare to collect the members
+            response.Members = new List<MemberDetails>();
+
+            if (groupType == "Student")
+            {
+                // Query to get student members along with class-section and mobile number
+                string studentQuery = @"
+            SELECT 
+                s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name AS Name,
+                CONCAT(c.class_name, '-', sec.section_name) AS ClassSection,
+                '' as MobileNumber
+            FROM StudentCommGroup scg
+            INNER JOIN tbl_StudentMaster s ON scg.StudentID = s.student_id
+            INNER JOIN tblGroupClassSectionMapping gcsm ON gcsm.GroupID = scg.GroupID
+            INNER JOIN tbl_Class c ON gcsm.ClassID = c.class_id
+            INNER JOIN tbl_Section sec ON gcsm.SectionID = sec.section_id
+            WHERE scg.GroupID = @GroupID";
+
+                var students = await _connection.QueryAsync<MemberDetails>(studentQuery, new { GroupID = request.GroupID });
+
+                // Map the response for students
+                response.Members = students.Select(s => new MemberDetails
+                {
+                    Name = s.Name,
+                    ClassSection = s.ClassSection,
+                    MobileNumber = s.MobileNumber
+                }).ToList();
+
+                response.TotalCount = students.Count();
+            }
+            else if (groupType == "Employee")
+            {
+                // Query to get employee members along with department-designation and mobile number
+                string employeeQuery = @"
+            SELECT 
+                e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name AS Name,
+                CONCAT(d.DepartmentName, '-', des.DesignationName) AS DepartmentDesignation,
+                e.Mobile_number as MobileNumber
+            FROM EmployeeCommGroup ecg
+            INNER JOIN tbl_EmployeeMaster e ON ecg.EmployeeID = e.Employee_id
+            INNER JOIN tbl_Department d ON e.Department_id = d.Department_id
+            INNER JOIN tbl_Designation des ON e.Designation_id = des.Designation_id
+            WHERE ecg.GroupID = @GroupID";
+
+                var employees = await _connection.QueryAsync<MemberDetails>(employeeQuery, new { GroupID = request.GroupID });
+
+                // Map the response for employees
+                response.Members = employees.Select(e => new MemberDetails
+                {
+                    Name = e.Name,
+                    DepartmentDesignation = e.DepartmentDesignation,
+                    MobileNumber = e.MobileNumber
+                }).ToList();
+
+                response.TotalCount = employees.Count();
+            }
+
+            return new ServiceResponse<GetGroupMembersResponse>(true, "Group Members Found", response, 200);
+        }
+
+
     }
 }

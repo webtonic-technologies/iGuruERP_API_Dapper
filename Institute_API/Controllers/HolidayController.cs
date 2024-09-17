@@ -1,4 +1,5 @@
 ﻿using Institute_API.DTOs;
+using Institute_API.Services.Implementations;
 using Institute_API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -96,6 +97,45 @@ namespace Institute_API.Controllers
             catch (Exception ex)
             {
                 return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPost("ExportAllHolidaysToExcel")]
+        public async Task<IActionResult> ExportAllHolidaysToExcel(CommonRequestDTO commonRequest)
+        {
+            var response = await _holidayService.ExportAllHolidaysToExcel(commonRequest);
+
+            if (response.Success)
+            {
+                var filePath = response.Data;
+                var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+
+                // Return the Excel file for download
+                return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", Path.GetFileName(filePath));
+            }
+            else
+            {
+                return BadRequest(response.Message);
+            }
+        }
+
+        [HttpPost("ExportApprovedHolidaysToExcel")]
+        public async Task<IActionResult> ExportApprovedHolidaysToExcel(CommonRequestDTO commonRequest)
+        {
+
+            var response = await _holidayService.ExportApprovedHolidaysToExcel(commonRequest);
+
+            if (response.Success)
+            {
+                var filePath = response.Data;
+                var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+
+                // Return the Excel file for download
+                return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", Path.GetFileName(filePath));
+            }
+            else
+            {
+                return BadRequest(response.Message);
             }
         }
     }

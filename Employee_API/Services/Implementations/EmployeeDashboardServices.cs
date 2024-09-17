@@ -1,9 +1,7 @@
 ﻿using Employee_API.DTOs;
 using Employee_API.DTOs.ServiceResponse;
-using Employee_API.Repository.Implementations;
 using Employee_API.Repository.Interfaces;
 using Employee_API.Services.Interfaces;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Employee_API.Services.Implementations
 {
@@ -27,7 +25,12 @@ namespace Employee_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<AgeGroupStatsResponse>> GetEmployeeAgeGroupStats(int instituteId)
+        public async Task<ServiceResponse<AppUserNonAppUserResponse>> GetAppUsersNonAppUsersEmployees(int instituteId)
+        {
+            return await _employeeDashboardRepository.GetAppUsersNonAppUsersEmployees(instituteId);
+        }
+
+        public async Task<ServiceResponse<List<AgeGroupStatsResponse>>> GetEmployeeAgeGroupStats(int instituteId)
         {
             try
             {
@@ -35,7 +38,7 @@ namespace Employee_API.Services.Implementations
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<AgeGroupStatsResponse>(false, ex.Message, new AgeGroupStatsResponse(), 500);
+                return new ServiceResponse<List<AgeGroupStatsResponse>>(false, ex.Message, [], 500);
             }
         }
 
@@ -63,7 +66,7 @@ namespace Employee_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<ExperienceStatsResponse>> GetEmployeeExperienceStats(int instituteId)
+        public async Task<ServiceResponse<List<ExperienceRangeResponse>>> GetEmployeeExperienceStats(int instituteId)
         {
             try
             {
@@ -71,7 +74,7 @@ namespace Employee_API.Services.Implementations
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<ExperienceStatsResponse>(false, ex.Message, new ExperienceStatsResponse(), 500);
+                return new ServiceResponse<List<ExperienceRangeResponse>>(false, ex.Message, [], 500);
             }
         }
 

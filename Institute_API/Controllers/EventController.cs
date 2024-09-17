@@ -108,7 +108,7 @@ namespace Institute_API.Controllers
         }
 
         [HttpPost("ToggleEventActiveStatus")]
-        public async Task<IActionResult> ToggleEventActiveStatus([FromBody]ToggleEventActiveStatusRequest toggleEvent)
+        public async Task<IActionResult> ToggleEventActiveStatus([FromBody] ToggleEventActiveStatusRequest toggleEvent)
         {
             try
             {

@@ -77,35 +77,98 @@ namespace Employee_API.Controllers
                 return this.BadRequest(e.Message);
             }
         }
-        [HttpGet("DownloadExcelSheet/{InstituteId}")]
-        public async Task<IActionResult> DownloadExcelSheet(int InstituteId)
+        [HttpPost("DownloadExcelSheet")]
+        public async Task<IActionResult> DownloadExcelSheet(DownloadExcelRequest request)
         {
-            var response = await _employeeLoginsServices.DownloadExcelSheet(InstituteId);
+            var response = await _employeeLoginsServices.DownloadExcelSheet(request);
             if (response.Success)
             {
                 return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "EmployeeCredentials.xlsx");
             }
             return StatusCode(response.StatusCode, response.Message);
         }
-        [HttpGet("DownloadExcelSheetNonAppUsers/{InstituteId}")]
-        public async Task<IActionResult> DownloadExcelSheetNonAppUsers(int InstituteId)
+        [HttpPost("DownloadExcelSheetNonAppUsers")]
+        public async Task<IActionResult> DownloadExcelSheetNonAppUsers(DownloadExcelRequest request)
         {
-            var response = await _employeeLoginsServices.DownloadExcelSheetNonAppUsers(InstituteId);
+            var response = await _employeeLoginsServices.DownloadExcelSheetNonAppUsers(request);
             if (response.Success)
             {
                 return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "EmployeeNonAppUsers.xlsx");
             }
             return StatusCode(response.StatusCode, response.Message);
         }
-        [HttpGet("DownloadExcelSheetEmployeeActivity/{InstituteId}")]
-        public async Task<IActionResult> DownloadExcelSheetEmployeeActivity(int InstituteId)
+        [HttpPost("DownloadExcelSheetEmployeeActivity")]
+        public async Task<IActionResult> DownloadExcelSheetEmployeeActivity(DownloadExcelRequest request)
         {
-            var response = await _employeeLoginsServices.DownloadExcelSheetEmployeeActivity(InstituteId);
+            var response = await _employeeLoginsServices.DownloadExcelSheetEmployeeActivity(request);
             if (response.Success)
             {
                 return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "EmployeeActivity.xlsx");
             }
             return StatusCode(response.StatusCode, response.Message);
+        }
+        [HttpPost("UserLogin")]
+        public async Task<IActionResult> UserLogin(string username)
+        {
+            try
+            {
+                var data = await _employeeLoginsServices.UserLogin(username);
+                if (data != null)
+                {
+                    return Ok(data);
+                }
+                else
+                {
+                    return BadRequest("Bad Request");
+                }
+
+            }
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
+        }
+        [HttpPost("UserLoginPasswordScreen")]
+        public async Task<IActionResult> UserLoginPasswordScreen(UserLoginRequest request)
+        {
+            try
+            {
+                var data = await _employeeLoginsServices.UserLoginPasswordScreen(request);
+                if (data != null)
+                {
+                    return Ok(data);
+                }
+                else
+                {
+                    return BadRequest("Bad Request");
+                }
+
+            }
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
+        }
+        [HttpPost("UserLogout")]
+        public async Task<IActionResult> UserLogout(string username)
+        {
+            try
+            {
+                var data = await _employeeLoginsServices.UserLogout(username);
+                if (data != null)
+                {
+                    return Ok(data);
+                }
+                else
+                {
+                    return BadRequest("Bad Request");
+                }
+
+            }
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
         }
     }
 }

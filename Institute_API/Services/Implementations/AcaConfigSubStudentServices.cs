@@ -1,5 +1,6 @@
 ﻿using Institute_API.DTOs;
 using Institute_API.DTOs.ServiceResponse;
+using Institute_API.Repository.Implementations;
 using Institute_API.Repository.Interfaces;
 using Institute_API.Services.Interfaces;
 
@@ -25,11 +26,11 @@ namespace Institute_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<byte[]>> DownloadExcelSheet(int InstituteId)
+        public async Task<ServiceResponse<byte[]>> DownloadExcelSheet(ExcelDownloadSubStudentMappingRequest request)
         {
             try
             {
-                return await _acaConfigSubStudentRepository.DownloadExcelSheet(InstituteId);
+                return await _acaConfigSubStudentRepository.DownloadExcelSheet(request);
             }
             catch (Exception ex)
             {
@@ -49,28 +50,33 @@ namespace Institute_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<SubjectList>>> GetInstituteSubjectsList(int SubjectType)
+        //public async Task<ServiceResponse<List<SubjectList>>> GetInstituteSubjectsList(int SubjectType)
+        //{
+        //    try
+        //    {
+        //        return await _acaConfigSubStudentRepository.GetInstituteSubjectsList(SubjectType);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return new ServiceResponse<List<SubjectList>>(false, ex.Message, [], 500);
+        //    }
+        //}
+
+        public async Task<ServiceResponse<AcaConfigSubStudentRepository.CombinedResponse>> GetSubjectsAndStudentMappings(MappingListRequest request)
         {
-            try
-            {
-                return await _acaConfigSubStudentRepository.GetInstituteSubjectsList(SubjectType);
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<List<SubjectList>>(false, ex.Message, [], 500);
-            }
+            return await _acaConfigSubStudentRepository.GetSubjectsAndStudentMappings(request);
         }
 
-        public async Task<ServiceResponse<AcaConfigSubStudentResponse>> GetSubjectStudentMappingList(MappingListRequest request)
-        {
-            try
-            {
-                return await _acaConfigSubStudentRepository.GetSubjectStudentMappingList(request);
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<AcaConfigSubStudentResponse>(false, ex.Message, new AcaConfigSubStudentResponse(), 500);
-            }
-        }
+        //public async Task<ServiceResponse<AcaConfigSubStudentResponse>> GetSubjectStudentMappingList(MappingListRequest request)
+        //{
+        //    try
+        //    {
+        //        return await _acaConfigSubStudentRepository.GetSubjectStudentMappingList(request);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return new ServiceResponse<AcaConfigSubStudentResponse>(false, ex.Message, new AcaConfigSubStudentResponse(), 500);
+        //    }
+        //}
     }
 }

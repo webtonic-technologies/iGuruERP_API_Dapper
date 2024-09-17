@@ -417,5 +417,15 @@ namespace Employee_API.Controllers
             }
 
         }
+        [HttpPost("DownloadExcel")]
+        public async Task<IActionResult> DownloadExcelSheet(ExcelDownloadRequest request)
+        {
+            var response = await _employeeProfileServices.ExcelDownload(request);
+            if (response.Success)
+            {
+                return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Employee.xlsx");
+            }
+            return StatusCode(response.StatusCode, response.Message);
+        }
     }
 }

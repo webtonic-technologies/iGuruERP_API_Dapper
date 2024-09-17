@@ -65,4 +65,17 @@
         public int subject_type_id { get; set; }
         public string subject_type { get; set; } = string.Empty;
     }
+    public class ExcelDownloadRequest
+    {
+        public int InstituteId { get; set; }
+        public int ClassId { get; set; }
+        public int SectionId { get; set; }
+    }
+    public class ExcelDownloadSubStudentMappingRequest
+    {
+        public int InstituteId { get; set; }
+        public int ClassId { get; set; }
+        public int SectionId { get; set; }
+        public int SubjectTypeId {  get; set; }
+    }
 }

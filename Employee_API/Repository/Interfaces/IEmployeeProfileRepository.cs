@@ -25,5 +25,6 @@ namespace Employee_API.Repository.Interfaces
         Task<ServiceResponse<List<Department>>> GetDepartmentList(int InstituteId);
         Task<ServiceResponse<List<Designation>>> GetDesignationList(int DepartmentId);
         Task<ServiceResponse<bool>> UpdatePassword(int userId, int userType, string Password);
+        Task<ServiceResponse<byte[]>> ExcelDownload(ExcelDownloadRequest request);
     }
 }

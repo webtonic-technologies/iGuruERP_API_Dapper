@@ -13,6 +13,7 @@ namespace Attendance_API.Services.Implementations
         {
             _studentAttendanceReportRepository = studentAttendanceReportRepository; 
         }
+        
         public async Task<ServiceResponse<dynamic>> GetStudentAttendanceDatewiseReport(StudentAttendanceDatewiseReportRequestDTO request)
         {
             return await _studentAttendanceReportRepository.GetStudentAttendanceDatewiseReport(request);

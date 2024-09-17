@@ -32,5 +32,6 @@
         public List<EmployeeBankDetails>? EmployeeBankDetails { get; set; }
         public EmployeeFamily? Family { get; set; }
         public List<EmployeeAddressDetails>? EmployeeAddressDetails { get; set; }
+        public EmployeeStaffMappingRequest? EmployeeStaffMappingRequest {  get; set; }
     }
 }

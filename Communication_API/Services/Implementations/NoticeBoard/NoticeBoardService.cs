@@ -1,4 +1,5 @@
 ﻿using Communication_API.DTOs.Requests.NoticeBoard;
+using Communication_API.DTOs.Responses.NoticeBoard;
 using Communication_API.DTOs.ServiceResponse;
 using Communication_API.Models.NoticeBoard;
 using Communication_API.Repository.Interfaces.NoticeBoard;
@@ -20,19 +21,48 @@ namespace Communication_API.Services.Implementations.NoticeBoard
             return await _noticeBoardRepository.AddUpdateNotice(request);
         }
 
-        public async Task<ServiceResponse<List<Notice>>> GetAllNotice(GetAllNoticeRequest request)
+        public async Task<ServiceResponse<List<NoticeResponse>>> GetAllNotice(GetAllNoticeRequest request)
         {
             return await _noticeBoardRepository.GetAllNotice(request);
         }
+
 
         public async Task<ServiceResponse<string>> AddUpdateCircular(AddUpdateCircularRequest request)
         {
             return await _noticeBoardRepository.AddUpdateCircular(request);
         }
 
-        public async Task<ServiceResponse<List<Circular>>> GetAllCircular(GetAllCircularRequest request)
+        public async Task<ServiceResponse<List<CircularResponse>>> GetAllCircular(GetAllCircularRequest request)
         {
             return await _noticeBoardRepository.GetAllCircular(request);
         }
+
+        public async Task<ServiceResponse<string>> NoticeSetStudentView(NoticeSetStudentViewRequest request)
+        {
+            return await _noticeBoardRepository.NoticeSetStudentView(request);
+        }
+        public async Task<ServiceResponse<string>> NoticeSetEmployeeView(NoticeSetEmployeeViewRequest request)
+        {
+            return await _noticeBoardRepository.NoticeSetEmployeeView(request);
+        }
+
+        public async Task<ServiceResponse<StudentNoticeStatisticsResponse>> GetStudentNoticeStatistics(GetStudentNoticeStatisticsRequest request)
+        {
+            return await _noticeBoardRepository.GetStudentNoticeStatistics(request);
+        }
+
+        public async Task<ServiceResponse<EmployeeNoticeStatisticsResponse>> GetEmployeeNoticeStatistics(GetEmployeeNoticeStatisticsRequest request)
+        {
+            return await _noticeBoardRepository.GetEmployeeNoticeStatistics(request);
+        }
+        public async Task<ServiceResponse<string>> DeleteNotice(int InstituteID, int NoticeID)
+        {
+            return await _noticeBoardRepository.DeleteNotice(InstituteID, NoticeID);
+        }
+        public async Task<ServiceResponse<string>> DeleteCircular(DeleteCircularRequest request)
+        {
+            return await _noticeBoardRepository.DeleteCircular(request);
+        }
+
     }
 }

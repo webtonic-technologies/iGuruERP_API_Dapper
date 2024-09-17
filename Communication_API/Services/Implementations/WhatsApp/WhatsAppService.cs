@@ -1,4 +1,5 @@
 ﻿using Communication_API.DTOs.Requests.WhatsApp;
+using Communication_API.DTOs.Responses.WhatsApp;
 using Communication_API.DTOs.ServiceResponse;
 using Communication_API.Models.WhatsApp;
 using Communication_API.Repository.Interfaces.WhatsApp;
@@ -40,7 +41,7 @@ namespace Communication_API.Services.Implementations.WhatsApp
             return await _whatsAppRepository.Send(request);
         }
 
-        public async Task<ServiceResponse<List<WhatsAppReport>>> GetWhatsAppReport(GetWhatsAppReportRequest request)
+        public async Task<ServiceResponse<List<WhatsAppReportResponse>>> GetWhatsAppReport(GetWhatsAppReportRequest request)
         {
             return await _whatsAppRepository.GetWhatsAppReport(request);
         }
