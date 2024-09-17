@@ -1,6 +1,7 @@
 ﻿using Student_API.DTOs;
 using Student_API.DTOs.RequestDTO;
 using Student_API.DTOs.ServiceResponse;
+using Student_API.Services.Implementations;
 
 namespace Student_API.Services.Interfaces
 {
@@ -19,6 +20,6 @@ namespace Student_API.Services.Interfaces
         Task<ServiceResponse<int>> AddUpdateStudentDocuments(StudentDocumentsDTO request);
         Task<ServiceResponse<int>> DeleteStudentDocument(int Student_Documents_id);
         Task<ServiceResponse<List<StudentInformationDTO>>> GetAllStudentDetailsData(GetStudentRequestModel obj);
-        Task<ServiceResponse<string>> GetAllStudentDetailsAsExcel(GetStudentRequestModel obj);
+        Task<ServiceResponse<string>> GetAllStudentDetailsAsExcel(getStudentRequest obj);
     }
 }

@@ -143,9 +143,12 @@ namespace Student_API.DTOs.RequestDTO
         [MaxLength(30)]
         public string Area { get; set; }
       
-        public int City_id { get; set; }
+        //public int City_id { get; set; }
       
-        public int State_id { get; set; }
+        //public int State_id { get; set; }
+        public string City {  get; set; }   
+        public string State {  get; set; }   
+
         [MaxLength(30)]
         public string Pincode { get; set; }
     }

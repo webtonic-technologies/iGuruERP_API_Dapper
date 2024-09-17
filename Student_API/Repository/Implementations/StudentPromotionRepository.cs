@@ -59,8 +59,10 @@ namespace Student_API.Repository.Implementations
             student_id, 
             CONCAT(first_name, ' ', last_name) AS Student_Name, 
             CONCAT(tbl_Class.class_name, ' - ', tbl_Section.Section_name) AS Class_Section,
+            tbl_StudentMaster.File_Name
             tbl_StudentMaster.class_id,
-            tbl_StudentMaster.Section_Id
+            tbl_StudentMaster.Section_Id,
+            tbl_StudentMaster.institute_id
         INTO 
             #TempStudentDetails
         FROM 
