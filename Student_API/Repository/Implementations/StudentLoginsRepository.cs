@@ -37,8 +37,8 @@ namespace Student_API.Repository.Implementations
                logs.LastActionTaken,
                logs.AppVersion
         FROM tbl_StudentMaster stu
-        LEFT JOIN tbl_Class cls ON stu.class_id = cls.ClassId
-        LEFT JOIN tbl_Section sec ON stu.section_id = sec.SectionId
+        LEFT JOIN tbl_Class cls ON stu.class_id = cls.class_id
+        LEFT JOIN tbl_Section sec ON stu.section_id = sec.section_id
         LEFT JOIN tblUserLogs logs ON stu.App_User_id = logs.UserId
         WHERE stu.Institute_id = @InstituteId";
 
@@ -105,8 +105,8 @@ namespace Student_API.Repository.Implementations
                sec.SectionName AS Section,
                stu.MobileNumber
         FROM tbl_StudentMaster stu
-        LEFT JOIN tbl_Class cls ON stu.class_id = cls.ClassId
-        LEFT JOIN tbl_Section sec ON stu.section_id = sec.SectionId
+        LEFT JOIN tbl_Class cls ON stu.class_id = cls.class_id
+        LEFT JOIN tbl_Section sec ON stu.section_id = sec.section_id
         LEFT JOIN tblUserLogs logs ON stu.App_User_id = logs.UserId
         WHERE stu.Institute_id = @InstituteId
         AND logs.IsAppUser = 0";  // Fetching non-app users by checking IsAppUser flag
@@ -331,14 +331,14 @@ namespace Student_API.Repository.Implementations
                sec.SectionName AS Section,
                login.LoginId AS LoginId,
                login.Password AS Password,
-               gen.GenderName AS Gender,
+               gen.Gender_Type AS Gender,
                logs.LoginTime AS LastActionTaken,  -- Latest login action
                logs.appVersion AS AppVersion
         FROM tbl_StudentMaster stu
         LEFT JOIN LatestStudentLogs logs ON stu.student_id = logs.UserId AND logs.RowNum = 1
-        LEFT JOIN tbl_Class cls ON stu.class_id = cls.ClassId
-        LEFT JOIN tbl_Section sec ON stu.section_id = sec.SectionId
-        LEFT JOIN tblGenderMaster gen ON stu.gender_id = gen.GenderId
+        LEFT JOIN tbl_Class cls ON stu.class_id = cls.class_id
+        LEFT JOIN tbl_Section sec ON stu.section_id = sec.section_id
+        LEFT JOIN tbl_Gender gen ON stu.gender_id = gen.Gender_id
         WHERE stu.Institute_id = @InstituteId
         AND (@ClassId = 0 OR stu.class_id = @ClassId)
         AND (@SectionId = 0 OR stu.section_id = @SectionId)
