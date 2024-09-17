@@ -288,14 +288,15 @@ namespace Employee_API.Repository.Implementations
                    emp.First_Name + ' ' + emp.Last_Name AS EmployeeName,
                    des.DesignationName AS Designation,
                    dep.DepartmentName AS Department,
-                   emp.Gender,
+                   gen.Gender_Type as Gender,
                    login.UserName AS LoginId,
                    login.Password,
                    login.UserActivity AS LastActivity
             FROM tblLoginInformationMaster login
             INNER JOIN tbl_EmployeeProfileMaster emp ON login.UserId = emp.Employee_id
-            LEFT JOIN tblDesignationMaster des ON emp.Designation_id = des.Designation_id
-            LEFT JOIN tblDepartmentMaster dep ON emp.Department_id = dep.Department_id
+            LEFT JOIN tbl_Designation des ON emp.Designation_id = des.Designation_id
+            LEFT JOIN tbl_Gender gen ON emp.Gender_id = gen.Gender_id
+            LEFT JOIN tbl_Department dep ON emp.Department_id = dep.Department_id
             WHERE login.InstituteId = @InstituteId
             AND (@DepartmentId = 0 OR emp.Department_id = @DepartmentId)
             AND (@DesignationId = 0 OR emp.Designation_id = @DesignationId)
@@ -309,8 +310,8 @@ namespace Employee_API.Repository.Implementations
             SELECT COUNT(*)
             FROM tblLoginInformationMaster login
             INNER JOIN tbl_EmployeeProfileMaster emp ON login.UserId = emp.Employee_id
-            LEFT JOIN tblDesignationMaster des ON emp.Designation_id = des.Designation_id
-            LEFT JOIN tblDepartmentMaster dep ON emp.Department_id = dep.Department_id
+            LEFT JOIN tbl_Designation des ON emp.Designation_id = des.Designation_id
+            LEFT JOIN tbl_Department dep ON emp.Department_id = dep.Department_id
             WHERE login.InstituteId = @InstituteId
             AND (@DepartmentId = 0 OR emp.Department_id = @DepartmentId)
             AND (@DesignationId = 0 OR emp.Designation_id = @DesignationId)
@@ -368,8 +369,8 @@ namespace Employee_API.Repository.Implementations
                    emp.Gender,
                    emp.MobileNo AS MobileNumber
             FROM tbl_EmployeeProfileMaster emp
-            LEFT JOIN tblDesignationMaster des ON emp.Designation_id = des.Designation_id
-            LEFT JOIN tblDepartmentMaster dep ON emp.Department_id = dep.Department_id
+            LEFT JOIN tbl_Designation des ON emp.Designation_id = des.Designation_id
+            LEFT JOIN tbl_Department dep ON emp.Department_id = dep.Department_id
             LEFT JOIN tblLoginInformationMaster login ON login.UserId = emp.Employee_id
             WHERE login.UserId IS NULL  -- Non-app users (no login information)
             AND emp.InstituteId = @InstituteId
@@ -449,8 +450,8 @@ namespace Employee_API.Repository.Implementations
                logs.version_sdkInt AS Version
         FROM LatestUserLogs logs
         INNER JOIN tbl_EmployeeProfileMaster emp ON logs.UserId = emp.Employee_id
-        LEFT JOIN tblDesignationMaster des ON emp.Designation_id = des.Designation_id
-        LEFT JOIN tblDepartmentMaster dep ON emp.Department_id = dep.Department_id
+        LEFT JOIN tbl_Designation des ON emp.Designation_id = des.Designation_id
+        LEFT JOIN tbl_Department dep ON emp.Department_id = dep.Department_id
         WHERE emp.InstituteId = @InstituteId
         AND (@DepartmentId = 0 OR emp.Department_id = @DepartmentId)
         AND (@DesignationId = 0 OR emp.Designation_id = @DesignationId)

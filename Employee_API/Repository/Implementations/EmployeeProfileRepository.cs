@@ -3,20 +3,24 @@ using Employee_API.DTOs;
 using Employee_API.DTOs.ServiceResponse;
 using Employee_API.Models;
 using Employee_API.Repository.Interfaces;
+using Microsoft.Extensions.Configuration;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using System.Data;
+using System.Data.SqlClient;
 
 namespace Employee_API.Repository.Implementations
 {
     public class EmployeeProfileRepository : IEmployeeProfileRepository
     {
         private readonly IDbConnection _connection;
+        private readonly string _connectionString;
         private readonly IWebHostEnvironment _hostingEnvironment;
-        public EmployeeProfileRepository(IDbConnection connection, IWebHostEnvironment hostingEnvironment)
+        public EmployeeProfileRepository(IDbConnection connection, IWebHostEnvironment hostingEnvironment, IConfiguration configuration)
         {
             _connection = connection;
             _hostingEnvironment = hostingEnvironment;
+            _connectionString = configuration.GetConnectionString("DefaultConnection");
             ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
         }
         public async Task<ServiceResponse<int>> AddUpdateEmployeeProfile(EmployeeProfile request)
@@ -384,13 +388,14 @@ namespace Employee_API.Repository.Implementations
         {
             try
             {
+                var connection = new SqlConnection(_connectionString);
+                connection.Open();
                 // Check and process the EmployeeStaffMappingsClassTeacher
                 if (request.EmployeeStaffMappingsClassTeacher != null)
                 {
                     // Check if a record already exists for the EmployeeId in the tbl_EmployeeStaffMapClassTeacher table
-                    var existingClassTeacherMapping = await _connection.QueryFirstOrDefaultAsync<int>(
-                        @"SELECT MappingId FROM tbl_EmployeeStaffMapClassTeacher 
-                  WHERE EmployeeId = @EmployeeId AND ClassId = @ClassId AND SectionId = @SectionId",
+                    var existingClassTeacherMapping = await connection.QueryFirstOrDefaultAsync<dynamic>(
+                        "SELECT * FROM tbl_EmployeeStaffMapClassTeacher WHERE EmployeeId = @EmployeeId AND ClassId = @ClassId AND SectionId = @SectionId;",
                         new
                         {
                             request.EmployeeId,
@@ -402,7 +407,7 @@ namespace Employee_API.Repository.Implementations
                     if (existingClassTeacherMapping > 0)
                     {
                         // Update the existing record
-                        await _connection.ExecuteAsync(
+                        await connection.ExecuteAsync(
                             @"UPDATE tbl_EmployeeStaffMapClassTeacher
                       SET SubjectId = @SubjectId
                       WHERE MappingId = @MappingId",
@@ -416,7 +421,7 @@ namespace Employee_API.Repository.Implementations
                     else
                     {
                         // Insert a new record
-                        await _connection.ExecuteAsync(
+                        await connection.ExecuteAsync(
                             @"INSERT INTO tbl_EmployeeStaffMapClassTeacher (EmployeeId, ClassId, SectionId, SubjectId)
                       VALUES (@EmployeeId, @ClassId, @SectionId, @SubjectId)",
                             new
@@ -434,7 +439,7 @@ namespace Employee_API.Repository.Implementations
                 if (request.EmployeeStappMappingsClassSection != null)
                 {
                     // Check if a record already exists for the EmployeeId in the tbl_EmployeeStappMapClassSection table
-                    var existingClassSectionMapping = await _connection.QueryFirstOrDefaultAsync<int>(
+                    var existingClassSectionMapping = await connection.QueryFirstOrDefaultAsync<int>(
                         @"SELECT ClassSectionMapId FROM tbl_EmployeeStappMapClassSection 
                   WHERE EmployeeId = @EmployeeId AND ClassId = @ClassId AND SectionId = @SectionId",
                         new
@@ -448,7 +453,7 @@ namespace Employee_API.Repository.Implementations
                     if (existingClassSectionMapping > 0)
                     {
                         // Update the existing record
-                        await _connection.ExecuteAsync(
+                        await connection.ExecuteAsync(
                             @"UPDATE tbl_EmployeeStappMapClassSection
                       SET SubjectId = @SubjectId
                       WHERE ClassSectionMapId = @ClassSectionMapId",
@@ -462,7 +467,7 @@ namespace Employee_API.Repository.Implementations
                     else
                     {
                         // Insert a new record
-                        await _connection.ExecuteAsync(
+                        await connection.ExecuteAsync(
                             @"INSERT INTO tbl_EmployeeStappMapClassSection (EmployeeId, ClassId, SectionId, SubjectId)
                       VALUES (@EmployeeId, @ClassId, @SectionId, @SubjectId)",
                             new
@@ -1618,6 +1623,9 @@ namespace Employee_API.Repository.Implementations
         {
             try
             {
+                var connection = new SqlConnection(_connectionString);
+                connection.Open();
+
                 // Define common password
                 string commonPassword = "iGuru@1234";
 
@@ -1635,11 +1643,12 @@ namespace Employee_API.Repository.Implementations
                 // Initialize variables
                 string username = null;
                 dynamic userDetails = null;
+               
 
                 // Fetch user details based on the UserType
                 if (userType == 1) // Employee
                 {
-                    userDetails = await _connection.QueryFirstOrDefaultAsync<dynamic>(employeeSql, new { UserId = userId });
+                    userDetails = await connection.QueryFirstOrDefaultAsync<dynamic>(employeeSql, new { UserId = userId });
                     if (userDetails != null)
                     {
                         // Construct username for employee
@@ -1652,7 +1661,7 @@ namespace Employee_API.Repository.Implementations
                 }
                 else if (userType == 2) // Student
                 {
-                    userDetails = await _connection.QueryFirstOrDefaultAsync<dynamic>(studentSql, new { UserId = userId });
+                    userDetails = await connection.QueryFirstOrDefaultAsync<dynamic>(studentSql, new { UserId = userId });
                     if (userDetails != null)
                     {
                         // Construct username for student
@@ -1676,7 +1685,7 @@ namespace Employee_API.Repository.Implementations
             VALUES (@UserId, @UserType, @UserName, @Password, @InstituteId, NULL)";
 
                     // Insert login information into the database
-                    await _connection.ExecuteAsync(insertLoginSql, new
+                    await connection.ExecuteAsync(insertLoginSql, new
                     {
                         UserId = userId,
                         UserType = userType,
@@ -1699,6 +1708,8 @@ namespace Employee_API.Repository.Implementations
         }
         private async Task<string> EnsureUniqueUsername(string baseUsername)
         {
+            var connection = new SqlConnection(_connectionString);
+            connection.Open();
             // Define the SQL query to check if the username exists
             string checkUsernameSql = @"
     SELECT COUNT(1)
@@ -1709,7 +1720,7 @@ namespace Employee_API.Repository.Implementations
             int suffix = 1;
 
             // Check if the username already exists
-            while (await _connection.ExecuteScalarAsync<int>(checkUsernameSql, new { UserName = uniqueUsername }) > 0)
+            while (await connection.ExecuteScalarAsync<int>(checkUsernameSql, new { UserName = uniqueUsername }) > 0)
             {
                 // Append a numeric suffix to make the username unique
                 uniqueUsername = $"{baseUsername}{suffix}";
