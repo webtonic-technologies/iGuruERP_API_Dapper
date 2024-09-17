@@ -366,14 +366,16 @@ namespace Employee_API.Repository.Implementations
                    emp.First_Name + ' ' + emp.Last_Name AS EmployeeName,
                    des.DesignationName AS Designation,
                    dep.DepartmentName AS Department,
-                   emp.Gender,
-                   emp.MobileNo AS MobileNumber
+                   gen.Gender_Type as Gender,
+                   emp.mobile_number AS MobileNumber
             FROM tbl_EmployeeProfileMaster emp
             LEFT JOIN tbl_Designation des ON emp.Designation_id = des.Designation_id
             LEFT JOIN tbl_Department dep ON emp.Department_id = dep.Department_id
+            LEFT JOIN tbl_Gender gen ON emp.Gender_id = gen.Gender_id
             LEFT JOIN tblLoginInformationMaster login ON login.UserId = emp.Employee_id
-            WHERE login.UserId IS NULL  -- Non-app users (no login information)
-            AND emp.InstituteId = @InstituteId
+LEFT JOIN tblUserLogs us ON us.UserId = emp.Employee_id
+            WHERE us.IsAppUser = 0  -- Non-app users (no login information)
+            AND emp.Institute_id = @InstituteId
             AND (@DepartmentId = 0 OR emp.Department_id = @DepartmentId)
             AND (@DesignationId = 0 OR emp.Designation_id = @DesignationId)
             AND (emp.First_Name + ' ' + emp.Last_Name LIKE '%' + @SearchText + '%' OR @SearchText = '')
@@ -385,8 +387,9 @@ namespace Employee_API.Repository.Implementations
             SELECT COUNT(*)
             FROM tbl_EmployeeProfileMaster emp
             LEFT JOIN tblLoginInformationMaster login ON login.UserId = emp.Employee_id
-            WHERE login.UserId IS NULL  -- Non-app users (no login information)
-            AND emp.InstituteId = @InstituteId
+LEFT JOIN tblUserLogs us ON us.UserId = emp.Employee_id
+            WHERE us.IsAppUser = 0  -- Non-app users (no login information)
+            AND emp.Institute_id = @InstituteId
             AND (@DepartmentId = 0 OR emp.Department_id = @DepartmentId)
             AND (@DesignationId = 0 OR emp.Designation_id = @DesignationId)
             AND (emp.First_Name + ' ' + emp.Last_Name LIKE '%' + @SearchText + '%' OR @SearchText = '')";
@@ -445,14 +448,14 @@ namespace Employee_API.Repository.Implementations
                emp.First_Name + ' ' + emp.Last_Name AS EmployeeName,
                des.DesignationName AS Designation,
                dep.DepartmentName AS Department,
-               emp.MobileNo AS MobileNumber,
+               emp.mobile_number AS MobileNumber,
                logs.LoginTime AS LastActionTaken,  -- Latest login action
                logs.version_sdkInt AS Version
         FROM LatestUserLogs logs
         INNER JOIN tbl_EmployeeProfileMaster emp ON logs.UserId = emp.Employee_id
         LEFT JOIN tbl_Designation des ON emp.Designation_id = des.Designation_id
         LEFT JOIN tbl_Department dep ON emp.Department_id = dep.Department_id
-        WHERE emp.InstituteId = @InstituteId
+        WHERE emp.Institute_id = @InstituteId
         AND (@DepartmentId = 0 OR emp.Department_id = @DepartmentId)
         AND (@DesignationId = 0 OR emp.Designation_id = @DesignationId)
         AND (emp.First_Name + ' ' + emp.Last_Name LIKE '%' + @SearchText + '%' OR @SearchText = '')
@@ -465,7 +468,7 @@ namespace Employee_API.Repository.Implementations
         SELECT COUNT(DISTINCT emp.Employee_id)
         FROM tblUserLogs logs
         INNER JOIN tbl_EmployeeProfileMaster emp ON logs.UserId = emp.Employee_id
-        WHERE emp.InstituteId = @InstituteId
+        WHERE emp.Institute_id = @InstituteId
         AND (@DepartmentId = 0 OR emp.Department_id = @DepartmentId)
         AND (@DesignationId = 0 OR emp.Designation_id = @DesignationId)
         AND (emp.First_Name + ' ' + emp.Last_Name LIKE '%' + @SearchText + '%' OR @SearchText = '')
@@ -589,7 +592,7 @@ namespace Employee_API.Repository.Implementations
                 if (loginInfo.UserType == 1) // Employee
                 {
                     var employeeQuery = @"
-                SELECT TOP 1 [First_Name], [Last_Name], [Institute_id]
+                SELECT TOP 1 Employee_id, [First_Name], [Last_Name], [Institute_id]
                 FROM tbl_EmployeeProfileMaster
                 WHERE [Employee_id] = @UserId";
 
@@ -602,14 +605,14 @@ namespace Employee_API.Repository.Implementations
                             Username = $"{employeeInfo.First_Name} {employeeInfo.Last_Name}",
                             InstituteId = employeeInfo.Institute_id,
                             UserType = "Employee",
-                            UserId = loginInfo.UserId
+                            UserId = employeeInfo.Employee_id
                         };
                     }
                 }
                 else if (loginInfo.UserType == 2) // Student
                 {
                     var studentQuery = @"
-                SELECT TOP 1 [First_Name], [Last_Name], [Institute_id]
+                SELECT TOP 1 student_id, [First_Name], [Last_Name], [Institute_id]
                 FROM tbl_StudentMaster
                 WHERE [student_id] = @UserId";
 
@@ -622,7 +625,7 @@ namespace Employee_API.Repository.Implementations
                             Username = $"{studentInfo.First_Name} {studentInfo.Last_Name}",
                             InstituteId = studentInfo.Institute_id,
                             UserType = "Student",
-                            UserId = loginInfo.UserId
+                            UserId = studentInfo.student_id
                         };
                     }
                 }
@@ -634,36 +637,15 @@ namespace Employee_API.Repository.Implementations
                 // Step 3: Log the login details in tblUserLogs
                 var insertLogQuery = @"
             INSERT INTO tblUserLogs 
-            ([UserId], [UserTypeId], [LoginTime], [IsAppUser], [brand], [device], [fingerprint], [model], [serialNumber], [type], [version_sdkInt], [version_securityPatch], [build_id], [isPhysicalDevice], [systemName], [systemVersion], [utsname_version], [operSysName], [browserName], [appName], [appVersion], [deviceMemory], [platform], [kernelVersion], [computerName], [systemGUID])
-            VALUES (@UserId, @UserTypeId, @LoginTime, @IsAppUser, @Brand, @Device, @Fingerprint, @Model, @SerialNumber, @Type, @VersionSdkInt, @VersionSecurityPatch, @BuildId, @IsPhysicalDevice, @SystemName, @SystemVersion, @UtsnameVersion, @OperSysName, @BrowserName, @AppName, @AppVersion, @DeviceMemory, @Platform, @KernelVersion, @ComputerName, @SystemGUID)";
+            ([UserId], [UserTypeId], [LoginTime], [IsAppUser], [systemGUID])
+            VALUES (@UserId, @UserTypeId, @LoginTime, @IsAppUser, @SystemGUID)";
 
                 var logParams = new
                 {
-                    UserId = loginInfo.UserId,
-                    UserTypeId = loginInfo.UserType,
+                    UserId = response.UserId,
+                    UserTypeId = response.UserType == "Student" ? 2 : 1,
                     LoginTime = DateTime.Now,
                     IsAppUser = false, // You can update this based on your requirement
-                    Brand = "Unknown", // Placeholder values
-                    Device = "Unknown",
-                    Fingerprint = "Unknown",
-                    Model = "Unknown",
-                    SerialNumber = "Unknown",
-                    Type = "Unknown",
-                    VersionSdkInt = "Unknown",
-                    VersionSecurityPatch = "Unknown",
-                    BuildId = "Unknown",
-                    IsPhysicalDevice = false,
-                    SystemName = "Unknown",
-                    SystemVersion = "Unknown",
-                    UtsnameVersion = "Unknown",
-                    OperSysName = "Unknown",
-                    BrowserName = "Unknown",
-                    AppName = "Unknown",
-                    AppVersion = "Unknown",
-                    DeviceMemory = "Unknown",
-                    Platform = "Unknown",
-                    KernelVersion = "Unknown",
-                    ComputerName = "Unknown",
                     SystemGUID = Guid.NewGuid().ToString() // Generate a unique system GUID
                 };
 

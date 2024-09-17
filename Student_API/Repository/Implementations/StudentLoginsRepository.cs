@@ -162,7 +162,7 @@ namespace Student_API.Repository.Implementations
         WITH RecentLogs AS (
             SELECT logs.*,
                    ROW_NUMBER() OVER (PARTITION BY logs.UserId ORDER BY logs.LoginTime DESC) AS rn
-            FROM [iGuruERP].[dbo].[tblUserLogs] logs
+            FROM [tblUserLogs] logs
         )
         SELECT stu.Admission_Number AS AdmissionNumber,
                stu.student_id AS StudentId,
