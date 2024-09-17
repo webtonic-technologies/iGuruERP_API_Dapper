@@ -98,7 +98,7 @@ namespace Student_API.DTOs
         [MaxLength(30)]
         public string Last_Name { get; set; }
         [MaxLength(20)]
-        public string Contact_Number { get; set; }
+        public string Mobile_Number { get; set; }
         [MaxLength(30)]
         public string Bank_Account_no { get; set; }
         [MaxLength(30)]

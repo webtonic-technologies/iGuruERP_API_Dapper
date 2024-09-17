@@ -61,11 +61,16 @@ namespace Student_API.Services.Implementations
         public async Task<ServiceResponse<SinglePermissionSlipDTO>> GetPermissionSlipById(int permissionSlipId)
         {
             var data = await _repository.GetPermissionSlipById(permissionSlipId);
-            if (data != null)
+            if (data.Data != null)
             {
                 if (!string.IsNullOrEmpty(data.Data.Qr_Code) && File.Exists(data.Data.Qr_Code))
                 {
                     data.Data.Qr_Code = _imageService.GetImageAsBase64(data.Data.Qr_Code);
+                }
+
+                if (!string.IsNullOrEmpty(data.Data.Parent_File) && File.Exists(data.Data.Parent_File))
+                {
+                    data.Data.Parent_File = _imageService.GetImageAsBase64(data.Data.Parent_File);
                 }
             }
             return data;
