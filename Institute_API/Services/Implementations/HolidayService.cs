@@ -94,10 +94,10 @@ namespace Institute_API.Services.Implementations
             {
                 var holidaysResponse = await _holidayRepository.GetAllHolidays(commonRequest.Institute_id, commonRequest.Academic_year_id, commonRequest.sortColumn, commonRequest.sortDirection, commonRequest.pageSize, commonRequest.pageNumber);
 
-                if (!holidaysResponse.Success)
-                {
-                    return new ServiceResponse<string>(false, "No holidays found", null, 404);
-                }
+                //if (!holidaysResponse.Success)
+                //{
+                //    return new ServiceResponse<string>(false, "No holidays found", null, 404);
+                //}
 
                 var holidays = holidaysResponse.Data;
                 ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
@@ -144,10 +144,10 @@ namespace Institute_API.Services.Implementations
             {
                 var holidaysResponse = await _holidayRepository.GetApprovedHolidays(commonRequest.Institute_id, commonRequest.Academic_year_id, commonRequest.Status, commonRequest.sortColumn, commonRequest.sortDirection, commonRequest.pageSize, commonRequest.pageNumber);
 
-                if (!holidaysResponse.Success)
-                {
-                    return new ServiceResponse<string>(false, "No approved holidays found", null, 404);
-                }
+                //if (!holidaysResponse.Success)
+                //{
+                //    return new ServiceResponse<string>(false, "No approved holidays found", null, 404);
+                //}
 
                 var holidays = holidaysResponse.Data;
                 ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
