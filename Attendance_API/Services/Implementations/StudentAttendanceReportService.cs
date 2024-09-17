@@ -3,7 +3,6 @@ using Attendance_API.DTOs.ServiceResponse;
 using Attendance_API.Repository.Interfaces;
 using Attendance_API.Services.Interfaces;
 using OfficeOpenXml;
-using System.IO;
 
 namespace Attendance_API.Services.Implementations
 {
@@ -84,9 +83,16 @@ namespace Attendance_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<string>> ExportStudentSubjectwiseReportToExcel(SubjectwiseAttendanceReportRequest request)
+        public async Task<ServiceResponse<string>> ExportStudentSubjectwiseReportToExcel(SubjectwiseAttendanceReportRequestExport request)
         {
-            var response = await _studentAttendanceReportRepository.GetStudentSubjectwiseReport(request);
+
+            SubjectwiseAttendanceReportRequest model = new();
+            model.section_id= request.section_id;
+            model.class_id= request.class_id;
+            model.Date = request.Date;
+            model.PageNumber = 1;
+            model.PageSize = int.MaxValue; 
+            var response = await _studentAttendanceReportRepository.GetStudentSubjectwiseReport(model);
             if (!response.Success)
             {
                 return new ServiceResponse<string>(false, "No data found for export", null, 404);

@@ -119,10 +119,12 @@ namespace Student_API.Repository.Implementations
 
                     SELECT * FROM [dbo].[tbl_StudentHealthInfo] WHERE student_id = @studentId;
 
-                    SELECT Student_Parent_Office_Info_id, Student_id, Parents_Type_id, Office_Building_no, Street, Area, Pincode, tbl_StudentParentsOfficeInfo.City_id, city_name, tbl_StudentParentsOfficeInfo.State_id, state_name 
+                    //SELECT Student_Parent_Office_Info_id, Student_id, Parents_Type_id, Office_Building_no, Street, Area, Pincode, tbl_StudentParentsOfficeInfo.City_id, city_name, tbl_StudentParentsOfficeInfo.State_id, state_name 
+                    //FROM tbl_StudentParentsOfficeInfo
+                    //INNER JOIN tbl_State ON tbl_State.state_id = tbl_StudentParentsOfficeInfo.state_id
+                    //INNER JOIN tbl_City ON tbl_City.city_id = tbl_StudentParentsOfficeInfo.city_id
+  SELECT Student_Parent_Office_Info_id, Student_id, Parents_Type_id, Office_Building_no, Street, Area, Pincode, tbl_StudentParentsOfficeInfo.City, tbl_StudentParentsOfficeInfo.State
                     FROM tbl_StudentParentsOfficeInfo
-                    INNER JOIN tbl_State ON tbl_State.state_id = tbl_StudentParentsOfficeInfo.state_id
-                    INNER JOIN tbl_City ON tbl_City.city_id = tbl_StudentParentsOfficeInfo.city_id 
                     WHERE tbl_StudentParentsOfficeInfo.student_id = @studentId;
 
                     SELECT * FROM [dbo].[tbl_StudentDocuments] WHERE student_id = @studentId AND isDelete = 0;";
@@ -322,8 +324,8 @@ namespace Student_API.Repository.Implementations
 
                                 // Insert Student Parent Office Info
                                 var addOfficeSql = @"
-                    INSERT INTO [dbo].[tbl_StudentParentsOfficeInfo] ([Student_id],[Parents_Type_id],[Office_Building_no],[Street],[Area],[City_id],[State_id],[Pincode])
-                    VALUES (@Student_id,@Parents_Type_id,@Office_Building_no,@Street,@Area,@City_id,@State_id,@Pincode);";
+                    INSERT INTO [dbo].[tbl_StudentParentsOfficeInfo] ([Student_id],[Parents_Type_id],[Office_Building_no],[Street],[Area],[City],[State],[Pincode])
+                    VALUES (@Student_id,@Parents_Type_id,@Office_Building_no,@Street,@Area,@City,@State,@Pincode);";
                                 await _connection.ExecuteAsync(addOfficeSql, parentInfo.studentParentOfficeInfo, transaction);
 
                                 if (insertedId <= 0)
@@ -369,8 +371,8 @@ namespace Student_API.Repository.Implementations
                         [Office_Building_no] = @Office_Building_no,
                         [Street] = @Street,
                         [Area] = @Area,
-                        [City_id] = @City_id,
-                        [State_id] = @State_id,
+                        [City] = @City,
+                        [State] = @State,
                         [Pincode] = @Pincode
                     WHERE [Student_Parent_Office_Info_id] = @Student_Parent_Office_Info_id;";
                                 int affectedRowsOffice = await _connection.ExecuteAsync(updateOfficeSql, parentInfo.studentParentOfficeInfo, transaction);

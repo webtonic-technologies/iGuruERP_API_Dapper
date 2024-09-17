@@ -11,5 +11,7 @@
         public int Section_Id { get; set; }
         //public string SectionName { get; set; }
         public string Class_Section { get; set; }
+        public string File_Name { get; set; }
+        public int institute_id { get; set; }
     }
 }
