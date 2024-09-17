@@ -144,11 +144,11 @@ namespace Student_API.DTOs
         [MaxLength(30)]
         public string Area { get; set; }
 
-        public int City_id { get; set; }
-        public string city_name { get; set; }
+        public int City { get; set; }
+        //public string city_name { get; set; }
 
-        public int State_id { get; set; }
-        public string state_name { get; set; }
+        public int State { get; set; }
+        //public string state_name { get; set; }
         [MaxLength(30)]
         public string Pincode { get; set; }
     }
@@ -178,19 +178,19 @@ namespace Student_API.DTOs
     {
         public int Student_Prev_School_id { get; set; }
         public int student_id { get; set; }
-       
+
         public string Previous_School_Name { get; set; }
-     
+
         public string Previous_Board { get; set; }
-      
+
         public string Previous_Medium { get; set; }
-       
+
         public string Previous_School_Address { get; set; }
-       
+
         public string previous_School_Course { get; set; }
-      
+
         public string Previous_Class { get; set; }
-       
+
         public string TC_number { get; set; }
         public string TC_date { get; set; }
         public bool isTC_Submitted { get; set; }
@@ -214,7 +214,7 @@ namespace Student_API.DTOs
         public float weight { get; set; }
         [MaxLength(50)]
         public string Government_ID { get; set; }
-     
+
         public string Chest { get; set; }
 
         [MaxLength(50)]

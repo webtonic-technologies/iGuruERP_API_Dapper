@@ -11,15 +11,27 @@ namespace Student_API.Services.Implementations
     public class StudentPromotionService : IStudentPromotionService
     {
         private readonly IStudentPromotionRepository _studentPromotionRepository;
-        public StudentPromotionService(IStudentPromotionRepository studentPromotionRepository)
+        private readonly  IImageService _imageService;
+        public StudentPromotionService(IStudentPromotionRepository studentPromotionRepository, IImageService imageService)
         {
             _studentPromotionRepository = studentPromotionRepository;
+            _imageService = imageService;   
         }
         public async Task<ServiceResponse<List<StudentPromotionDTO>>> GetStudentsForPromotion(GetStudentsForPromotionParam obj)
         {
             try
             {
                 var data = await _studentPromotionRepository.GetStudentsForPromotion(obj.classId, obj.sortField, obj.sortDirection, obj.pageSize, obj.pageNumber);
+                if(data.Data != null)
+                {
+                    foreach(var item in data.Data)
+                    {
+                        if (!string.IsNullOrEmpty(item.File_Name) && File.Exists(item.File_Name))
+                        {
+                            item.File_Name = _imageService.GetImageAsBase64(item.File_Name);
+                        }
+                    }
+                }
                 return data;
             }
             catch (Exception ex)
