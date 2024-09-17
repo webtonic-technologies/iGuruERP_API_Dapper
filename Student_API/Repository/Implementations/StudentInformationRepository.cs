@@ -9,16 +9,20 @@ using Student_API.DTOs.RequestDTO;
 using Student_API.Models;
 using Student_API.Helper;
 using Microsoft.AspNetCore.Http;
+using System.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
 
 namespace Student_API.Repository.Implementations
 {
     public class StudentInformationRepository : IStudentInformationRepository
     {
         private readonly IDbConnection _connection;
+        private readonly string _connectionString;
 
-        public StudentInformationRepository(IDbConnection connection)
+        public StudentInformationRepository(IDbConnection connection, IConfiguration configuration)
         {
             _connection = connection;
+            _connectionString = configuration.GetConnectionString("DefaultConnection");
         }
 
         public async Task<ServiceResponse<string>> GetStudentInfoImageById(int studentId)
@@ -1629,6 +1633,8 @@ FROM
         {
             try
             {
+                var connection = new SqlConnection(_connectionString);
+                connection.Open();
                 // Define common password
                 string commonPassword = "iGuru@1234";
 
@@ -1710,6 +1716,8 @@ FROM
         }
         private async Task<string> EnsureUniqueUsername(string baseUsername)
         {
+            var connection = new SqlConnection(_connectionString);
+            connection.Open();
             // Define the SQL query to check if the username exists
             string checkUsernameSql = @"
     SELECT COUNT(1)
