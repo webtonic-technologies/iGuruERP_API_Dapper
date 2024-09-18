@@ -3,7 +3,7 @@ using Student_API.DTOs.ServiceResponse;
 using Student_API.Models;
 using Student_API.Repository.Interfaces;
 using System.Data;
-using static System.Collections.Specialized.BitVector32;
+
 
 namespace Student_API.Repository.Implementations
 {
@@ -87,78 +87,44 @@ namespace Student_API.Repository.Implementations
                 return new ServiceResponse<List<Class>>(false, ex.Message, null, 500);
             }
         }
-        public async Task<ServiceResponse<List<Religion>>> GetAllReligions()
+
+        public async Task<ServiceResponse<List<ClassWithSections>>> GetAllClassesWithSections(int institute_id)
         {
             try
             {
                 string sql = @"
-            SELECT [Religion_id], [Religion_Type]
-            FROM [dbo].[tbl_Religion]";
+                SELECT c.class_id, c.class_name, s.section_id AS section_id, s.section_name AS section_name
+                FROM [dbo].[tbl_class] c
+                LEFT JOIN [dbo].[tbl_Section] s ON c.class_id = s.class_id
+                WHERE c.institute_id = @institute_id";
 
-                var religions = await _connection.QueryAsync<Religion>(sql);
+                var classWithSections = await _connection.QueryAsync<dynamic>(sql, new { institute_id = institute_id });
 
-                if (religions != null && religions.Any())
+                if (classWithSections != null && classWithSections.Any())
                 {
-                    return new ServiceResponse<List<Religion>>(true, "Operation successful", religions.ToList(), 200);
+                    var groupedClasses = classWithSections
+                        .GroupBy(c => new { class_id = (int)c.class_id, class_name = (string)c.class_name })
+                        .Select(g => new ClassWithSections
+                        {
+                            class_id = g.Key.class_id,
+                            class_name = g.Key.class_name,
+                            sections = g.Select(s => new Sections
+                            {
+                                section_id = (int)s.section_id,
+                                section_name = (string)s.section_name
+                            }).ToList()
+                        }).ToList();
+
+                    return new ServiceResponse<List<ClassWithSections>>(true, "Operation successful", groupedClasses, 200);
                 }
                 else
                 {
-                    return new ServiceResponse<List<Religion>>(false, "Religions not found", null, 404);
+                    return new ServiceResponse<List<ClassWithSections>>(false, "Classes and sections not found", null, 404);
                 }
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<List<Religion>>(false, ex.Message, null, 500);
-            }
-
-        }
-        public async Task<ServiceResponse<List<Nationality>>> GetAllNationalities()
-        {
-            try
-            {
-                string sql = @"
-            SELECT [Nationality_id], [Nationality_Type]
-            FROM [dbo].[tbl_Nationality]";
-
-                var nationalities = await _connection.QueryAsync<Nationality>(sql);
-
-                if (nationalities != null && nationalities.Any())
-                {
-                    return new ServiceResponse<List<Nationality>>(true, "Operation successful", nationalities.ToList(), 200);
-                }
-                else
-                {
-                    return new ServiceResponse<List<Nationality>>(false, "Nationalities not found", null, 404);
-                }
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<List<Nationality>>(false, ex.Message, null, 500);
-            }
-        }
-
-        public async Task<ServiceResponse<List<MotherTongue>>> GetAllMotherTongues()
-        {
-            try
-            {
-                string sql = @"
-            SELECT [Mother_Tongue_id], [Mother_Tongue_Name]
-            FROM [dbo].[tbl_MotherTongue]";
-
-                var motherTongues = await _connection.QueryAsync<MotherTongue>(sql);
-
-                if (motherTongues != null && motherTongues.Any())
-                {
-                    return new ServiceResponse<List<MotherTongue>>(true, "Operation successful", motherTongues.ToList(), 200);
-                }
-                else
-                {
-                    return new ServiceResponse<List<MotherTongue>>(false, "Mother tongues not found", null, 404);
-                }
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<List<MotherTongue>>(false, ex.Message, null, 500);
+                return new ServiceResponse<List<ClassWithSections>>(false, ex.Message, null, 500);
             }
         }
 
@@ -353,7 +319,7 @@ namespace Student_API.Repository.Implementations
                 }
                 else
                 {
-                    return new ServiceResponse<List<Academic>>(false, "Academic Yesr not found", null, 404);
+                    return new ServiceResponse<List<Academic>>(false, "Academic Year not found", null, 404);
                 }
             }
             catch (Exception ex)
@@ -363,4 +329,3 @@ namespace Student_API.Repository.Implementations
         }
     }
 }
-

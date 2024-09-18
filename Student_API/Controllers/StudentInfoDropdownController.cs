@@ -56,6 +56,20 @@ namespace Student_API.Controllers
             }
         }
         [HttpGet]
+        [Route("Sections/GetAllClassesWithSections/{institute_id}")]
+        public async Task<IActionResult> GetAllClassesWithSections(int institute_id)
+        {
+            try
+            {
+                var data = await _studentInfoDropdownService.GetAllClassesWithSections(institute_id);
+                return Ok(data);
+            }
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
+        }
+        [HttpGet]
         [Route("Religions/GetAllReligions")]
         public async Task<IActionResult> GetAllReligions()
         {

@@ -1,6 +1,5 @@
 ﻿using Student_API.DTOs.ServiceResponse;
 using Student_API.Models;
-using Student_API.Repository.Implementations;
 using Student_API.Repository.Interfaces;
 using Student_API.Services.Interfaces;
 
@@ -14,6 +13,7 @@ namespace Student_API.Services.Implementations
         {
             _studentInfoDropdownRepository = studentInfoDropdownRepository;
         }
+
         public async Task<ServiceResponse<List<Gender>>> GetAllGenders()
         {
             try
@@ -26,6 +26,7 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<List<Gender>>(false, ex.Message, null, 500);
             }
         }
+
         public async Task<ServiceResponse<List<Sections>>> GetAllSections(int Class_Id)
         {
             try
@@ -51,6 +52,7 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<List<Class>>(false, ex.Message, null, 500);
             }
         }
+
         public async Task<ServiceResponse<List<Religion>>> GetAllReligions()
         {
             try
@@ -63,6 +65,7 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<List<Religion>>(false, ex.Message, null, 500);
             }
         }
+
         public async Task<ServiceResponse<List<Nationality>>> GetAllNationalities()
         {
             try
@@ -75,6 +78,7 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<List<Nationality>>(false, ex.Message, null, 500);
             }
         }
+
         public async Task<ServiceResponse<List<MotherTongue>>> GetAllMotherTongues()
         {
             try
@@ -87,6 +91,7 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<List<MotherTongue>>(false, ex.Message, null, 500);
             }
         }
+
         public async Task<ServiceResponse<List<BloodGroup>>> GetAllBloodGroups()
         {
             try
@@ -99,6 +104,7 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<List<BloodGroup>>(false, ex.Message, null, 500);
             }
         }
+
         public async Task<ServiceResponse<List<StudentType>>> GetAllStudentTypes()
         {
             try
@@ -111,6 +117,7 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<List<StudentType>>(false, ex.Message, null, 500);
             }
         }
+
         public async Task<ServiceResponse<List<StudentGroup>>> GetAllStudentGroups()
         {
             try
@@ -123,6 +130,7 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<List<StudentGroup>>(false, ex.Message, null, 500);
             }
         }
+
         public async Task<ServiceResponse<List<Occupation>>> GetAllOccupations()
         {
             try
@@ -135,6 +143,7 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<List<Occupation>>(false, ex.Message, null, 500);
             }
         }
+
         public async Task<ServiceResponse<List<ParentType>>> GetAllParentTypes()
         {
             try
@@ -147,6 +156,7 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<List<ParentType>>(false, ex.Message, null, 500);
             }
         }
+
         public async Task<ServiceResponse<List<State>>> GetAllStates()
         {
             try
@@ -159,11 +169,12 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<List<State>>(false, ex.Message, null, 500);
             }
         }
+
         public async Task<ServiceResponse<List<City>>> GetAllCities(int stateId)
         {
             try
             {
-                var data = await _studentInfoDropdownRepository.GetAllCities( stateId);
+                var data = await _studentInfoDropdownRepository.GetAllCities(stateId);
                 return data;
             }
             catch (Exception ex)
@@ -171,6 +182,7 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<List<City>>(false, ex.Message, null, 500);
             }
         }
+
         public async Task<ServiceResponse<List<Academic>>> GetAllAcademic()
         {
             try
@@ -181,6 +193,19 @@ namespace Student_API.Services.Implementations
             catch (Exception ex)
             {
                 return new ServiceResponse<List<Academic>>(false, ex.Message, null, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<List<ClassWithSections>>> GetAllClassesWithSections(int institute_id)
+        {
+            try
+            {
+                var data = await _studentInfoDropdownRepository.GetAllClassesWithSections(institute_id);
+                return data;
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<ClassWithSections>>(false, ex.Message, null, 500);
             }
         }
     }
