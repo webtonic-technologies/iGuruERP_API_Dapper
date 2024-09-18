@@ -6,9 +6,9 @@ namespace Institute_API.DTOs
     {
         public int Event_id { get; set; }
         public string EventName { get; set; }
-        [ValidDateString("dd-MM-yyyy hh:mm tt")]
+        [ValidDateString("dd-MM-yyyy")]
         public string StartDate { get; set; }
-        [ValidDateString("dd-MM-yyyy hh:mm tt")]
+        [ValidDateString("dd-MM-yyyy")]
         public string EndDate { get; set; }
         public string Description { get; set; }
         public string Location { get; set; }

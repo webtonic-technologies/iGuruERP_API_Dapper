@@ -6,6 +6,7 @@ using Dapper;
 using Institute_API.Models;
 using System.Text;
 using static Institute_API.Models.Enums;
+using Microsoft.Extensions.Logging;
 
 namespace Institute_API.Repository.Implementations
 {
@@ -160,7 +161,7 @@ INNER JOIN tbl_CreateEvent ON tbl_CreateEvent.Event_id = tbl_Gallery.Event_id
         }
 
 
-        public async Task<ServiceResponse<List<GalleryEventDTO>>> GetAllGalleryImagesByEvent(int Institute_id, int? pageSize = null, int? pageNumber = null)
+        public async Task<ServiceResponse<List<GalleryEventDTO>>> GetAllGalleryImagesByEvent(int Institute_id, int Event_id, int? pageSize = null, int? pageNumber = null)
         {
             try
             {
@@ -168,7 +169,7 @@ INNER JOIN tbl_CreateEvent ON tbl_CreateEvent.Event_id = tbl_Gallery.Event_id
           SELECT tbl_Gallery.Event_id, tbl_Gallery.FileName, tbl_Gallery.isApproved,tbl_Gallery.Status,FORMAT([StartDate], 'dd-MM-yyyy hh:mm tt') AS EventDateTime
             FROM [dbo].[tbl_Gallery]
 INNER JOIN tbl_CreateEvent ON tbl_CreateEvent.Event_id = tbl_Gallery.Event_id
-            WHERE tbl_Gallery.Institute_id = @Institute_id  AND tbl_Gallery.isDelete = 0 AND tbl_CreateEvent.isDelete = 0
+            WHERE tbl_Gallery.Institute_id = @Institute_id  AND tbl_Gallery.isDelete = 0 AND tbl_CreateEvent.isDelete = 0 AND tbl_Gallery.Event_id = @Event_id
             ORDER BY tbl_Gallery.Event_id";
 
 
@@ -178,10 +179,11 @@ INNER JOIN tbl_CreateEvent ON tbl_CreateEvent.Event_id = tbl_Gallery.Event_id
 
                     query += $@"
                 OFFSET @Offset ROWS
-                FETCH NEXT @PageSize ROWS ONLY;";
+                FETCH NEXT @PageSize ROWS ONLY;
+                    ";
                 }
 
-                var images = await _connection.QueryAsync<Gallery>(query, new { Institute_id, Offset = (pageNumber - 1) * pageSize, PageSize = pageSize });
+                var images = await _connection.QueryAsync<Gallery>(query, new { Institute_id, Event_id, Offset = (pageNumber - 1) * pageSize, PageSize = pageSize });
 
                 var result = images.GroupBy(x => x.Event_id)
                                    .Select(g => new GalleryEventDTO

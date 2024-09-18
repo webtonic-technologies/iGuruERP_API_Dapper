@@ -138,10 +138,10 @@ namespace Institute_API.Services.Implementations
                 var eventsResponse = await _eventRepository.GetApprovedEvents(commonRequest.Institute_id, commonRequest.Academic_year_id, commonRequest.Status, "", "", int.MaxValue, 1);
 
                 // Check if events were retrieved successfully
-                if (!eventsResponse.Success)
-                {
-                    return new ServiceResponse<string>(false, "No approved events found", null, 404);
-                }
+                //if (!eventsResponse.Success)
+                //{
+                //    return new ServiceResponse<string>(false, "No approved events found", null, 404);
+                //}
 
                 var events = eventsResponse.Data;
                 ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
@@ -208,10 +208,10 @@ namespace Institute_API.Services.Implementations
                 var eventsResponse = await _eventRepository.GetAllEvents(commonRequest.Institute_id, commonRequest.Academic_year_id, "", "", int.MaxValue, 1);
 
                 // Check if events were retrieved successfully
-                if (!eventsResponse.Success)
-                {
-                    return new ServiceResponse<string>(false, "No events found", null, 404);
-                }
+                //if (!eventsResponse.Success)
+                //{
+                //    return new ServiceResponse<string>(false, "No events found", null, 404);
+                //}
 
                 var events = eventsResponse.Data;
                 if (events == null || !events.Any())

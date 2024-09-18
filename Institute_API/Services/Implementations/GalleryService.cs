@@ -123,7 +123,7 @@ namespace Institute_API.Services.Implementations
         {
             try
             {
-                var response = await _galleryRepository.GetAllGalleryImagesByEvent(model.Institute_id, model.pageSize, model.pageNumber);
+                var response = await _galleryRepository.GetAllGalleryImagesByEvent(model.Institute_id,model.Event_id, model.pageSize, model.pageNumber);
 
                 if (response.Success)
                 {
