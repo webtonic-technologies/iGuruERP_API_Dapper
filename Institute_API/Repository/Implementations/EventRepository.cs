@@ -143,8 +143,8 @@ namespace Institute_API.Repository.Implementations
                     try
                     {
 
-                        var StartDate = DateTimeHelper.ConvertToDateTime(eventDto.StartDate);
-                        var EndDate = DateTimeHelper.ConvertToDateTime(eventDto.EndDate);
+                        var StartDate = DateTimeHelper.ConvertToDateTime(eventDto.StartDate, "dd-MM-yyyy").ToString("yyyy-MM-dd");
+                        var EndDate = DateTimeHelper.ConvertToDateTime(eventDto.EndDate, "dd-MM-yyyy").ToString("yyyy-MM-dd");
                         // Save or update the event
                         string eventQuery;
                         if (eventDto.Event_id > 0)
@@ -356,8 +356,8 @@ namespace Institute_API.Repository.Implementations
             {
                 // Get event details from tbl_CreateEvent
                 string eventQuery = @"
-            SELECT Event_id,EventName,FORMAT([StartDate], 'dd-MM-yyyy hh:mm tt') AS StartDate, 
-                   FORMAT([EndDate], 'dd-MM-yyyy hh:mm tt') AS EndDate,,Description,Location,ScheduleTime AS ScheduleDate,Time AS ScheduleTime,AttachmentFile,isApproved,approvedBy,Academic_year_id
+            SELECT Event_id,EventName,FORMAT([StartDate], 'dd-MM-yyyy') AS StartDate, 
+                   FORMAT([EndDate], 'dd-MM-yyyy') AS EndDate,Description,Location,ScheduleTime AS ScheduleDate,Time AS ScheduleTime,AttachmentFile,isApproved,approvedBy,Academic_year_id,Institute_id
             FROM tbl_CreateEvent
             WHERE Event_id = @EventId";
 
@@ -459,13 +459,14 @@ namespace Institute_API.Repository.Implementations
                 string queryAll = @"
     SELECT Event_id,
            EventName,
-          FORMAT([StartDate], 'dd-MM-yyyy hh:mm tt') AS StartDate, 
-                   FORMAT([EndDate], 'dd-MM-yyyy hh:mm tt') AS EndDate,
+          FORMAT([StartDate], 'dd-MM-yyyy') AS StartDate, 
+                   FORMAT([EndDate], 'dd-MM-yyyy') AS EndDate,
            Description,
            Location,
            AttachmentFile
     FROM tbl_CreateEvent 
-    WHERE    Status = @Status AND isDelete = 0 AND Institute_id = @Institute_id AND (@Academic_year_id = 0 OR Academic_year_id=@Academic_year_id)";
+    WHERE    Status = @Status AND isDelete = 0 AND Institute_id = @Institute_id AND (@Academic_year_id = 0 OR Academic_year_id=@
+)";
 
                 string queryCount = @"
     SELECT COUNT(*)
@@ -536,14 +537,21 @@ namespace Institute_API.Repository.Implementations
                 }
 
                 // Ensure sort direction is valid, default to "ASC" if not
-                sortDirection = sortDirection.ToUpper() == "DESC" ? "DESC" : "ASC";
+                //sortDirection = sortDirection.ToUpper() == "DESC" ? "DESC" : "ASC";
+                var allowedSortDirections = new List<string> { "ASC", "DESC" };
+
+                sortDirection = sortDirection.ToUpper();
+                if (!allowedSortDirections.Contains(sortDirection))
+                {
+                    sortDirection = "ASC";  // Default to ASC if invalid
+                }
 
                 // SQL queries
                 string queryAll = @"
             SELECT Event_id,
                    EventName,
-FORMAT([StartDate], 'dd-MM-yyyy hh:mm tt') AS StartDate, 
-                   FORMAT([EndDate], 'dd-MM-yyyy hh:mm tt') AS EndDate,
+FORMAT([StartDate], 'dd-MM-yyyy') AS StartDate, 
+                   FORMAT([EndDate], 'dd-MM-yyyy') AS EndDate,
                    Description,
                    Location,
                    AttachmentFile
