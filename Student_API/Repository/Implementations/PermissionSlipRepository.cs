@@ -42,10 +42,10 @@ namespace Student_API.Repository.Implementations
                 sec.Section_name AS SectionName,
                 g.Gender_Type AS GenderName,
                 p.first_name + ' ' + p.last_name AS ParentName,
-                FORMAT(ps.RequestedDateTime, 'dd-MM-yyyy') AS RequestedDateTime ,
+                FORMAT(ps.RequestedDateTime, 'dd-MM-yyyy hh:mm tt') AS RequestedDateTime ,
                 ps.Reason,
                 ps.Status,
-               FORMAT(ps.ModifiedDate, 'dd-MM-yyyy') AS ModifiedDate
+               FORMAT(ps.ModifiedDate, 'dd-MM-yyyy hh:mm tt') AS ModifiedDate
             INTO #PermissionSlipTempTable
             FROM tbl_PermissionSlip ps
             INNER JOIN tbl_StudentMaster s ON ps.Student_Id = s.student_id
@@ -138,7 +138,7 @@ namespace Student_API.Repository.Implementations
                 s.first_name + ' ' + s.last_name AS StudentName,
                 c.class_name AS ClassName,
                 sec.Section_name AS SectionName,
-                FORMAT(ps.RequestedDateTime, 'dd-MM-yyyy')  AS ApprovalDate,
+                FORMAT(ps.RequestedDateTime, 'dd-MM-yyyy hh:mm tt')  AS ApprovalDate,
                 pt.parent_type AS ParentType,
                 p.first_name + ' ' + p.last_name AS ParentName,
                 ps.Reason AS Remark,
@@ -154,8 +154,8 @@ namespace Student_API.Repository.Implementations
               AND (s.class_id = @ClassId OR  @ClassId=0)
               AND (s.section_id = @SectionId OR  @SectionId =0)
               AND ps.Status = @Status
-              AND (@StartDate IS NULL OR ps.ModifiedDate >= CONVERT(datetime, @StartDate, 105))
-              AND (@EndDate IS NULL OR ps.ModifiedDate <= CONVERT(datetime, @EndDate, 105));
+              AND (@StartDate IS NULL OR ps.RequestedDateTime >= CONVERT(datetime, @StartDate, 105))
+              AND (@EndDate IS NULL OR ps.RequestedDateTime <= CONVERT(datetime, @EndDate, 105));
 
             SELECT * 
             FROM #PermissionSlipTempTable
@@ -212,13 +212,14 @@ namespace Student_API.Repository.Implementations
                     s.admission_number AS Admission_Number,
                     c.class_name AS ClassName,
                     sec.Section_name AS SectionName,
-                    FORMAT(ps.RequestedDateTime, 'dd-MM-yyyy') AS RequestedDateTime,
+                    FORMAT(ps.RequestedDateTime, 'dd-MM-yyyy hh:mm tt') AS RequestedDateTime,
                     ps.Reason,
                     ps.Status,
-                    ps.ModifiedDate,
+                     FORMAT(ps.ModifiedDate, 'dd-MM-yyyy hh:mm tt') AS ModifiedDate,
                     ps.Qr_Code,
                     p.first_name + ' ' + p.last_name AS ParentName,
-                    g.Gender_Type AS GenderName
+                    g.Gender_Type AS GenderName,
+                    p.File_Name AS Parent_File
                 FROM tbl_PermissionSlip ps
                 JOIN tbl_StudentMaster s ON ps.Student_Id = s.student_id
                 JOIN tbl_StudentParentsInfo p ON ps.Student_Parent_Info_id = p.student_parent_info_id

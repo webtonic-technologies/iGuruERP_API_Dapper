@@ -62,7 +62,7 @@ namespace Student_API.Repository.Implementations
             tbl_StudentMaster.File_Name
             tbl_StudentMaster.class_id,
             tbl_StudentMaster.Section_Id,
-            tbl_StudentMaster.institute_id
+            tbl_StudentMaster.Academic_year_id
         INTO 
             #TempStudentDetails
         FROM 
