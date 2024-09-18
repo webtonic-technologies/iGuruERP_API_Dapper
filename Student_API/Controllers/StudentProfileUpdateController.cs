@@ -31,7 +31,7 @@ namespace Student_API.Controllers
         }
 
         [HttpGet("getProfileUpdateRequests")]
-        public async Task<IActionResult> GetProfileUpdateRequests([FromQuery] GetStudentRequestModel requestModel)
+        public async Task<IActionResult> GetProfileUpdateRequests([FromQuery] GetStudentProfileRequestModel requestModel)
         {
             var response = await _studentProfileUpdateServices.GetProfileUpdateRequests(requestModel);
             return Ok(response);
