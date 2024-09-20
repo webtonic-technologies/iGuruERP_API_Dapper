@@ -1521,7 +1521,7 @@ namespace Employee_API.Repository.Implementations
                             CONCAT(First_Name, ' ', Middle_Name, ' ', Last_Name) AS EmployeeName,
                             d.DepartmentName AS Department,
                             des.DesignationName AS Designation,
-                            g.GenderName AS Gender,
+                            g.Gender_Type AS Gender,
                             mobile_number AS Mobile,
                             Date_of_Birth AS DateOfBirth,
                             EmailID AS Email
@@ -1619,31 +1619,30 @@ namespace Employee_API.Repository.Implementations
                 return new ServiceResponse<byte[]>(false, ex.Message, null, StatusCodes.Status500InternalServerError);
             }
         }
-    private async Task<bool> CreateUserLoginInfo(int userId, int userType, int instituteId)
+        private async Task<bool> CreateUserLoginInfo(int userId, int userType, int instituteId)
         {
             try
             {
                 var connection = new SqlConnection(_connectionString);
-                connection.Open();
+                await connection.OpenAsync(); // Ensure async method for opening
 
                 // Define common password
                 string commonPassword = "iGuru@1234";
 
                 // SQL queries for fetching user details based on UserType
                 string employeeSql = @"
-        SELECT TOP (1) [Employee_id], [First_Name], [Last_Name], [mobile_number]
-        FROM [tbl_EmployeeProfileMaster]
-        WHERE [Employee_id] = @UserId";
+            SELECT TOP (1) [Employee_id], [First_Name], [Last_Name], [mobile_number]
+            FROM [tbl_EmployeeProfileMaster]
+            WHERE [Employee_id] = @UserId";
 
                 string studentSql = @"
-        SELECT TOP (1) [student_id], [First_Name], [Last_Name], [Admission_Number]
-        FROM [tbl_StudentMaster]
-        WHERE [student_id] = @UserId";
+            SELECT TOP (1) [student_id], [First_Name], [Last_Name], [Admission_Number]
+            FROM [tbl_StudentMaster]
+            WHERE [student_id] = @UserId";
 
                 // Initialize variables
                 string username = null;
                 dynamic userDetails = null;
-               
 
                 // Fetch user details based on the UserType
                 if (userType == 1) // Employee
@@ -1656,7 +1655,15 @@ namespace Employee_API.Repository.Implementations
                         string lastName = userDetails.Last_Name;
                         string phoneNumber = userDetails.mobile_number;
 
-                        username = $"{firstName.Substring(0, 3)}{lastName.Substring(0, 3)}{phoneNumber.Substring(phoneNumber.Length - 4)}";
+                        // Ensure the first name and last name have at least 3 characters and the phone number has at least 4 characters
+                        if (firstName.Length >= 3 && lastName.Length >= 3 && phoneNumber.Length >= 4)
+                        {
+                            username = $"{firstName.Substring(0, 3)}{lastName.Substring(0, 3)}{phoneNumber.Substring(phoneNumber.Length - 4)}";
+                        }
+                        else
+                        {
+                            throw new Exception("First name, last name, or phone number too short for username creation.");
+                        }
                     }
                 }
                 else if (userType == 2) // Student
@@ -1669,7 +1676,15 @@ namespace Employee_API.Repository.Implementations
                         string lastName = userDetails.Last_Name;
                         string admissionNumber = userDetails.Admission_Number;
 
-                        username = $"{firstName.Substring(0, 3)}{lastName.Substring(0, 3)}{admissionNumber.Substring(admissionNumber.Length - 4)}";
+                        // Ensure the first name and last name have at least 3 characters and the admission number has at least 4 characters
+                        if (firstName.Length >= 3 && lastName.Length >= 3 && admissionNumber.Length >= 4)
+                        {
+                            username = $"{firstName.Substring(0, 3)}{lastName.Substring(0, 3)}{admissionNumber.Substring(admissionNumber.Length - 4)}";
+                        }
+                        else
+                        {
+                            throw new Exception("First name, last name, or admission number too short for username creation.");
+                        }
                     }
                 }
 
@@ -1680,9 +1695,9 @@ namespace Employee_API.Repository.Implementations
 
                     // SQL query to insert login information
                     string insertLoginSql = @"
-            INSERT INTO [tblLoginInformationMaster] 
-            ([UserId], [UserType], [UserName], [Password], [InstituteId], [UserActivity])
-            VALUES (@UserId, @UserType, @UserName, @Password, @InstituteId, NULL)";
+                INSERT INTO [tblLoginInformationMaster] 
+                ([UserId], [UserType], [UserName], [Password], [InstituteId], [UserActivity])
+                VALUES (@UserId, @UserType, @UserName, @Password, @InstituteId, NULL)";
 
                     // Insert login information into the database
                     await connection.ExecuteAsync(insertLoginSql, new
