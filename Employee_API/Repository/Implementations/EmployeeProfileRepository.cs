@@ -395,7 +395,7 @@ namespace Employee_API.Repository.Implementations
                 {
                     // Check if a record already exists for the EmployeeId in the tbl_EmployeeStaffMapClassTeacher table
                     var existingClassTeacherMapping = await connection.QueryFirstOrDefaultAsync<dynamic>(
-                        "SELECT * FROM tbl_EmployeeStaffMapClassTeacher WHERE EmployeeId = @EmployeeId AND ClassId = @ClassId AND SectionId = @SectionId;",
+                        "SELECT * FROM tbl_EmployeeStaffMapClassTeacher WHERE EmployeeId = @EmployeeId;",
                         new
                         {
                             request.EmployeeId,
@@ -441,7 +441,7 @@ namespace Employee_API.Repository.Implementations
                     // Check if a record already exists for the EmployeeId in the tbl_EmployeeStappMapClassSection table
                     var existingClassSectionMapping = await connection.QueryFirstOrDefaultAsync<int>(
                         @"SELECT ClassSectionMapId FROM tbl_EmployeeStappMapClassSection 
-                  WHERE EmployeeId = @EmployeeId AND ClassId = @ClassId AND SectionId = @SectionId",
+                  WHERE EmployeeId = @EmployeeId",
                         new
                         {
                             request.EmployeeId,
