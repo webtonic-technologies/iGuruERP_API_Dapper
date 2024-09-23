@@ -48,7 +48,8 @@ namespace Institute_API.Repository.Implementations
                         SET SubjectName = @SubjectName,
                             SubjectCode = @SubjectCode,
                             subject_type_id = @subject_type_id,
-                            IsDeleted = @IsDeleted
+                            IsDeleted = @IsDeleted,
+                            InstituteId = @InstituteId
                         WHERE SubjectId = @SubjectId;
 
                         -- Get the updated SubjectId
@@ -57,7 +58,7 @@ namespace Institute_API.Repository.Implementations
                     ELSE
                     BEGIN
                         INSERT INTO tbl_Subjects (InstituteId, SubjectName, SubjectCode, subject_type_id, IsDeleted)
-                        VALUES (@InstituteId, @SubjectName, @SubjectCode, @subject_type_id, @IsDeleted);
+                        VALUES (@InstituteId, @SubjectName, @SubjectCode, @subject_type_id, 0);
                         
                         -- Get the new SubjectId
                         SET @OutputSubjectId = CAST(SCOPE_IDENTITY() AS INT);
@@ -69,7 +70,7 @@ namespace Institute_API.Repository.Implementations
                             // Map the subject properties to the parameters
                             var subjectParams = new
                             {
-                                request.InstituteId,
+                                InstituteId = request.InstituteId,
                                 subject.SubjectId,
                                 subject.SubjectName,
                                 subject.SubjectCode,
@@ -116,115 +117,6 @@ namespace Institute_API.Repository.Implementations
                 }
             }
         }
-
-        // Method to handle subject section mappings
-        private async Task<int> HandleSubjectMappings(List<SubjectSectionMappingRequest> mappings, int subjectId, IDbTransaction transaction)
-        {
-            if (mappings == null || mappings.Count == 0)
-            {
-                return 0; // No mappings to process
-            }
-
-            string insertMappingSql = @"
-    INSERT INTO tbl_SubjectSectionMapping (SubjectId, class_id, section_id, IsDeleted)
-    VALUES (@SubjectId, @class_id, @section_id, @IsDeleted)";
-
-            foreach (var mapping in mappings)
-            {
-                var mappingParams = new
-                {
-                    mapping.SubjectId,
-                    mapping.class_id,
-                    mapping.section_id,
-                    mapping.IsDeleted
-                };
-
-                await _connection.ExecuteAsync(insertMappingSql, mappingParams, transaction);
-            }
-
-            return mappings.Count; // Return the number of rows inserted
-        }
-
-        //public async Task<ServiceResponse<string>> AddUpdateAcademicConfigSubject(SubjectRequest request)
-        //{
-        //    if (_connection.State != ConnectionState.Open)
-        //    {
-        //        _connection.Open();
-        //    }
-
-        //    using (var connection = _connection)
-        //    {
-        //        using (var transaction = connection.BeginTransaction())
-        //        {
-        //            try
-        //            {
-        //                // SQL query to insert or update the subject and retrieve SubjectId
-        //                string upsertSubjectSql = @"
-        //        DECLARE @OutputSubjectId INT;
-
-        //        IF EXISTS (SELECT 1 FROM tbl_Subjects WHERE SubjectId = @SubjectId)
-        //        BEGIN
-        //            UPDATE tbl_Subjects
-        //            SET SubjectName = @SubjectName,
-        //                SubjectCode = @SubjectCode,
-        //                subject_type_id = @subject_type_id,
-        //                IsDeleted = @IsDeleted
-        //            WHERE SubjectId = @SubjectId;
-
-        //            -- Get the updated SubjectId
-        //            SET @OutputSubjectId = @SubjectId;
-        //        END
-        //        ELSE
-        //        BEGIN
-        //            INSERT INTO tbl_Subjects (InstituteId, SubjectName, SubjectCode, subject_type_id, IsDeleted)
-        //            VALUES (@InstituteId, @SubjectName, @SubjectCode, @subject_type_id, @IsDeleted);
-
-        //            -- Get the new SubjectId
-        //            SET @OutputSubjectId = CAST(SCOPE_IDENTITY() AS INT);
-        //        END
-
-        //        SELECT @OutputSubjectId; -- Return the SubjectId
-        //        ";
-
-        //                request.IsDeleted = false;
-        //                if (request.SubjectId > 0)
-        //                {
-        //                    foreach (var data in request.SubjectSectionMappingRequests)
-        //                    {
-        //                        data.SubjectId = request.SubjectId;
-        //                    }
-        //                }
-
-        //                // Execute the upsert and retrieve the SubjectId
-        //                var subjectId = await connection.QuerySingleAsync<int>(upsertSubjectSql, request, transaction);
-
-        //                // Handle subject section mappings
-        //                int rowsInserted = await HandleSubjectMappings(request.SubjectSectionMappingRequests, subjectId, transaction);
-
-        //                // Commit transaction if all operations were successful
-        //                if (rowsInserted >= 0)
-        //                {
-        //                    transaction.Commit();
-        //                    return new ServiceResponse<string>(true, "Subject and mappings saved successfully.", "Operation successful", 200); // Return the SubjectId
-        //                }
-        //                else
-        //                {
-        //                    transaction.Rollback();
-        //                    return new ServiceResponse<string>(false, "Failed to save subject mappings.", string.Empty, 500);
-        //                }
-        //            }
-        //            catch (Exception ex)
-        //            {
-        //                transaction.Rollback();
-        //                return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
-        //            }
-        //            finally
-        //            {
-        //                connection.Close();
-        //            }
-        //        }
-        //    }
-        //}
         public async Task<ServiceResponse<List<SubjectType>>> GetSubjectTypeList()
         {
             try
@@ -269,7 +161,6 @@ namespace Institute_API.Repository.Implementations
                 return new ServiceResponse<SubjectType>(false, ex.Message, null, 500);
             }
         }
-
         public async Task<ServiceResponse<string>> AddUpdateSubjectType(SubjectType request)
         {
             if (_connection.State != ConnectionState.Open)
@@ -633,32 +524,32 @@ namespace Institute_API.Repository.Implementations
                 return new ServiceResponse<List<SubjectResponse>>(false, ex.Message, new List<SubjectResponse>(), 500);
             }
         }
-        //    private async Task<int> HandleSubjectMappings(List<SubjectSectionMappingRequest>? mappings, int subjectId, IDbTransaction transaction)
-        //    {
-        //        if (mappings == null || mappings.Count == 0) return 0;
+        private async Task<int> HandleSubjectMappings(List<SubjectSectionMappingRequest>? mappings, int subjectId, IDbTransaction transaction)
+        {
+            if (mappings == null || mappings.Count == 0) return 0;
 
-        //        // Delete existing mappings
-        //        string deleteMappingSql = "DELETE FROM tbl_ClassSectionSubjectMapping WHERE SubjectId = @SubjectId";
-        //        await _connection.ExecuteAsync(deleteMappingSql, new { SubjectId = subjectId }, transaction);
+            // Delete existing mappings
+            string deleteMappingSql = "DELETE FROM tbl_ClassSectionSubjectMapping WHERE SubjectId = @SubjectId";
+            await _connection.ExecuteAsync(deleteMappingSql, new { SubjectId = subjectId }, transaction);
 
-        //        // Insert new mappings
-        //        string insertMappingSql = @"
-        //    INSERT INTO tbl_ClassSectionSubjectMapping (SubjectId, class_id, section_id, IsDeleted)
-        //    VALUES (@SubjectId, @class_id, @section_id, @IsDeleted);
-        //";
+            // Insert new mappings
+            string insertMappingSql = @"
+            INSERT INTO tbl_ClassSectionSubjectMapping (SubjectId, class_id, section_id, IsDeleted)
+            VALUES (@SubjectId, @class_id, @section_id, @IsDeleted);
+        ";
 
-        //        var mappingParams = mappings.Select(mapping => new
-        //        {
-        //            SubjectId = subjectId,
-        //            mapping.class_id,
-        //            mapping.section_id,
-        //            IsDeleted = false
-        //        }).ToList();
+            var mappingParams = mappings.Select(mapping => new
+            {
+                SubjectId = subjectId,
+                mapping.class_id,
+                mapping.section_id,
+                IsDeleted = false
+            }).ToList();
 
-        //        int rowsInserted = await _connection.ExecuteAsync(insertMappingSql, mappingParams, transaction);
+            int rowsInserted = await _connection.ExecuteAsync(insertMappingSql, mappingParams, transaction);
 
-        //        return rowsInserted;
-        //    }
+            return rowsInserted;
+        }
         public async Task<ServiceResponse<byte[]>> DownloadExcelSheet(ExcelDownloadRequest request)
         {
             try
@@ -806,123 +697,5 @@ namespace Institute_API.Repository.Implementations
                 return new ServiceResponse<byte[]>(true, "No data found. Returning an empty Excel sheet.", excelData, 200);
             }
         }
-
-        //public async Task<ServiceResponse<byte[]>> DownloadExcelSheet(int InstituteId)
-        //{
-        //    try
-        //    {
-        //        ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
-        //        // SQL query to fetch subjects, class-section mappings, and subject types
-        //        string sql = @"
-        //SELECT s.SubjectName, s.SubjectCode, st.subject_type, csm.class_id, csm.section_id
-        //FROM tbl_Subjects s
-        //LEFT JOIN tbl_ClassSectionSubjectMapping csm ON s.SubjectId = csm.SubjectId
-        //LEFT JOIN tbl_SubjectTypeMaster st ON s.subject_type_id = st.subject_type_id
-        //WHERE s.InstituteId = @InstituteId AND s.IsDeleted = 0 AND csm.IsDeleted = 0";
-
-        //        var subjectResult = await _connection.QueryAsync(sql, new { InstituteId });
-
-        //        // Prepare to gather all unique section IDs across results
-        //        List<int> allSectionIds = new List<int>();
-
-        //        foreach (var row in subjectResult)
-        //        {
-        //            string sectionIdCsv = row.section_id;
-        //            if (!string.IsNullOrEmpty(sectionIdCsv))
-        //            {
-        //                // Split section IDs and parse them into integers
-        //                string[] sectionIdStrings = sectionIdCsv.Split(',');
-        //                foreach (var sectionIdStr in sectionIdStrings)
-        //                {
-        //                    if (int.TryParse(sectionIdStr, out int sectionId))
-        //                    {
-        //                        // Add the section ID to the list if it’s valid and not already present
-        //                        if (!allSectionIds.Contains(sectionId))
-        //                        {
-        //                            allSectionIds.Add(sectionId);
-        //                        }
-        //                    }
-        //                }
-        //            }
-        //        }
-
-        //        // Now that we have all section IDs, fetch their corresponding section names
-        //        var sectionSql = @"
-        //SELECT section_id, section_name 
-        //FROM tbl_Section 
-        //WHERE section_id IN @SectionIds";
-
-        //        var sectionData = await _connection.QueryAsync(sectionSql, new { SectionIds = allSectionIds.ToArray() });
-
-        //        // Create a dictionary for fast lookup of section names by their ID
-        //        Dictionary<int, string> sectionIdToNameMap = sectionData.ToDictionary(row => (int)row.section_id, row => (string)row.section_name);
-
-        //        // Prepare the final result set
-        //        List<dynamic> finalResult = new List<dynamic>();
-
-        //        foreach (var row in subjectResult)
-        //        {
-        //            string[] sectionIdStrings = row.section_id.Split(',');
-        //            List<string> sectionNames = new List<string>();
-
-        //            foreach (var sectionIdStr in sectionIdStrings)
-        //            {
-        //                if (int.TryParse(sectionIdStr, out int sectionId) && sectionIdToNameMap.ContainsKey(sectionId))
-        //                {
-        //                    sectionNames.Add(sectionIdToNameMap[sectionId]);
-        //                }
-        //            }
-
-        //            finalResult.Add(new
-        //            {
-        //                SubjectName = row.SubjectName,
-        //                SubjectCode = row.SubjectCode,
-        //                SubjectType = row.subject_type,
-        //                ClassId = row.class_id,
-        //                Sections = string.Join(", ", sectionNames) // Join all the section names
-        //            });
-        //        }
-
-        //        // Create the Excel file with EPPlus
-        //        using (var package = new ExcelPackage())
-        //        {
-        //            var worksheet = package.Workbook.Worksheets.Add("Subject Details");
-
-        //            // Add headers
-        //            worksheet.Cells[1, 1].Value = "Sr No";
-        //            worksheet.Cells[1, 2].Value = "Subject Name";
-        //            worksheet.Cells[1, 3].Value = "Subject Code";
-        //            worksheet.Cells[1, 4].Value = "Class";
-        //            worksheet.Cells[1, 5].Value = "Sections";
-        //            worksheet.Cells[1, 6].Value = "Subject Type";
-
-        //            // Fill the worksheet with data
-        //            int rowNumber = 2;
-        //            int serialNumber = 1;
-
-        //            foreach (var entry in finalResult)
-        //            {
-        //                worksheet.Cells[rowNumber, 1].Value = serialNumber++;
-        //                worksheet.Cells[rowNumber, 2].Value = entry.SubjectName;
-        //                worksheet.Cells[rowNumber, 3].Value = entry.SubjectCode;
-        //                worksheet.Cells[rowNumber, 4].Value = entry.ClassId;
-        //                worksheet.Cells[rowNumber, 5].Value = entry.Sections;
-        //                worksheet.Cells[rowNumber, 6].Value = entry.SubjectType;
-
-        //                rowNumber++;
-        //            }
-
-        //            worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
-
-        //            // Convert the Excel package to byte array and return it
-        //            var excelData = package.GetAsByteArray();
-        //            return new ServiceResponse<byte[]>(true, "Excel file generated successfully", excelData, 200);
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return new ServiceResponse<byte[]>(false, $"Error generating Excel file: {ex.Message}", null, 500);
-        //    }
-        //}
     }
 }

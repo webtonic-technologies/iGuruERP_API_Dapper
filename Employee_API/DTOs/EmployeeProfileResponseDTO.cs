@@ -130,15 +130,15 @@ namespace Employee_API.DTOs
     public class EmployeeStappMapClassSectionResponse
     {
         public int ClassSectionMapId { get; set; }
-        public int SubjectId { get; set; }
+        public int? SubjectId { get; set; }
         public string SubjectName { get; set; } = string.Empty;
-        public int ClassId { get; set; }
+        public int? ClassId { get; set; }
         public string ClassName { get; set; } = string.Empty;
         public List<Sections>? sections { get; set; }
     }
     public class Sections
     {
-        public int SectionId { get; set; }
+        public int? SectionId { get; set; }
         public string SectionName {  get; set; } = string.Empty;
     }
 }
