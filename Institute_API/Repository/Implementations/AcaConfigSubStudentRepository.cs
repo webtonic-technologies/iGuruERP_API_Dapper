@@ -634,16 +634,14 @@ namespace Institute_API.Repository.Implementations
                sm.First_Name,
                sm.Middle_Name,
                sm.Last_Name,
-               sm.AdmissionNumber
+               sm.Admission_Number as AdmissionNumber
         FROM tbl_StudentSubjectMapping ssm
-        INNER JOIN tbl_ClassSectionSubjectMapping cssm ON ssm.SubjectId = cssm.SubjectId
         INNER JOIN tbl_Subjects s ON s.SubjectId = ssm.SubjectId
-        INNER JOIN tbl_StudentMaster sm ON sm.StudentId = ssm.StudentId
+        INNER JOIN tbl_StudentMaster sm ON sm.student_id = ssm.StudentId
         WHERE ssm.InstituteId = @InstituteId
-          AND sm.ClassId = @ClassId
-          AND sm.SectionId = @SectionId
-          AND s.IsDeleted = 0
-          AND cssm.IsDeleted = 0";
+          AND sm.class_id = @ClassId
+          AND sm.section_id = @SectionId
+          AND s.IsDeleted = 0";
 
                 var parameters = new DynamicParameters();
                 parameters.Add("InstituteId", request.InstituteId);

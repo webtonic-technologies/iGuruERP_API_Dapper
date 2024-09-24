@@ -1271,33 +1271,44 @@ namespace Employee_API.Repository.Implementations
 
             // Query for EmployeeStaffMapClassTeacher
             string teacherMappingsSql = @"
-    SELECT t.MappingId, t.EmployeeId, t.ClassId, c.class_name, t.SectionId, s.section_name, t.SubjectId, sub.SubjectName
-    FROM tbl_EmployeeStaffMapClassTeacher t
-    INNER JOIN tbl_Class c ON t.ClassId = c.class_id
-    LEFT JOIN (
-        SELECT section_id, section_name FROM tbl_Section WHERE IsDeleted = 0
-    ) s ON CHARINDEX(CONVERT(varchar, s.section_id), t.SectionId) > 0
-    LEFT JOIN tbl_Subjects sub ON CHARINDEX(CONVERT(varchar, sub.SubjectId), t.SubjectId) > 0
-    WHERE t.EmployeeId = @EmployeeId";
+            SELECT t.MappingId, t.EmployeeId, t.ClassId, c.class_name, t.SectionId, s.section_name, t.SubjectId, sub.SubjectName
+            FROM tbl_EmployeeStaffMapClassTeacher t
+            INNER JOIN tbl_Class c ON t.ClassId = c.class_id
+            LEFT JOIN tbl_Section s ON t.SectionId = s.section_id AND s.IsDeleted = 0
+            LEFT JOIN tbl_Subjects sub ON CHARINDEX(CONVERT(varchar, sub.SubjectId), t.SubjectId) > 0
+            WHERE t.EmployeeId = @EmployeeId";
+
 
             var teacherMappings = await _connection.QueryAsync<dynamic>(teacherMappingsSql, new { EmployeeId = employeeId });
+            // Cast the dynamic to a list of a dictionary or to a custom type
+            var teacherMappingsList = ((IEnumerable<dynamic>)teacherMappings).Select(m => new
+            {
+                MappingId = (int)m.MappingId,
+                EmployeeId = (int)m.EmployeeId,
+                ClassId = (int)m.ClassId,
+                ClassName = (string)m.class_name,
+                SectionId = (int)m.SectionId,
+                SectionName = (string)m.section_name,
+                SubjectId = (string)m.SubjectId, // Assuming this is a CSV string
+                SubjectName = (string)m.SubjectName
+            }).ToList();
 
             // Group and map the teacher mappings by class and section
-            var groupedTeacherMappings = teacherMappings
-                .GroupBy(m => new { m.ClassId, m.SectionId }) // Group by class and section
+            var groupedTeacherMappings = teacherMappingsList
+                .GroupBy(m => new { m.ClassId, m.SectionId })
                 .Select(g => new EmployeeStaffMapClassTeacherResponse
                 {
                     MappingId = g.First().MappingId,
                     ClassId = g.First().ClassId,
-                    ClassName = g.First().class_name,
+                    ClassName = g.First().ClassName,
                     SectionId = g.First().SectionId,
-                    SectionName = g.First().section_name,
+                    SectionName = g.First().SectionName,
                     subjects = g.Select(s => new Subjects
                     {
-                        SubjectId = s.SubjectId,
+                        
                         SubjectName = s.SubjectName
                     }).ToList()
-                }).FirstOrDefault(); // Assuming one teacher mapping per employee
+                }).FirstOrDefault();
 
             response.EmployeeStaffMappingsClassTeacher = groupedTeacherMappings;
 

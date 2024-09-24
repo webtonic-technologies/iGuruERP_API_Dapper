@@ -458,8 +458,8 @@ namespace Institute_API.Repository.Implementations
                 if (rowsAffected > 0)
                 {
                     string insertQuery = @"
-                INSERT INTO tbl_InstituteAddress (Institute_id, country_id, state_id, city_id, house, pincode, district_id, Locality, Landmark, Mobile_number, Email, en_date, AddressType_id)
-                VALUES (@Institute_id, @country_id, @state_id, @city_id, @house, @pincode, @district_id, @Locality, @Landmark, @Mobile_number, @Email, @en_date, @AddressType_id)";
+                INSERT INTO tbl_InstituteAddress (Institute_id, country_id, state_id, city_id, house, pincode, district_id, Mobile_number, Email, en_date, AddressType_id)
+                VALUES (@Institute_id, @country_id, @state_id, @city_id, @house, @pincode, @district_id, @Mobile_number, @Email, @en_date, @AddressType_id)";
 
                     // Execute the query with multiple parameterized sets of values
                     addedRecords = await _connection.ExecuteAsync(insertQuery, request);
@@ -468,8 +468,8 @@ namespace Institute_API.Repository.Implementations
             else
             {
                 string insertQuery = @"
-                INSERT INTO tbl_InstituteAddress (Institute_id, country_id, state_id, city_id, house, pincode, district_id, Locality, Landmark, Mobile_number, Email, en_date, AddressType_id)
-                VALUES (@Institute_id, @country_id, @state_id, @city_id, @house, @pincode, @district_id, @Locality, @Landmark, @Mobile_number, @Email, @en_date, @AddressType_id)";
+                INSERT INTO tbl_InstituteAddress (Institute_id, country_id, state_id, city_id, house, pincode, district_id, Mobile_number, Email, en_date, AddressType_id)
+                VALUES (@Institute_id, @country_id, @state_id, @city_id, @house, @pincode, @district_id, @Mobile_number, @Email, @en_date, @AddressType_id)";
 
                 // Execute the query with multiple parameterized sets of values
                 addedRecords = await _connection.ExecuteAsync(insertQuery, request);
