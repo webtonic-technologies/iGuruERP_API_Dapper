@@ -7,7 +7,7 @@ namespace Transport_API.Repository.Interfaces
 {
     public interface IRouteMappingRepository
     {
-        Task<ServiceResponse<string>> AddUpdateRouteMapping(RouteMapping routeMapping);
+        Task<ServiceResponse<string>> AddUpdateRouteMapping(RouteMappingRequest routeMapping);
         Task<ServiceResponse<IEnumerable<RouteMappingResponse>>> GetAllRouteMappings(GetAllRouteMappingRequest request);
         Task<ServiceResponse<RouteMappingResponse>> GetRouteMappingById(int routeMappingId);
         Task<ServiceResponse<bool>> UpdateRouteMappingStatus(int routeMappingId);

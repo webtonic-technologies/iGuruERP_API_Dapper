@@ -19,15 +19,21 @@ namespace Transport_API.Repository.Implementations
         public async Task<ServiceResponse<string>> AddUpdateTransportAttendance(TransportAttendance transportAttendance)
         {
             string sql;
-            if (transportAttendance.TransportAttendanceId == 0)
+            if (transportAttendance.TAID == 0) // Assuming TAID is the identifier for tblTransportAttendance
             {
-                sql = @"INSERT INTO tbl_Transport_Attendance (AttendanceTypeId, StudentId, Date, AttendanceStatus) 
-                        VALUES (@AttendanceTypeId, @StudentId, @Date, @AttendanceStatus)";
+                sql = @"INSERT INTO tblTransportAttendance (RoutePlanID, AttendanceTypeID, StudentID, AttendanceStatus, AttendanceDate, Remarks) 
+                VALUES (@RoutePlanID, @AttendanceTypeID, @StudentID, @AttendanceStatus, @AttendanceDate, @Remarks)";
             }
             else
             {
-                sql = @"UPDATE tbl_Transport_Attendance SET AttendanceTypeId = @AttendanceTypeId, StudentId = @StudentId, 
-                        Date = @Date, AttendanceStatus = @AttendanceStatus WHERE TransportAttendanceId = @TransportAttendanceId";
+                sql = @"UPDATE tblTransportAttendance 
+                SET RoutePlanID = @RoutePlanID, 
+                    AttendanceTypeID = @AttendanceTypeID, 
+                    StudentID = @StudentID, 
+                    AttendanceStatus = @AttendanceStatus, 
+                    AttendanceDate = @AttendanceDate, 
+                    Remarks = @Remarks 
+                WHERE TAID = @TAID";
             }
 
             var result = await _dbConnection.ExecuteAsync(sql, transportAttendance);

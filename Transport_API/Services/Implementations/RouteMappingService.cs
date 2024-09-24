@@ -22,8 +22,25 @@ namespace Transport_API.Services.Implementations
         }
         public async Task<ServiceResponse<string>> AddUpdateRouteMapping(RouteMapping routeMapping)
         {
-            return await _routeMappingRepository.AddUpdateRouteMapping(routeMapping);
+            // Map RouteMapping to RouteMappingRequest
+            var routeMappingRequest = new RouteMappingRequest
+            {
+                AssignRouteID = routeMapping.AssignRouteID,
+                RoutePlanID = routeMapping.RoutePlanID,
+                VehicleID = routeMapping.VehicleID,
+                DriverID = routeMapping.DriverID,
+                TransportStaffID = routeMapping.TransportStaffID,
+                IsActive = routeMapping.IsActive,
+                StopID = routeMapping.StopID, // Map StopID
+                StudentIDs = routeMapping.StudentIDs, // Map StudentIDs
+                EmployeeIDs = routeMapping.EmployeeIDs // Map EmployeeIDs
+            };
+
+            // Call the repository method with the mapped object
+            return await _routeMappingRepository.AddUpdateRouteMapping(routeMappingRequest);
         }
+
+
         public async Task<ServiceResponse<string>> AddUpdateStudentStopMapping(List<StudentStopMapping> request)
         {
             return await _routeMappingRepository.AddUpdateStudentStopMapping(request);
