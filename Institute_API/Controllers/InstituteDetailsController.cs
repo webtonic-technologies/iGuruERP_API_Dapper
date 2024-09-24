@@ -64,12 +64,12 @@ namespace Institute_API.Controllers
                 return BadRequest(ex.Message);
             }
         }
-        [HttpGet("GetInstituteDetails")]
-        public async Task<IActionResult> GetInstituteDetails()
+        [HttpGet("GetInstituteDetails/{AcademicYear}")]
+        public async Task<IActionResult> GetInstituteDetails(int AcademicYear)
         {
             try
             {
-                var data = await _instituteDetailsServices.GetAllInstituteDetailsList();
+                var data = await _instituteDetailsServices.GetAllInstituteDetailsList(AcademicYear);
                 return Ok(data);
             }
             catch (Exception ex)
@@ -122,6 +122,19 @@ namespace Institute_API.Controllers
             try
             {
                 var data = await _instituteDetailsServices.GetDistrictsByStateIdAsync(stateId);
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+        [HttpGet("AcademicYear")]
+        public async Task<IActionResult> GetAcademicYearList()
+        {
+            try
+            {
+                var data = await _instituteDetailsServices.GetAcademicYearList();
                 return Ok(data);
             }
             catch (Exception ex)

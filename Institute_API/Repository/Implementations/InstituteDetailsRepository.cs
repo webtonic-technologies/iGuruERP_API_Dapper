@@ -156,7 +156,7 @@ namespace Institute_API.Repository.Implementations
                 return new ServiceResponse<InstituteDetailsResponseDTO>(false, ex.Message, new InstituteDetailsResponseDTO(), 500);
             }
         }
-        public async Task<ServiceResponse<List<InstituteDetailsResponseDTO>>> GetAllInstituteDetailsList()
+        public async Task<ServiceResponse<List<InstituteDetailsResponseDTO>>> GetAllInstituteDetailsList(int AcademicYearId)
         {
             try
             {
@@ -166,9 +166,14 @@ namespace Institute_API.Repository.Implementations
                 i.Institute_name, 
                 i.Institute_Alias, 
                 i.en_date
-            FROM tbl_InstituteDetails i";
+            FROM tbl_InstituteDetails i
+            JOIN tbl_AcademicInfo ai ON i.Institute_id = ai.Institute_id
+            JOIN tbl_AcademicYear ay ON ai.AcademicYearStartMonth >= ay.StartDate
+                AND ai.AcademicYearEndMonth <= ay.EndDate
+            WHERE ay.Id = @AcademicYearId";
 
-                var institutes = await _connection.QueryAsync<InstituteDetails>(queryInstitutes);
+                // Fetch the institutes that match the selected academic year
+                var institutes = await _connection.QueryAsync<InstituteDetails>(queryInstitutes, new { AcademicYearId });
 
                 var responseList = new List<InstituteDetailsResponseDTO>();
 
@@ -380,6 +385,25 @@ namespace Institute_API.Repository.Implementations
             var semesterInfo = await _connection.QueryFirstOrDefaultAsync<SemesterInfo>(query, new { Institute_id = instituteId });
             return semesterInfo ?? new SemesterInfo();
         }
+        public async Task<ServiceResponse<List<AcademicYearMaster>>> GetAcademicYearList()
+        {
+            try
+            {
+                // Define the query to retrieve academic year data
+                string query = @"
+            SELECT [Id] AS yearId, [YearName]
+            FROM [iGuruERP].[dbo].[tbl_AcademicYear]
+            WHERE [Status] = 1 -- Assuming you only want active academic years";
+
+                // Execute the query asynchronously using Dapper
+                var result = await _connection.QueryAsync<AcademicYearMaster>(query);
+                return new ServiceResponse<List<AcademicYearMaster>>(true, "Academic year list retrieved successfully.", result.ToList(), 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<AcademicYearMaster>>(false, ex.Message, [], 200);
+            }
+        }
         public async Task<ServiceResponse<bool>> DeleteImage(DeleteImageRequest request)
         {
             try
@@ -582,60 +606,148 @@ namespace Institute_API.Repository.Implementations
                 foreach (var data in request)
                 {
                     data.Institute_id = InstitutionId;
+
+                    // Ensure that the day is set to the 1st for both AcademicYearStartMonth and AcademicYearEndMonth
+                    data.AcademicYearStartMonth = new DateTime(data.AcademicYearStartMonth.Year, data.AcademicYearStartMonth.Month, 1);
+                    data.AcademicYearEndMonth = new DateTime(data.AcademicYearEndMonth.Year, data.AcademicYearEndMonth.Month, 1);
                 }
             }
+
             string query = "SELECT COUNT(*) FROM [tbl_AcademicInfo] WHERE Institute_id = @InstituteId";
             int count = await _connection.ExecuteScalarAsync<int>(query, new { InstituteId = InstitutionId });
+
             if (count > 0)
             {
+                // Delete existing records for the institution
                 string deleteQuery = "DELETE FROM [tbl_AcademicInfo] WHERE Institute_id = @InstituteId";
                 int rowsAffected = await _connection.ExecuteAsync(deleteQuery, new { InstituteId = InstitutionId });
+
                 if (rowsAffected > 0)
                 {
                     string insertQuery = @"
-                INSERT INTO [tbl_AcademicInfo] (Institute_id, [AcademicYearStartMonth], [AcademicYearEndMonth], Status)
-                VALUES (@Institute_id, @AcademicYearStartMonth, @AcademicYearEndMonth, @Status)";
-                    // Execute the query with multiple parameterized sets of values
+            INSERT INTO [tbl_AcademicInfo] (Institute_id, [AcademicYearStartMonth], [AcademicYearEndMonth], Status)
+            VALUES (@Institute_id, @AcademicYearStartMonth, @AcademicYearEndMonth, @Status)";
+
+                    // Insert new academic information after deletion
                     addedRecords = await _connection.ExecuteAsync(insertQuery, request);
                 }
             }
             else
             {
+                // Insert directly if no records exist
                 string insertQuery = @"
-                INSERT INTO [tbl_AcademicInfo] (Institute_id, [AcademicYearStartMonth], [AcademicYearEndMonth], Status)
-                VALUES (@Institute_id, @AcademicYearStartMonth, @AcademicYearEndMonth, @Status)";
-                // Execute the query with multiple parameterized sets of values
+        INSERT INTO [tbl_AcademicInfo] (Institute_id, [AcademicYearStartMonth], [AcademicYearEndMonth], Status)
+        VALUES (@Institute_id, @AcademicYearStartMonth, @AcademicYearEndMonth, @Status)";
+
                 addedRecords = await _connection.ExecuteAsync(insertQuery, request);
             }
+
             return addedRecords;
         }
+        //private async Task<int> AddUpdateAcademicInfo(List<AcademicInfo> request, int InstitutionId)
+        //{
+        //    int addedRecords = 0;
+        //    if (request != null)
+        //    {
+        //        foreach (var data in request)
+        //        {
+        //            data.Institute_id = InstitutionId;
+        //        }
+        //    }
+        //    string query = "SELECT COUNT(*) FROM [tbl_AcademicInfo] WHERE Institute_id = @InstituteId";
+        //    int count = await _connection.ExecuteScalarAsync<int>(query, new { InstituteId = InstitutionId });
+        //    if (count > 0)
+        //    {
+        //        string deleteQuery = "DELETE FROM [tbl_AcademicInfo] WHERE Institute_id = @InstituteId";
+        //        int rowsAffected = await _connection.ExecuteAsync(deleteQuery, new { InstituteId = InstitutionId });
+        //        if (rowsAffected > 0)
+        //        {
+        //            string insertQuery = @"
+        //        INSERT INTO [tbl_AcademicInfo] (Institute_id, [AcademicYearStartMonth], [AcademicYearEndMonth], Status)
+        //        VALUES (@Institute_id, @AcademicYearStartMonth, @AcademicYearEndMonth, @Status)";
+        //            // Execute the query with multiple parameterized sets of values
+        //            addedRecords = await _connection.ExecuteAsync(insertQuery, request);
+        //        }
+        //    }
+        //    else
+        //    {
+        //        string insertQuery = @"
+        //        INSERT INTO [tbl_AcademicInfo] (Institute_id, [AcademicYearStartMonth], [AcademicYearEndMonth], Status)
+        //        VALUES (@Institute_id, @AcademicYearStartMonth, @AcademicYearEndMonth, @Status)";
+        //        // Execute the query with multiple parameterized sets of values
+        //        addedRecords = await _connection.ExecuteAsync(insertQuery, request);
+        //    }
+        //    return addedRecords;
+        //}
         private async Task<int> AddUpdateSemesterInfo(SemesterInfo request, int InstitutionId)
         {
             int rowsAffected = 0;
+
+            // Set day to the 1st of the month for both SemesterStartDate and SemesterEndDate
+            if (request.SemesterStartDate.HasValue)
+            {
+                request.SemesterStartDate = new DateTime(request.SemesterStartDate.Value.Year, request.SemesterStartDate.Value.Month, 1);
+            }
+
+            if (request.SemesterEndDate.HasValue)
+            {
+                request.SemesterEndDate = new DateTime(request.SemesterEndDate.Value.Year, request.SemesterEndDate.Value.Month, 1);
+            }
+
             if (request.SemesterInfoId == 0)
             {
                 request.Institute_id = InstitutionId;
 
                 var insertQuery = @"
-                INSERT INTO tbl_SemesterInfo (Institute_id, IsSemester, SemesterStartDate, SemesterEndDate)
-                VALUES (@Institute_id, @IsSemester, @SemesterStartDate, @SemesterEndDate);";
+        INSERT INTO tbl_SemesterInfo (Institute_id, IsSemester, SemesterStartDate, SemesterEndDate)
+        VALUES (@Institute_id, @IsSemester, @SemesterStartDate, @SemesterEndDate);";
+
                 // Execute the query with parameterized values
                 rowsAffected = await _connection.ExecuteAsync(insertQuery, request);
             }
             else
             {
                 var updateQuery = @"
-    UPDATE tbl_SemesterInfo
-    SET Institute_id = @Institute_id,
-        IsSemester = @IsSemester,
-        SemesterStartDate = @SemesterStartDate,
-        SemesterEndDate = @SemesterEndDate
-    WHERE SemesterInfoId = @SemesterInfoId;";
+        UPDATE tbl_SemesterInfo
+        SET Institute_id = @Institute_id,
+            IsSemester = @IsSemester,
+            SemesterStartDate = @SemesterStartDate,
+            SemesterEndDate = @SemesterEndDate
+        WHERE SemesterInfoId = @SemesterInfoId;";
 
                 rowsAffected = await _connection.ExecuteAsync(updateQuery, request);
             }
+
             return rowsAffected;
         }
+
+        //    private async Task<int> AddUpdateSemesterInfo(SemesterInfo request, int InstitutionId)
+        //    {
+        //        int rowsAffected = 0;
+        //        if (request.SemesterInfoId == 0)
+        //        {
+        //            request.Institute_id = InstitutionId;
+
+        //            var insertQuery = @"
+        //            INSERT INTO tbl_SemesterInfo (Institute_id, IsSemester, SemesterStartDate, SemesterEndDate)
+        //            VALUES (@Institute_id, @IsSemester, @SemesterStartDate, @SemesterEndDate);";
+        //            // Execute the query with parameterized values
+        //            rowsAffected = await _connection.ExecuteAsync(insertQuery, request);
+        //        }
+        //        else
+        //        {
+        //            var updateQuery = @"
+        //UPDATE tbl_SemesterInfo
+        //SET Institute_id = @Institute_id,
+        //    IsSemester = @IsSemester,
+        //    SemesterStartDate = @SemesterStartDate,
+        //    SemesterEndDate = @SemesterEndDate
+        //WHERE SemesterInfoId = @SemesterInfoId;";
+
+        //            rowsAffected = await _connection.ExecuteAsync(updateQuery, request);
+        //        }
+        //        return rowsAffected;
+        //    }
         private async Task<int> InsertInstituteLogos(List<InstituteLogos> logos, int instituteId)
         {
             if (logos == null || instituteId <= 0)

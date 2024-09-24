@@ -92,4 +92,9 @@ namespace Institute_API.DTOs
         public bool? isPrimary { get; set; }
         public DateTime? en_date { get; set; }
     }
+    public class AcademicYearMaster
+    {
+        public int yearId { get; set; }
+        public string YearName { get; set; } = string.Empty;
+    }
 }
