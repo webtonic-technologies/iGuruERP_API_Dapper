@@ -1347,20 +1347,20 @@ WHERE e.EmployeeId = @EmployeeId";
 
             // Define the SQL query to get subjects based on classId and sectionId
             var query = @"
-    SELECT 
-        csm.class_id AS ClassId,
-        csm.section_id AS SectionId,
-        s.SubjectId,
-        s.SubjectName
-    FROM 
-        tbl_ClassSectionSubjectMapping csm
-    JOIN 
-        tbl_Subject s ON csm.SubjectId = s.SubjectId
-    WHERE 
-        csm.class_id = @ClassId AND
-        ',' + csm.section_id + ',' LIKE @SectionIdFilter AND
-        csm.IsDeleted = 0 AND
-        s.IsDeleted = 0;";
+            SELECT 
+            csm.class_id AS ClassId,
+            csm.section_id AS SectionId,
+            s.SubjectId,
+            s.SubjectName
+        FROM 
+            tbl_ClassSectionSubjectMapping csm
+        JOIN 
+            tbl_Subjects s ON csm.SubjectId = s.SubjectId
+        WHERE 
+            csm.class_id = @ClassId AND
+            ',' + csm.section_id + ',' LIKE '%,' + CAST(@SectionIdFilter AS VARCHAR) + ',%' AND
+            csm.IsDeleted = 0 AND
+            s.IsDeleted = 0;";
 
             try
             {
@@ -1368,7 +1368,7 @@ WHERE e.EmployeeId = @EmployeeId";
                 var subjectList = await _connection.QueryAsync<Subjects>(query, new
                 {
                     ClassId = classId,
-                    SectionIdFilter = $",{sectionId}," // Format for CSV matching
+                    SectionIdFilter = sectionId // Format for CSV matching
                 });
 
                 // Check if any subjects were found
@@ -1399,49 +1399,74 @@ WHERE e.EmployeeId = @EmployeeId";
         }
         public async Task<ServiceResponse<List<ClassSectionSubjectResponse>>> ClassSectionSubjectsMappings(int InstituteId)
         {
-            // Define the SQL query to get all subject mappings for the given InstituteId
+            // Adjusted SQL query to match the provided table structures
             var query = @"
-        SELECT 
-            csm.class_id AS ClassId,
-            csm.section_id AS SectionId,
-            s.SubjectId,
-            s.SubjectName
-        FROM 
-            tbl_ClassSectionSubjectMapping csm
-        JOIN 
-            tbl_Subject s ON csm.SubjectId = s.SubjectId
-        JOIN 
-            tbl_Class c ON csm.class_id = c.class_id
-        JOIN 
-            tbl_Section sec ON csm.section_id = sec.section_id
-        WHERE 
-            c.institute_id = @InstituteId AND
-            csm.IsDeleted = 0 AND
-            s.IsDeleted = 0;";
+    SELECT 
+        csm.class_id AS ClassId,
+        csm.section_id AS SectionIdCSV, -- section_id is stored as a CSV
+        s.SubjectId,
+        s.SubjectName
+    FROM 
+        tbl_ClassSectionSubjectMapping csm
+    JOIN 
+        tbl_Subjects s ON csm.SubjectId = s.SubjectId
+    JOIN 
+        tbl_Class c ON csm.class_id = c.class_id
+    WHERE 
+        c.institute_id = @InstituteId AND
+        csm.IsDeleted = 0 AND
+        s.IsDeleted = 0;";
 
             try
             {
                 // Execute the query and fetch results
                 var mappingsList = await _connection.QueryAsync<dynamic>(query, new { InstituteId });
 
-                // Grouping results by ClassId and SectionId
-                var groupedMappings = mappingsList
-                    .GroupBy(m => new { ClassId = (int)m.ClassId, SectionId = (int)m.SectionId })
-                    .Select(g => new ClassSectionSubjectResponse
+                // Check if any mappings were found
+                if (mappingsList.Any())
+                {
+                    // Process section IDs stored as CSV strings
+                    var processedMappings = mappingsList.SelectMany(m =>
                     {
-                        classId = g.Key.ClassId,
-                        SectionId = g.Key.SectionId,
-                        subjects = g.Select(s => new Subjects
+                        // Split the CSV string of section IDs and convert to integers
+                        var sectionIds = ((string)m.SectionIdCSV).Split(',')
+                                         .Where(id => int.TryParse(id, out _))  // Filter valid integers
+                                         .Select(int.Parse).ToList();           // Convert valid strings to integers
+
+                        // Create separate mappings for each section ID
+                        return sectionIds.Select(sectionId => new ClassSectionSubjectResponse
                         {
-                            SubjectId = (int)s.SubjectId,
-                            SubjectName = (string)s.SubjectName
-                        }).ToList()
+                            classId = (int)m.ClassId,
+                            SectionId = sectionId,
+                            subjects = new List<Subjects>
+                    {
+                        new Subjects
+                        {
+                            SubjectId = (int)m.SubjectId,
+                            SubjectName = (string)m.SubjectName
+                        }
+                    }
+                        });
                     }).ToList();
-                return new ServiceResponse<List<ClassSectionSubjectResponse>>(true, "Subject mappings retrieved successfully.", groupedMappings, 200);
+
+                    // Check if we have valid mappings
+                    if (processedMappings.Any())
+                    {
+                        return new ServiceResponse<List<ClassSectionSubjectResponse>>(true, "Subject mappings retrieved successfully.", processedMappings, 200);
+                    }
+                    else
+                    {
+                        return new ServiceResponse<List<ClassSectionSubjectResponse>>(false, "No valid section IDs found.", new List<ClassSectionSubjectResponse>(), 404);
+                    }
+                }
+                else
+                {
+                    return new ServiceResponse<List<ClassSectionSubjectResponse>>(false, "No subject mappings found for the specified institute.", new List<ClassSectionSubjectResponse>(), 404);
+                }
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<List<ClassSectionSubjectResponse>>(false, ex.Message, [], 500);
+                return new ServiceResponse<List<ClassSectionSubjectResponse>>(false, $"An error occurred: {ex.Message}", new List<ClassSectionSubjectResponse>(), 500);
             }
         }
         public async Task<ServiceResponse<bool>> StatusActiveInactive(int employeeId)
@@ -1726,7 +1751,7 @@ WHERE e.EmployeeId = @EmployeeId";
                         worksheet.Cells[i + 2, 4].Value = profile.Designation;
                         worksheet.Cells[i + 2, 5].Value = profile.Gender;
                         worksheet.Cells[i + 2, 6].Value = profile.Mobile;
-                        worksheet.Cells[i + 2, 7].Value = profile.DateOfBirth.ToString("yyyy-MM-dd");
+                        worksheet.Cells[i + 2, 7].Value = profile.DateOfBirth;
                         worksheet.Cells[i + 2, 8].Value = profile.Email;
                     }
 
