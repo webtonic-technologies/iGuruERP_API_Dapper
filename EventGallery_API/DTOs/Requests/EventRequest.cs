@@ -1,5 +1,12 @@
 ﻿namespace EventGallery_API.DTOs.Requests
 {
+
+    public class GetAllEventsRequest
+    {
+        public int AcademicYearID { get; set; }
+        public int InstituteID { get; set; }
+    }
+
     public class EventRequest
     {
         public int? EventID { get; set; }

@@ -27,15 +27,16 @@ namespace EventGallery_API.Controllers
         }
 
         [HttpPost("GetAllEvents")]
-        public async Task<IActionResult> GetAllEvents()
+        public async Task<IActionResult> GetAllEvents([FromBody] GetAllEventsRequest request)
         {
-            var response = await _eventService.GetAllEvents();
+            var response = await _eventService.GetAllEvents(request);
             if (response.Success)
             {
                 return Ok(response);
             }
-            return NotFound(response);
+            return BadRequest(response);
         }
+
 
         [HttpGet("GetEventById/{eventId}")]
         public async Task<IActionResult> GetEventById(int eventId)

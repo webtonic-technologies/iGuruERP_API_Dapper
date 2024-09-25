@@ -1,5 +1,6 @@
 ﻿using EventGallery_API.DTOs.Requests;
 using EventGallery_API.DTOs.Response;
+using EventGallery_API.DTOs.Responses;
 using EventGallery_API.DTOs.ServiceResponse; // Ensure this is included
 using EventGallery_API.Repository.Interfaces;
 using EventGallery_API.Services.Interfaces;
@@ -20,9 +21,9 @@ namespace EventGallery_API.Services.Implementations
             return await _eventRepository.AddUpdateEvent(request);
         }
 
-        public async Task<ServiceResponse<List<EventResponse>>> GetAllEvents()
+        public async Task<ServiceResponse<List<GetAllEventsResponse>>> GetAllEvents(GetAllEventsRequest request)
         {
-            return await _eventRepository.GetAllEvents();
+            return await _eventRepository.GetAllEvents(request);
         }
 
         public async Task<ServiceResponse<EventResponse>> GetEventById(int eventId)

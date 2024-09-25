@@ -20,6 +20,13 @@ builder.Services.AddScoped<IDbConnection>(sp =>
 builder.Services.AddScoped<IEventRepository, EventRepository>();
 builder.Services.AddScoped<IEventService, EventService>();
 
+builder.Services.AddScoped<IHolidayRepository, HolidayRepository>();
+builder.Services.AddScoped<IHolidayService, HolidayService>();
+
+builder.Services.AddScoped<IGalleryRepository, GalleryRepository>();
+builder.Services.AddScoped<IGalleryService, GalleryService>();
+ 
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

@@ -4,6 +4,7 @@ using EventGallery_API.DTOs.Requests;
 using EventGallery_API.DTOs.Response;
 using EventGallery_API.DTOs.ServiceResponse; // Ensure this is included
 using EventGallery_API.Repository.Interfaces;
+using EventGallery_API.DTOs.Responses;
 
 namespace EventGallery_API.Repository.Implementations
 {
@@ -103,11 +104,37 @@ namespace EventGallery_API.Repository.Implementations
             return new ServiceResponse<int>(true, "Event added/updated successfully.", eventId, 200);
         }
 
-        public async Task<ServiceResponse<List<EventResponse>>> GetAllEvents()
+        public async Task<ServiceResponse<List<GetAllEventsResponse>>> GetAllEvents(GetAllEventsRequest request)
         {
-            var query = "SELECT * FROM tblEvent WHERE IsActive = 1 AND IsDelete = 0";
-            var events = await _connection.QueryAsync<EventResponse>(query);
-            return new ServiceResponse<List<EventResponse>>(true, "Events fetched successfully", events.ToList(), 200);
+            var query = @"
+                SELECT 
+                e.EventID,
+                e.EventName,
+                CONCAT(CONVERT(VARCHAR, e.FromDate, 105), ' to ', CONVERT(VARCHAR, e.ToDate, 105)) AS Date,
+                e.Description AS Document,
+                e.Location,
+                CASE 
+                    WHEN e.ScheduleTime IS NOT NULL 
+                    THEN CONCAT(CONVERT(VARCHAR, e.ScheduleDate, 105), ' at ', FORMAT(e.ScheduleTime, 'hh:mm tt')) 
+                    ELSE CONCAT(CONVERT(VARCHAR, e.ScheduleDate, 105), ' at ', 'N/A')
+                END AS EventNotification,
+                CASE 
+                    WHEN emp.First_Name IS NOT NULL AND emp.Last_Name IS NOT NULL
+                    THEN CONCAT(emp.First_Name, ' ', emp.Last_Name)
+                    ELSE 'N/A'
+                END AS CreatedBy
+            FROM tblEvent e
+            LEFT JOIN tbl_EmployeeProfileMaster emp ON emp.Employee_id = e.CreatedBy
+            WHERE e.AcademicYearID = @AcademicYearID AND e.InstituteID = @InstituteID;";
+
+            var parameters = new
+            {
+                request.AcademicYearID,
+                request.InstituteID
+            };
+
+            var events = await _connection.QueryAsync<GetAllEventsResponse>(query, parameters);
+            return new ServiceResponse<List<GetAllEventsResponse>>(true, "Events fetched successfully.", events.ToList(), 200);
         }
 
         public async Task<ServiceResponse<EventResponse>> GetEventById(int eventId)
