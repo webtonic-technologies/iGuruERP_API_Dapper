@@ -3,7 +3,6 @@ using Employee_API.DTOs;
 using Employee_API.DTOs.ServiceResponse;
 using Employee_API.Models;
 using Employee_API.Repository.Interfaces;
-using Microsoft.Extensions.Configuration;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using System.Data;
@@ -388,97 +387,51 @@ namespace Employee_API.Repository.Implementations
         {
             try
             {
-                var connection = new SqlConnection(_connectionString);
-                connection.Open();
-                // Check and process the EmployeeStaffMappingsClassTeacher
+                using var connection = new SqlConnection(_connectionString);
+                await connection.OpenAsync();
+
+                // Remove existing records for the EmployeeId in tbl_EmployeeStaffMapClassTeacher
                 if (request.EmployeeStaffMappingsClassTeacher != null)
                 {
-                    // Check if a record already exists for the EmployeeId in the tbl_EmployeeStaffMapClassTeacher table
-                    var existingClassTeacherMapping = await connection.QueryFirstOrDefaultAsync<dynamic>(
-                        "SELECT * FROM tbl_EmployeeStaffMapClassTeacher WHERE EmployeeId = @EmployeeId;",
+                    await connection.ExecuteAsync(
+                        "DELETE FROM tbl_EmployeeStaffMapClassTeacher WHERE EmployeeId = @EmployeeId",
+                        new { request.EmployeeId }
+                    );
+
+                    // Insert new record for EmployeeStaffMappingsClassTeacher
+                    await connection.ExecuteAsync(
+                        @"INSERT INTO tbl_EmployeeStaffMapClassTeacher (EmployeeId, ClassId, SectionId, SubjectId)
+                VALUES (@EmployeeId, @ClassId, @SectionId, @SubjectId)",
                         new
                         {
                             request.EmployeeId,
                             request.EmployeeStaffMappingsClassTeacher.ClassId,
-                            request.EmployeeStaffMappingsClassTeacher.SectionId
+                            request.EmployeeStaffMappingsClassTeacher.SectionId,
+                            request.EmployeeStaffMappingsClassTeacher.SubjectId
                         }
                     );
-
-                    if (existingClassTeacherMapping > 0)
-                    {
-                        // Update the existing record
-                        await connection.ExecuteAsync(
-                            @"UPDATE tbl_EmployeeStaffMapClassTeacher
-                      SET SubjectId = @SubjectId
-                      WHERE MappingId = @MappingId",
-                            new
-                            {
-                                MappingId = existingClassTeacherMapping,
-                                request.EmployeeStaffMappingsClassTeacher.SubjectId
-                            }
-                        );
-                    }
-                    else
-                    {
-                        // Insert a new record
-                        await connection.ExecuteAsync(
-                            @"INSERT INTO tbl_EmployeeStaffMapClassTeacher (EmployeeId, ClassId, SectionId, SubjectId)
-                      VALUES (@EmployeeId, @ClassId, @SectionId, @SubjectId)",
-                            new
-                            {
-                                request.EmployeeId,
-                                request.EmployeeStaffMappingsClassTeacher.ClassId,
-                                request.EmployeeStaffMappingsClassTeacher.SectionId,
-                                request.EmployeeStaffMappingsClassTeacher.SubjectId
-                            }
-                        );
-                    }
                 }
 
-                // Check and process the EmployeeStappMappingsClassSection
+                // Remove existing records for the EmployeeId in tbl_EmployeeStappMapClassSection
                 if (request.EmployeeStappMappingsClassSection != null)
                 {
-                    // Check if a record already exists for the EmployeeId in the tbl_EmployeeStappMapClassSection table
-                    var existingClassSectionMapping = await connection.QueryFirstOrDefaultAsync<int>(
-                        @"SELECT ClassSectionMapId FROM tbl_EmployeeStappMapClassSection 
-                  WHERE EmployeeId = @EmployeeId",
+                    await connection.ExecuteAsync(
+                        "DELETE FROM tbl_EmployeeStappMapClassSection WHERE EmployeeId = @EmployeeId",
+                        new { request.EmployeeId }
+                    );
+
+                    // Insert new record for EmployeeStappMappingsClassSection
+                    await connection.ExecuteAsync(
+                        @"INSERT INTO tbl_EmployeeStappMapClassSection (EmployeeId, ClassId, SectionId, SubjectId)
+                VALUES (@EmployeeId, @ClassId, @SectionId, @SubjectId)",
                         new
                         {
                             request.EmployeeId,
                             request.EmployeeStappMappingsClassSection.ClassId,
-                            request.EmployeeStappMappingsClassSection.SectionId
+                            request.EmployeeStappMappingsClassSection.SectionId,
+                            request.EmployeeStappMappingsClassSection.SubjectId
                         }
                     );
-
-                    if (existingClassSectionMapping > 0)
-                    {
-                        // Update the existing record
-                        await connection.ExecuteAsync(
-                            @"UPDATE tbl_EmployeeStappMapClassSection
-                      SET SubjectId = @SubjectId
-                      WHERE ClassSectionMapId = @ClassSectionMapId",
-                            new
-                            {
-                                ClassSectionMapId = existingClassSectionMapping,
-                                request.EmployeeStappMappingsClassSection.SubjectId
-                            }
-                        );
-                    }
-                    else
-                    {
-                        // Insert a new record
-                        await connection.ExecuteAsync(
-                            @"INSERT INTO tbl_EmployeeStappMapClassSection (EmployeeId, ClassId, SectionId, SubjectId)
-                      VALUES (@EmployeeId, @ClassId, @SectionId, @SubjectId)",
-                            new
-                            {
-                                request.EmployeeId,
-                                request.EmployeeStappMappingsClassSection.ClassId,
-                                request.EmployeeStappMappingsClassSection.SectionId,
-                                request.EmployeeStappMappingsClassSection.SubjectId
-                            }
-                        );
-                    }
                 }
 
                 return new ServiceResponse<int>(true, "Mapping saved successfully", 0, 200);
@@ -899,7 +852,7 @@ namespace Employee_API.Repository.Implementations
                         response.EmployeeBankDetails = bankDetails.AsList();
                     }
 
-                    string docsql = @"SELECT Document_id, employee_id, Document_Name, file_name, file_path
+                    string docsql = @"SELECT Document_id, employee_id, Document_Name, file_path
                               FROM [dbo].[tbl_DocumentsMaster]
                               WHERE employee_id = @EmployeeId";
 
@@ -1271,80 +1224,225 @@ namespace Employee_API.Repository.Implementations
 
             // Query for EmployeeStaffMapClassTeacher
             string teacherMappingsSql = @"
-            SELECT t.MappingId, t.EmployeeId, t.ClassId, c.class_name, t.SectionId, s.section_name, t.SubjectId, sub.SubjectName
-            FROM tbl_EmployeeStaffMapClassTeacher t
-            INNER JOIN tbl_Class c ON t.ClassId = c.class_id
-            LEFT JOIN tbl_Section s ON t.SectionId = s.section_id AND s.IsDeleted = 0
-            LEFT JOIN tbl_Subjects sub ON CHARINDEX(CONVERT(varchar, sub.SubjectId), t.SubjectId) > 0
-            WHERE t.EmployeeId = @EmployeeId";
-
+    SELECT t.MappingId, 
+           t.EmployeeId, 
+           t.ClassId, 
+           c.class_name, 
+           t.SectionId, 
+           s.section_name, 
+           sub.SubjectId, 
+           sub.SubjectName
+    FROM tbl_EmployeeStaffMapClassTeacher t
+    INNER JOIN tbl_Class c ON t.ClassId = c.class_id
+    LEFT JOIN tbl_Section s ON t.SectionId = s.section_id AND s.IsDeleted = 0
+    LEFT JOIN tbl_Subjects sub ON sub.SubjectId IN (
+        SELECT value FROM STRING_SPLIT(t.SubjectId, ',')
+    ) AND sub.IsDeleted = 0
+    WHERE t.EmployeeId = @EmployeeId";
 
             var teacherMappings = await _connection.QueryAsync<dynamic>(teacherMappingsSql, new { EmployeeId = employeeId });
-            // Cast the dynamic to a list of a dictionary or to a custom type
-            var teacherMappingsList = ((IEnumerable<dynamic>)teacherMappings).Select(m => new
-            {
-                MappingId = (int)m.MappingId,
-                EmployeeId = (int)m.EmployeeId,
-                ClassId = (int)m.ClassId,
-                ClassName = (string)m.class_name,
-                SectionId = (int)m.SectionId,
-                SectionName = (string)m.section_name,
-                SubjectId = (string)m.SubjectId, // Assuming this is a CSV string
-                SubjectName = (string)m.SubjectName
-            }).ToList();
 
             // Group and map the teacher mappings by class and section
-            var groupedTeacherMappings = teacherMappingsList
+            var groupedTeacherMappings = teacherMappings
                 .GroupBy(m => new { m.ClassId, m.SectionId })
                 .Select(g => new EmployeeStaffMapClassTeacherResponse
                 {
                     MappingId = g.First().MappingId,
                     ClassId = g.First().ClassId,
-                    ClassName = g.First().ClassName,
+                    ClassName = g.First().class_name,
                     SectionId = g.First().SectionId,
-                    SectionName = g.First().SectionName,
+                    SectionName = g.First().section_name,
                     subjects = g.Select(s => new Subjects
                     {
-                        
+                        SubjectId = s.SubjectId,
                         SubjectName = s.SubjectName
                     }).ToList()
-                }).FirstOrDefault();
+                }).ToList(); // Return the entire list
 
             response.EmployeeStaffMappingsClassTeacher = groupedTeacherMappings;
 
             // Query for EmployeeStappMapClassSection
             string sectionMappingsSql = @"
-    SELECT e.ClassSectionMapId, e.EmployeeId, e.SubjectId, sub.SubjectName, e.ClassId, c.class_name, e.SectionId, s.section_name
-    FROM tbl_EmployeeStappMapClassSection e
-    INNER JOIN tbl_Class c ON e.ClassId = c.class_id
-    LEFT JOIN (
-        SELECT section_id, section_name FROM tbl_Section WHERE IsDeleted = 0
-    ) s ON CHARINDEX(CONVERT(varchar, s.section_id), e.SectionId) > 0
-    LEFT JOIN tbl_Subjects sub ON e.SubjectId = sub.SubjectId
-    WHERE e.EmployeeId = @EmployeeId";
+SELECT e.ClassSectionMapId, 
+       e.EmployeeId, 
+       e.SubjectId, 
+       sub.SubjectName, 
+       e.ClassId, 
+       c.class_name, 
+       s.section_id, 
+       s.section_name
+FROM tbl_EmployeeStappMapClassSection e
+INNER JOIN tbl_Class c ON e.ClassId = c.class_id
+LEFT JOIN tbl_Section s 
+    ON s.section_id IN (
+        SELECT value FROM STRING_SPLIT(e.SectionId, ',')
+    ) AND s.IsDeleted = 0
+LEFT JOIN tbl_Subjects sub 
+    ON e.SubjectId = sub.SubjectId
+WHERE e.EmployeeId = @EmployeeId";
 
             var sectionMappings = await _connection.QueryAsync<dynamic>(sectionMappingsSql, new { EmployeeId = employeeId });
 
             // Group and map the section mappings by class and sections
             var groupedSectionMappings = sectionMappings
-                .GroupBy(m => m.ClassId) // Group by class ID
+                .GroupBy(m => new { m.ClassId, m.ClassSectionMapId }) // Group by class ID and ClassSectionMapId
                 .Select(g => new EmployeeStappMapClassSectionResponse
                 {
-                    ClassSectionMapId = g.First().ClassSectionMapId,
-                    ClassId = g.First().ClassId,
+                    ClassSectionMapId = g.Key.ClassSectionMapId,
+                    ClassId = g.Key.ClassId,
                     ClassName = g.First().class_name,
                     SubjectId = g.First().SubjectId,
                     SubjectName = g.First().SubjectName,
-                    sections = g.Select(s => new Sections
-                    {
-                        SectionId = s.section_id,
-                        SectionName = s.section_name
-                    }).ToList()
-                }).FirstOrDefault(); // Assuming one section mapping per employee
+                    sections = g.GroupBy(sec => sec.section_id)
+                                .Select(secGroup => new Sections
+                                {
+                                    SectionId = secGroup.Key,
+                                    SectionName = secGroup.First().section_name
+                                }).ToList()
+                }).ToList();
 
             response.EmployeeStappMappingsClassSection = groupedSectionMappings;
 
             return new ServiceResponse<EmployeeStaffMappingResponse>(true, "Records found", response, 200);
+        }
+        public async Task<ServiceResponse<List<ClassSectionList>>> GetClassSectionList(int instituteId)
+        {
+            // Define the SQL query to join classes and sections
+            var query = @"
+        SELECT 
+            c.class_id AS ClassId,
+            s.section_id AS SectionId,
+            CONCAT(c.class_name, ' - ', s.section_name) AS ClassSection
+        FROM 
+            tbl_Class c
+        JOIN 
+            tbl_Section s ON c.class_id = s.class_id
+        WHERE 
+            c.institute_id = @InstituteId AND c.IsDeleted = 0 AND s.IsDeleted = 0
+        ORDER BY 
+            c.class_name, s.section_name;";
+
+            try
+            {
+
+                // Open the connection
+                _connection.Open();
+
+                // Execute the query and map results
+                var classSectionList = await _connection.QueryAsync<ClassSectionList>(query, new { InstituteId = instituteId });
+                return new ServiceResponse<List<ClassSectionList>>(true, "Class section list retrieved successfully.", classSectionList.ToList(), 200);
+
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<ClassSectionList>>(false, ex.Message, [], 500);
+            }
+            finally
+            {
+                _connection.Close();
+            }
+        }
+        public async Task<ServiceResponse<ClassSectionSubjectResponse>> ClassSectionSubjectsList(int classId, int sectionId)
+        {
+
+            // Define the SQL query to get subjects based on classId and sectionId
+            var query = @"
+    SELECT 
+        csm.class_id AS ClassId,
+        csm.section_id AS SectionId,
+        s.SubjectId,
+        s.SubjectName
+    FROM 
+        tbl_ClassSectionSubjectMapping csm
+    JOIN 
+        tbl_Subject s ON csm.SubjectId = s.SubjectId
+    WHERE 
+        csm.class_id = @ClassId AND
+        ',' + csm.section_id + ',' LIKE @SectionIdFilter AND
+        csm.IsDeleted = 0 AND
+        s.IsDeleted = 0;";
+
+            try
+            {
+                // Execute the query and fetch results
+                var subjectList = await _connection.QueryAsync<Subjects>(query, new
+                {
+                    ClassId = classId,
+                    SectionIdFilter = $",{sectionId}," // Format for CSV matching
+                });
+
+                // Check if any subjects were found
+                if (subjectList.Any())
+                {
+                    // Create the response object with subjects
+                    var classSectionSubjectResponse = new ClassSectionSubjectResponse
+                    {
+                        classId = classId,
+                        SectionId = sectionId,
+                        subjects = subjectList.Select(s => new Subjects
+                        {
+                            SubjectId = s.SubjectId,
+                            SubjectName = s.SubjectName
+                        }).ToList()
+                    };
+                    return new ServiceResponse<ClassSectionSubjectResponse>(true, "Subjects retrieved successfully.", classSectionSubjectResponse, 200);
+                }
+                else
+                {
+                    return new ServiceResponse<ClassSectionSubjectResponse>(false, "No subjects found for the specified class and section.", new ClassSectionSubjectResponse(), 500);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<ClassSectionSubjectResponse>(false, ex.Message, new ClassSectionSubjectResponse(), 500);
+            }
+        }
+        public async Task<ServiceResponse<List<ClassSectionSubjectResponse>>> ClassSectionSubjectsMappings(int InstituteId)
+        {
+            // Define the SQL query to get all subject mappings for the given InstituteId
+            var query = @"
+        SELECT 
+            csm.class_id AS ClassId,
+            csm.section_id AS SectionId,
+            s.SubjectId,
+            s.SubjectName
+        FROM 
+            tbl_ClassSectionSubjectMapping csm
+        JOIN 
+            tbl_Subject s ON csm.SubjectId = s.SubjectId
+        JOIN 
+            tbl_Class c ON csm.class_id = c.class_id
+        JOIN 
+            tbl_Section sec ON csm.section_id = sec.section_id
+        WHERE 
+            c.institute_id = @InstituteId AND
+            csm.IsDeleted = 0 AND
+            s.IsDeleted = 0;";
+
+            try
+            {
+                // Execute the query and fetch results
+                var mappingsList = await _connection.QueryAsync<dynamic>(query, new { InstituteId });
+
+                // Grouping results by ClassId and SectionId
+                var groupedMappings = mappingsList
+                    .GroupBy(m => new { ClassId = (int)m.ClassId, SectionId = (int)m.SectionId })
+                    .Select(g => new ClassSectionSubjectResponse
+                    {
+                        classId = g.Key.ClassId,
+                        SectionId = g.Key.SectionId,
+                        subjects = g.Select(s => new Subjects
+                        {
+                            SubjectId = (int)s.SubjectId,
+                            SubjectName = (string)s.SubjectName
+                        }).ToList()
+                    }).ToList();
+                return new ServiceResponse<List<ClassSectionSubjectResponse>>(true, "Subject mappings retrieved successfully.", groupedMappings, 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<ClassSectionSubjectResponse>>(false, ex.Message, [], 500);
+            }
         }
         public async Task<ServiceResponse<bool>> StatusActiveInactive(int employeeId)
         {
@@ -1487,34 +1585,57 @@ namespace Employee_API.Repository.Implementations
                 return new ServiceResponse<List<Department>>(false, ex.Message, new List<Department>(), 500);
             }
         }
-        public async Task<ServiceResponse<bool>> UpdatePassword(int userId, int userType, string Password)
+        public async Task<ServiceResponse<bool>> UpdatePassword(ChangePasswordRequest request)
         {
             try
             {
-                // SQL query to update user activity
-                string updateActivitySql = @"
-            UPDATE [tblLoginInformationMaster]
-            SET [UserActivity] = @ActivityDescription, Password = @Password
-            WHERE [UserId] = @UserId AND UserType = @UserType";
-
-                // Update user activity in the database
-                int rowsAffected = await _connection.ExecuteAsync(updateActivitySql, new
+                // Ensure the new password is at least 8 characters
+                if (request.NewPassword.Length < 8)
                 {
-                    UserId = userId,
-                    ActivityDescription = DateTime.Now,
-                    UserType = userType,
-                    Password = @Password
+                    return new ServiceResponse<bool>(false, "New password must be at least 8 characters", false, 400);
+                }
+
+                // Query to validate the username and current password
+                string validateUserSql = @"
+        SELECT COUNT(1) 
+        FROM tblLoginInformationMaster
+        WHERE UserName = @UserName AND Password = @OldPassword";
+
+                // Check if the user exists with the current password
+                int userExists = await _connection.ExecuteScalarAsync<int>(validateUserSql, new
+                {
+                    UserName = request.Username,   // Corrected to UserName column
+                    OldPassword = request.OldPassword
                 });
 
-                // Return true if one or more rows were updated
+                // If no user found with the given username and current password
+                if (userExists == 0)
+                {
+                    return new ServiceResponse<bool>(false, "Invalid username or current password", false, 401);
+                }
+
+                // SQL query to update the password
+                string updatePasswordSql = @"
+        UPDATE tblLoginInformationMaster
+        SET Password = @NewPassword, UserActivity = @ActivityDescription
+        WHERE UserName = @UserName";
+
+                // Update the password in the database
+                int rowsAffected = await _connection.ExecuteAsync(updatePasswordSql, new
+                {
+                    UserName = request.Username,    // Corrected to UserName column
+                    NewPassword = request.NewPassword,
+                    ActivityDescription = DateTime.Now
+                });
+
+                // Return true if the password was successfully updated
                 if (rowsAffected > 0)
                 {
-                    return new ServiceResponse<bool>(true, "Operation successful", true, 200);
+                    return new ServiceResponse<bool>(true, "Password updated successfully", true, 200);
                 }
                 else
                 {
-
-                    return new ServiceResponse<bool>(false, "Operation failed", false, 500);
+                    return new ServiceResponse<bool>(false, "Password update failed", false, 500);
                 }
             }
             catch (Exception ex)

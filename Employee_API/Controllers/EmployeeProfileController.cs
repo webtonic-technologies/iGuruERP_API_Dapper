@@ -14,7 +14,7 @@ namespace Employee_API.Controllers
         {
             _employeeProfileServices = employeeProfileServices;
         }
-        [HttpPost("AddEmployee")]
+        [HttpPost("AddUpdateEmployeeProfile")]
         public async Task<IActionResult> AddUpdateEmployeeProfile([FromBody] EmployeeProfile request)
         {
             try
@@ -62,223 +62,223 @@ namespace Employee_API.Controllers
                 return BadRequest(ex.Message);
             }
         }
-        [HttpPost("EmployeeDoc")]
-        public async Task<IActionResult> AddUpdateEmployeeDocuments([FromBody]List<EmployeeDocument> request, int employeeId)
-        {
-            try
-            {
-                var data = await _employeeProfileServices.AddUpdateEmployeeDocuments(request, employeeId);
-                if (data != null)
-                {
-                    return Ok(data);
-                }
-                else
-                {
-                    return BadRequest("Bad Request");
-                }
-            }
-            catch (Exception e)
-            {
-                return this.BadRequest(e.Message);
-            }
+        //[HttpPost("EmployeeDoc")]
+        //public async Task<IActionResult> AddUpdateEmployeeDocuments([FromBody]List<EmployeeDocument> request, int employeeId)
+        //{
+        //    try
+        //    {
+        //        var data = await _employeeProfileServices.AddUpdateEmployeeDocuments(request, employeeId);
+        //        if (data != null)
+        //        {
+        //            return Ok(data);
+        //        }
+        //        else
+        //        {
+        //            return BadRequest("Bad Request");
+        //        }
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        return this.BadRequest(e.Message);
+        //    }
 
-        }
-        [HttpGet("EmployeeDoc/{id}")]
-        public async Task<IActionResult> GetEmployeeDocumentsById(int id)
-        {
-            try
-            {
-                var data = await _employeeProfileServices.GetEmployeeDocuments(id);
-                if (data != null)
-                {
-                    return Ok(data);
-                }
-                else
-                {
-                    return BadRequest("Bad Request");
-                }
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
-        [HttpPost("BankDetails/{employeeId}")]
-        public async Task<IActionResult> AddUpdateEmployeeBankDetails([FromBody] List<EmployeeBankDetails>? request, int employeeId)
-        {
-            try
-            {
-                var data = await _employeeProfileServices.AddUpdateEmployeeBankDetails(request, employeeId);
-                if (data != null)
-                {
-                    return Ok(data);
-                }
-                else
-                {
-                    return BadRequest("Bad Request");
-                }
+        //}
+        //[HttpGet("EmployeeDoc/{id}")]
+        //public async Task<IActionResult> GetEmployeeDocumentsById(int id)
+        //{
+        //    try
+        //    {
+        //        var data = await _employeeProfileServices.GetEmployeeDocuments(id);
+        //        if (data != null)
+        //        {
+        //            return Ok(data);
+        //        }
+        //        else
+        //        {
+        //            return BadRequest("Bad Request");
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return BadRequest(ex.Message);
+        //    }
+        //}
+        //[HttpPost("BankDetails/{employeeId}")]
+        //public async Task<IActionResult> AddUpdateEmployeeBankDetails([FromBody] List<EmployeeBankDetails>? request, int employeeId)
+        //{
+        //    try
+        //    {
+        //        var data = await _employeeProfileServices.AddUpdateEmployeeBankDetails(request, employeeId);
+        //        if (data != null)
+        //        {
+        //            return Ok(data);
+        //        }
+        //        else
+        //        {
+        //            return BadRequest("Bad Request");
+        //        }
 
-            }
-            catch (Exception e)
-            {
-                return this.BadRequest(e.Message);
-            }
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        return this.BadRequest(e.Message);
+        //    }
 
-        }
-        [HttpPost("EmployeeFamily")]
-        public async Task<IActionResult> AddUpdateEmployeeFamily([FromBody] EmployeeFamily request)
-        {
-            try
-            {
-                var data = await _employeeProfileServices.AddUpdateEmployeeFamily(request);
-                if (data != null)
-                {
-                    return Ok(data);
-                }
-                else
-                {
-                    return BadRequest("Bad Request");
-                }
+        //}
+        //[HttpPost("EmployeeFamily")]
+        //public async Task<IActionResult> AddUpdateEmployeeFamily([FromBody] EmployeeFamily request)
+        //{
+        //    try
+        //    {
+        //        var data = await _employeeProfileServices.AddUpdateEmployeeFamily(request);
+        //        if (data != null)
+        //        {
+        //            return Ok(data);
+        //        }
+        //        else
+        //        {
+        //            return BadRequest("Bad Request");
+        //        }
 
-            }
-            catch (Exception e)
-            {
-                return this.BadRequest(e.Message);
-            }
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        return this.BadRequest(e.Message);
+        //    }
 
-        }
-        [HttpPost("EmpWorkExperience/{employeeId}")]
-        public async Task<IActionResult> AddUpdateEmployeeWorkExp([FromBody] List<EmployeeWorkExperience>? request, int employeeId)
-        {
-            try
-            {
-                var data = await _employeeProfileServices.AddUpdateEmployeeWorkExp(request, employeeId);
-                if (data != null)
-                {
-                    return Ok(data);
-                }
-                else
-                {
-                    return BadRequest("Bad Request");
-                }
+        //}
+        //[HttpPost("EmpWorkExperience/{employeeId}")]
+        //public async Task<IActionResult> AddUpdateEmployeeWorkExp([FromBody] List<EmployeeWorkExperience>? request, int employeeId)
+        //{
+        //    try
+        //    {
+        //        var data = await _employeeProfileServices.AddUpdateEmployeeWorkExp(request, employeeId);
+        //        if (data != null)
+        //        {
+        //            return Ok(data);
+        //        }
+        //        else
+        //        {
+        //            return BadRequest("Bad Request");
+        //        }
 
-            }
-            catch (Exception e)
-            {
-                return this.BadRequest(e.Message);
-            }
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        return this.BadRequest(e.Message);
+        //    }
 
-        }
-        [HttpPost("EmpQualification/{employeeId}")]
-        public async Task<IActionResult> AddUpdateEmployeeQualification([FromBody] List<EmployeeQualification>? request, int employeeId)
-        {
-            try
-            {
-                var data = await _employeeProfileServices.AddUpdateEmployeeQualification(request, employeeId);
-                if (data != null)
-                {
-                    return Ok(data);
-                }
-                else
-                {
-                    return BadRequest("Bad Request");
-                }
+        //}
+        //[HttpPost("EmpQualification/{employeeId}")]
+        //public async Task<IActionResult> AddUpdateEmployeeQualification([FromBody] List<EmployeeQualification>? request, int employeeId)
+        //{
+        //    try
+        //    {
+        //        var data = await _employeeProfileServices.AddUpdateEmployeeQualification(request, employeeId);
+        //        if (data != null)
+        //        {
+        //            return Ok(data);
+        //        }
+        //        else
+        //        {
+        //            return BadRequest("Bad Request");
+        //        }
 
-            }
-            catch (Exception e)
-            {
-                return this.BadRequest(e.Message);
-            }
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        return this.BadRequest(e.Message);
+        //    }
 
-        }
-        [HttpGet("GetEmpQualification/{employeeId}")]
-        public async Task<IActionResult> GetEmployeeQualificationById(int employeeId)
-        {
-            try
-            {
-                var data = await _employeeProfileServices.GetEmployeeQualificationById(employeeId);
-                if (data != null)
-                {
-                    return Ok(data);
-                }
-                else
-                {
-                    return BadRequest("Bad Request");
-                }
+        //}
+        //[HttpGet("GetEmpQualification/{employeeId}")]
+        //public async Task<IActionResult> GetEmployeeQualificationById(int employeeId)
+        //{
+        //    try
+        //    {
+        //        var data = await _employeeProfileServices.GetEmployeeQualificationById(employeeId);
+        //        if (data != null)
+        //        {
+        //            return Ok(data);
+        //        }
+        //        else
+        //        {
+        //            return BadRequest("Bad Request");
+        //        }
 
-            }
-            catch (Exception e)
-            {
-                return this.BadRequest(e.Message);
-            }
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        return this.BadRequest(e.Message);
+        //    }
 
-        }
-        [HttpGet("GetEmpWorkExp/{employeeId}")]
-        public async Task<IActionResult> GetEmployeeWorkExperienceById(int employeeId)
-        {
-            try
-            {
-                var data = await _employeeProfileServices.GetEmployeeWorkExperienceById(employeeId);
-                if (data != null)
-                {
-                    return Ok(data);
-                }
-                else
-                {
-                    return BadRequest("Bad Request");
-                }
+        //}
+        //[HttpGet("GetEmpWorkExp/{employeeId}")]
+        //public async Task<IActionResult> GetEmployeeWorkExperienceById(int employeeId)
+        //{
+        //    try
+        //    {
+        //        var data = await _employeeProfileServices.GetEmployeeWorkExperienceById(employeeId);
+        //        if (data != null)
+        //        {
+        //            return Ok(data);
+        //        }
+        //        else
+        //        {
+        //            return BadRequest("Bad Request");
+        //        }
 
-            }
-            catch (Exception e)
-            {
-                return this.BadRequest(e.Message);
-            }
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        return this.BadRequest(e.Message);
+        //    }
 
-        }
-        [HttpGet("GetEmpBankDetails/{employeeId}")]
-        public async Task<IActionResult> GetEmployeeBankDetailsById(int employeeId)
-        {
-            try
-            {
-                var data = await _employeeProfileServices.GetEmployeeBankDetailsById(employeeId);
-                if (data != null)
-                {
-                    return Ok(data);
-                }
-                else
-                {
-                    return BadRequest("Bad Request");
-                }
+        //}
+        //[HttpGet("GetEmpBankDetails/{employeeId}")]
+        //public async Task<IActionResult> GetEmployeeBankDetailsById(int employeeId)
+        //{
+        //    try
+        //    {
+        //        var data = await _employeeProfileServices.GetEmployeeBankDetailsById(employeeId);
+        //        if (data != null)
+        //        {
+        //            return Ok(data);
+        //        }
+        //        else
+        //        {
+        //            return BadRequest("Bad Request");
+        //        }
 
-            }
-            catch (Exception e)
-            {
-                return this.BadRequest(e.Message);
-            }
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        return this.BadRequest(e.Message);
+        //    }
 
-        }
-        [HttpGet("GetEmpFamilyDetails/{employeeId}")]
-        public async Task<IActionResult> GetEmployeeFamilyDetailsById(int employeeId)
-        {
-            try
-            {
-                var data = await _employeeProfileServices.GetEmployeeFamilyDetailsById(employeeId);
-                if (data != null)
-                {
-                    return Ok(data);
-                }
-                else
-                {
-                    return BadRequest("Bad Request");
-                }
+        //}
+        //[HttpGet("GetEmpFamilyDetails/{employeeId}")]
+        //public async Task<IActionResult> GetEmployeeFamilyDetailsById(int employeeId)
+        //{
+        //    try
+        //    {
+        //        var data = await _employeeProfileServices.GetEmployeeFamilyDetailsById(employeeId);
+        //        if (data != null)
+        //        {
+        //            return Ok(data);
+        //        }
+        //        else
+        //        {
+        //            return BadRequest("Bad Request");
+        //        }
 
-            }
-            catch (Exception e)
-            {
-                return this.BadRequest(e.Message);
-            }
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        return this.BadRequest(e.Message);
+        //    }
 
-        }
+        //}
         [HttpPut("Status/{employeeId}")]
         public async Task<IActionResult> StatusActiveInactive(int employeeId)
         {
@@ -395,11 +395,11 @@ namespace Employee_API.Controllers
 
         }
         [HttpPut("ChangePassword")]
-        public async Task<IActionResult> UpdatePassword(int userId, string Password)
+        public async Task<IActionResult> UpdatePassword(ChangePasswordRequest request)
         {
             try
             {
-                var data = await _employeeProfileServices.UpdatePassword(userId, 1, Password);
+                var data = await _employeeProfileServices.UpdatePassword(request);
                 if (data != null)
                 {
                     return Ok(data);
@@ -426,6 +426,73 @@ namespace Employee_API.Controllers
                 return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Employee.xlsx");
             }
             return StatusCode(response.StatusCode, response.Message);
+        }
+        [HttpGet("GetClassSectionList/{instituteId}")]
+        public async Task<IActionResult> GetClassSectionList(int instituteId)
+        {
+            try
+            {
+                var data = await _employeeProfileServices.GetClassSectionList(instituteId);
+                if (data != null)
+                {
+                    return Ok(data);
+
+                }
+                else
+                {
+                    return BadRequest("Bad Request");
+                }
+
+            }
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
+
+        }
+        [HttpGet("ClassSectionSubjectsList/{classId}/{sectionId}")]
+        public async Task<IActionResult> ClassSectionSubjectsList(int classId, int sectionId)
+        {
+            try
+            {
+                var data = await _employeeProfileServices.ClassSectionSubjectsList(classId, sectionId);
+                if (data != null)
+                {
+                    return Ok(data);
+
+                }
+                else
+                {
+                    return BadRequest("Bad Request");
+                }
+
+            }
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
+        }
+        [HttpGet("ClassSectionSubjectsMappings/{InstituteId}")]
+        public async Task<IActionResult> ClassSectionSubjectsMappings(int InstituteId)
+        {
+            try
+            {
+                var data = await _employeeProfileServices.ClassSectionSubjectsMappings(InstituteId);
+                if (data != null)
+                {
+                    return Ok(data);
+
+                }
+                else
+                {
+                    return BadRequest("Bad Request");
+                }
+
+            }
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
         }
     }
 }

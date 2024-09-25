@@ -110,8 +110,8 @@ namespace Employee_API.DTOs
     public class EmployeeStaffMappingResponse
     {
         public int EmployeeId { get; set; }
-        public EmployeeStaffMapClassTeacherResponse? EmployeeStaffMappingsClassTeacher { get; set; }
-        public EmployeeStappMapClassSectionResponse? EmployeeStappMappingsClassSection { get; set; }
+        public List<EmployeeStaffMapClassTeacherResponse>? EmployeeStaffMappingsClassTeacher { get; set; }
+        public List<EmployeeStappMapClassSectionResponse>? EmployeeStappMappingsClassSection { get; set; }
     }
     public class EmployeeStaffMapClassTeacherResponse
     {
@@ -119,10 +119,10 @@ namespace Employee_API.DTOs
         public int ClassId { get; set; }
         public string ClassName { get; set; } = string.Empty;
         public int SectionId { get; set; }
-        public string SectionName {  get; set; } = string.Empty;
+        public string SectionName { get; set; } = string.Empty;
         public List<Subjects>? subjects { get; set; }
     }
-    public class Subjects 
+    public class Subjects
     {
         public int SubjectId { get; set; }
         public string SubjectName { get; set; } = string.Empty;
@@ -139,6 +139,18 @@ namespace Employee_API.DTOs
     public class Sections
     {
         public int? SectionId { get; set; }
-        public string SectionName {  get; set; } = string.Empty;
+        public string SectionName { get; set; } = string.Empty;
+    }
+    public class ClassSectionList
+    {
+        public int classId { get; set; }
+        public int sectionId {  get; set; }
+        public string ClassSection {  get; set; } = string.Empty;//8 - A
+    }
+    public class ClassSectionSubjectResponse
+    {
+        public int classId { set; get; }
+        public int SectionId {  get; set; }
+        public List<Subjects>? subjects { get; set; }
     }
 }

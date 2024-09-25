@@ -87,6 +87,16 @@ namespace Employee_API.Services.Implementations
             }
         }
 
+        public async Task<ServiceResponse<ClassSectionSubjectResponse>> ClassSectionSubjectsList(int classId, int sectionId)
+        {
+            return await _employeeProfileRepository.ClassSectionSubjectsList(classId, sectionId);
+        }
+
+        public async Task<ServiceResponse<List<ClassSectionSubjectResponse>>> ClassSectionSubjectsMappings(int InstituteId)
+        {
+            return await _employeeProfileRepository.ClassSectionSubjectsMappings(InstituteId);
+        }
+
         public async Task<ServiceResponse<byte[]>> ExcelDownload(ExcelDownloadRequest request)
         {
             return await _employeeProfileRepository.ExcelDownload(request);
@@ -102,6 +112,11 @@ namespace Employee_API.Services.Implementations
             {
                 return new ServiceResponse<List<BloodGroup>>(false, ex.Message, [], 500);
             }
+        }
+
+        public async Task<ServiceResponse<List<ClassSectionList>>> GetClassSectionList(int instituteId)
+        {
+            return await _employeeProfileRepository.GetClassSectionList(instituteId);
         }
 
         public async Task<ServiceResponse<List<Department>>> GetDepartmentList(int InstituteId)
@@ -236,11 +251,11 @@ namespace Employee_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<bool>> UpdatePassword(int userId, int userType, string Password)
+        public async Task<ServiceResponse<bool>> UpdatePassword(ChangePasswordRequest request)
         {
             try
             {
-                return await _employeeProfileRepository.UpdatePassword(userId, userType, Password);
+                return await _employeeProfileRepository.UpdatePassword(request);
             }
             catch (Exception ex)
             {

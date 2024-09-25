@@ -24,7 +24,10 @@ namespace Employee_API.Repository.Interfaces
         Task<ServiceResponse<List<BloodGroup>>> GetBloodGroupList();
         Task<ServiceResponse<List<Department>>> GetDepartmentList(int InstituteId);
         Task<ServiceResponse<List<Designation>>> GetDesignationList(int DepartmentId);
-        Task<ServiceResponse<bool>> UpdatePassword(int userId, int userType, string Password);
+        Task<ServiceResponse<bool>> UpdatePassword(ChangePasswordRequest request);
         Task<ServiceResponse<byte[]>> ExcelDownload(ExcelDownloadRequest request);
+        Task<ServiceResponse<List<ClassSectionList>>> GetClassSectionList(int instituteId);
+        Task<ServiceResponse<ClassSectionSubjectResponse>> ClassSectionSubjectsList(int classId, int sectionId);
+        Task<ServiceResponse<List<ClassSectionSubjectResponse>>> ClassSectionSubjectsMappings(int InstituteId);
     }
 }
