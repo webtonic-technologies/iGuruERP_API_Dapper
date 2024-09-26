@@ -94,7 +94,7 @@ namespace Institute_API.DTOs
     }
     public class AcademicYearMaster
     {
-        public int yearId { get; set; }
+        public int InstituteId { get; set; }
         public string YearName { get; set; } = string.Empty;
     }
 }

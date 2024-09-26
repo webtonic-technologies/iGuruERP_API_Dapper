@@ -13,6 +13,6 @@ namespace Institute_API.Services.Interfaces
         Task<ServiceResponse<List<State>>> GetStatesByCountryIdAsync(int countryId);
         Task<ServiceResponse<List<City>>> GetCitiesByDistrictIdAsync(int districtId);
         Task<ServiceResponse<List<District>>> GetDistrictsByStateIdAsync(int stateId);
-        Task<ServiceResponse<List<AcademicYearMaster>>> GetAcademicYearList();
+        Task<ServiceResponse<List<AcademicYearMaster>>> GetAcademicYearList(int InstituteId);
     }
 }

@@ -37,9 +37,9 @@ namespace Institute_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<AcademicYearMaster>>> GetAcademicYearList()
+        public async Task<ServiceResponse<List<AcademicYearMaster>>> GetAcademicYearList(int InstituteId)
         {
-            return await _instituteDetailsRepository.GetAcademicYearList();
+            return await _instituteDetailsRepository.GetAcademicYearList(InstituteId);
         }
 
         public async Task<ServiceResponse<List<InstituteDetailsResponseDTO>>> GetAllInstituteDetailsList(int AcademicYear)

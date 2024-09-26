@@ -129,12 +129,12 @@ namespace Institute_API.Controllers
                 return BadRequest(ex.Message);
             }
         }
-        [HttpGet("AcademicYear")]
-        public async Task<IActionResult> GetAcademicYearList()
+        [HttpGet("AcademicYear/{InstituteId}")]
+        public async Task<IActionResult> GetAcademicYearList(int InstituteId)
         {
             try
             {
-                var data = await _instituteDetailsServices.GetAcademicYearList();
+                var data = await _instituteDetailsServices.GetAcademicYearList(InstituteId);
                 return Ok(data);
             }
             catch (Exception ex)

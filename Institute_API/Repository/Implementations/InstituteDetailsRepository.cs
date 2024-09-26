@@ -385,23 +385,47 @@ namespace Institute_API.Repository.Implementations
             var semesterInfo = await _connection.QueryFirstOrDefaultAsync<SemesterInfo>(query, new { Institute_id = instituteId });
             return semesterInfo ?? new SemesterInfo();
         }
-        public async Task<ServiceResponse<List<AcademicYearMaster>>> GetAcademicYearList()
+        public async Task<ServiceResponse<List<AcademicYearMaster>>> GetAcademicYearList(int InstituteId)
         {
+            // SQL query to fetch academic year info, assuming we're working with datetime strings
+            var query = @"
+    SELECT 
+        AcademicYearStartMonth, 
+        AcademicYearEndMonth
+    FROM 
+        tbl_AcademicInfo
+    WHERE 
+        Institute_id = @InstituteId AND Status = 1";  // assuming Status = 1 means active
+
             try
             {
-                // Define the query to retrieve academic year data
-                string query = @"
-            SELECT [Id] AS yearId, [YearName]
-            FROM [iGuruERP].[dbo].[tbl_AcademicYear]
-            WHERE [Status] = 1 -- Assuming you only want active academic years";
+                // Execute the query
+                var academicYears = await _connection.QueryAsync<dynamic>(query, new { InstituteId });
 
-                // Execute the query asynchronously using Dapper
-                var result = await _connection.QueryAsync<AcademicYearMaster>(query);
-                return new ServiceResponse<List<AcademicYearMaster>>(true, "Academic year list retrieved successfully.", result.ToList(), 200);
+                // Check if data was retrieved
+                if (academicYears.Any())
+                {
+                    // Map the result to the list of AcademicYearMaster objects
+                    var academicYearList = academicYears.Select(ay => new AcademicYearMaster
+                    {
+                        InstituteId = InstituteId,
+
+                        // Extract only the year from AcademicYearStartMonth and AcademicYearEndMonth
+                        YearName = $"{DateTime.Parse(ay.AcademicYearStartMonth.ToString()).Year} - {DateTime.Parse(ay.AcademicYearEndMonth.ToString()).Year}"
+                    }).ToList();
+
+                    return new ServiceResponse<List<AcademicYearMaster>>(true, "Academic year list retrieved successfully.", academicYearList, 200);
+                }
+                else
+                {
+                    // No records found for the given institute
+                    return new ServiceResponse<List<AcademicYearMaster>>(false, "No academic years found for the specified institute.", new List<AcademicYearMaster>(), 404);
+                }
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<List<AcademicYearMaster>>(false, ex.Message, [], 200);
+                // Return an error response
+                return new ServiceResponse<List<AcademicYearMaster>>(false, $"An error occurred: {ex.Message}", new List<AcademicYearMaster>(), 500);
             }
         }
         public async Task<ServiceResponse<bool>> DeleteImage(DeleteImageRequest request)
