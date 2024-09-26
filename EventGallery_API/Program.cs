@@ -25,7 +25,9 @@ builder.Services.AddScoped<IHolidayService, HolidayService>();
 
 builder.Services.AddScoped<IGalleryRepository, GalleryRepository>();
 builder.Services.AddScoped<IGalleryService, GalleryService>();
- 
+
+builder.Services.AddScoped<IEventApprovalService, EventApprovalService>();
+builder.Services.AddScoped<IEventApprovalRepository, EventApprovalRepository>();
 
 var app = builder.Build();
 

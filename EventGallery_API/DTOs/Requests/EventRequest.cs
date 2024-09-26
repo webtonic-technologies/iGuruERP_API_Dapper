@@ -4,7 +4,10 @@
     public class GetAllEventsRequest
     {
         public int AcademicYearID { get; set; }
-        public int InstituteID { get; set; }
+        public int InstituteID { get; set; }  // Ensure there is only one definition
+        public string Search { get; set; }
+        public int PageNumber { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
     }
 
     public class EventRequest

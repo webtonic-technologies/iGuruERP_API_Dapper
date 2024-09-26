@@ -5,6 +5,7 @@
         public int AcademicYearID { get; set; }
         public int InstituteID { get; set; }
         public string Search { get; set; } // Search by HolidayName
+
     }
 
 }

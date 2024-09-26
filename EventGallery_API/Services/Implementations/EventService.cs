@@ -23,7 +23,15 @@ namespace EventGallery_API.Services.Implementations
 
         public async Task<ServiceResponse<List<GetAllEventsResponse>>> GetAllEvents(GetAllEventsRequest request)
         {
-            return await _eventRepository.GetAllEvents(request);
+            var eventsResponse = await _eventRepository.GetAllEvents(request);
+            if (eventsResponse != null && eventsResponse.Data != null)
+            {
+                return new ServiceResponse<List<GetAllEventsResponse>>(true, "Events fetched successfully.", eventsResponse.Data, 200, eventsResponse.TotalCount);
+            }
+            else
+            {
+                return new ServiceResponse<List<GetAllEventsResponse>>(false, "No events found.", null, 404);
+            }
         }
 
         public async Task<ServiceResponse<EventResponse>> GetEventById(int eventId)

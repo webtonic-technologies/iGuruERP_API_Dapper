@@ -5,6 +5,7 @@ using EventGallery_API.DTOs.Response;
 using EventGallery_API.DTOs.ServiceResponse; // Ensure this is included
 using EventGallery_API.Repository.Interfaces;
 using EventGallery_API.DTOs.Responses;
+using System.Data.Common;
 
 namespace EventGallery_API.Repository.Implementations
 {
@@ -104,37 +105,138 @@ namespace EventGallery_API.Repository.Implementations
             return new ServiceResponse<int>(true, "Event added/updated successfully.", eventId, 200);
         }
 
+        //public async Task<ServiceResponse<List<GetAllEventsResponse>>> GetAllEvents(GetAllEventsRequest request)
+        //{
+        //    var query = @"
+        //        SELECT 
+        //        e.EventID,
+        //        e.EventName,
+        //        CONCAT(CONVERT(VARCHAR, e.FromDate, 105), ' to ', CONVERT(VARCHAR, e.ToDate, 105)) AS Date,
+        //        e.Description AS Document,
+        //        e.Location,
+        //        CASE 
+        //            WHEN e.ScheduleTime IS NOT NULL 
+        //            THEN CONCAT(CONVERT(VARCHAR, e.ScheduleDate, 105), ' at ', FORMAT(e.ScheduleTime, 'hh:mm tt')) 
+        //            ELSE CONCAT(CONVERT(VARCHAR, e.ScheduleDate, 105), ' at ', 'N/A')
+        //        END AS EventNotification,
+        //        CASE 
+        //            WHEN emp.First_Name IS NOT NULL AND emp.Last_Name IS NOT NULL
+        //            THEN CONCAT(emp.First_Name, ' ', emp.Last_Name)
+        //            ELSE 'N/A'
+        //        END AS CreatedBy
+        //    FROM tblEvent e
+        //    LEFT JOIN tbl_EmployeeProfileMaster emp ON emp.Employee_id = e.CreatedBy
+        //    WHERE e.AcademicYearID = @AcademicYearID AND e.InstituteID = @InstituteID;";
+
+        //    var parameters = new
+        //    {
+        //        request.AcademicYearID,
+        //        request.InstituteID
+        //    };
+
+        //    var events = await _connection.QueryAsync<GetAllEventsResponse>(query, parameters);
+        //    return new ServiceResponse<List<GetAllEventsResponse>>(true, "Events fetched successfully.", events.ToList(), 200);
+        //}
+
+
         public async Task<ServiceResponse<List<GetAllEventsResponse>>> GetAllEvents(GetAllEventsRequest request)
         {
+            // Query to get the total count of events (before applying paging, if any), with optional search criteria
+            var countQuery = @"
+    SELECT COUNT(*)
+    FROM tblEvent e
+    WHERE e.AcademicYearID = @AcademicYearID AND e.InstituteID = @InstituteID
+    AND (@Search IS NULL OR e.EventName LIKE '%' + @Search + '%');";
+
+            // Query to get the actual event data, with optional search and paging
             var query = @"
-                SELECT 
-                e.EventID,
-                e.EventName,
-                CONCAT(CONVERT(VARCHAR, e.FromDate, 105), ' to ', CONVERT(VARCHAR, e.ToDate, 105)) AS Date,
-                e.Description AS Document,
-                e.Location,
-                CASE 
-                    WHEN e.ScheduleTime IS NOT NULL 
-                    THEN CONCAT(CONVERT(VARCHAR, e.ScheduleDate, 105), ' at ', FORMAT(e.ScheduleTime, 'hh:mm tt')) 
-                    ELSE CONCAT(CONVERT(VARCHAR, e.ScheduleDate, 105), ' at ', 'N/A')
-                END AS EventNotification,
-                CASE 
-                    WHEN emp.First_Name IS NOT NULL AND emp.Last_Name IS NOT NULL
-                    THEN CONCAT(emp.First_Name, ' ', emp.Last_Name)
-                    ELSE 'N/A'
-                END AS CreatedBy
-            FROM tblEvent e
-            LEFT JOIN tbl_EmployeeProfileMaster emp ON emp.Employee_id = e.CreatedBy
-            WHERE e.AcademicYearID = @AcademicYearID AND e.InstituteID = @InstituteID;";
+    SELECT 
+        e.EventID,
+        e.EventName,
+        CONCAT(CONVERT(VARCHAR, e.FromDate, 105), ' to ', CONVERT(VARCHAR, e.ToDate, 105)) AS Date,
+        e.Description AS Description,
+        e.Location,
+        CASE 
+            WHEN e.ScheduleTime IS NOT NULL 
+            THEN CONCAT(CONVERT(VARCHAR, e.ScheduleDate, 105), ' at ', FORMAT(e.ScheduleTime, 'hh:mm tt')) 
+            ELSE CONCAT(CONVERT(VARCHAR, e.ScheduleDate, 105), ' at ', 'N/A')
+        END AS EventNotification,
+        CASE 
+            WHEN emp.First_Name IS NOT NULL AND emp.Last_Name IS NOT NULL
+            THEN CONCAT(emp.First_Name, ' ', emp.Last_Name)
+            ELSE 'N/A'
+        END AS CreatedBy
+    FROM tblEvent e
+    LEFT JOIN tbl_EmployeeProfileMaster emp ON emp.Employee_id = e.CreatedBy
+    WHERE e.AcademicYearID = @AcademicYearID AND e.InstituteID = @InstituteID
+    AND (@Search IS NULL OR e.EventName LIKE '%' + @Search + '%')
+    ORDER BY e.EventName
+    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;"; // Paging logic using OFFSET and FETCH
 
             var parameters = new
             {
                 request.AcademicYearID,
-                request.InstituteID
+                request.InstituteID,
+                Search = string.IsNullOrEmpty(request.Search) ? null : request.Search, // Handle null search
+                Offset = (request.PageNumber - 1) * request.PageSize, // Calculate offset
+                PageSize = request.PageSize
             };
 
+            // Get the total count of events (without paging)
+            var totalCount = await _connection.ExecuteScalarAsync<int>(countQuery, parameters);
+
+            // Get the paginated list of events
             var events = await _connection.QueryAsync<GetAllEventsResponse>(query, parameters);
-            return new ServiceResponse<List<GetAllEventsResponse>>(true, "Events fetched successfully.", events.ToList(), 200);
+
+            // Return the events along with the total count
+            return new ServiceResponse<List<GetAllEventsResponse>>(true, "Events fetched successfully.", events.ToList(), 200, totalCount);
+        }
+
+
+        //public async Task<ServiceResponse<List<GetAllEventsResponse>>> GetAllEvents(GetAllEventsRequest request)
+        //{
+        //    var query = @"
+        //SELECT e.EventID, e.EventName, 
+        //       CONVERT(varchar, e.FromDate, 105) + ' to ' + CONVERT(varchar, e.ToDate, 105) AS Date,
+        //       e.Description, e.Location, 
+        //       CONVERT(varchar, e.ScheduleDate, 105) + ' at ' + FORMAT(e.ScheduleTime, 'hh:mm tt') AS EventNotification,
+        //       ep.First_Name + ' ' + ep.Last_Name AS CreatedBy, 
+        //       e.StatusID
+        //FROM tblEvent e
+        //LEFT JOIN tbl_EmployeeProfileMaster ep ON e.CreatedBy = ep.Employee_id
+        //WHERE e.InstituteID = @InstituteID 
+        //AND (@Search IS NULL OR e.EventName LIKE '%' + @Search + '%')
+        //ORDER BY e.EventID DESC
+        //OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+
+        //    var events = await _connection.QueryAsync<GetAllEventsResponse>(query, new
+        //    {
+        //        request.InstituteID,
+        //        request.Search,
+        //        Offset = (request.PageNumber - 1) * request.PageSize,
+        //        request.PageSize
+        //    });
+
+        //    var totalCount = await GetTotalEventCount(request); // Total number of events
+
+        //    return new ServiceResponse<List<GetAllEventsResponse>>(true, "Events fetched successfully.", events.ToList(), 200, totalCount);
+        //}
+
+
+
+        public async Task<int> GetTotalEventCount(GetAllEventsRequest request)
+        {
+            var query = @"
+        SELECT COUNT(*)
+        FROM tblEvent e
+        WHERE e.InstituteID = @InstituteID
+        AND (@Search IS NULL OR e.EventName LIKE '%' + @Search + '%')";
+
+            return await _connection.ExecuteScalarAsync<int>(query, new
+            {
+                request.InstituteID,
+                request.Search
+            });
         }
 
         public async Task<ServiceResponse<EventResponse>> GetEventById(int eventId)

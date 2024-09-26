@@ -29,12 +29,8 @@ namespace EventGallery_API.Controllers
         [HttpPost("GetAllEvents")]
         public async Task<IActionResult> GetAllEvents([FromBody] GetAllEventsRequest request)
         {
-            var response = await _eventService.GetAllEvents(request);
-            if (response.Success)
-            {
-                return Ok(response);
-            }
-            return BadRequest(response);
+            var result = await _eventService.GetAllEvents(request);
+            return Ok(result);
         }
 
 
