@@ -8,5 +8,6 @@
         public DateTime AcademicYearEndMonth { get; set; }
         public bool Status { get; set; }
         public string StatusName { get; set; } = string.Empty;
+        public string AcaInfoYearCode { get; set; } = string.Empty;
     }
 }

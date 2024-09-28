@@ -718,8 +718,8 @@ namespace Employee_API.Repository.Implementations
 
                         // Insert new addresses
                         string insertAddressSql = @"
-                INSERT INTO tbl_EmployeePresentAddress (Address, Country_id, State_id, City_id, District_id, Pin_code, AddressTypeId, Employee_id)
-                VALUES (@Address, @Country_id, @State_id, @City_id, @District_id, @Pin_code, @AddressTypeId, @Employee_id);";
+                INSERT INTO tbl_EmployeePresentAddress (Address, CountryName, StateName, CityName, DistrictName, Pin_code, AddressTypeId, Employee_id)
+                VALUES (@Address, @CountryName, @StateName, @CityName, @DistrictName, @Pin_code, @AddressTypeId, @Employee_id);";
 
                         // Execute the insert operation for each address
                         foreach (var address in request)
@@ -1174,22 +1174,14 @@ namespace Employee_API.Repository.Implementations
         SELECT 
             e.Employee_Present_Address_id,
             e.Address,
-            e.Country_id,
-            c.country_name as CountryName,
-            e.State_id,
-            s.state_name as StateName,
-            e.City_id,
-            ci.city_name as CityName,
-            e.District_id,
-            d.district_name as DistrictName,
+            e.CountryName,
+            e.StateName,
+            e.CityName,
+            e.DistrictName,
             e.Pin_code,
             e.AddressTypeId,
             e.Employee_id
         FROM tbl_EmployeePresentAddress e
-        LEFT JOIN tbl_Country c ON e.Country_id = c.Country_id
-        LEFT JOIN tbl_State s ON e.State_id = s.State_id
-        LEFT JOIN tbl_City ci ON e.City_id = ci.City_id
-        LEFT JOIN tbl_District d ON e.District_id = d.District_id
         WHERE e.Employee_id = @EmployeeId"; // Assuming IsDeleted is a column to check if the address is active
 
                 // Execute the query and retrieve the address details
@@ -1399,23 +1391,28 @@ WHERE e.EmployeeId = @EmployeeId";
         }
         public async Task<ServiceResponse<List<ClassSectionSubjectResponse>>> ClassSectionSubjectsMappings(int InstituteId)
         {
-            // Adjusted SQL query to match the provided table structures
+            // Adjusted SQL query to fetch class and section names
             var query = @"
-    SELECT 
-        csm.class_id AS ClassId,
-        csm.section_id AS SectionIdCSV, -- section_id is stored as a CSV
-        s.SubjectId,
-        s.SubjectName
-    FROM 
-        tbl_ClassSectionSubjectMapping csm
-    JOIN 
-        tbl_Subjects s ON csm.SubjectId = s.SubjectId
-    JOIN 
-        tbl_Class c ON csm.class_id = c.class_id
-    WHERE 
-        c.institute_id = @InstituteId AND
-        csm.IsDeleted = 0 AND
-        s.IsDeleted = 0;";
+SELECT 
+    csm.class_id AS ClassId,
+    csm.section_id AS SectionIdCSV, -- section_id is stored as a CSV
+    c.class_name,
+    s.SubjectId,
+    s.SubjectName,
+    sec.section_id,
+    sec.section_name
+FROM 
+    tbl_ClassSectionSubjectMapping csm
+JOIN 
+    tbl_Subjects s ON csm.SubjectId = s.SubjectId
+JOIN 
+    tbl_Class c ON csm.class_id = c.class_id
+LEFT JOIN 
+    tbl_Section sec ON CHARINDEX(',' + CAST(sec.section_id AS VARCHAR) + ',', ',' + csm.section_id + ',') > 0
+WHERE 
+    c.institute_id = @InstituteId AND
+    csm.IsDeleted = 0 AND
+    s.IsDeleted = 0;";
 
             try
             {
@@ -1437,17 +1434,20 @@ WHERE e.EmployeeId = @EmployeeId";
                         return sectionIds.Select(sectionId => new ClassSectionSubjectResponse
                         {
                             classId = (int)m.ClassId,
+                            ClassName = (string)m.class_name,  // Map class name
                             SectionId = sectionId,
+                            SectionName = (string)m.section_name, // Map section name
                             subjects = new List<Subjects>
-                    {
-                        new Subjects
-                        {
-                            SubjectId = (int)m.SubjectId,
-                            SubjectName = (string)m.SubjectName
-                        }
-                    }
+        {
+            new Subjects
+            {
+                SubjectId = (int)m.SubjectId,
+                SubjectName = (string)m.SubjectName
+            }
+        }
                         });
                     }).ToList();
+
 
                     // Check if we have valid mappings
                     if (processedMappings.Any())

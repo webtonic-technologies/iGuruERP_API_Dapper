@@ -52,13 +52,9 @@ namespace Employee_API.DTOs
     {
         public int Employee_Present_Address_id { get; set; }
         public string Address { get; set; } = string.Empty;
-        public int Country_id { get; set; }
         public string CountryName { get; set; } = string.Empty;
-        public int State_id { get; set; }
         public string StateName { get; set; } = string.Empty;
-        public int City_id { get; set; }
         public string CityName { get; set; } = string.Empty;
-        public int District_id { get; set; }
         public string DistrictName { get; set; } = string.Empty;
         public string Pin_code { get; set; } = string.Empty;
         public int AddressTypeId { get; set; }
@@ -69,11 +65,11 @@ namespace Employee_API.DTOs
         public int EmployeeId { get; set; }
         public string EmployeeName { get; set; } = string.Empty;
         public string Designation { get; set; } = string.Empty;
-        public string Departemnt { get; set; } = string.Empty;
+        public string Department { get; set; } = string.Empty;
         public string Gender { get; set; } = string.Empty;
         public string LoginId { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
-        public DateTime? LastActivity { get; set; }
+        public string? LastActivity { get; set; }
     }
     public class EmployeeNonAppUsersResponse
     {
@@ -150,7 +146,44 @@ namespace Employee_API.DTOs
     public class ClassSectionSubjectResponse
     {
         public int classId { set; get; }
+        public string ClassName {  set; get; } = string.Empty;
         public int SectionId {  get; set; }
+        public string SectionName {  set; get; } = string.Empty;
         public List<Subjects>? subjects { get; set; }
+    }
+    public class UserSwitchOverResponse
+    {
+        public List<StudentResponse> Students { get; set; }
+        public List<EmployeeResponse> Employees { get; set; }
+    }
+
+    public class StudentResponse
+    {
+        public int UserId { get; set; }
+        public string FirstName { get; set; }
+        public string MiddleName { get; set; }
+        public string LastName { get; set; }
+        public string UserName { get; set; }
+        public string ClassName { get; set; }
+        public string SectionName { get; set; }
+    }
+
+    public class EmployeeResponse
+    {
+        public int UserId { get; set; }
+        public string FirstName { get; set; }
+        public string MiddleName { get; set; }
+        public string LastName { get; set; }
+        public string UserName { get; set; }
+        public string DepartmentName { get; set; }
+        public string DesignationName { get; set; }
+    }
+    public class ForgetPasswordResponse
+    {
+        public string Token { get; set; } = string.Empty;
+        public int UserId { get; set; }
+        public string Usertype { get; set; } = string.Empty;
+        public string UserName { set; get; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
     }
 }

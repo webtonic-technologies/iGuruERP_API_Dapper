@@ -13,5 +13,8 @@ namespace Employee_API.Repository.Interfaces
         Task<ServiceResponse<EmployeeLoginResposne>> UserLogin(string username);
         Task<ServiceResponse<LoginResposne>> UserLoginPasswordScreen(UserLoginRequest request);
         Task<ServiceResponse<string>> UserLogout(string username);
+        Task<ServiceResponse<UserSwitchOverResponse>> UserSwitchOver(UserSwitchOverRequest request);
+        Task<ServiceResponse<ForgetPasswordResponse>> ForgetPassword(ForgotPassword request);
+        Task<ServiceResponse<bool>> ResetPassword(ResetPassword request);
     }
 }

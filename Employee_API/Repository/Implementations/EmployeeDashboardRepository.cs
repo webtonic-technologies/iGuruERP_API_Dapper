@@ -107,16 +107,43 @@ namespace Employee_API.Repository.Implementations
             try
             {
                 string sql = @"
+        WITH CurrentExperience AS (
+            SELECT 
+                emp.Employee_id,
+                DATEDIFF(MONTH, TRY_CAST(emp.Date_of_Joining AS DATE), GETDATE()) AS CurrentExperienceMonths
+            FROM 
+                tbl_EmployeeProfileMaster emp
+            WHERE 
+                emp.Institute_id = @InstituteId
+        ),
+        PreviousExperience AS (
+            SELECT
+                we.Employee_id,
+                COALESCE(SUM(TRY_CAST(we.Year AS INT) * 12 + TRY_CAST(we.Month AS INT)), 0) AS PreviousExperienceMonths
+            FROM 
+                tbl_WorkExperienceMaster we
+            GROUP BY 
+                we.Employee_id
+        ),
+        TotalExperience AS (
+            SELECT
+                cur.Employee_id,
+                ISNULL(cur.CurrentExperienceMonths, 0) + ISNULL(prev.PreviousExperienceMonths, 0) AS TotalExperienceMonths
+            FROM 
+                CurrentExperience cur
+            LEFT JOIN 
+                PreviousExperience prev ON cur.Employee_id = prev.Employee_id
+        )
         SELECT 
-            SUM(CASE WHEN DATEDIFF(MONTH, Date_of_Joining, GETDATE()) BETWEEN 0 AND 11 THEN 1 ELSE 0 END) AS Experience_0_1,
-            SUM(CASE WHEN DATEDIFF(MONTH, Date_of_Joining, GETDATE()) BETWEEN 12 AND 23 THEN 1 ELSE 0 END) AS Experience_1_2,
-            SUM(CASE WHEN DATEDIFF(MONTH, Date_of_Joining, GETDATE()) BETWEEN 24 AND 35 THEN 1 ELSE 0 END) AS Experience_2_3,
-            SUM(CASE WHEN DATEDIFF(MONTH, Date_of_Joining, GETDATE()) BETWEEN 36 AND 47 THEN 1 ELSE 0 END) AS Experience_3_4,
-            SUM(CASE WHEN DATEDIFF(MONTH, Date_of_Joining, GETDATE()) BETWEEN 48 AND 59 THEN 1 ELSE 0 END) AS Experience_4_5,
-            SUM(CASE WHEN DATEDIFF(MONTH, Date_of_Joining, GETDATE()) BETWEEN 60 AND 71 THEN 1 ELSE 0 END) AS Experience_5_6,
-            SUM(CASE WHEN DATEDIFF(MONTH, Date_of_Joining, GETDATE()) >= 72 THEN 1 ELSE 0 END) AS Experience_6_7
-        FROM tbl_EmployeeProfileMaster
-        WHERE Institute_id = @InstituteId;
+            SUM(CASE WHEN TotalExperienceMonths BETWEEN 0 AND 11 THEN 1 ELSE 0 END) AS Experience_0_1,
+            SUM(CASE WHEN TotalExperienceMonths BETWEEN 12 AND 23 THEN 1 ELSE 0 END) AS Experience_1_2,
+            SUM(CASE WHEN TotalExperienceMonths BETWEEN 24 AND 35 THEN 1 ELSE 0 END) AS Experience_2_3,
+            SUM(CASE WHEN TotalExperienceMonths BETWEEN 36 AND 47 THEN 1 ELSE 0 END) AS Experience_3_4,
+            SUM(CASE WHEN TotalExperienceMonths BETWEEN 48 AND 59 THEN 1 ELSE 0 END) AS Experience_4_5,
+            SUM(CASE WHEN TotalExperienceMonths BETWEEN 60 AND 71 THEN 1 ELSE 0 END) AS Experience_5_6,
+            SUM(CASE WHEN TotalExperienceMonths >= 72 THEN 1 ELSE 0 END) AS Experience_6_7
+        FROM 
+            TotalExperience;
         ";
 
                 var result = await _connection.QueryFirstOrDefaultAsync<ExperienceStats>(sql, new { InstituteId = instituteId });
@@ -126,7 +153,6 @@ namespace Employee_API.Repository.Implementations
                     return new ServiceResponse<List<ExperienceRangeResponse>>(false, "No data found", null, 204);
                 }
 
-                // Prepare the response with the format requested
                 var response = new List<ExperienceRangeResponse>
         {
             new ExperienceRangeResponse { Experience = "0-1", Count = result.Experience_0_1 },

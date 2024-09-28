@@ -50,6 +50,11 @@ namespace Employee_API.Services.Implementations
             }
         }
 
+        public async Task<ServiceResponse<ForgetPasswordResponse>> ForgetPassword(ForgotPassword request)
+        {
+            return await _employeeLoginsRepository.ForgetPassword(request);
+        }
+
         public async Task<ServiceResponse<List<EmployeeActivityResponse>>> GetAllEmployeeActivity(EmployeeLoginRequest request)
         {
             try
@@ -86,6 +91,11 @@ namespace Employee_API.Services.Implementations
             }
         }
 
+        public async Task<ServiceResponse<bool>> ResetPassword(ResetPassword request)
+        {
+            return await _employeeLoginsRepository.ResetPassword(request);
+        }
+
         public async Task<ServiceResponse<EmployeeLoginResposne>> UserLogin(string username)
         {
             try
@@ -113,6 +123,11 @@ namespace Employee_API.Services.Implementations
         public async Task<ServiceResponse<string>> UserLogout(string username)
         {
             return await _employeeLoginsRepository.UserLogout(username);
+        }
+
+        public async Task<ServiceResponse<UserSwitchOverResponse>> UserSwitchOver(UserSwitchOverRequest request)
+        {
+            return await _employeeLoginsRepository.UserSwitchOver(request);
         }
     }
 }

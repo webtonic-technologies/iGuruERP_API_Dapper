@@ -21,18 +21,20 @@ namespace Employee_API.Repository.Implementations
         {
             try
             {
-                // SQL query to fetch employee details, handling optional filters for DepartmentId and DesignationId
+                // SQL query to fetch employee details along with login information
                 string sql = @"
-        SELECT emp.Employee_id, emp.First_Name, emp.Middle_Name, emp.Last_Name, emp.Gender_id, 
-               emp.Department_id, emp.Designation_id, emp.mobile_number, emp.Date_of_Birth, emp.EmailID,
-               dep.DepartmentName, des.DesignationName, gen.Gender_Type
-        FROM tbl_EmployeeProfileMaster emp
-        LEFT JOIN tbl_Department dep ON emp.Department_id = dep.Department_id
-        LEFT JOIN tbl_Designation des ON emp.Designation_id = des.Designation_id
-        LEFT JOIN tbl_Gender gen ON emp.Gender_id = gen.Gender_id
-        WHERE emp.Institute_id = @InstituteId AND emp.Status = 1
-        AND (@DepartmentId = 0 OR emp.Department_id = @DepartmentId)
-        AND (@DesignationId = 0 OR emp.Designation_id = @DesignationId)";
+            SELECT emp.Employee_id, emp.First_Name, emp.Middle_Name, emp.Last_Name, emp.Gender_id, 
+                   emp.Department_id, emp.Designation_id, emp.mobile_number, emp.Date_of_Birth, emp.EmailID,
+                   dep.DepartmentName, des.DesignationName, gen.Gender_Type, 
+                   login.UserName AS LoginId, login.Password, login.UserActivity AS LastActivity
+            FROM tbl_EmployeeProfileMaster emp
+            LEFT JOIN tbl_Department dep ON emp.Department_id = dep.Department_id
+            LEFT JOIN tbl_Designation des ON emp.Designation_id = des.Designation_id
+            LEFT JOIN tbl_Gender gen ON emp.Gender_id = gen.Gender_id
+            LEFT JOIN tblLoginInformationMaster login ON emp.Employee_id = login.UserId
+            WHERE emp.Institute_id = @InstituteId AND emp.Status = 1
+            AND (@DepartmentId = 0 OR emp.Department_id = @DepartmentId)
+            AND (@DesignationId = 0 OR emp.Designation_id = @DesignationId)";
 
                 // Execute the query, using optional filters
                 var employees = await _connection.QueryAsync<dynamic>(sql, new { request.InstituteId, request.DepartmentId, request.DesignationId });
@@ -42,36 +44,52 @@ namespace Employee_API.Repository.Implementations
                 {
                     var worksheet = package.Workbook.Worksheets.Add("Employee Details");
 
-                    // Add headers
-                    worksheet.Cells[1, 1].Value = "Employee ID";
-                    worksheet.Cells[1, 2].Value = "Employee Name";
-                    worksheet.Cells[1, 3].Value = "Department";
-                    worksheet.Cells[1, 4].Value = "Designation";
-                    worksheet.Cells[1, 5].Value = "Gender";
-                    worksheet.Cells[1, 6].Value = "Mobile";
-                    worksheet.Cells[1, 7].Value = "Date of Birth";
-                    worksheet.Cells[1, 8].Value = "Email";
+                    // Add headers, including the new ones
+                    worksheet.Cells[1, 1].Value = "Sr. No.";
+                    worksheet.Cells[1, 2].Value = "Employee ID";
+                    worksheet.Cells[1, 3].Value = "Employee Name";
+                    worksheet.Cells[1, 4].Value = "Department";
+                    worksheet.Cells[1, 5].Value = "Designation";
+                    worksheet.Cells[1, 6].Value = "Gender";
+                    worksheet.Cells[1, 7].Value = "Mobile";
+                    worksheet.Cells[1, 8].Value = "Date of Birth";
+                    worksheet.Cells[1, 9].Value = "Email";
+                    worksheet.Cells[1, 10].Value = "Login ID";
+                    worksheet.Cells[1, 11].Value = "Password";
+                    worksheet.Cells[1, 12].Value = "Last Activity";
 
                     // Check if there are employees returned from the query
                     if (employees.Any())
                     {
-                        // Fill the worksheet with employee data
+                        // Fill the worksheet with employee data and Sr. No.
                         int row = 2;
+                        int serialNumber = 1;
 
                         foreach (var employee in employees)
                         {
                             // Combine first name, middle name, and last name into employee name
                             string employeeName = $"{employee.First_Name} {employee.Middle_Name} {employee.Last_Name}".Trim();
 
-                            worksheet.Cells[row, 1].Value = employee.Employee_id;
-                            worksheet.Cells[row, 2].Value = employeeName;
-                            worksheet.Cells[row, 3].Value = employee.DepartmentName;
-                            worksheet.Cells[row, 4].Value = employee.DesignationName;
-                            worksheet.Cells[row, 5].Value = employee.Gender_Type;
-                            worksheet.Cells[row, 6].Value = employee.mobile_number;
-                            worksheet.Cells[row, 7].Value = employee.Date_of_Birth;
-                            worksheet.Cells[row, 8].Value = employee.EmailID;
+                            // Check if LastActivity is not null and is a DateTime
+                            string lastActivityFormatted = employee.LastActivity != null && employee.LastActivity is DateTime
+                                ? ((DateTime)employee.LastActivity).ToString("dd-MM-yyyy hh:mm tt")
+                                : string.Empty;
+
+                            worksheet.Cells[row, 1].Value = serialNumber; // Sr. No.
+                            worksheet.Cells[row, 2].Value = employee.Employee_id;
+                            worksheet.Cells[row, 3].Value = employeeName;
+                            worksheet.Cells[row, 4].Value = employee.DepartmentName;
+                            worksheet.Cells[row, 5].Value = employee.DesignationName;
+                            worksheet.Cells[row, 6].Value = employee.Gender_Type;
+                            worksheet.Cells[row, 7].Value = employee.mobile_number;
+                            worksheet.Cells[row, 8].Value = employee.Date_of_Birth;
+                            worksheet.Cells[row, 9].Value = employee.EmailID;
+                            worksheet.Cells[row, 10].Value = employee.LoginId; // Login ID
+                            worksheet.Cells[row, 11].Value = employee.Password; // Password
+                            worksheet.Cells[row, 12].Value = lastActivityFormatted; // Last Activity
+
                             row++;
+                            serialNumber++;
                         }
 
                         // Auto-fit the columns for better visibility
@@ -80,14 +98,18 @@ namespace Employee_API.Repository.Implementations
                     else
                     {
                         // If no data is found, return an empty Excel with only headers
-                        worksheet.Cells[1, 1].Value = "Employee ID";
-                        worksheet.Cells[1, 2].Value = "Employee Name";
-                        worksheet.Cells[1, 3].Value = "Department";
-                        worksheet.Cells[1, 4].Value = "Designation";
-                        worksheet.Cells[1, 5].Value = "Gender";
-                        worksheet.Cells[1, 6].Value = "Mobile";
-                        worksheet.Cells[1, 7].Value = "Date of Birth";
-                        worksheet.Cells[1, 8].Value = "Email";
+                        worksheet.Cells[1, 1].Value = "Sr. No.";
+                        worksheet.Cells[1, 2].Value = "Employee ID";
+                        worksheet.Cells[1, 3].Value = "Employee Name";
+                        worksheet.Cells[1, 4].Value = "Department";
+                        worksheet.Cells[1, 5].Value = "Designation";
+                        worksheet.Cells[1, 6].Value = "Gender";
+                        worksheet.Cells[1, 7].Value = "Mobile";
+                        worksheet.Cells[1, 8].Value = "Date of Birth";
+                        worksheet.Cells[1, 9].Value = "Email";
+                        worksheet.Cells[1, 10].Value = "Login ID";
+                        worksheet.Cells[1, 11].Value = "Password";
+                        worksheet.Cells[1, 12].Value = "Last Activity";
                     }
 
                     // Convert the worksheet into a byte array
@@ -133,42 +155,35 @@ namespace Employee_API.Repository.Implementations
                     // Add a worksheet
                     var worksheet = package.Workbook.Worksheets.Add("Non-App Users");
 
-                    // Add headers to the Excel sheet
-                    worksheet.Cells[1, 1].Value = "Employee ID";
-                    worksheet.Cells[1, 2].Value = "Employee Name";
-                    worksheet.Cells[1, 3].Value = "Designation";
-                    worksheet.Cells[1, 4].Value = "Department";
-                    worksheet.Cells[1, 5].Value = "Gender";
-                    worksheet.Cells[1, 6].Value = "Mobile Number";
+                    // Add headers to the Excel sheet with "Sr No" as the first column
+                    worksheet.Cells[1, 1].Value = "Sr No";
+                    worksheet.Cells[1, 2].Value = "Employee ID";
+                    worksheet.Cells[1, 3].Value = "Employee Name";
+                    worksheet.Cells[1, 4].Value = "Designation";
+                    worksheet.Cells[1, 5].Value = "Department";
+                    worksheet.Cells[1, 6].Value = "Gender";
+                    worksheet.Cells[1, 7].Value = "Mobile Number";
 
                     // Check if there are any non-app users to include in the Excel sheet
                     if (nonAppUsers.Any())
                     {
                         // Populate the worksheet with data from the query
                         int row = 2;
+                        int srNo = 1; // Initialize Sr No counter
                         foreach (var user in nonAppUsers)
                         {
                             // Combine first name, middle name, and last name for the full employee name
                             string employeeName = $"{user.First_Name} {user.Middle_Name} {user.Last_Name}".Trim();
 
-                            worksheet.Cells[row, 1].Value = user.Employee_id;
-                            worksheet.Cells[row, 2].Value = employeeName;
-                            worksheet.Cells[row, 3].Value = user.DesignationName;
-                            worksheet.Cells[row, 4].Value = user.DepartmentName;
-                            worksheet.Cells[row, 5].Value = user.Gender_Type;
-                            worksheet.Cells[row, 6].Value = user.mobile_number;
+                            worksheet.Cells[row, 1].Value = srNo++; // Increment Sr No for each row
+                            worksheet.Cells[row, 2].Value = user.Employee_id;
+                            worksheet.Cells[row, 3].Value = employeeName;
+                            worksheet.Cells[row, 4].Value = user.DesignationName;
+                            worksheet.Cells[row, 5].Value = user.DepartmentName;
+                            worksheet.Cells[row, 6].Value = user.Gender_Type;
+                            worksheet.Cells[row, 7].Value = user.mobile_number;
                             row++;
                         }
-                    }
-                    else
-                    {
-                        // If no data is found, just return headers
-                        worksheet.Cells[1, 1].Value = "Employee ID";
-                        worksheet.Cells[1, 2].Value = "Employee Name";
-                        worksheet.Cells[1, 3].Value = "Designation";
-                        worksheet.Cells[1, 4].Value = "Department";
-                        worksheet.Cells[1, 5].Value = "Gender";
-                        worksheet.Cells[1, 6].Value = "Mobile Number";
                     }
 
                     // Auto-fit columns for better readability
@@ -222,41 +237,48 @@ namespace Employee_API.Repository.Implementations
                     var worksheet = package.Workbook.Worksheets.Add("Employee Activity Logs");
 
                     // Add headers to the Excel sheet
-                    worksheet.Cells[1, 1].Value = "Employee ID";
-                    worksheet.Cells[1, 2].Value = "Employee Name";
-                    worksheet.Cells[1, 3].Value = "Designation";
-                    worksheet.Cells[1, 4].Value = "Department";
-                    worksheet.Cells[1, 5].Value = "Last Action Taken (Login Time)";
-                    worksheet.Cells[1, 6].Value = "App Version";
+                    worksheet.Cells[1, 1].Value = "Sr. No.";
+                    worksheet.Cells[1, 2].Value = "Employee ID";
+                    worksheet.Cells[1, 3].Value = "Employee Name";
+                    worksheet.Cells[1, 4].Value = "Designation";
+                    worksheet.Cells[1, 5].Value = "Department";
+                    worksheet.Cells[1, 6].Value = "Last Action Taken (Login Time)";
+                    worksheet.Cells[1, 7].Value = "App Version";
 
                     // Check if there are any logs to include in the Excel sheet
                     if (employeeActivityLogs.Any())
                     {
                         // Populate the worksheet with data from the query
                         int row = 2;
+                        int serialNumber = 1;  // Initialize serial number
+
                         foreach (var log in employeeActivityLogs)
                         {
                             // Combine first name, middle name, and last name for the full employee name
                             string employeeName = $"{log.First_Name} {log.Middle_Name} {log.Last_Name}".Trim();
 
-                            worksheet.Cells[row, 1].Value = log.Employee_id;
-                            worksheet.Cells[row, 2].Value = employeeName;
-                            worksheet.Cells[row, 3].Value = log.DesignationName;
-                            worksheet.Cells[row, 4].Value = log.DepartmentName;
-                            worksheet.Cells[row, 5].Value = log.LoginTime?.ToString("yyyy-MM-dd HH:mm:ss");  // Format login time
-                            worksheet.Cells[row, 6].Value = log.appVersion;
+                            worksheet.Cells[row, 1].Value = serialNumber;  // Serial number
+                            worksheet.Cells[row, 2].Value = log.Employee_id;
+                            worksheet.Cells[row, 3].Value = employeeName;
+                            worksheet.Cells[row, 4].Value = log.DesignationName;
+                            worksheet.Cells[row, 5].Value = log.DepartmentName;
+                            worksheet.Cells[row, 6].Value = log.LoginTime?.ToString("yyyy-MM-dd HH:mm:ss");  // Format login time
+                            worksheet.Cells[row, 7].Value = log.appVersion;
+
                             row++;
+                            serialNumber++;  // Increment serial number
                         }
                     }
                     else
                     {
                         // If no data is found, just return headers
-                        worksheet.Cells[1, 1].Value = "Employee ID";
-                        worksheet.Cells[1, 2].Value = "Employee Name";
-                        worksheet.Cells[1, 3].Value = "Designation";
-                        worksheet.Cells[1, 4].Value = "Department";
-                        worksheet.Cells[1, 5].Value = "Last Action Taken (Login Time)";
-                        worksheet.Cells[1, 6].Value = "App Version";
+                        worksheet.Cells[1, 1].Value = "Sr. No.";
+                        worksheet.Cells[1, 2].Value = "Employee ID";
+                        worksheet.Cells[1, 3].Value = "Employee Name";
+                        worksheet.Cells[1, 4].Value = "Designation";
+                        worksheet.Cells[1, 5].Value = "Department";
+                        worksheet.Cells[1, 6].Value = "Last Action Taken (Login Time)";
+                        worksheet.Cells[1, 7].Value = "App Version";
                     }
 
                     // Auto-fit columns for better readability
@@ -338,19 +360,35 @@ namespace Employee_API.Repository.Implementations
                     PageSize = request.PageSize
                 });
 
+                // Format LastActivity to "ddMMyyyy hh:mm tt" if it has a value
+                var formattedEmployeeCredentials = employeeCredentials.Select(e => new EmployeeCredentialsResponse
+                {
+                    EmployeeId = e.EmployeeId,
+                    EmployeeName = e.EmployeeName,
+                    Designation = e.Designation,
+                    Department = e.Department,
+                    Gender = e.Gender,
+                    LoginId = e.LoginId,
+                    Password = e.Password,
+                    LastActivity = !string.IsNullOrEmpty(e.LastActivity)
+                    ? DateTime.Parse(e.LastActivity).ToString("dd-MM-yyyy hh:mm tt")
+                    : null
+                }).ToList();
+
+
                 // Set the response data including pagination details
                 if (totalRecords > 0)
                 {
-                    return new ServiceResponse<List<EmployeeCredentialsResponse>>(true, "Employee credentials fetched successfully.", employeeCredentials.ToList(), 200, totalRecords);
+                    return new ServiceResponse<List<EmployeeCredentialsResponse>>(true, "Employee credentials fetched successfully.", formattedEmployeeCredentials, 200, totalRecords);
                 }
                 else
                 {
-                    return new ServiceResponse<List<EmployeeCredentialsResponse>>(false, "no records", [], 500);
+                    return new ServiceResponse<List<EmployeeCredentialsResponse>>(false, "no records", new List<EmployeeCredentialsResponse>(), 500);
                 }
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<List<EmployeeCredentialsResponse>>(false, ex.Message, [], 500);
+                return new ServiceResponse<List<EmployeeCredentialsResponse>>(false, ex.Message, new List<EmployeeCredentialsResponse>(), 500);
             }
         }
         public async Task<ServiceResponse<List<EmployeeNonAppUsersResponse>>> GetAllEmployeeNonAppUsers(EmployeeLoginRequest request)
@@ -493,10 +531,21 @@ LEFT JOIN tblUserLogs us ON us.UserId = emp.Employee_id
                     Offset = offset,
                     PageSize = request.PageSize
                 });
-
+                var formattedemployeeActivity = employeeActivity.Select(e => new EmployeeActivityResponse
+                {
+                    EmployeeId = e.EmployeeId,
+                    EmployeeName = e.EmployeeName,
+                    Designation = e.Designation,
+                    Departemnt = e.Departemnt,
+                    MobileNumber = e.MobileNumber,
+                    Version = e.Version,
+                    LastActionTaken = !string.IsNullOrEmpty(e.LastActionTaken)
+                   ? DateTime.Parse(e.LastActionTaken).ToString("dd-MM-yyyy hh:mm tt")
+                   : null
+                }).ToList();
                 if (totalRecords > 0)
                 {
-                    return new ServiceResponse<List<EmployeeActivityResponse>>(true, "Employee activity fetched successfully.", employeeActivity.ToList(), 200, totalRecords);
+                    return new ServiceResponse<List<EmployeeActivityResponse>>(true, "Employee activity fetched successfully.", formattedemployeeActivity.ToList(), 200, totalRecords);
                 }
                 else
                 {
@@ -636,17 +685,44 @@ LEFT JOIN tblUserLogs us ON us.UserId = emp.Employee_id
 
                 // Step 3: Log the login details in tblUserLogs
                 var insertLogQuery = @"
-            INSERT INTO tblUserLogs 
-            ([UserId], [UserTypeId], [LoginTime], [IsAppUser], [systemGUID])
-            VALUES (@UserId, @UserTypeId, @LoginTime, @IsAppUser, @SystemGUID)";
+    INSERT INTO tblUserLogs 
+    ([UserId], [UserTypeId], [LoginTime], [IsAppUser], [brand], [device], [fingerprint], [model], 
+     [serialNumber], [type], [version_sdkInt], [version_securityPatch], [build_id], [isPhysicalDevice], 
+     [systemName], [systemVersion], [utsname_version], [operSysName], [browserName], [appName], [appVersion], 
+     [deviceMemory], [platform], [kernelVersion], [computerName], [systemGUID])
+    VALUES (@UserId, @UserTypeId, @LoginTime, @IsAppUser, @Brand, @Device, @Fingerprint, @Model, 
+            @SerialNumber, @Type, @VersionSdkInt, @VersionSecurityPatch, @BuildId, @IsPhysicalDevice, 
+            @SystemName, @SystemVersion, @UtsnameVersion, @OperSysName, @BrowserName, @AppName, @AppVersion, 
+            @DeviceMemory, @Platform, @KernelVersion, @ComputerName, @SystemGUID)";
 
                 var logParams = new
                 {
                     UserId = response.UserId,
                     UserTypeId = response.UserType == "Student" ? 2 : 1,
                     LoginTime = DateTime.Now,
-                    IsAppUser = false, // You can update this based on your requirement
-                    SystemGUID = Guid.NewGuid().ToString() // Generate a unique system GUID
+                    request.IsAppUser, // Using IsAppUser from the request body
+                    request.Brand,
+                    request.Device,
+                    request.Fingerprint,
+                    request.Model,
+                    request.SerialNumber,
+                    request.Type,
+                    request.VersionSdkInt,
+                    request.VersionSecurityPatch,
+                    request.BuildId,
+                    request.IsPhysicalDevice,
+                    request.SystemName,
+                    request.SystemVersion,
+                    request.UtsnameVersion,
+                    request.OperSysName,
+                    request.BrowserName,
+                    request.AppName,
+                    request.AppVersion,
+                    request.DeviceMemory,
+                    request.Platform,
+                    request.KernelVersion,
+                    request.ComputerName,
+                    request.SystemGUID
                 };
 
                 await _connection.ExecuteAsync(insertLogQuery, logParams);
@@ -672,37 +748,300 @@ LEFT JOIN tblUserLogs us ON us.UserId = emp.Employee_id
         {
             try
             {
-                // SQL query to fetch the user logs based on the username (assuming username is unique)
-                string selectQuery = @"
-        SELECT LogsId 
-        FROM tblUserLogs 
-        WHERE UserId = (SELECT App_User_id FROM tbl_StudentMaster WHERE Admission_Number = @username)
-          AND LogoutTime IS NULL
-        ORDER BY LoginTime DESC";
+                // Step 1: Fetch UserId and UserTypeId from tblLoginInformationMaster
+                string fetchUserInfoQuery = @"
+            SELECT UserId, UserType 
+            FROM tblLoginInformationMaster
+            WHERE UserName = @username";
 
-                // Fetch the most recent log entry where the user is currently logged in (LogoutTime is null)
-                var logsId = await _connection.QueryFirstOrDefaultAsync<int?>(selectQuery, new { username });
+                var userInfo = await _connection.QueryFirstOrDefaultAsync<dynamic>(fetchUserInfoQuery, new { username });
 
-                if (logsId == null)
+                if (userInfo == null)
+                {
+                    return new ServiceResponse<string>(false, "User not found", null, 404);
+                }
+
+                int userId = userInfo.UserId;
+                int userTypeId = userInfo.UserType;
+
+                // Step 2: Check if the user is logged in by checking tblUserLogs
+                string checkUserLogQuery = @"
+            SELECT LogsId 
+            FROM tblUserLogs
+            WHERE UserId = @userId AND UserTypeId = @userTypeId AND LogoutTime IS NULL";
+
+                var logEntry = await _connection.QueryFirstOrDefaultAsync<int?>(checkUserLogQuery, new { userId, userTypeId });
+
+                if (logEntry == null)
                 {
                     return new ServiceResponse<string>(false, "No active session found for this user", null, 404);
                 }
 
-                // SQL query to update the logout time for the fetched log entry
+                // Step 3: Update the LogoutTime for the active session
                 string updateQuery = @"
-        UPDATE tblUserLogs
-        SET LogoutTime = @LogoutTime
-        WHERE LogsId = @LogsId";
+            UPDATE tblUserLogs
+            SET LogoutTime = @LogoutTime
+            WHERE LogsId = @LogsId";
 
-                // Execute the update query with the current timestamp
-                await _connection.ExecuteAsync(updateQuery, new { LogoutTime = DateTime.Now, LogsId = logsId });
+                await _connection.ExecuteAsync(updateQuery, new { LogoutTime = DateTime.Now, LogsId = logEntry });
 
                 return new ServiceResponse<string>(true, "User successfully logged out", null, 200);
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<string>(false, ex.Message, null, 500);
+                return new ServiceResponse<string>(false, $"Error: {ex.Message}", null, 500);
             }
+        }
+        public async Task<ServiceResponse<UserSwitchOverResponse>> UserSwitchOver(UserSwitchOverRequest request)
+        {
+            if (string.IsNullOrEmpty(request.MobileNumber) || request.InstituteId <= 0)
+            {
+                return new ServiceResponse<UserSwitchOverResponse>(
+                    false, "Invalid request parameters.", null, 400);
+            }
+
+            var response = new UserSwitchOverResponse
+            {
+                Students = new List<StudentResponse>(),
+                Employees = new List<EmployeeResponse>()
+            };
+
+            // Fetch student details using parent's mobile number
+            var studentQuery = @"
+       SELECT 
+    std.student_id AS UserId,
+    li.UserName,
+    std.First_Name as FirstName,
+    std.Middle_Name as MiddleName,
+    std.Last_Name as LastName,
+    cls.class_name AS ClassName,
+    sec.section_name AS SectionName
+FROM 
+tbl_StudentMaster std
+  
+JOIN 
+     tbl_StudentParentsInfo spi  ON std.student_id = spi.Student_id
+JOIN 
+    tblLoginInformationMaster li ON li.UserId = std.student_id -- Assuming this relation
+JOIN 
+    tbl_Class cls ON cls.class_id = std.class_id
+JOIN 
+    tbl_Section sec ON sec.section_id = std.section_id
+WHERE 
+    spi.Mobile_Number = @MobileNumber AND std.Institute_id = @InstituteId";
+
+            var students = await _connection.QueryAsync<StudentResponse>(studentQuery, new { request.MobileNumber, request.InstituteId });
+            response.Students.AddRange(students);
+
+            // Fetch employee details using the mobile number
+            var employeeQuery = @"
+        SELECT 
+            emp.Employee_id AS UserId, 
+            li.UserName,
+            emp.First_Name AS FirstName, 
+            emp.Middle_Name AS MiddleName, 
+            emp.Last_Name AS LastName, 
+            dep.DepartmentName, 
+            des.DesignationName
+        FROM 
+            tbl_EmployeeProfileMaster emp
+        JOIN 
+            tblLoginInformationMaster li ON li.UserId = emp.Employee_id -- Assuming this relation
+        JOIN 
+            tbl_Department dep ON dep.Department_id = emp.Department_id
+        JOIN 
+            tbl_Designation des ON des.Designation_id = emp.Designation_id
+        WHERE 
+            emp.mobile_number = @MobileNumber AND emp.Institute_id = @InstituteId";
+
+            var employees = await _connection.QueryAsync<EmployeeResponse>(employeeQuery, new { request.MobileNumber, request.InstituteId });
+            response.Employees.AddRange(employees);
+
+            // Prepare and return the response
+            if (response.Students.Count == 0 && response.Employees.Count == 0)
+            {
+                return new ServiceResponse<UserSwitchOverResponse>(
+                    false, "No users found for the provided mobile number and institute ID.", response, 404);
+            }
+
+            return new ServiceResponse<UserSwitchOverResponse>(
+                true, "User switch over successful.", response, 200, response.Students.Count + response.Employees.Count);
+        }
+        public async Task<ServiceResponse<ForgetPasswordResponse>> ForgetPassword(ForgotPassword request)
+        {
+            if (string.IsNullOrEmpty(request.UserEmailOrPhoneOrUsername))
+            {
+                return new ServiceResponse<ForgetPasswordResponse>(
+                    false, "Invalid request parameters.", null, 400);
+            }
+
+            var response = new ForgetPasswordResponse();
+
+            // Check if the input is a username in tblLoginInformationMaster
+            var loginQuery = @"
+    SELECT 
+        UserId AS UserId, 
+        UserName, 
+        UserType AS Usertype,
+        '' AS Email  -- Email is not stored in this table
+    FROM 
+        tblLoginInformationMaster 
+    WHERE 
+        UserName = @UserInput";
+
+            var loginResult = await _connection.QueryFirstOrDefaultAsync<ForgetPasswordResponse>(loginQuery, new { UserInput = request.UserEmailOrPhoneOrUsername });
+
+            if (loginResult != null)
+            {
+                response.UserId = loginResult.UserId;
+                response.UserName = loginResult.UserName;
+                
+
+                // Now, fetch the email based on UserType
+                if (loginResult.Usertype == "1")  // Employee
+                {
+                    // Fetch email from tbl_EmployeeProfileMaster
+                    var employeeEmailQuery = @"
+            SELECT 
+                emp.EmailID AS Email
+            FROM 
+                tbl_EmployeeProfileMaster emp
+            WHERE 
+                emp.Employee_id = @UserId";
+
+                    var employeeEmailResult = await _connection.QueryFirstOrDefaultAsync<string>(employeeEmailQuery, new { UserId = response.UserId });
+                    response.Email = employeeEmailResult ?? string.Empty; // Default to empty string if not found
+                    response.Usertype = "Employee";
+                }
+                else if (loginResult.Usertype == "2")  // Student
+                {
+                    // Fetch email from tbl_StudentParentsInfo
+                    var studentEmailQuery = @"
+            SELECT 
+                spi.Email_id AS Email
+            FROM 
+                tbl_StudentParentsInfo spi
+            WHERE 
+                spi.Student_id = @UserId";
+
+                    var studentEmailResult = await _connection.QueryFirstOrDefaultAsync<string>(studentEmailQuery, new { UserId = response.UserId });
+                    response.Email = studentEmailResult ?? string.Empty; // Default to empty string if not found
+                    response.Usertype = "Student";
+                }
+
+                return new ServiceResponse<ForgetPasswordResponse>(
+                    true, "User found by username.", response, 200);
+            }
+
+            // Search in tbl_EmployeeProfileMaster for mobile number or email
+            var employeeQuery = @"
+    SELECT 
+        emp.Employee_id AS UserId, 
+        emp.First_Name + ' ' + ISNULL(emp.Middle_Name, '') + ' ' + emp.Last_Name AS UserName, 
+        'Employee' AS UserType,
+        emp.EmailID AS Email
+    FROM 
+        tbl_EmployeeProfileMaster emp
+    WHERE 
+        emp.mobile_number = @UserInput OR emp.EmailID = @UserInput";
+
+            var employeeResult = await _connection.QueryFirstOrDefaultAsync<ForgetPasswordResponse>(employeeQuery, new { UserInput = request.UserEmailOrPhoneOrUsername });
+
+            if (employeeResult != null)
+            {
+                response.UserId = employeeResult.UserId;
+                response.UserName = employeeResult.UserName;
+                response.Usertype = "Employee";
+                response.Email = employeeResult.Email;
+
+                return new ServiceResponse<ForgetPasswordResponse>(
+                    true, "User found by mobile number or email (employee).", response, 200);
+            }
+
+            // Search in tbl_StudentParentsInfo for mobile number or email (student's parent)
+            var studentQuery = @"
+    SELECT 
+        spi.Student_id AS UserId, 
+        spi.First_Name + ' ' + ISNULL(spi.Middle_Name, '') + ' ' + spi.Last_Name AS UserName, 
+        'StudentParent' AS UserType,
+        spi.Email_id AS Email
+    FROM 
+        tbl_StudentParentsInfo spi
+    WHERE 
+        spi.Mobile_Number = @UserInput OR spi.Email_id = @UserInput";
+
+            var studentResult = await _connection.QueryFirstOrDefaultAsync<ForgetPasswordResponse>(studentQuery, new { UserInput = request.UserEmailOrPhoneOrUsername });
+
+            if (studentResult != null)
+            {
+                response.UserId = studentResult.UserId;
+                response.UserName = studentResult.UserName;
+                response.Usertype = "Student";
+                response.Email = studentResult.Email;
+
+                return new ServiceResponse<ForgetPasswordResponse>(
+                    true, "User found by mobile number or email (student's parent).", response, 200);
+            }
+
+            // If no user is found
+            return new ServiceResponse<ForgetPasswordResponse>(
+                false, "No user found with the provided details.", null, 404);
+        }
+        public Task<ServiceResponse<bool>> ResetPassword(ResetPassword request)
+        {
+            return Task.Run(async () =>
+            {
+                if (request.UserId <= 0 || string.IsNullOrEmpty(request.UserName) ||
+                    string.IsNullOrEmpty(request.NewPassword))
+                {
+                    return new ServiceResponse<bool>(false,
+                        "Invalid request parameters.", false, 400);
+                }
+
+                int userTypeInt = request.Usertype.Equals("Employee",
+                    StringComparison.OrdinalIgnoreCase) ? 1 :
+                    request.Usertype.Equals("Student", StringComparison.OrdinalIgnoreCase) ? 2 : 0;
+
+                if (userTypeInt == 0)
+                {
+                    return new ServiceResponse<bool>(false,
+                        "Invalid user type.", false, 400);
+                }
+
+                var userQuery = @"
+        SELECT LoginInfoId, UserId, UserType, UserName 
+        FROM tblLoginInformationMaster
+        WHERE UserId = @UserId AND UserName = @UserName AND UserType = @UserType";
+
+                var userResult = await _connection.QueryFirstOrDefaultAsync<dynamic>(
+                    userQuery,
+                    new { UserId = request.UserId, UserName = request.UserName, UserType = userTypeInt });
+
+                if (userResult == null)
+                {
+                    return new ServiceResponse<bool>(false,
+                        "User not found with the provided details.", false, 404);
+                }
+
+                var updatePasswordQuery = @"
+        UPDATE tblLoginInformationMaster
+        SET Password = @NewPassword
+        WHERE UserId = @UserId AND UserName = @UserName AND UserType = @UserType";
+
+                var rowsAffected = await _connection.ExecuteAsync(
+                    updatePasswordQuery,
+                    new
+                    {
+                        NewPassword = request.NewPassword,
+                        UserId = request.UserId,
+                        UserName = request.UserName,
+                        UserType = userTypeInt
+                    });
+
+                return rowsAffected > 0
+                    ? new ServiceResponse<bool>(true, "Password reset successfully.", true, 200)
+                    : new ServiceResponse<bool>(false, "Password reset failed.", false, 500);
+            });
         }
     }
 }

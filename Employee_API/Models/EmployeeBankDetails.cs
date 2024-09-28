@@ -14,10 +14,10 @@
     {
         public int Employee_Present_Address_id { get; set; }
         public string Address { get; set; } = string.Empty;
-        public int Country_id { get; set; }
-        public int State_id { get; set; }
-        public int City_id { get; set; }
-        public int District_id { get; set; }
+        public string CountryName { get; set; } = string.Empty;
+        public string StateName { get; set; } = string.Empty;
+        public string CityName { get; set; } = string.Empty;
+        public string DistrictName { get; set; } = string.Empty;
         public string Pin_code { get; set; } = string.Empty;
         public int AddressTypeId { get; set; }
         public int Employee_id {  get; set; }

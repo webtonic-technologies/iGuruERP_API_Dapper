@@ -629,14 +629,21 @@ namespace Institute_API.Repository.Implementations
             {
                 foreach (var data in request)
                 {
+                    // Set the Institute ID
                     data.Institute_id = InstitutionId;
 
                     // Ensure that the day is set to the 1st for both AcademicYearStartMonth and AcademicYearEndMonth
                     data.AcademicYearStartMonth = new DateTime(data.AcademicYearStartMonth.Year, data.AcademicYearStartMonth.Month, 1);
                     data.AcademicYearEndMonth = new DateTime(data.AcademicYearEndMonth.Year, data.AcademicYearEndMonth.Month, 1);
+
+                    // Generate AcaInfoYearCode (since it's not part of the request body)
+                    string startMonthName = data.AcademicYearStartMonth.ToString("MMM").ToUpper();  // Get the first 3 letters of the month
+                    int startYear = data.AcademicYearStartMonth.Year;
+                    data.AcaInfoYearCode = $"{data.Institute_id}{startMonthName}{startYear}";  // e.g., 3JUL2024
                 }
             }
 
+            // Check if records exist for the institution
             string query = "SELECT COUNT(*) FROM [tbl_AcademicInfo] WHERE Institute_id = @InstituteId";
             int count = await _connection.ExecuteScalarAsync<int>(query, new { InstituteId = InstitutionId });
 
@@ -648,11 +655,12 @@ namespace Institute_API.Repository.Implementations
 
                 if (rowsAffected > 0)
                 {
-                    string insertQuery = @"
-            INSERT INTO [tbl_AcademicInfo] (Institute_id, [AcademicYearStartMonth], [AcademicYearEndMonth], Status)
-            VALUES (@Institute_id, @AcademicYearStartMonth, @AcademicYearEndMonth, @Status)";
-
                     // Insert new academic information after deletion
+                    string insertQuery = @"
+            INSERT INTO [tbl_AcademicInfo] 
+            (Institute_id, [AcademicYearStartMonth], [AcademicYearEndMonth], [AcaInfoYearCode], Status)
+            VALUES (@Institute_id, @AcademicYearStartMonth, @AcademicYearEndMonth, @AcaInfoYearCode, @Status)";
+
                     addedRecords = await _connection.ExecuteAsync(insertQuery, request);
                 }
             }
@@ -660,8 +668,9 @@ namespace Institute_API.Repository.Implementations
             {
                 // Insert directly if no records exist
                 string insertQuery = @"
-        INSERT INTO [tbl_AcademicInfo] (Institute_id, [AcademicYearStartMonth], [AcademicYearEndMonth], Status)
-        VALUES (@Institute_id, @AcademicYearStartMonth, @AcademicYearEndMonth, @Status)";
+        INSERT INTO [tbl_AcademicInfo] 
+        (Institute_id, [AcademicYearStartMonth], [AcademicYearEndMonth], [AcaInfoYearCode], Status)
+        VALUES (@Institute_id, @AcademicYearStartMonth, @AcademicYearEndMonth, @AcaInfoYearCode, @Status)";
 
                 addedRecords = await _connection.ExecuteAsync(insertQuery, request);
             }
