@@ -2,7 +2,7 @@
 {
     public class HolidaySearchRequest
     {
-        public int AcademicYearID { get; set; }
+        public string AcademicYearCode { get; set; }
         public int InstituteID { get; set; }
         public string Search { get; set; } // Search by HolidayName
 

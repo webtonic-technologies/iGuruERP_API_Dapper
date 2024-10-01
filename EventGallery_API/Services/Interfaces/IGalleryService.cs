@@ -12,6 +12,8 @@ namespace EventGallery_API.Services.Interfaces
         Task<ServiceResponse<GalleryImageResponse>> DownloadGalleryImage(int galleryID);
         Task<ServiceResponse<List<GalleryImageResponse>>> DownloadAllGalleryImages(int eventID);
         Task<ServiceResponse<bool>> DeleteGalleryImage(int galleryID);
-        Task<ServiceResponse<List<GalleryImageResponse>>> GetAllGalleryImages(GalleryImageRequest request);
+        Task<ServiceResponse<EventGalleryResponse>> GetAllGalleryImages(GalleryImageRequest_Get request);
+        Task<List<EventGallery_API.DTOs.Responses.EventDetails>> GetAllEvents(int instituteID); // Specify full namespace
+
     }
 }

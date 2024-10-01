@@ -67,6 +67,7 @@ namespace EventGallery_API.Controllers
         }
 
 
+
         [HttpGet("GetHoliday/{HolidayID:int}")]
         public async Task<IActionResult> GetHoliday(int HolidayID)
         {

@@ -76,17 +76,39 @@ namespace EventGallery_API.Services.Implementations
             return new ServiceResponse<bool>(true, "Image deleted successfully.", true, 200);
         }
 
-        public async Task<ServiceResponse<List<GalleryImageResponse>>> GetAllGalleryImages(GalleryImageRequest request)
+        public async Task<ServiceResponse<EventGalleryResponse>> GetAllGalleryImages(GalleryImageRequest_Get request)
         {
-            var galleryImages = await _galleryRepository.GetAllGalleryImages(request.EventID);
-            var response = galleryImages.Select(img => new GalleryImageResponse
+            // Fetch event details
+            var eventDetails = await _galleryRepository.GetEventDetails(request.EventID, request.InstituteID);
+
+            // Fetch gallery images associated with the event
+            var galleryImages = await _galleryRepository.GetAllGalleryImages(request.EventID, request.InstituteID);
+
+            // Map gallery images to the response format
+            var galleryImageResponses = galleryImages.Select(img => new GalleryImageResponse
             {
                 GalleryID = img.GalleryID,
                 ImageName = img.FileName,
                 ImageData = System.IO.File.ReadAllBytes($"Assets/Gallery/{img.FileName}")
             }).ToList();
 
-            return new ServiceResponse<List<GalleryImageResponse>>(true, "All gallery images fetched successfully.", response, 200);
+            // Create the full response object
+            var response = new EventGalleryResponse
+            {
+                EventID = eventDetails.EventID,
+                EventName = eventDetails.EventName,
+                EventDate = eventDetails.EventDate,
+                GalleryImages = galleryImageResponses
+            };
+
+            return new ServiceResponse<EventGalleryResponse>(true, "Event gallery details fetched successfully.", response, 200);
+        }
+
+
+
+        public async Task<List<EventGallery_API.DTOs.Responses.EventDetails>> GetAllEvents(int instituteID)
+        {
+            return await _galleryRepository.GetAllEvents(instituteID);
         }
     }
 }

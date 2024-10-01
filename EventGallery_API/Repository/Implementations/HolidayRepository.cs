@@ -18,14 +18,14 @@ namespace EventGallery_API.Repository.Implementations
         public async Task<int> AddUpdateHoliday(HolidayRequest request)
         {
             var query = request.HolidayID == 0
-        ? @"INSERT INTO tblHolidays (HolidayName, FromDate, ToDate, Description, InstituteID, AcademicYearID, IsActive) 
-           VALUES (@HolidayName, @FromDate, @ToDate, @Description, @InstituteID, @AcademicYearID, 1);
-           SELECT CAST(SCOPE_IDENTITY() AS INT);"
+        ? @"INSERT INTO tblHolidays (HolidayName, FromDate, ToDate, Description, InstituteID, AcademicYearCode, IsActive) 
+   VALUES (@HolidayName, @FromDate, @ToDate, @Description, @InstituteID, @AcademicYearCode, 1);
+   SELECT CAST(SCOPE_IDENTITY() AS INT);"
         : @"UPDATE tblHolidays 
-           SET HolidayName = @HolidayName, FromDate = @FromDate, ToDate = @ToDate, Description = @Description, 
-               InstituteID = @InstituteID, AcademicYearID = @AcademicYearID, IsActive = 1
-           WHERE HolidayID = @HolidayID; 
-           SELECT @HolidayID;";
+   SET HolidayName = @HolidayName, FromDate = @FromDate, ToDate = @ToDate, Description = @Description, 
+       InstituteID = @InstituteID, AcademicYearCode = @AcademicYearCode, IsActive = 1
+   WHERE HolidayID = @HolidayID; 
+   SELECT @HolidayID;";
 
             // Execute the query and pass the FromDate and ToDate as already formatted in the ISO format
             var holidayID = await _dbConnection.QuerySingleAsync<int>(query, new
@@ -36,9 +36,8 @@ namespace EventGallery_API.Repository.Implementations
                 request.ToDate,    // Date is already in "yyyy-MM-dd" format
                 request.Description,
                 request.InstituteID,
-                request.AcademicYearID
+                request.AcademicYearCode // Updated parameter name to match new column name
             });
-
 
             // Delete old ClassSection mappings for this holiday
             await _dbConnection.ExecuteAsync("DELETE FROM tblHolidayClassSectionMapping WHERE HolidayID = @HolidayID", new { HolidayID = holidayID });
@@ -47,7 +46,7 @@ namespace EventGallery_API.Repository.Implementations
             if (request.ClassSection != null && request.ClassSection.Any())
             {
                 var classSectionQuery = @"INSERT INTO tblHolidayClassSectionMapping (HolidayID, ClassID, SectionID)
-                                  VALUES (@HolidayID, @ClassID, @SectionID)";
+                          VALUES (@HolidayID, @ClassID, @SectionID)";
 
                 foreach (var classSection in request.ClassSection)
                 {
@@ -64,23 +63,23 @@ namespace EventGallery_API.Repository.Implementations
             return holidayID;
         }
 
-        public async Task<List<HolidayResponse>> GetAllHolidays(int academicYearID, int instituteID, string search)
+        public async Task<List<HolidayResponse>> GetAllHolidays(string academicYearCode, int instituteID, string search)
         {
             var query = @"
-        SELECT h.HolidayID, h.HolidayName, h.FromDate, h.ToDate, h.Description, 
-               c.class_name AS ClassName, s.section_name AS SectionName, hcs.ClassID, hcs.SectionID
-        FROM tblHolidays h
-        LEFT JOIN tblHolidayClassSectionMapping hcs ON h.HolidayID = hcs.HolidayID
-        LEFT JOIN tbl_class c ON hcs.ClassID = c.class_id
-        LEFT JOIN tbl_section s ON hcs.SectionID = s.section_id
-        WHERE h.AcademicYearID = @AcademicYearID 
-          AND h.InstituteID = @InstituteID
-          AND (@Search IS NULL OR h.HolidayName LIKE '%' + @Search + '%')";
+                        SELECT h.HolidayID, h.HolidayName, h.FromDate, h.ToDate, h.Description, 
+                               c.class_name AS ClassName, s.section_name AS SectionName, hcs.ClassID, hcs.SectionID
+                        FROM tblHolidays h
+                        LEFT JOIN tblHolidayClassSectionMapping hcs ON h.HolidayID = hcs.HolidayID
+                        LEFT JOIN tbl_class c ON hcs.ClassID = c.class_id
+                        LEFT JOIN tbl_section s ON hcs.SectionID = s.section_id
+                        WHERE h.AcademicYearCode = @AcademicYearCode 
+                          AND h.InstituteID = @InstituteID
+                          AND (@Search IS NULL OR h.HolidayName LIKE '%' + @Search + '%') AND h.IsActive = 1";
 
             // Fetch the raw data from the query
             var rawHolidays = await _dbConnection.QueryAsync<dynamic>(query, new
             {
-                AcademicYearID = academicYearID,
+                AcademicYearCode = academicYearCode,  // Use the updated parameter name
                 InstituteID = instituteID,
                 Search = search
             });
@@ -125,7 +124,7 @@ namespace EventGallery_API.Repository.Implementations
         LEFT JOIN tblHolidayClassSectionMapping hcs ON h.HolidayID = hcs.HolidayID
         LEFT JOIN tbl_class c ON hcs.ClassID = c.class_id
         LEFT JOIN tbl_section s ON hcs.SectionID = s.section_id
-        WHERE h.HolidayID = @HolidayID";
+        WHERE h.HolidayID = @HolidayID AND h.IsActive = 1";
 
             var rawHoliday = await _dbConnection.QueryAsync<dynamic>(query, new { HolidayID = holidayID });
 

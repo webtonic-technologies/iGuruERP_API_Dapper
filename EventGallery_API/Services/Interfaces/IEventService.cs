@@ -9,8 +9,8 @@ namespace EventGallery_API.Services.Interfaces
     {
         Task<ServiceResponse<int>> AddUpdateEvent(EventRequest request);
         Task<ServiceResponse<List<GetAllEventsResponse>>> GetAllEvents(GetAllEventsRequest request);
-        Task<ServiceResponse<EventResponse>> GetEventById(int eventId);
+        Task<ServiceResponse<GetAllEventsResponse>> GetEventById(int eventId);
         Task<ServiceResponse<bool>> DeleteEvent(int eventId);
-        Task<ServiceResponse<bool>> ExportAllEvents(); // Ensure the return type matches
+        Task<ServiceResponse<bool>> ExportAllEvents();
     }
 }

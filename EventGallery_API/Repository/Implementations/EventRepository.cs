@@ -27,11 +27,11 @@ namespace EventGallery_API.Repository.Implementations
             var scheduleTime = DateTime.ParseExact(request.ScheduleTime, "hh:mm tt", null).TimeOfDay;
 
             var query = request.EventID == 0 ?
-                @"INSERT INTO tblEvent (EventName, FromDate, ToDate, Description, Location, ScheduleDate, ScheduleTime, AcademicYearID, CreatedBy, InstituteID, IsActive)
-          VALUES (@EventName, @FromDate, @ToDate, @Description, @Location, @ScheduleDate, @ScheduleTime, @AcademicYearID, @CreatedBy, @InstituteID, 1);
+                @"INSERT INTO tblEvent (EventName, FromDate, ToDate, Description, Location, ScheduleDate, ScheduleTime, AcademicYearCode, CreatedBy, InstituteID, IsActive)
+          VALUES (@EventName, @FromDate, @ToDate, @Description, @Location, @ScheduleDate, @ScheduleTime, @AcademicYearCode, @CreatedBy, @InstituteID, 1);
           SELECT CAST(SCOPE_IDENTITY() as int);"
                 :
-                @"UPDATE tblEvent SET EventName = @EventName, FromDate = @FromDate, ToDate = @ToDate, Description = @Description, Location = @Location, ScheduleDate = @ScheduleDate, ScheduleTime = @ScheduleTime, AcademicYearID = @AcademicYearID WHERE EventID = @EventID;
+                @"UPDATE tblEvent SET EventName = @EventName, FromDate = @FromDate, ToDate = @ToDate, Description = @Description, Location = @Location, ScheduleDate = @ScheduleDate, ScheduleTime = @ScheduleTime, AcademicYearCode = @AcademicYearCode WHERE EventID = @EventID;
           SELECT @EventID;";
 
             var parameters = new
@@ -43,7 +43,7 @@ namespace EventGallery_API.Repository.Implementations
                 request.Location,
                 ScheduleDate = scheduleDate,
                 ScheduleTime = scheduleTime,
-                request.AcademicYearID,
+                request.AcademicYearCode,
                 request.CreatedBy,
                 request.InstituteID,
                 request.EventID
@@ -54,13 +54,14 @@ namespace EventGallery_API.Repository.Implementations
             // Handle Class and Section Mapping using tbl_Class and tbl_Section
             if (request.Students.All)
             {
-                // Add all classes and sections based on tbl_Class and tbl_Section
+                // Add all classes and sections based on tbl_Class and tbl_Section with InstituteID filter
                 var insertAllClassSectionQuery = @"INSERT INTO tblEventClassSectionMapping (EventID, ClassID, SectionID)
                                            SELECT @EventID, c.class_id, s.section_id 
                                            FROM tbl_Class c 
                                            INNER JOIN tbl_Section s ON c.class_id = s.class_id
-                                           WHERE c.IsDeleted = 0 AND s.IsDeleted = 0";
-                await _connection.ExecuteAsync(insertAllClassSectionQuery, new { EventID = eventId });
+                                           WHERE c.IsDeleted = 0 AND s.IsDeleted = 0 AND c.institute_id = @InstituteID";
+                await _connection.ExecuteAsync(insertAllClassSectionQuery, new { EventID = eventId, request.InstituteID });
+
             }
             else if (request.Students.ClassSection != null)
             {
@@ -81,8 +82,9 @@ namespace EventGallery_API.Repository.Implementations
             if (request.Employee.All)
             {
                 var insertAllEmployeeQuery = @"INSERT INTO tblEventEmployeeMapping (EventID, EmployeeID)
-                                       SELECT @EventID, EmployeeID FROM tblEmployee";
-                await _connection.ExecuteAsync(insertAllEmployeeQuery, new { EventID = eventId });
+                                       SELECT @EventID, Employee_id FROM tbl_EmployeeProfileMaster 
+                                       WHERE Institute_id = @InstituteID";
+                await _connection.ExecuteAsync(insertAllEmployeeQuery, new { EventID = eventId, request.InstituteID });
             }
             else if (request.Employee.EmployeeID != null)
             {
@@ -138,14 +140,13 @@ namespace EventGallery_API.Repository.Implementations
         //    return new ServiceResponse<List<GetAllEventsResponse>>(true, "Events fetched successfully.", events.ToList(), 200);
         //}
 
-
         public async Task<ServiceResponse<List<GetAllEventsResponse>>> GetAllEvents(GetAllEventsRequest request)
         {
             // Query to get the total count of events (before applying paging, if any), with optional search criteria
             var countQuery = @"
     SELECT COUNT(*)
     FROM tblEvent e
-    WHERE e.AcademicYearID = @AcademicYearID AND e.InstituteID = @InstituteID
+    WHERE e.AcademicYearCode = @AcademicYearCode AND e.InstituteID = @InstituteID
     AND (@Search IS NULL OR e.EventName LIKE '%' + @Search + '%');";
 
             // Query to get the actual event data, with optional search and paging
@@ -165,17 +166,19 @@ namespace EventGallery_API.Repository.Implementations
             WHEN emp.First_Name IS NOT NULL AND emp.Last_Name IS NOT NULL
             THEN CONCAT(emp.First_Name, ' ', emp.Last_Name)
             ELSE 'N/A'
-        END AS CreatedBy
+        END AS CreatedBy,
+        ISNULL(tea.Attachment, '') AS Document
     FROM tblEvent e
     LEFT JOIN tbl_EmployeeProfileMaster emp ON emp.Employee_id = e.CreatedBy
-    WHERE e.AcademicYearID = @AcademicYearID AND e.InstituteID = @InstituteID
+    LEFT JOIN tblEventAttachment tea ON e.EventID = tea.EventID
+    WHERE e.AcademicYearCode = @AcademicYearCode AND e.InstituteID = @InstituteID
     AND (@Search IS NULL OR e.EventName LIKE '%' + @Search + '%')
     ORDER BY e.EventName
     OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;"; // Paging logic using OFFSET and FETCH
 
             var parameters = new
             {
-                request.AcademicYearID,
+                AcademicYearCode = request.AcademicYearCode, // Update parameter name
                 request.InstituteID,
                 Search = string.IsNullOrEmpty(request.Search) ? null : request.Search, // Handle null search
                 Offset = (request.PageNumber - 1) * request.PageSize, // Calculate offset
@@ -239,14 +242,50 @@ namespace EventGallery_API.Repository.Implementations
             });
         }
 
-        public async Task<ServiceResponse<EventResponse>> GetEventById(int eventId)
+        //public async Task<ServiceResponse<EventResponse>> GetEventById(int eventId)
+        //{
+        //    var query = "SELECT * FROM tblEvent WHERE EventID = @EventID AND IsActive = 1 AND IsDelete = 0";
+        //    var eventData = await _connection.QueryFirstOrDefaultAsync<EventResponse>(query, new { EventID = eventId });
+        //    return eventData != null
+        //        ? new ServiceResponse<EventResponse>(true, "Event fetched successfully.", eventData, 200)
+        //        : new ServiceResponse<EventResponse>(false, "Event not found.", null, 404);
+        //}
+
+        public async Task<ServiceResponse<GetAllEventsResponse>> GetEventById(int eventId)
         {
-            var query = "SELECT * FROM tblEvent WHERE EventID = @EventID AND IsActive = 1 AND IsDelete = 0";
-            var eventData = await _connection.QueryFirstOrDefaultAsync<EventResponse>(query, new { EventID = eventId });
+            // Query to get the event details along with additional information for response
+            var query = @"
+                        SELECT 
+                            e.EventID,
+                            e.EventName,
+                            CONCAT(CONVERT(VARCHAR, e.FromDate, 105), ' to ', CONVERT(VARCHAR, e.ToDate, 105)) AS Date,
+                            e.Description AS Description,
+                            e.Location,
+                            CASE 
+                                WHEN e.ScheduleTime IS NOT NULL 
+                                THEN CONCAT(CONVERT(VARCHAR, e.ScheduleDate, 105), ' at ', FORMAT(e.ScheduleTime, 'hh:mm tt')) 
+                                ELSE CONCAT(CONVERT(VARCHAR, e.ScheduleDate, 105), ' at ', 'N/A')
+                            END AS EventNotification,
+                            CASE 
+                                WHEN emp.First_Name IS NOT NULL AND emp.Last_Name IS NOT NULL
+                                THEN CONCAT(emp.First_Name, ' ', emp.Last_Name)
+                                ELSE 'N/A'
+                            END AS CreatedBy,
+                            ISNULL(tea.Attachment, '') AS Document
+                        FROM tblEvent e
+                        LEFT JOIN tbl_EmployeeProfileMaster emp ON emp.Employee_id = e.CreatedBy
+                        LEFT JOIN tblEventAttachment tea ON e.EventID = tea.EventID
+                        WHERE e.EventID = @EventID AND e.IsActive = 1 AND e.IsDelete = 0;";
+
+            // Fetch the event details using the query
+            var eventData = await _connection.QueryFirstOrDefaultAsync<GetAllEventsResponse>(query, new { EventID = eventId });
+
+            // Return the response in the new format
             return eventData != null
-                ? new ServiceResponse<EventResponse>(true, "Event fetched successfully.", eventData, 200)
-                : new ServiceResponse<EventResponse>(false, "Event not found.", null, 404);
+                ? new ServiceResponse<GetAllEventsResponse>(true, "Event fetched successfully.", eventData, 200)
+                : new ServiceResponse<GetAllEventsResponse>(false, "Event not found.", null, 404);
         }
+
 
         public async Task<ServiceResponse<bool>> DeleteEvent(int eventId)
         {

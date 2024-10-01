@@ -20,8 +20,8 @@ namespace EventGallery_API.Controllers
             _galleryService = galleryService;
         }
 
-        [HttpPost("UploadGalleryImage/{EventID}")]
-        public async Task<IActionResult> UploadGalleryImage(int EventID, [FromBody] GalleryImageRequest request)
+        [HttpPost("UploadGalleryImage")]
+        public async Task<IActionResult> UploadGalleryImage([FromBody] GalleryImageRequest request)
         {
             byte[] imageBytes = Convert.FromBase64String(request.FileName);
 
@@ -37,9 +37,11 @@ namespace EventGallery_API.Controllers
 
             request.FileName = fileName;
 
-            var result = await _galleryService.UploadGalleryImage(EventID, request);
+            // Use the eventID from the request body
+            var result = await _galleryService.UploadGalleryImage(request.EventID, request);
             return Ok(result);
         }
+
 
         [HttpGet("DownloadGalleryImage/{GalleryID}")]
         public async Task<IActionResult> DownloadGalleryImage(int GalleryID)
@@ -92,10 +94,36 @@ namespace EventGallery_API.Controllers
         }
 
         [HttpPost("GetAllGalleryImages")]
-        public async Task<IActionResult> GetAllGalleryImages([FromBody] GalleryImageRequest request)
+        public async Task<IActionResult> GetAllGalleryImages([FromBody] GalleryImageRequest_Get request)
         {
+            // Fetch images along with event details
             var result = await _galleryService.GetAllGalleryImages(request);
+
             return Ok(result);
         }
+
+        [HttpPost("GetAllEvents/{InstituteID}")]
+        public async Task<IActionResult> GetAllEvents(int InstituteID)
+        {
+            // Fetch events based on InstituteID
+            var events = await _galleryService.GetAllEvents(InstituteID);
+
+            // Map to response body format
+            var response = events.ConvertAll(e => new
+            {
+                e.EventID,
+                e.EventName
+            });
+
+            return Ok(new
+            {
+                success = true,
+                message = "Events fetched successfully.",
+                data = response,
+                statusCode = 200
+            });
+        }
+
+
     }
 }

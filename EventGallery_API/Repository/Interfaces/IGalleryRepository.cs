@@ -1,6 +1,7 @@
 ﻿using EventGallery_API.Models;
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using System.Threading.Tasks; 
+
 
 namespace EventGallery_API.Repository.Interfaces
 {
@@ -10,6 +11,11 @@ namespace EventGallery_API.Repository.Interfaces
         Task<GalleryImage> DownloadGalleryImage(int galleryID);
         Task<List<GalleryImage>> DownloadAllGalleryImages(int eventID);
         Task<bool> DeleteGalleryImage(int galleryID);
-        Task<List<GalleryImage>> GetAllGalleryImages(int eventID);
+
+        Task<EventDetails> GetEventDetails(int eventID, int instituteID);
+
+        Task<List<GalleryImage>> GetAllGalleryImages(int eventID, int instituteID);
+        Task<List<EventGallery_API.DTOs.Responses.EventDetails>> GetAllEvents(int instituteID); // Use full type name
+
     }
 }

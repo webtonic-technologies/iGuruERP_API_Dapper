@@ -3,7 +3,7 @@
 
     public class GetAllEventsRequest
     {
-        public int AcademicYearID { get; set; }
+        public string AcademicYearCode { get; set; }
         public int InstituteID { get; set; }  // Ensure there is only one definition
         public string Search { get; set; }
         public int PageNumber { get; set; } = 1;
@@ -20,7 +20,7 @@
         public string Location { get; set; }
         public string ScheduleDate { get; set; }  // Accepting string for DD-MM-YYYY format
         public string ScheduleTime { get; set; }  // Accepting string for hh:mm AM/PM format
-        public int AcademicYearID { get; set; }
+        public string AcademicYearCode { get; set; }
         public int CreatedBy { get; set; }
         public bool IsActive { get; set; }
         public int InstituteID { get; set; }

@@ -22,12 +22,9 @@ namespace EventGallery_API.Services.Implementations
             return await _holidayRepository.AddUpdateHoliday(request);
         }
 
-
-
         public async Task<List<HolidayResponse>> GetAllHolidays(HolidaySearchRequest request)
         {
-            // Forward the search request to the repository
-            return await _holidayRepository.GetAllHolidays(request.AcademicYearID, request.InstituteID, request.Search);
+            return await _holidayRepository.GetAllHolidays(request.AcademicYearCode, request.InstituteID, request.Search);
         }
 
         public async Task<HolidayResponse> GetHoliday(int holidayID)

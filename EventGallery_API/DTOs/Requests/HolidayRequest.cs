@@ -9,7 +9,7 @@
         public string Description { get; set; }
         public List<ClassSectionRequest> ClassSection { get; set; }
         public int InstituteID { get; set; }
-        public int AcademicYearID { get; set; }
+        public string AcademicYearCode { get; set; }
     }
 
 

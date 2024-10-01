@@ -34,10 +34,11 @@ namespace EventGallery_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<EventResponse>> GetEventById(int eventId)
+        public async Task<ServiceResponse<GetAllEventsResponse>> GetEventById(int eventId)
         {
             return await _eventRepository.GetEventById(eventId);
         }
+
 
         public async Task<ServiceResponse<bool>> DeleteEvent(int eventId)
         {
