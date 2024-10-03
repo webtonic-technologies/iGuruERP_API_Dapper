@@ -5,6 +5,7 @@ using Institute_API.Repository.Interfaces;
 using OfficeOpenXml;
 using System.Data;
 using System.Linq;
+using System.Text;
 
 namespace Institute_API.Repository.Implementations
 {
@@ -550,129 +551,250 @@ namespace Institute_API.Repository.Implementations
 
             return rowsInserted;
         }
-        public async Task<ServiceResponse<byte[]>> DownloadExcelSheet(ExcelDownloadRequest request)
+        //public async Task<ServiceResponse<byte[]>> DownloadExcelSheet(ExcelDownloadRequest request)
+        //{
+        //    try
+        //    {
+        //        ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+
+        //        // SQL query to fetch subjects, class-section mappings, and subject types based on filters
+        //        string sql = @"
+        //SELECT s.SubjectName, s.SubjectCode, st.subject_type, csm.class_id, csm.section_id
+        //FROM tbl_Subjects s
+        //LEFT JOIN tbl_ClassSectionSubjectMapping csm ON s.SubjectId = csm.SubjectId
+        //LEFT JOIN tbl_SubjectTypeMaster st ON s.subject_type_id = st.subject_type_id
+        //WHERE s.InstituteId = @InstituteId AND s.IsDeleted = 0
+        //AND (@ClassId = 0 OR csm.class_id = @ClassId)
+        //AND (@SectionId = 0 OR csm.section_id LIKE '%' + CAST(@SectionId AS VARCHAR) + '%')
+        //AND csm.IsDeleted = 0";
+
+        //        var subjectResult = await _connection.QueryAsync(sql, new { request.InstituteId, request.ClassId, request.SectionId });
+
+        //        // If no data is present, return only headers
+        //        if (!subjectResult.Any())
+        //        {
+        //            return await GenerateEmptyExcelSheet();
+        //        }
+
+        //        // Prepare to gather all unique section IDs across results
+        //        List<int> allSectionIds = new List<int>();
+
+        //        foreach (var row in subjectResult)
+        //        {
+        //            string sectionIdCsv = row.section_id;
+        //            if (!string.IsNullOrEmpty(sectionIdCsv))
+        //            {
+        //                string[] sectionIdStrings = sectionIdCsv.Split(',');
+        //                foreach (var sectionIdStr in sectionIdStrings)
+        //                {
+        //                    if (int.TryParse(sectionIdStr, out int sectionId))
+        //                    {
+        //                        if (!allSectionIds.Contains(sectionId))
+        //                        {
+        //                            allSectionIds.Add(sectionId);
+        //                        }
+        //                    }
+        //                }
+        //            }
+        //        }
+
+        //        // Fetch corresponding section names
+        //        var sectionSql = @"
+        //SELECT section_id, section_name 
+        //FROM tbl_Section 
+        //WHERE section_id IN @SectionIds";
+
+        //        var sectionData = await _connection.QueryAsync(sectionSql, new { SectionIds = allSectionIds.ToArray() });
+
+        //        // Create a dictionary for fast lookup of section names by their ID
+        //        Dictionary<int, string> sectionIdToNameMap = sectionData.ToDictionary(row => (int)row.section_id, row => (string)row.section_name);
+
+        //        // Prepare the final result set
+        //        List<dynamic> finalResult = new List<dynamic>();
+
+        //        foreach (var row in subjectResult)
+        //        {
+        //            string[] sectionIdStrings = row.section_id.Split(',');
+        //            List<string> sectionNames = new List<string>();
+
+        //            foreach (var sectionIdStr in sectionIdStrings)
+        //            {
+        //                if (int.TryParse(sectionIdStr, out int sectionId) && sectionIdToNameMap.ContainsKey(sectionId))
+        //                {
+        //                    sectionNames.Add(sectionIdToNameMap[sectionId]);
+        //                }
+        //            }
+
+        //            finalResult.Add(new
+        //            {
+        //                SubjectName = row.SubjectName,
+        //                SubjectCode = row.SubjectCode,
+        //                SubjectType = row.subject_type,
+        //                ClassId = row.class_id,
+        //                Sections = string.Join(", ", sectionNames) // Join all the section names
+        //            });
+        //        }
+
+        //        // Create and return the Excel file with EPPlus
+        //        using (var package = new ExcelPackage())
+        //        {
+        //            var worksheet = package.Workbook.Worksheets.Add("Subject Details");
+
+        //            // Add headers
+        //            worksheet.Cells[1, 1].Value = "Sr No";
+        //            worksheet.Cells[1, 2].Value = "Subject Name";
+        //            worksheet.Cells[1, 3].Value = "Subject Code";
+        //            worksheet.Cells[1, 4].Value = "Class";
+        //            worksheet.Cells[1, 5].Value = "Sections";
+        //            worksheet.Cells[1, 6].Value = "Subject Type";
+
+        //            // Fill the worksheet with data
+        //            int rowNumber = 2;
+        //            int serialNumber = 1;
+
+        //            foreach (var entry in finalResult)
+        //            {
+        //                worksheet.Cells[rowNumber, 1].Value = serialNumber++;
+        //                worksheet.Cells[rowNumber, 2].Value = entry.SubjectName;
+        //                worksheet.Cells[rowNumber, 3].Value = entry.SubjectCode;
+        //                worksheet.Cells[rowNumber, 4].Value = entry.ClassId;
+        //                worksheet.Cells[rowNumber, 5].Value = entry.Sections;
+        //                worksheet.Cells[rowNumber, 6].Value = entry.SubjectType;
+
+        //                rowNumber++;
+        //            }
+
+        //            worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+
+        //            // Convert the Excel package to byte array and return it
+        //            var excelData = package.GetAsByteArray();
+        //            return new ServiceResponse<byte[]>(true, "Excel file generated successfully", excelData, 200);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return new ServiceResponse<byte[]>(false, $"Error generating Excel file: {ex.Message}", null, 500);
+        //    }
+        //}
+
+        //// Helper method to generate an empty Excel sheet with just headers
+        //private async Task<ServiceResponse<byte[]>> GenerateEmptyExcelSheet()
+        //{
+        //    using (var package = new ExcelPackage())
+        //    {
+        //        var worksheet = package.Workbook.Worksheets.Add("Subject Details");
+
+        //        // Add headers
+        //        worksheet.Cells[1, 1].Value = "Sr No";
+        //        worksheet.Cells[1, 2].Value = "Subject Name";
+        //        worksheet.Cells[1, 3].Value = "Subject Code";
+        //        worksheet.Cells[1, 4].Value = "Class";
+        //        worksheet.Cells[1, 5].Value = "Sections";
+        //        worksheet.Cells[1, 6].Value = "Subject Type";
+
+        //        worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+
+        //        var excelData = package.GetAsByteArray();
+        //        return new ServiceResponse<byte[]>(true, "No data found. Returning an empty Excel sheet.", excelData, 200);
+        //    }
+        //}
+        public async Task<ServiceResponse<byte[]>> DownloadSubjectData(ExcelDownloadRequest request, string format)
         {
             try
             {
-                ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
-
-                // SQL query to fetch subjects, class-section mappings, and subject types based on filters
                 string sql = @"
-        SELECT s.SubjectName, s.SubjectCode, st.subject_type, csm.class_id, csm.section_id
-        FROM tbl_Subjects s
-        LEFT JOIN tbl_ClassSectionSubjectMapping csm ON s.SubjectId = csm.SubjectId
-        LEFT JOIN tbl_SubjectTypeMaster st ON s.subject_type_id = st.subject_type_id
-        WHERE s.InstituteId = @InstituteId AND s.IsDeleted = 0
-        AND (@ClassId = 0 OR csm.class_id = @ClassId)
-        AND (@SectionId = 0 OR csm.section_id LIKE '%' + CAST(@SectionId AS VARCHAR) + '%')
-        AND csm.IsDeleted = 0";
+            SELECT s.SubjectName, s.SubjectCode, st.subject_type, csm.class_id, csm.section_id
+            FROM tbl_Subjects s
+            LEFT JOIN tbl_ClassSectionSubjectMapping csm ON s.SubjectId = csm.SubjectId
+            LEFT JOIN tbl_SubjectTypeMaster st ON s.subject_type_id = st.subject_type_id
+            WHERE s.InstituteId = @InstituteId AND s.IsDeleted = 0
+            AND (@ClassId = 0 OR csm.class_id = @ClassId)
+            AND (@SectionId = 0 OR csm.section_id LIKE '%' + CAST(@SectionId AS VARCHAR) + '%')
+            AND csm.IsDeleted = 0";
 
                 var subjectResult = await _connection.QueryAsync(sql, new { request.InstituteId, request.ClassId, request.SectionId });
 
-                // If no data is present, return only headers
                 if (!subjectResult.Any())
                 {
-                    return await GenerateEmptyExcelSheet();
+                    return format.Equals("csv", StringComparison.OrdinalIgnoreCase)
+                        ? GenerateEmptyCsvData()
+                        : await GenerateEmptyExcelSheet();
                 }
 
-                // Prepare to gather all unique section IDs across results
-                List<int> allSectionIds = new List<int>();
-
-                foreach (var row in subjectResult)
-                {
-                    string sectionIdCsv = row.section_id;
-                    if (!string.IsNullOrEmpty(sectionIdCsv))
-                    {
-                        string[] sectionIdStrings = sectionIdCsv.Split(',');
-                        foreach (var sectionIdStr in sectionIdStrings)
-                        {
-                            if (int.TryParse(sectionIdStr, out int sectionId))
-                            {
-                                if (!allSectionIds.Contains(sectionId))
-                                {
-                                    allSectionIds.Add(sectionId);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Fetch corresponding section names
-                var sectionSql = @"
-        SELECT section_id, section_name 
-        FROM tbl_Section 
-        WHERE section_id IN @SectionIds";
-
-                var sectionData = await _connection.QueryAsync(sectionSql, new { SectionIds = allSectionIds.ToArray() });
-
-                // Create a dictionary for fast lookup of section names by their ID
-                Dictionary<int, string> sectionIdToNameMap = sectionData.ToDictionary(row => (int)row.section_id, row => (string)row.section_name);
-
-                // Prepare the final result set
                 List<dynamic> finalResult = new List<dynamic>();
-
                 foreach (var row in subjectResult)
                 {
                     string[] sectionIdStrings = row.section_id.Split(',');
-                    List<string> sectionNames = new List<string>();
-
-                    foreach (var sectionIdStr in sectionIdStrings)
-                    {
-                        if (int.TryParse(sectionIdStr, out int sectionId) && sectionIdToNameMap.ContainsKey(sectionId))
-                        {
-                            sectionNames.Add(sectionIdToNameMap[sectionId]);
-                        }
-                    }
+                    List<string> sectionNames = sectionIdStrings.Select(id => id.Trim()).ToList();
 
                     finalResult.Add(new
                     {
                         SubjectName = row.SubjectName,
                         SubjectCode = row.SubjectCode,
-                        SubjectType = row.subject_type,
                         ClassId = row.class_id,
-                        Sections = string.Join(", ", sectionNames) // Join all the section names
+                        Sections = string.Join(", ", sectionNames)
                     });
                 }
 
-                // Create and return the Excel file with EPPlus
-                using (var package = new ExcelPackage())
+                if (format.Equals("csv", StringComparison.OrdinalIgnoreCase))
                 {
-                    var worksheet = package.Workbook.Worksheets.Add("Subject Details");
-
-                    // Add headers
-                    worksheet.Cells[1, 1].Value = "Sr No";
-                    worksheet.Cells[1, 2].Value = "Subject Name";
-                    worksheet.Cells[1, 3].Value = "Subject Code";
-                    worksheet.Cells[1, 4].Value = "Class";
-                    worksheet.Cells[1, 5].Value = "Sections";
-                    worksheet.Cells[1, 6].Value = "Subject Type";
-
-                    // Fill the worksheet with data
-                    int rowNumber = 2;
-                    int serialNumber = 1;
-
-                    foreach (var entry in finalResult)
-                    {
-                        worksheet.Cells[rowNumber, 1].Value = serialNumber++;
-                        worksheet.Cells[rowNumber, 2].Value = entry.SubjectName;
-                        worksheet.Cells[rowNumber, 3].Value = entry.SubjectCode;
-                        worksheet.Cells[rowNumber, 4].Value = entry.ClassId;
-                        worksheet.Cells[rowNumber, 5].Value = entry.Sections;
-                        worksheet.Cells[rowNumber, 6].Value = entry.SubjectType;
-
-                        rowNumber++;
-                    }
-
-                    worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
-
-                    // Convert the Excel package to byte array and return it
-                    var excelData = package.GetAsByteArray();
-                    return new ServiceResponse<byte[]>(true, "Excel file generated successfully", excelData, 200);
+                    return new ServiceResponse<byte[]>(true, "CSV file generated successfully", GenerateCsvData(finalResult), 200);
+                }
+                else // Default to Excel
+                {
+                    return await GenerateExcelData(finalResult);
                 }
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<byte[]>(false, $"Error generating Excel file: {ex.Message}", null, 500);
+                return new ServiceResponse<byte[]>(false, $"Error generating file: {ex.Message}", null, 500);
+            }
+        }
+
+        private byte[] GenerateCsvData(IEnumerable<dynamic> groupedData)
+        {
+            var csvBuilder = new StringBuilder();
+            csvBuilder.AppendLine("Sr No,Subject Name,Subject Code,Class,Sections");
+
+            int serialNumber = 1;
+            foreach (var data in groupedData)
+            {
+                csvBuilder.AppendLine($"{serialNumber++},{data.SubjectName},{data.SubjectCode},{data.ClassId},{data.Sections}");
+            }
+
+            return Encoding.UTF8.GetBytes(csvBuilder.ToString());
+        }
+
+        private async Task<ServiceResponse<byte[]>> GenerateExcelData(IEnumerable<dynamic> finalResult)
+        {
+            ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+
+            using (var package = new ExcelPackage())
+            {
+                var worksheet = package.Workbook.Worksheets.Add("Subject Details");
+                worksheet.Cells[1, 1].Value = "Sr No";
+                worksheet.Cells[1, 2].Value = "Subject Name";
+                worksheet.Cells[1, 3].Value = "Subject Code";
+                worksheet.Cells[1, 4].Value = "Class";
+                worksheet.Cells[1, 5].Value = "Sections";
+
+                int rowNumber = 2;
+                int serialNumber = 1;
+
+                foreach (var entry in finalResult)
+                {
+                    worksheet.Cells[rowNumber, 1].Value = serialNumber++;
+                    worksheet.Cells[rowNumber, 2].Value = entry.SubjectName;
+                    worksheet.Cells[rowNumber, 3].Value = entry.SubjectCode;
+                    worksheet.Cells[rowNumber, 4].Value = entry.ClassId;
+                    worksheet.Cells[rowNumber, 5].Value = entry.Sections;
+
+                    rowNumber++;
+                }
+
+                worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+                var excelData = package.GetAsByteArray();
+                return new ServiceResponse<byte[]>(true, "Excel file generated successfully", excelData, 200);
             }
         }
 
@@ -682,14 +804,11 @@ namespace Institute_API.Repository.Implementations
             using (var package = new ExcelPackage())
             {
                 var worksheet = package.Workbook.Worksheets.Add("Subject Details");
-
-                // Add headers
                 worksheet.Cells[1, 1].Value = "Sr No";
                 worksheet.Cells[1, 2].Value = "Subject Name";
                 worksheet.Cells[1, 3].Value = "Subject Code";
                 worksheet.Cells[1, 4].Value = "Class";
                 worksheet.Cells[1, 5].Value = "Sections";
-                worksheet.Cells[1, 6].Value = "Subject Type";
 
                 worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
 
@@ -697,5 +816,13 @@ namespace Institute_API.Repository.Implementations
                 return new ServiceResponse<byte[]>(true, "No data found. Returning an empty Excel sheet.", excelData, 200);
             }
         }
+
+        private ServiceResponse<byte[]> GenerateEmptyCsvData()
+        {
+            var csvBuilder = new StringBuilder();
+            csvBuilder.AppendLine("Sr No,Subject Name,Subject Code,Class,Sections");
+            return new ServiceResponse<byte[]>(true, "No data found. Returning an empty CSV.", Encoding.UTF8.GetBytes(csvBuilder.ToString()), 200);
+        }
+
     }
 }

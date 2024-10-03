@@ -14,5 +14,6 @@ namespace Institute_API.Repository.Interfaces
         Task<ServiceResponse<List<City>>> GetCitiesByDistrictIdAsync(int districtId);
         Task<ServiceResponse<List<District>>> GetDistrictsByStateIdAsync(int stateId);
         Task<ServiceResponse<List<AcademicYearMaster>>> GetAcademicYearList(int InstituteId);
+        Task<ServiceResponse<bool>> ActiveAcademicYear(string AcaInfoYearCode, int InstituteId);
     }
 }

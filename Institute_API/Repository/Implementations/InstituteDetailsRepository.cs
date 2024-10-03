@@ -391,11 +391,12 @@ namespace Institute_API.Repository.Implementations
             var query = @"
     SELECT 
         AcademicYearStartMonth, 
-        AcademicYearEndMonth
+        AcademicYearEndMonth,
+        AcaInfoYearCode
     FROM 
         tbl_AcademicInfo
     WHERE 
-        Institute_id = @InstituteId AND Status = 1";  // assuming Status = 1 means active
+        Institute_id = @InstituteId";
 
             try
             {
@@ -426,6 +427,38 @@ namespace Institute_API.Repository.Implementations
             {
                 // Return an error response
                 return new ServiceResponse<List<AcademicYearMaster>>(false, $"An error occurred: {ex.Message}", new List<AcademicYearMaster>(), 500);
+            }
+        }
+        public async Task<ServiceResponse<bool>> ActiveAcademicYear(string AcaInfoYearCode, int InstituteId)
+        {
+            try
+            {
+                // Combined query: Deactivate all and activate the specific record in one go
+                string query = @"
+            UPDATE [tbl_AcademicInfo]
+            SET Status = CASE 
+                WHEN AcaInfoYearCode = @AcaInfoYearCode THEN 1 
+                ELSE 0 
+            END
+            WHERE Institute_id = @InstituteId";
+
+                // Execute the query
+                var rowsAffected = await _connection.ExecuteAsync(query, new { AcaInfoYearCode, InstituteId });
+
+                // Return a success response
+                if (rowsAffected > 0)
+                {
+                    return new ServiceResponse<bool>(true, "Academic year activated successfully.", true, 200);
+                }
+                else
+                {
+                    return new ServiceResponse<bool>(false, "No academic year records updated.", false, 500);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Handle any exceptions
+                return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
         public async Task<ServiceResponse<bool>> DeleteImage(DeleteImageRequest request)

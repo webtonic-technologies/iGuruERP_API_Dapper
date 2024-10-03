@@ -50,16 +50,16 @@ namespace Institute_API.Controllers
                 return BadRequest(ex.Message);
             }
         }
-        [HttpPost("DownloadExcel")]
-        public async Task<IActionResult> DownloadExcelSheet(ExcelDownloadSubStudentMappingRequest request)
-        {
-            var response = await _acaConfigSubStudentServices.DownloadExcelSheet(request);
-            if (response.Success)
-            {
-                return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Subject Mapping.xlsx");
-            }
-            return StatusCode(response.StatusCode, response.Message);
-        }
+        //[HttpPost("DownloadExcel")]
+        //public async Task<IActionResult> DownloadExcelSheet(ExcelDownloadSubStudentMappingRequest request)
+        //{
+        //    var response = await _acaConfigSubStudentServices.DownloadExcelSheet(request);
+        //    if (response.Success)
+        //    {
+        //        return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Subject Mapping.xlsx");
+        //    }
+        //    return StatusCode(response.StatusCode, response.Message);
+        //}
         [HttpPost("GetSubjectsAndStudentMappings")]
         public async Task<IActionResult> GetSubjectsAndStudentMappings(MappingListRequest request)
         {
@@ -81,5 +81,41 @@ namespace Institute_API.Controllers
                 return this.BadRequest(e.Message);
             }
         }
+        [HttpPost("DownloadFile")]
+        public async Task<IActionResult> DownloadFile(ExcelDownloadSubStudentMappingRequest request, [FromQuery] string format)
+        {
+            // Ensure the format is provided
+            if (string.IsNullOrEmpty(format))
+            {
+                return BadRequest("File format not specified.");
+            }
+
+            // Handle CSV format
+            if (format.Equals("csv", StringComparison.OrdinalIgnoreCase))
+            {
+                var response = await _acaConfigSubStudentServices.DownloadExcelSheet(request, format);
+                if (response.Success)
+                {
+                    return File(response.Data, "text/csv", "Subject_Mapping.csv");
+                }
+                return StatusCode(response.StatusCode, response.Message);
+            }
+            // Handle Excel format
+            else if (format.Equals("excel", StringComparison.OrdinalIgnoreCase))
+            {
+                var response = await _acaConfigSubStudentServices.DownloadExcelSheet(request, format);
+                if (response.Success)
+                {
+                    return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Subject_Mapping.xlsx");
+                }
+                return StatusCode(response.StatusCode, response.Message);
+            }
+            else
+            {
+                // Unsupported format
+                return BadRequest("Invalid file format specified. Supported formats: 'csv', 'excel'.");
+            }
+        }
+
     }
 }

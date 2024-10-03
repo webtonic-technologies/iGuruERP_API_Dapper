@@ -26,11 +26,11 @@ namespace Institute_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<byte[]>> DownloadExcelSheet(ExcelDownloadSubStudentMappingRequest request)
+        public async Task<ServiceResponse<byte[]>> DownloadExcelSheet(ExcelDownloadSubStudentMappingRequest request, string format)
         {
             try
             {
-                return await _acaConfigSubStudentRepository.DownloadExcelSheet(request);
+                return await _acaConfigSubStudentRepository.DownloadExcelSheet(request, format);
             }
             catch (Exception ex)
             {

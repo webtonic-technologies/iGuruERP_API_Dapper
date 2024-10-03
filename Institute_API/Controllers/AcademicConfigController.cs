@@ -87,13 +87,21 @@ namespace Institute_API.Controllers
                 return this.BadRequest(e.Message);
             }
         }
-        [HttpGet("DownloadExcel/{instituteId}")]
-        public async Task<IActionResult> DownloadExcelSheet(int instituteId)
+        [HttpGet("DownloadFile/{instituteId}")]
+        public async Task<IActionResult> DownloadFile(int instituteId, [FromQuery] string format)
         {
-            var response = await _academicConfigServices.DownloadExcelSheet(instituteId);
+            var response = await _academicConfigServices.DownloadExcelSheet(instituteId, format);
+
             if (response.Success)
             {
-                return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Class/Course.xlsx");
+                if (format.ToLower() == "csv")
+                {
+                    return File(response.Data, "text/csv", "Class_Course.csv");
+                }
+                else
+                {
+                    return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Class_Course.xlsx");
+                }
             }
             return StatusCode(response.StatusCode, response.Message);
         }

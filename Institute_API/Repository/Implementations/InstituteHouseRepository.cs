@@ -5,6 +5,7 @@ using Institute_API.Models;
 using Institute_API.Repository.Interfaces;
 using OfficeOpenXml;
 using System.Data;
+using System.Text;
 
 namespace Institute_API.Repository.Implementations
 {
@@ -232,7 +233,7 @@ namespace Institute_API.Repository.Implementations
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
-        public async Task<ServiceResponse<byte[]>> DownloadExcelSheet(int InstituteId)
+        public async Task<ServiceResponse<byte[]>> DownloadExcelSheet(int instituteId, string format)
         {
             try
             {
@@ -245,7 +246,7 @@ namespace Institute_API.Repository.Implementations
             WHERE Institute_id = @InstituteId AND IsDeleted = 0";
 
                 // Execute the query
-                var houseData = await _connection.QueryAsync<dynamic>(sql, new { InstituteId });
+                var houseData = await _connection.QueryAsync<dynamic>(sql, new { InstituteId = instituteId });
 
                 // Check if any data is returned
                 if (houseData == null || !houseData.Any())
@@ -253,48 +254,124 @@ namespace Institute_API.Repository.Implementations
                     return new ServiceResponse<byte[]>(false, "No data found for the given Institute ID", null, 404);
                 }
 
-                // Create a new Excel package
-                using (var package = new ExcelPackage())
+                // Handle CSV format
+                if (format.ToLower() == "csv")
                 {
-                    // Add a new worksheet
-                    var worksheet = package.Workbook.Worksheets.Add("Institute Houses");
+                    var csvBuilder = new StringBuilder();
+                    csvBuilder.AppendLine("Sr No.,House Name,House Color");
 
-                    // Add headers to the Excel sheet
-                    worksheet.Cells[1, 1].Value = "Sr No.";
-                    worksheet.Cells[1, 2].Value = "House Name";
-                    worksheet.Cells[1, 3].Value = "House Color";
-
-                    // Add the house data to the Excel sheet
-                    int row = 2;
                     int srNo = 1;
                     foreach (var house in houseData)
                     {
-                        worksheet.Cells[row, 1].Value = srNo;
-                        worksheet.Cells[row, 2].Value = house.HouseName;
-                        worksheet.Cells[row, 3].Value = house.HouseColor;
-                        row++;
+                        csvBuilder.AppendLine($"{srNo},{house.HouseName},{house.HouseColor}");
                         srNo++;
                     }
 
-                    // Auto-fit columns for better readability
-                    worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
-
-                    // Save the Excel package to a memory stream
-                    using (var stream = new MemoryStream())
+                    var csvBytes = Encoding.UTF8.GetBytes(csvBuilder.ToString());
+                    return new ServiceResponse<byte[]>(true, "CSV file generated successfully", csvBytes, 200);
+                }
+                else // Handle Excel format
+                {
+                    using (var package = new ExcelPackage())
                     {
-                        package.SaveAs(stream);
-                        var fileBytes = stream.ToArray();
+                        var worksheet = package.Workbook.Worksheets.Add("Institute Houses");
 
-                        // Return the Excel file as a byte array
-                        return new ServiceResponse<byte[]>(true, "Excel sheet generated successfully", fileBytes, 200);
+                        // Add headers
+                        worksheet.Cells[1, 1].Value = "Sr No.";
+                        worksheet.Cells[1, 2].Value = "House Name";
+                        worksheet.Cells[1, 3].Value = "House Color";
+
+                        int row = 2;
+                        int srNo = 1;
+                        foreach (var house in houseData)
+                        {
+                            worksheet.Cells[row, 1].Value = srNo;
+                            worksheet.Cells[row, 2].Value = house.HouseName;
+                            worksheet.Cells[row, 3].Value = house.HouseColor;
+                            row++;
+                            srNo++;
+                        }
+
+                        worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+
+                        using (var stream = new MemoryStream())
+                        {
+                            package.SaveAs(stream);
+                            var fileBytes = stream.ToArray();
+
+                            return new ServiceResponse<byte[]>(true, "Excel sheet generated successfully", fileBytes, 200);
+                        }
                     }
                 }
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<byte[]>(false, ex.Message, null, 500);
+                return new ServiceResponse<byte[]>(false, $"Error generating file: {ex.Message}", null, 500);
             }
         }
+        //public async Task<ServiceResponse<byte[]>> DownloadExcelSheet(int InstituteId)
+        //{
+        //    try
+        //    {
+        //        ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+
+        //        // SQL query to fetch data from tbl_InstituteHouse
+        //        string sql = @"
+        //    SELECT HouseName, HouseColor
+        //    FROM tbl_InstituteHouse
+        //    WHERE Institute_id = @InstituteId AND IsDeleted = 0";
+
+        //        // Execute the query
+        //        var houseData = await _connection.QueryAsync<dynamic>(sql, new { InstituteId });
+
+        //        // Check if any data is returned
+        //        if (houseData == null || !houseData.Any())
+        //        {
+        //            return new ServiceResponse<byte[]>(false, "No data found for the given Institute ID", null, 404);
+        //        }
+
+        //        // Create a new Excel package
+        //        using (var package = new ExcelPackage())
+        //        {
+        //            // Add a new worksheet
+        //            var worksheet = package.Workbook.Worksheets.Add("Institute Houses");
+
+        //            // Add headers to the Excel sheet
+        //            worksheet.Cells[1, 1].Value = "Sr No.";
+        //            worksheet.Cells[1, 2].Value = "House Name";
+        //            worksheet.Cells[1, 3].Value = "House Color";
+
+        //            // Add the house data to the Excel sheet
+        //            int row = 2;
+        //            int srNo = 1;
+        //            foreach (var house in houseData)
+        //            {
+        //                worksheet.Cells[row, 1].Value = srNo;
+        //                worksheet.Cells[row, 2].Value = house.HouseName;
+        //                worksheet.Cells[row, 3].Value = house.HouseColor;
+        //                row++;
+        //                srNo++;
+        //            }
+
+        //            // Auto-fit columns for better readability
+        //            worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+
+        //            // Save the Excel package to a memory stream
+        //            using (var stream = new MemoryStream())
+        //            {
+        //                package.SaveAs(stream);
+        //                var fileBytes = stream.ToArray();
+
+        //                // Return the Excel file as a byte array
+        //                return new ServiceResponse<byte[]>(true, "Excel sheet generated successfully", fileBytes, 200);
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return new ServiceResponse<byte[]>(false, ex.Message, null, 500);
+        //    }
+        //}
 
         private string ImageUpload(string image)
         {

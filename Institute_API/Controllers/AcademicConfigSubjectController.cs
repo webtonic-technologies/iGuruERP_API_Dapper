@@ -144,15 +144,28 @@ namespace Institute_API.Controllers
                 return this.BadRequest(e.Message);
             }
         }
-        [HttpPost("DownloadExcel")]
-        public async Task<IActionResult> DownloadExcelSheet(ExcelDownloadRequest request)
+        //[HttpPost("DownloadExcel")]
+        //public async Task<IActionResult> DownloadExcelSheet(ExcelDownloadRequest request)
+        //{
+        //    var response = await _academicConfigSubjectsServices.DownloadExcelSheet(request);
+        //    if (response.Success)
+        //    {
+        //        return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Subjects.xlsx");
+        //    }
+        //    return StatusCode(response.StatusCode, response.Message);
+        //}
+        [HttpPost("Download")]
+        public async Task<IActionResult> Download(ExcelDownloadRequest request, [FromQuery]string format)
         {
-            var response = await _academicConfigSubjectsServices.DownloadExcelSheet(request);
+            var response = await _academicConfigSubjectsServices.DownloadSubjectData(request, format);
             if (response.Success)
             {
-                return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Subjects.xlsx");
+                string contentType = format.Equals("csv", StringComparison.OrdinalIgnoreCase) ? "text/csv" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                string fileName = format.Equals("csv", StringComparison.OrdinalIgnoreCase) ? "Subjects.csv" : "Subjects.xlsx";
+                return File(response.Data, contentType, fileName);
             }
             return StatusCode(response.StatusCode, response.Message);
         }
+
     }
 }

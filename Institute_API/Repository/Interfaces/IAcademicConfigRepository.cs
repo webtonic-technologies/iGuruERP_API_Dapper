@@ -9,6 +9,6 @@ namespace Institute_API.Repository.Interfaces
         Task<ServiceResponse<string>> DeleteAcademicConfig(int ClassId);
         Task<ServiceResponse<Class>> GetAcademicConfigById(int ClassId);
         Task<ServiceResponse<List<Class>>> GetAcademicConfigList(GetAllCourseClassRequest request);
-        Task<ServiceResponse<byte[]>> DownloadExcelSheet(int InstituteId);
+        Task<ServiceResponse<byte[]>> DownloadExcelSheet(int InstituteId, string format);
     }
 }

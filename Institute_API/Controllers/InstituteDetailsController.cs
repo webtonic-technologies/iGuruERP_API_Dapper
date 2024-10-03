@@ -142,5 +142,18 @@ namespace Institute_API.Controllers
                 return BadRequest(ex.Message);
             }
         }
+        [HttpPost("ActiveAcademicYear/{InstituteId}/{AcaInfoYearCode}")]
+        public async Task<IActionResult> ActiveAcademicYear(string AcaInfoYearCode, int InstituteId)
+        {
+            try
+            {
+                var data = await _instituteDetailsServices.ActiveAcademicYear(AcaInfoYearCode, InstituteId);
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
     }
 }

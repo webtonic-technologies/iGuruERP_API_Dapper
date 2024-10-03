@@ -4,6 +4,7 @@ using Institute_API.DTOs.ServiceResponse;
 using Institute_API.Repository.Interfaces;
 using OfficeOpenXml;
 using System.Data;
+using System.Text;
 
 namespace Institute_API.Repository.Implementations
 {
@@ -341,155 +342,7 @@ namespace Institute_API.Repository.Implementations
         //        return new ServiceResponse<AcaConfigSubStudentResponse>(false, ex.Message, new AcaConfigSubStudentResponse(), 500);
         //    }
         //}
-        public async Task<ServiceResponse<byte[]>> DownloadExcelSheet(ExcelDownloadSubStudentMappingRequest request)
-        {
-            try
-            {
-                ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
-
-                // SQL to fetch students based on filters (ClassId, SectionId) or all if no filter is applied
-                string studentSql = @"
-        SELECT student_id, Admission_Number, First_Name, Middle_Name, Last_Name 
-        FROM tbl_StudentMaster 
-        WHERE Institute_id = @InstituteId 
-        AND (@ClassId = 0 OR class_id = @ClassId) 
-        AND (@SectionId = 0 OR section_id = @SectionId)
-        AND isActive = 1";
-
-                // SQL to fetch subjects filtered by SubjectTypeId or all if no filter is applied
-                string subjectSql = @"
-        SELECT SubjectId, SubjectName 
-        FROM tbl_Subjects 
-        WHERE InstituteId = @InstituteId 
-        AND (@SubjectTypeId = 0 OR subject_type_id = @SubjectTypeId)
-        AND IsDeleted = 0";
-
-                // SQL to fetch the student-subject mappings
-                string studentSubjectMappingSql = @"
-        SELECT StudentId, SubjectId 
-        FROM tbl_StudentSubjectMapping 
-        WHERE InstituteId = @InstituteId";
-
-                // Execute queries with parameters
-                var students = await _connection.QueryAsync<dynamic>(studentSql, new { request.InstituteId, request.ClassId, request.SectionId });
-                var subjects = await _connection.QueryAsync<dynamic>(subjectSql, new { request.InstituteId, request.SubjectTypeId });
-                var studentSubjectMappings = await _connection.QueryAsync<dynamic>(studentSubjectMappingSql, new { request.InstituteId });
-
-                // If no data is found, return an empty Excel sheet with only headers
-                if (!students.Any() || !subjects.Any())
-                {
-                    using (var package = new ExcelPackage())
-                    {
-                        var worksheet = package.Workbook.Worksheets.Add("Student Subject Mapping");
-
-                        // Add headers
-                        worksheet.Cells[1, 1].Value = "Sr No";
-                        worksheet.Cells[1, 2].Value = "Admission Number";
-                        worksheet.Cells[1, 3].Value = "Student Name";
-
-                        int subjectColumnStart = 4;
-                        int currentColumn = subjectColumnStart;
-
-                        foreach (var subject in subjects)
-                        {
-                            worksheet.Cells[1, currentColumn].Value = subject.SubjectName;
-                            currentColumn++;
-                        }
-
-                        // Auto-fit columns for better readability
-                        worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
-
-                        // Return an empty Excel file with headers
-                        var excelData = package.GetAsByteArray();
-                        return new ServiceResponse<byte[]>(true, "No data available, empty Excel file generated", excelData, 200);
-                    }
-                }
-
-                // Group subject mappings by student
-                var studentToSubjectsMap = studentSubjectMappings
-                    .GroupBy(mapping => mapping.StudentId)
-                    .ToDictionary(group => group.Key, group => group.Select(mapping => (dynamic)mapping.SubjectId).ToList());
-
-                // Initialize EPPlus Excel package
-                using (var package = new ExcelPackage())
-                {
-                    var worksheet = package.Workbook.Worksheets.Add("Student Subject Mapping");
-
-                    // Add headers
-                    worksheet.Cells[1, 1].Value = "Sr No";
-                    worksheet.Cells[1, 2].Value = "Admission Number";
-                    worksheet.Cells[1, 3].Value = "Student Name";
-
-                    // Dynamically add headers for each subject
-                    int subjectColumnStart = 4;
-                    var subjectIds = subjects.Select(s => (int)s.SubjectId).ToList(); // Cast dynamic to int
-                    int currentColumn = subjectColumnStart;
-
-                    foreach (var subject in subjects)
-                    {
-                        worksheet.Cells[1, currentColumn].Value = subject.SubjectName;
-                        currentColumn++;
-                    }
-
-                    // Populate student rows
-                    int rowNumber = 2;
-                    int serialNumber = 1;
-
-                    foreach (var student in students)
-                    {
-                        // Set basic student info
-                        worksheet.Cells[rowNumber, 1].Value = serialNumber++;
-                        worksheet.Cells[rowNumber, 2].Value = student.Admission_Number;
-                        worksheet.Cells[rowNumber, 3].Value = $"{student.First_Name} {student.Middle_Name} {student.Last_Name}";
-
-                        // Get the subjects for this student, if any
-                        if (studentToSubjectsMap.TryGetValue(student.student_id, out List<dynamic> assignedSubjectsDynamic))
-                        {
-                            var assignedSubjects = assignedSubjectsDynamic.Select(s => (int)s).ToList();
-
-                            for (int i = 0; i < subjectIds.Count; i++)
-                            {
-                                var subjectId = subjectIds[i];
-                                var cell = worksheet.Cells[rowNumber, subjectColumnStart + i];
-
-                                if (assignedSubjects.Contains(subjectId))
-                                {
-                                    cell.Value = "Yes";
-                                    cell.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
-                                    cell.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGreen); // Highlight assigned subject
-                                }
-                                else
-                                {
-                                    cell.Value = "No";
-                                }
-                            }
-                        }
-                        else
-                        {
-                            // If no subjects are assigned, mark all as "No"
-                            for (int i = 0; i < subjectIds.Count; i++)
-                            {
-                                worksheet.Cells[rowNumber, subjectColumnStart + i].Value = "No";
-                            }
-                        }
-
-                        rowNumber++;
-                    }
-
-                    // Auto-fit the columns for better visibility
-                    worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
-
-                    // Convert the package to a byte array and return it
-                    var excelData = package.GetAsByteArray();
-                    return new ServiceResponse<byte[]>(true, "Excel file generated successfully", excelData, 200);
-                }
-            }
-            catch (Exception ex)
-            {
-                // Handle exceptions
-                return new ServiceResponse<byte[]>(false, $"Error generating Excel file: {ex.Message}", null, 500);
-            }
-        }
+     
         //public async Task<ServiceResponse<byte[]>> DownloadExcelSheet(ExcelDownloadSubStudentMappingRequest request)
         //{
         //    try
@@ -691,6 +544,355 @@ namespace Institute_API.Repository.Implementations
                 return new ServiceResponse<CombinedResponse>(false, ex.Message, new CombinedResponse(), 500);
             }
         }
+        public async Task<ServiceResponse<byte[]>> DownloadExcelSheet(ExcelDownloadSubStudentMappingRequest request, string format)
+        {
+            try
+            {
+                ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+
+                // SQL to fetch students based on filters (ClassId, SectionId) or all if no filter is applied
+                string studentSql = @"
+        SELECT student_id, Admission_Number, First_Name, Middle_Name, Last_Name 
+        FROM tbl_StudentMaster 
+        WHERE Institute_id = @InstituteId 
+        AND (@ClassId = 0 OR class_id = @ClassId) 
+        AND (@SectionId = 0 OR section_id = @SectionId)
+        AND isActive = 1";
+
+                // SQL to fetch subjects filtered by SubjectTypeId or all if no filter is applied
+                string subjectSql = @"
+        SELECT SubjectId, SubjectName 
+        FROM tbl_Subjects 
+        WHERE InstituteId = @InstituteId 
+        AND (@SubjectTypeId = 0 OR subject_type_id = @SubjectTypeId)
+        AND IsDeleted = 0";
+
+                // SQL to fetch the student-subject mappings
+                string studentSubjectMappingSql = @"
+        SELECT StudentId, SubjectId 
+        FROM tbl_StudentSubjectMapping 
+        WHERE InstituteId = @InstituteId";
+
+                // Execute queries with parameters
+                var students = await _connection.QueryAsync<dynamic>(studentSql, new { request.InstituteId, request.ClassId, request.SectionId });
+                var subjects = await _connection.QueryAsync<dynamic>(subjectSql, new { request.InstituteId, request.SubjectTypeId });
+                var studentSubjectMappings = await _connection.QueryAsync<dynamic>(studentSubjectMappingSql, new { request.InstituteId });
+
+                // If no data is found, return an empty file with only headers
+                if (!students.Any() || !subjects.Any())
+                {
+                    if (format.ToLower() == "csv")
+                    {
+                        var emptyCsv = GenerateEmptyCsv(subjects);
+                        return new ServiceResponse<byte[]>(true, "No data available, empty CSV file generated", emptyCsv, 200);
+                    }
+
+                    // Existing Excel implementation
+                    using (var package = new ExcelPackage())
+                    {
+                        var worksheet = package.Workbook.Worksheets.Add("Student Subject Mapping");
+
+                        // Add headers
+                        worksheet.Cells[1, 1].Value = "Sr No";
+                        worksheet.Cells[1, 2].Value = "Admission Number";
+                        worksheet.Cells[1, 3].Value = "Student Name";
+
+                        int subjectColumnStart = 4;
+                        int currentColumn = subjectColumnStart;
+
+                        foreach (var subject in subjects)
+                        {
+                            worksheet.Cells[1, currentColumn].Value = subject.SubjectName;
+                            currentColumn++;
+                        }
+
+                        // Auto-fit columns for better readability
+                        worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+
+                        var excelData = package.GetAsByteArray();
+                        return new ServiceResponse<byte[]>(true, "No data available, empty Excel file generated", excelData, 200);
+                    }
+                }
+
+                // Group subject mappings by student
+                var studentToSubjectsMap = studentSubjectMappings
+                    .GroupBy(mapping => mapping.StudentId)
+                    .ToDictionary(group => group.Key, group => group.Select(mapping => (dynamic)mapping.SubjectId).ToList());
+
+                if (format.ToLower() == "csv")
+                {
+                    var csvData = GenerateCsv(students, subjects, studentToSubjectsMap);
+                    return new ServiceResponse<byte[]>(true, "CSV file generated successfully", csvData, 200);
+                }
+                else // Excel
+                {
+                    using (var package = new ExcelPackage())
+                    {
+                        var worksheet = package.Workbook.Worksheets.Add("Student Subject Mapping");
+
+                        // Add headers
+                        worksheet.Cells[1, 1].Value = "Sr No";
+                        worksheet.Cells[1, 2].Value = "Admission Number";
+                        worksheet.Cells[1, 3].Value = "Student Name";
+
+                        int subjectColumnStart = 4;
+                        var subjectIds = subjects.Select(s => (int)s.SubjectId).ToList();
+                        int currentColumn = subjectColumnStart;
+
+                        foreach (var subject in subjects)
+                        {
+                            worksheet.Cells[1, currentColumn].Value = subject.SubjectName;
+                            currentColumn++;
+                        }
+
+                        // Populate student rows
+                        int rowNumber = 2;
+                        int serialNumber = 1;
+
+                        foreach (var student in students)
+                        {
+                            worksheet.Cells[rowNumber, 1].Value = serialNumber++;
+                            worksheet.Cells[rowNumber, 2].Value = student.Admission_Number;
+                            worksheet.Cells[rowNumber, 3].Value = $"{student.First_Name} {student.Middle_Name} {student.Last_Name}";
+
+                            if (studentToSubjectsMap.TryGetValue(student.student_id, out List<dynamic> assignedSubjectsDynamic))
+                            {
+                                var assignedSubjects = assignedSubjectsDynamic.Select(s => (int)s).ToList();
+
+                                for (int i = 0; i < subjectIds.Count; i++)
+                                {
+                                    var subjectId = subjectIds[i];
+                                    var cell = worksheet.Cells[rowNumber, subjectColumnStart + i];
+
+                                    if (assignedSubjects.Contains(subjectId))
+                                    {
+                                        cell.Value = "Yes";
+                                        cell.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                                        cell.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGreen);
+                                    }
+                                    else
+                                    {
+                                        cell.Value = "No";
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                for (int i = 0; i < subjectIds.Count; i++)
+                                {
+                                    worksheet.Cells[rowNumber, subjectColumnStart + i].Value = "No";
+                                }
+                            }
+
+                            rowNumber++;
+                        }
+
+                        worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+
+                        var excelData = package.GetAsByteArray();
+                        return new ServiceResponse<byte[]>(true, "Excel file generated successfully", excelData, 200);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<byte[]>(false, $"Error generating file: {ex.Message}", null, 500);
+            }
+        }
+
+        // Helper methods to generate CSV
+        private byte[] GenerateEmptyCsv(IEnumerable<dynamic> subjects)
+        {
+            var csvBuilder = new StringBuilder();
+            csvBuilder.AppendLine("Sr No,Admission Number,Student Name," + string.Join(",", subjects.Select(s => s.SubjectName)));
+            return Encoding.UTF8.GetBytes(csvBuilder.ToString());
+        }
+
+        private byte[] GenerateCsv(IEnumerable<dynamic> students, IEnumerable<dynamic> subjects, Dictionary<dynamic, List<dynamic>> studentToSubjectsMap)
+        {
+            var csvBuilder = new StringBuilder();
+            var subjectIds = subjects.Select(s => (int)s.SubjectId).ToList();
+
+            // Add headers
+            csvBuilder.AppendLine("Sr No,Admission Number,Student Name," + string.Join(",", subjects.Select(s => s.SubjectName)));
+
+            int serialNumber = 1;
+
+            // Add student rows
+            foreach (var student in students)
+            {
+                var studentName = $"{student.First_Name} {student.Middle_Name} {student.Last_Name}";
+                var studentData = new List<string>
+        {
+            serialNumber++.ToString(),
+            student.Admission_Number,
+            studentName
+        };
+
+                if (studentToSubjectsMap.TryGetValue(student.student_id, out List<dynamic> assignedSubjectsDynamic))
+                {
+                    var assignedSubjects = assignedSubjectsDynamic.Select(s => (int)s).ToList();
+                    studentData.AddRange(subjectIds.Select(subjectId => assignedSubjects.Contains(subjectId) ? "Yes" : "No"));
+                }
+                else
+                {
+                    studentData.AddRange(subjectIds.Select(_ => "No"));
+                }
+
+                csvBuilder.AppendLine(string.Join(",", studentData));
+            }
+
+            return Encoding.UTF8.GetBytes(csvBuilder.ToString());
+        }
+        //public async Task<ServiceResponse<byte[]>> DownloadExcelSheet(ExcelDownloadSubStudentMappingRequest request)
+        //{
+        //    try
+        //    {
+        //        ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+
+        //        // SQL to fetch students based on filters (ClassId, SectionId) or all if no filter is applied
+        //        string studentSql = @"
+        //SELECT student_id, Admission_Number, First_Name, Middle_Name, Last_Name 
+        //FROM tbl_StudentMaster 
+        //WHERE Institute_id = @InstituteId 
+        //AND (@ClassId = 0 OR class_id = @ClassId) 
+        //AND (@SectionId = 0 OR section_id = @SectionId)
+        //AND isActive = 1";
+
+        //        // SQL to fetch subjects filtered by SubjectTypeId or all if no filter is applied
+        //        string subjectSql = @"
+        //SELECT SubjectId, SubjectName 
+        //FROM tbl_Subjects 
+        //WHERE InstituteId = @InstituteId 
+        //AND (@SubjectTypeId = 0 OR subject_type_id = @SubjectTypeId)
+        //AND IsDeleted = 0";
+
+        //        // SQL to fetch the student-subject mappings
+        //        string studentSubjectMappingSql = @"
+        //SELECT StudentId, SubjectId 
+        //FROM tbl_StudentSubjectMapping 
+        //WHERE InstituteId = @InstituteId";
+
+        //        // Execute queries with parameters
+        //        var students = await _connection.QueryAsync<dynamic>(studentSql, new { request.InstituteId, request.ClassId, request.SectionId });
+        //        var subjects = await _connection.QueryAsync<dynamic>(subjectSql, new { request.InstituteId, request.SubjectTypeId });
+        //        var studentSubjectMappings = await _connection.QueryAsync<dynamic>(studentSubjectMappingSql, new { request.InstituteId });
+
+        //        // If no data is found, return an empty Excel sheet with only headers
+        //        if (!students.Any() || !subjects.Any())
+        //        {
+        //            using (var package = new ExcelPackage())
+        //            {
+        //                var worksheet = package.Workbook.Worksheets.Add("Student Subject Mapping");
+
+        //                // Add headers
+        //                worksheet.Cells[1, 1].Value = "Sr No";
+        //                worksheet.Cells[1, 2].Value = "Admission Number";
+        //                worksheet.Cells[1, 3].Value = "Student Name";
+
+        //                int subjectColumnStart = 4;
+        //                int currentColumn = subjectColumnStart;
+
+        //                foreach (var subject in subjects)
+        //                {
+        //                    worksheet.Cells[1, currentColumn].Value = subject.SubjectName;
+        //                    currentColumn++;
+        //                }
+
+        //                // Auto-fit columns for better readability
+        //                worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+
+        //                // Return an empty Excel file with headers
+        //                var excelData = package.GetAsByteArray();
+        //                return new ServiceResponse<byte[]>(true, "No data available, empty Excel file generated", excelData, 200);
+        //            }
+        //        }
+
+        //        // Group subject mappings by student
+        //        var studentToSubjectsMap = studentSubjectMappings
+        //            .GroupBy(mapping => mapping.StudentId)
+        //            .ToDictionary(group => group.Key, group => group.Select(mapping => (dynamic)mapping.SubjectId).ToList());
+
+        //        // Initialize EPPlus Excel package
+        //        using (var package = new ExcelPackage())
+        //        {
+        //            var worksheet = package.Workbook.Worksheets.Add("Student Subject Mapping");
+
+        //            // Add headers
+        //            worksheet.Cells[1, 1].Value = "Sr No";
+        //            worksheet.Cells[1, 2].Value = "Admission Number";
+        //            worksheet.Cells[1, 3].Value = "Student Name";
+
+        //            // Dynamically add headers for each subject
+        //            int subjectColumnStart = 4;
+        //            var subjectIds = subjects.Select(s => (int)s.SubjectId).ToList(); // Cast dynamic to int
+        //            int currentColumn = subjectColumnStart;
+
+        //            foreach (var subject in subjects)
+        //            {
+        //                worksheet.Cells[1, currentColumn].Value = subject.SubjectName;
+        //                currentColumn++;
+        //            }
+
+        //            // Populate student rows
+        //            int rowNumber = 2;
+        //            int serialNumber = 1;
+
+        //            foreach (var student in students)
+        //            {
+        //                // Set basic student info
+        //                worksheet.Cells[rowNumber, 1].Value = serialNumber++;
+        //                worksheet.Cells[rowNumber, 2].Value = student.Admission_Number;
+        //                worksheet.Cells[rowNumber, 3].Value = $"{student.First_Name} {student.Middle_Name} {student.Last_Name}";
+
+        //                // Get the subjects for this student, if any
+        //                if (studentToSubjectsMap.TryGetValue(student.student_id, out List<dynamic> assignedSubjectsDynamic))
+        //                {
+        //                    var assignedSubjects = assignedSubjectsDynamic.Select(s => (int)s).ToList();
+
+        //                    for (int i = 0; i < subjectIds.Count; i++)
+        //                    {
+        //                        var subjectId = subjectIds[i];
+        //                        var cell = worksheet.Cells[rowNumber, subjectColumnStart + i];
+
+        //                        if (assignedSubjects.Contains(subjectId))
+        //                        {
+        //                            cell.Value = "Yes";
+        //                            cell.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+        //                            cell.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGreen); // Highlight assigned subject
+        //                        }
+        //                        else
+        //                        {
+        //                            cell.Value = "No";
+        //                        }
+        //                    }
+        //                }
+        //                else
+        //                {
+        //                    // If no subjects are assigned, mark all as "No"
+        //                    for (int i = 0; i < subjectIds.Count; i++)
+        //                    {
+        //                        worksheet.Cells[rowNumber, subjectColumnStart + i].Value = "No";
+        //                    }
+        //                }
+
+        //                rowNumber++;
+        //            }
+
+        //            // Auto-fit the columns for better visibility
+        //            worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+
+        //            // Convert the package to a byte array and return it
+        //            var excelData = package.GetAsByteArray();
+        //            return new ServiceResponse<byte[]>(true, "Excel file generated successfully", excelData, 200);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        // Handle exceptions
+        //        return new ServiceResponse<byte[]>(false, $"Error generating Excel file: {ex.Message}", null, 500);
+        //    }
+        //}
         public class CombinedResponse
         {
             public List<SubjectList> SubjectList { get; set; }

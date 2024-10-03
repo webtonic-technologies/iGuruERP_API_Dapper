@@ -90,14 +90,34 @@ namespace Institute_API.Controllers
             }
         }
         [HttpGet("DownloadExcel/{instituteId}")]
-        public async Task<IActionResult> DownloadExcelSheet(int instituteId)
+        public async Task<IActionResult> DownloadExcelSheet(int instituteId, [FromQuery] string format)
         {
-            var response = await _instituteHouseServices.DownloadExcelSheet(instituteId);
+            var response = await _instituteHouseServices.DownloadExcelSheet(instituteId, format);
+
             if (response.Success)
             {
-                return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Institute Houses.xlsx");
+                if (format.ToLower() == "csv")
+                {
+                    return File(response.Data, "text/csv", "Institute Houses.csv");
+                }
+                else
+                {
+                    return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Institute Houses.xlsx");
+                }
             }
+
             return StatusCode(response.StatusCode, response.Message);
         }
+
+        //[HttpGet("DownloadExcel/{instituteId}")]
+        //public async Task<IActionResult> DownloadExcelSheet(int instituteId)
+        //{
+        //    var response = await _instituteHouseServices.DownloadExcelSheet(instituteId);
+        //    if (response.Success)
+        //    {
+        //        return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Institute Houses.xlsx");
+        //    }
+        //    return StatusCode(response.StatusCode, response.Message);
+        //}
     }
 }

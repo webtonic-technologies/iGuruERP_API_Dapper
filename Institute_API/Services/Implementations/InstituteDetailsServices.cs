@@ -13,6 +13,12 @@ namespace Institute_API.Services.Implementations
         {
             _instituteDetailsRepository = instituteDetailsRepository;
         }
+
+        public async Task<ServiceResponse<bool>> ActiveAcademicYear(string AcaInfoYearCode, int InstituteId)
+        {
+            return await _instituteDetailsRepository.ActiveAcademicYear(AcaInfoYearCode, InstituteId);
+        }
+
         public async Task<ServiceResponse<int>> AddUpdateInstititeDetails(InstituteDetailsDTO request)
         {
             try
