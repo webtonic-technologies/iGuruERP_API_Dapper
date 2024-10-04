@@ -97,5 +97,6 @@ namespace Institute_API.DTOs
         public int InstituteId { get; set; }
         public string YearName { get; set; } = string.Empty;
         public string AcaInfoYearCode {  get; set; } = string.Empty;
+        public bool Status { get; set; }
     }
 }

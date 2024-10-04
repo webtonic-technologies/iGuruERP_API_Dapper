@@ -2,6 +2,7 @@
 using Employee_API.DTOs.ServiceResponse;
 using Employee_API.Repository.Interfaces;
 using Employee_API.Services.Interfaces;
+using static Employee_API.Repository.Implementations.EmployeeDashboardRepository;
 
 namespace Employee_API.Services.Implementations
 {
@@ -66,7 +67,7 @@ namespace Employee_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<ExperienceRangeResponse>>> GetEmployeeExperienceStats(int instituteId)
+        public async Task<ServiceResponse<EmployeeExperienceStatsResponse>> GetEmployeeExperienceStats(int instituteId)
         {
             try
             {
@@ -74,7 +75,7 @@ namespace Employee_API.Services.Implementations
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<List<ExperienceRangeResponse>>(false, ex.Message, [], 500);
+                return new ServiceResponse<EmployeeExperienceStatsResponse>(false, ex.Message, new EmployeeExperienceStatsResponse(), 500);
             }
         }
 

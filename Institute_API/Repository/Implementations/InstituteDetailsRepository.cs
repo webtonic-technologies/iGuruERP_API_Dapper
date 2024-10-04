@@ -392,7 +392,7 @@ namespace Institute_API.Repository.Implementations
     SELECT 
         AcademicYearStartMonth, 
         AcademicYearEndMonth,
-        AcaInfoYearCode
+        AcaInfoYearCode, Status
     FROM 
         tbl_AcademicInfo
     WHERE 
@@ -410,7 +410,8 @@ namespace Institute_API.Repository.Implementations
                     var academicYearList = academicYears.Select(ay => new AcademicYearMaster
                     {
                         InstituteId = InstituteId,
-
+                        AcaInfoYearCode = ay.AcaInfoYearCode,
+                        Status = ay.Status,
                         // Extract only the year from AcademicYearStartMonth and AcademicYearEndMonth
                         YearName = $"{DateTime.Parse(ay.AcademicYearStartMonth.ToString()).Year} - {DateTime.Parse(ay.AcademicYearEndMonth.ToString()).Year}"
                     }).ToList();

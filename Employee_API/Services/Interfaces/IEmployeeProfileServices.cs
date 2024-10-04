@@ -19,13 +19,13 @@ namespace Employee_API.Services.Interfaces
         Task<ServiceResponse<List<EmployeeQualification>>> GetEmployeeQualificationById(int employeeId);
         Task<ServiceResponse<List<EmployeeWorkExperience>>> GetEmployeeWorkExperienceById(int employeeId);
         Task<ServiceResponse<List<EmployeeBankDetails>>> GetEmployeeBankDetailsById(int employeeId);
-        Task<ServiceResponse<bool>> StatusActiveInactive(int employeeId);
+        Task<ServiceResponse<bool>> StatusActiveInactive(EmployeeStatusRequest request);
         Task<ServiceResponse<List<MaritalStatus>>> GetMaritalStatusList();
         Task<ServiceResponse<List<BloodGroup>>> GetBloodGroupList();
         Task<ServiceResponse<List<Department>>> GetDepartmentList(int InstituteId);
         Task<ServiceResponse<List<Designation>>> GetDesignationList(int DepartmentId);
         Task<ServiceResponse<bool>> UpdatePassword(ChangePasswordRequest request);
-        Task<ServiceResponse<byte[]>> ExcelDownload(ExcelDownloadRequest request);
+        Task<ServiceResponse<byte[]>> ExcelDownload(ExcelDownloadRequest request, string format);
         Task<ServiceResponse<List<ClassSectionList>>> GetClassSectionList(int instituteId);
         Task<ServiceResponse<ClassSectionSubjectResponse>> ClassSectionSubjectsList(int classId, int sectionId);
         Task<ServiceResponse<List<ClassSectionSubjectResponse>>> ClassSectionSubjectsMappings(int InstituteId);

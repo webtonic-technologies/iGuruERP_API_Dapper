@@ -102,75 +102,75 @@ namespace Employee_API.Repository.Implementations
                 return new ServiceResponse<List<AgeGroupStatsResponse>>(false, ex.Message, null, 500);
             }
         }
-        public async Task<ServiceResponse<List<ExperienceRangeResponse>>> GetEmployeeExperienceStats(int instituteId)
-        {
-            try
-            {
-                string sql = @"
-        WITH CurrentExperience AS (
-            SELECT 
-                emp.Employee_id,
-                DATEDIFF(MONTH, TRY_CAST(emp.Date_of_Joining AS DATE), GETDATE()) AS CurrentExperienceMonths
-            FROM 
-                tbl_EmployeeProfileMaster emp
-            WHERE 
-                emp.Institute_id = @InstituteId
-        ),
-        PreviousExperience AS (
-            SELECT
-                we.Employee_id,
-                COALESCE(SUM(TRY_CAST(we.Year AS INT) * 12 + TRY_CAST(we.Month AS INT)), 0) AS PreviousExperienceMonths
-            FROM 
-                tbl_WorkExperienceMaster we
-            GROUP BY 
-                we.Employee_id
-        ),
-        TotalExperience AS (
-            SELECT
-                cur.Employee_id,
-                ISNULL(cur.CurrentExperienceMonths, 0) + ISNULL(prev.PreviousExperienceMonths, 0) AS TotalExperienceMonths
-            FROM 
-                CurrentExperience cur
-            LEFT JOIN 
-                PreviousExperience prev ON cur.Employee_id = prev.Employee_id
-        )
-        SELECT 
-            SUM(CASE WHEN TotalExperienceMonths BETWEEN 0 AND 11 THEN 1 ELSE 0 END) AS Experience_0_1,
-            SUM(CASE WHEN TotalExperienceMonths BETWEEN 12 AND 23 THEN 1 ELSE 0 END) AS Experience_1_2,
-            SUM(CASE WHEN TotalExperienceMonths BETWEEN 24 AND 35 THEN 1 ELSE 0 END) AS Experience_2_3,
-            SUM(CASE WHEN TotalExperienceMonths BETWEEN 36 AND 47 THEN 1 ELSE 0 END) AS Experience_3_4,
-            SUM(CASE WHEN TotalExperienceMonths BETWEEN 48 AND 59 THEN 1 ELSE 0 END) AS Experience_4_5,
-            SUM(CASE WHEN TotalExperienceMonths BETWEEN 60 AND 71 THEN 1 ELSE 0 END) AS Experience_5_6,
-            SUM(CASE WHEN TotalExperienceMonths >= 72 THEN 1 ELSE 0 END) AS Experience_6_7
-        FROM 
-            TotalExperience;
-        ";
+        //public async Task<ServiceResponse<List<ExperienceRangeResponse>>> GetEmployeeExperienceStats(int instituteId)
+        //{
+        //    try
+        //    {
+        //        string sql = @"
+        //WITH CurrentExperience AS (
+        //    SELECT 
+        //        emp.Employee_id,
+        //        DATEDIFF(MONTH, TRY_CAST(emp.Date_of_Joining AS DATE), GETDATE()) AS CurrentExperienceMonths
+        //    FROM 
+        //        tbl_EmployeeProfileMaster emp
+        //    WHERE 
+        //        emp.Institute_id = @InstituteId
+        //),
+        //PreviousExperience AS (
+        //    SELECT
+        //        we.Employee_id,
+        //        COALESCE(SUM(TRY_CAST(we.Year AS INT) * 12 + TRY_CAST(we.Month AS INT)), 0) AS PreviousExperienceMonths
+        //    FROM 
+        //        tbl_WorkExperienceMaster we
+        //    GROUP BY 
+        //        we.Employee_id
+        //),
+        //TotalExperience AS (
+        //    SELECT
+        //        cur.Employee_id,
+        //        ISNULL(cur.CurrentExperienceMonths, 0) + ISNULL(prev.PreviousExperienceMonths, 0) AS TotalExperienceMonths
+        //    FROM 
+        //        CurrentExperience cur
+        //    LEFT JOIN 
+        //        PreviousExperience prev ON cur.Employee_id = prev.Employee_id
+        //)
+        //SELECT 
+        //    SUM(CASE WHEN TotalExperienceMonths BETWEEN 0 AND 11 THEN 1 ELSE 0 END) AS Experience_0_1,
+        //    SUM(CASE WHEN TotalExperienceMonths BETWEEN 12 AND 23 THEN 1 ELSE 0 END) AS Experience_1_2,
+        //    SUM(CASE WHEN TotalExperienceMonths BETWEEN 24 AND 35 THEN 1 ELSE 0 END) AS Experience_2_3,
+        //    SUM(CASE WHEN TotalExperienceMonths BETWEEN 36 AND 47 THEN 1 ELSE 0 END) AS Experience_3_4,
+        //    SUM(CASE WHEN TotalExperienceMonths BETWEEN 48 AND 59 THEN 1 ELSE 0 END) AS Experience_4_5,
+        //    SUM(CASE WHEN TotalExperienceMonths BETWEEN 60 AND 71 THEN 1 ELSE 0 END) AS Experience_5_6,
+        //    SUM(CASE WHEN TotalExperienceMonths >= 72 THEN 1 ELSE 0 END) AS Experience_6_7
+        //FROM 
+        //    TotalExperience;
+        //";
 
-                var result = await _connection.QueryFirstOrDefaultAsync<ExperienceStats>(sql, new { InstituteId = instituteId });
+        //        var result = await _connection.QueryFirstOrDefaultAsync<ExperienceStats>(sql, new { InstituteId = instituteId });
 
-                if (result == null)
-                {
-                    return new ServiceResponse<List<ExperienceRangeResponse>>(false, "No data found", null, 204);
-                }
+        //        if (result == null)
+        //        {
+        //            return new ServiceResponse<List<ExperienceRangeResponse>>(false, "No data found", null, 204);
+        //        }
 
-                var response = new List<ExperienceRangeResponse>
-        {
-            new ExperienceRangeResponse { Experience = "0-1", Count = result.Experience_0_1 },
-            new ExperienceRangeResponse { Experience = "1-2", Count = result.Experience_1_2 },
-            new ExperienceRangeResponse { Experience = "2-3", Count = result.Experience_2_3 },
-            new ExperienceRangeResponse { Experience = "3-4", Count = result.Experience_3_4 },
-            new ExperienceRangeResponse { Experience = "4-5", Count = result.Experience_4_5 },
-            new ExperienceRangeResponse { Experience = "5-6", Count = result.Experience_5_6 },
-            new ExperienceRangeResponse { Experience = "6+", Count = result.Experience_6_7 }
-        };
+        //        var response = new List<ExperienceRangeResponse>
+        //{
+        //    new ExperienceRangeResponse { Experience = "0-1", Count = result.Experience_0_1 },
+        //    new ExperienceRangeResponse { Experience = "1-2", Count = result.Experience_1_2 },
+        //    new ExperienceRangeResponse { Experience = "2-3", Count = result.Experience_2_3 },
+        //    new ExperienceRangeResponse { Experience = "3-4", Count = result.Experience_3_4 },
+        //    new ExperienceRangeResponse { Experience = "4-5", Count = result.Experience_4_5 },
+        //    new ExperienceRangeResponse { Experience = "5-6", Count = result.Experience_5_6 },
+        //    new ExperienceRangeResponse { Experience = "6+", Count = result.Experience_6_7 }
+        //};
 
-                return new ServiceResponse<List<ExperienceRangeResponse>>(true, "Data found", response, 200);
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<List<ExperienceRangeResponse>>(false, ex.Message, null, 500);
-            }
-        }
+        //        return new ServiceResponse<List<ExperienceRangeResponse>>(true, "Data found", response, 200);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return new ServiceResponse<List<ExperienceRangeResponse>>(false, ex.Message, null, 500);
+        //    }
+        //}
         public async Task<ServiceResponse<DepartmentEmployeeResponse>> GetEmployeeDepartmentCounts(int instituteId)
         {
             try
@@ -354,5 +354,126 @@ namespace Employee_API.Repository.Implementations
                 return new ServiceResponse<AppUserNonAppUserResponse>(false, $"Error fetching data: {ex.Message}", null, 500);
             }
         }
+        public async Task<ServiceResponse<EmployeeExperienceStatsResponse>> GetEmployeeExperienceStats(int instituteId)
+        {
+            try
+            {
+                string sql = @"
+        WITH CurrentExperience AS (
+            SELECT 
+                emp.Employee_id,
+                DATEDIFF(MONTH, TRY_CAST(emp.Date_of_Joining AS DATE), GETDATE()) AS CurrentExperienceMonths
+            FROM 
+                tbl_EmployeeProfileMaster emp
+            WHERE 
+                emp.Institute_id = @InstituteId
+        ),
+        PreviousExperience AS (
+            SELECT
+                we.Employee_id,
+                COALESCE(SUM(TRY_CAST(we.Year AS INT) * 12 + TRY_CAST(we.Month AS INT)), 0) AS PreviousExperienceMonths
+            FROM 
+                tbl_WorkExperienceMaster we
+            GROUP BY 
+                we.Employee_id
+        ),
+        TotalExperience AS (
+            SELECT
+                cur.Employee_id,
+                ISNULL(cur.CurrentExperienceMonths, 0) + ISNULL(prev.PreviousExperienceMonths, 0) AS TotalExperienceMonths
+            FROM 
+                CurrentExperience cur
+            LEFT JOIN 
+                PreviousExperience prev ON cur.Employee_id = prev.Employee_id
+        )
+        SELECT 
+            SUM(CASE WHEN TotalExperienceMonths BETWEEN 0 AND 11 THEN 1 ELSE 0 END) AS Experience_0_1,
+            SUM(CASE WHEN TotalExperienceMonths BETWEEN 12 AND 23 THEN 1 ELSE 0 END) AS Experience_1_2,
+            SUM(CASE WHEN TotalExperienceMonths BETWEEN 24 AND 35 THEN 1 ELSE 0 END) AS Experience_2_3,
+            SUM(CASE WHEN TotalExperienceMonths BETWEEN 36 AND 47 THEN 1 ELSE 0 END) AS Experience_3_4,
+            SUM(CASE WHEN TotalExperienceMonths BETWEEN 48 AND 59 THEN 1 ELSE 0 END) AS Experience_4_5,
+            SUM(CASE WHEN TotalExperienceMonths BETWEEN 60 AND 71 THEN 1 ELSE 0 END) AS Experience_5_6,
+            SUM(CASE WHEN TotalExperienceMonths >= 72 THEN 1 ELSE 0 END) AS Experience_6_7,
+
+            -- Max, Min, and Avg Experience
+            MAX(TotalExperienceMonths) AS MaxExperienceMonths,
+            MIN(TotalExperienceMonths) AS MinExperienceMonths,
+            AVG(TotalExperienceMonths) AS AvgExperienceMonths
+        FROM 
+            TotalExperience;
+        ";
+
+                var result = await _connection.QueryFirstOrDefaultAsync<ExperienceStats>(sql, new { InstituteId = instituteId });
+
+                if (result == null)
+                {
+                    return new ServiceResponse<EmployeeExperienceStatsResponse>(false, "No data found", null, 204);
+                }
+
+                var response = new EmployeeExperienceStatsResponse
+                {
+                    ExperienceRanges = new List<ExperienceRangeResponse>
+            {
+                new ExperienceRangeResponse { Experience = "0-1", Count = result.Experience_0_1 },
+                new ExperienceRangeResponse { Experience = "1-2", Count = result.Experience_1_2 },
+                new ExperienceRangeResponse { Experience = "2-3", Count = result.Experience_2_3 },
+                new ExperienceRangeResponse { Experience = "3-4", Count = result.Experience_3_4 },
+                new ExperienceRangeResponse { Experience = "4-5", Count = result.Experience_4_5 },
+                new ExperienceRangeResponse { Experience = "5-6", Count = result.Experience_5_6 },
+                new ExperienceRangeResponse { Experience = "6+", Count = result.Experience_6_7 }
+            },
+                    MaxExperience = ConvertMonthsToYearsAndMonths(result.MaxExperienceMonths),
+                    MinExperience = ConvertMonthsToYearsAndMonths(result.MinExperienceMonths),
+                    AvgExperience = ConvertMonthsToYearsAndMonths((int)Math.Round(result.AvgExperienceMonths))
+                };
+
+                return new ServiceResponse<EmployeeExperienceStatsResponse>(true, "Data found", response, 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<EmployeeExperienceStatsResponse>(false, ex.Message, null, 500);
+            }
+        }
+
+        // Helper method to convert months to years and months format
+        private string ConvertMonthsToYearsAndMonths(int totalMonths)
+        {
+            int years = totalMonths / 12;
+            int months = totalMonths % 12;
+            return $"{years} years {months} months";
+        }
+
+        // ExperienceStats class to map SQL result
+        public class ExperienceStats
+        {
+            public int Experience_0_1 { get; set; }
+            public int Experience_1_2 { get; set; }
+            public int Experience_2_3 { get; set; }
+            public int Experience_3_4 { get; set; }
+            public int Experience_4_5 { get; set; }
+            public int Experience_5_6 { get; set; }
+            public int Experience_6_7 { get; set; }
+
+            public int MaxExperienceMonths { get; set; }
+            public int MinExperienceMonths { get; set; }
+            public double AvgExperienceMonths { get; set; }  // Using double for average
+        }
+
+        // Response class to include max, min, and avg experience
+        public class EmployeeExperienceStatsResponse
+        {
+            public List<ExperienceRangeResponse> ExperienceRanges { get; set; }
+            public string MaxExperience { get; set; }  // e.g., "6 years 11 months"
+            public string MinExperience { get; set; }  // e.g., "0 months"
+            public string AvgExperience { get; set; }  // e.g., "1 year 5 months"
+        }
+
+        // Response class for experience ranges
+        public class ExperienceRangeResponse
+        {
+            public string Experience { get; set; }  // Experience range in the format "0-1", "1-2", etc.
+            public int Count { get; set; }          // The count of employees in that experience range
+        }
+
     }
 }

@@ -279,12 +279,12 @@ namespace Employee_API.Controllers
         //    }
 
         //}
-        [HttpPut("Status/{employeeId}")]
-        public async Task<IActionResult> StatusActiveInactive(int employeeId)
+        [HttpPut("Status")]
+        public async Task<IActionResult> StatusActiveInactive(EmployeeStatusRequest request)
         {
             try
             {
-                var data = await _employeeProfileServices.StatusActiveInactive(employeeId);
+                var data = await _employeeProfileServices.StatusActiveInactive(request);
                 if (data != null)
                 {
                     return Ok(data);
@@ -417,16 +417,16 @@ namespace Employee_API.Controllers
             }
 
         }
-        [HttpPost("DownloadExcel")]
-        public async Task<IActionResult> DownloadExcelSheet(ExcelDownloadRequest request)
-        {
-            var response = await _employeeProfileServices.ExcelDownload(request);
-            if (response.Success)
-            {
-                return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Employee.xlsx");
-            }
-            return StatusCode(response.StatusCode, response.Message);
-        }
+        //[HttpPost("DownloadExcel")]
+        //public async Task<IActionResult> DownloadExcelSheet(ExcelDownloadRequest request)
+        //{
+        //    var response = await _employeeProfileServices.ExcelDownload(request);
+        //    if (response.Success)
+        //    {
+        //        return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Employee.xlsx");
+        //    }
+        //    return StatusCode(response.StatusCode, response.Message);
+        //}
         [HttpGet("GetClassSectionList/{instituteId}")]
         public async Task<IActionResult> GetClassSectionList(int instituteId)
         {
@@ -494,5 +494,25 @@ namespace Employee_API.Controllers
                 return this.BadRequest(e.Message);
             }
         }
+        [HttpGet("DownloadEmployeeData")]
+        public async Task<IActionResult> DownloadEmployeeData([FromQuery] ExcelDownloadRequest request, [FromQuery] string format )
+        {
+            var response = await _employeeProfileServices.ExcelDownload(request, format);
+
+            if (response.Success)
+            {
+                if (format.ToLower() == "csv")
+                {
+                    return File(response.Data, "text/csv", "Employee Data.csv");
+                }
+                else
+                {
+                    return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Employee Data.xlsx");
+                }
+            }
+
+            return StatusCode(response.StatusCode, response.Message);
+        }
+
     }
 }

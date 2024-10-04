@@ -7,6 +7,7 @@ using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using System.Data;
 using System.Data.SqlClient;
+using System.Text;
 
 namespace Employee_API.Repository.Implementations
 {
@@ -1469,19 +1470,19 @@ WHERE
                 return new ServiceResponse<List<ClassSectionSubjectResponse>>(false, $"An error occurred: {ex.Message}", new List<ClassSectionSubjectResponse>(), 500);
             }
         }
-        public async Task<ServiceResponse<bool>> StatusActiveInactive(int employeeId)
+        public async Task<ServiceResponse<bool>> StatusActiveInactive(EmployeeStatusRequest request)
         {
             try
             {
-                var data = await GetEmployeeProfileById(employeeId);
+                var data = await GetEmployeeProfileById(request.EmployeeId);
 
                 if (data.Data != null)
                 {
                     bool Status = !data.Data.Status;
 
-                    string sql = "UPDATE tbl_EmployeeProfileMaster SET Status = @Status WHERE Employee_id = @Employee_id";
+                    string sql = "UPDATE tbl_EmployeeProfileMaster SET Status = @Status, InActiveReason = @InActiveReason WHERE Employee_id = @Employee_id";
 
-                    int rowsAffected = await _connection.ExecuteAsync(sql, new { Status, Employee_id = employeeId });
+                    int rowsAffected = await _connection.ExecuteAsync(sql, new { Status, Employee_id = request.EmployeeId, InActiveReason = request.InActiveReason });
                     if (rowsAffected > 0)
                     {
                         return new ServiceResponse<bool>(true, "Operation Successful", true, 200);
@@ -1668,7 +1669,115 @@ WHERE
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
-        public async Task<ServiceResponse<byte[]>> ExcelDownload(ExcelDownloadRequest request)
+        //public async Task<ServiceResponse<byte[]>> ExcelDownload(ExcelDownloadRequest request)
+        //{
+        //    try
+        //    {
+        //        // Define your query with filters for DesignationId and DepartmentId
+        //        string query = @"SELECT 
+        //                    Employee_id AS EmployeeId,
+        //                    CONCAT(First_Name, ' ', Middle_Name, ' ', Last_Name) AS EmployeeName,
+        //                    d.DepartmentName AS Department,
+        //                    des.DesignationName AS Designation,
+        //                    g.Gender_Type AS Gender,
+        //                    mobile_number AS Mobile,
+        //                    Date_of_Birth AS DateOfBirth,
+        //                    EmailID AS Email
+        //                 FROM tbl_EmployeeProfileMaster e
+        //                 LEFT JOIN tbl_Department d ON e.Department_id = d.Department_id
+        //                 LEFT JOIN tbl_Designation des ON e.Designation_id = des.Designation_id
+        //                 LEFT JOIN tbl_Gender g ON e.Gender_id = g.Gender_id
+        //                 WHERE e.Institute_id = @InstituteId
+        //                 AND (@DesignationId IS NULL OR e.Designation_id = @DesignationId)
+        //                 AND (@DepartmentId IS NULL OR e.Department_id = @DepartmentId)
+        //                 AND e.Status = 1";
+
+        //        // Execute the query with filters
+        //        var employeeProfiles = (await _connection.QueryAsync<dynamic>(
+        //            query,
+        //            new
+        //            {
+        //                request.InstituteId,
+        //                DesignationId = request.DesignationId == 0 ? (int?)null : request.DesignationId,
+        //                DepartmentId = request.DepartmetnId == 0 ? (int?)null : request.DepartmetnId
+        //            })).ToList();
+
+        //        // If no records found, create Excel file with only headers
+        //        if (!employeeProfiles.Any())
+        //        {
+        //            using (var package = new ExcelPackage())
+        //            {
+        //                var worksheet = package.Workbook.Worksheets.Add("Employee Data");
+
+        //                // Add headers
+        //                worksheet.Cells[1, 1].Value = "Employee ID";
+        //                worksheet.Cells[1, 2].Value = "Employee Name";
+        //                worksheet.Cells[1, 3].Value = "Department";
+        //                worksheet.Cells[1, 4].Value = "Designation";
+        //                worksheet.Cells[1, 5].Value = "Gender";
+        //                worksheet.Cells[1, 6].Value = "Mobile";
+        //                worksheet.Cells[1, 7].Value = "Date of Birth";
+        //                worksheet.Cells[1, 8].Value = "Email";
+
+        //                // Convert to byte array
+        //                var stream = new MemoryStream();
+        //                package.SaveAs(stream);
+        //                var fileData = stream.ToArray();
+        //                return new ServiceResponse<byte[]>(true, "No records found, only headers included.", fileData, StatusCodes.Status200OK);
+        //            }
+        //        }
+
+        //        // Create Excel file with data
+        //        using (var package = new ExcelPackage())
+        //        {
+        //            var worksheet = package.Workbook.Worksheets.Add("Employee Data");
+
+        //            // Add headers
+        //            worksheet.Cells[1, 1].Value = "Employee ID";
+        //            worksheet.Cells[1, 2].Value = "Employee Name";
+        //            worksheet.Cells[1, 3].Value = "Department";
+        //            worksheet.Cells[1, 4].Value = "Designation";
+        //            worksheet.Cells[1, 5].Value = "Gender";
+        //            worksheet.Cells[1, 6].Value = "Mobile";
+        //            worksheet.Cells[1, 7].Value = "Date of Birth";
+        //            worksheet.Cells[1, 8].Value = "Email";
+
+        //            // Add data rows
+        //            for (int i = 0; i < employeeProfiles.Count; i++)
+        //            {
+        //                var profile = employeeProfiles[i];
+        //                worksheet.Cells[i + 2, 1].Value = profile.EmployeeId;
+        //                worksheet.Cells[i + 2, 2].Value = profile.EmployeeName;
+        //                worksheet.Cells[i + 2, 3].Value = profile.Department;
+        //                worksheet.Cells[i + 2, 4].Value = profile.Designation;
+        //                worksheet.Cells[i + 2, 5].Value = profile.Gender;
+        //                worksheet.Cells[i + 2, 6].Value = profile.Mobile;
+        //                worksheet.Cells[i + 2, 7].Value = profile.DateOfBirth;
+        //                worksheet.Cells[i + 2, 8].Value = profile.Email;
+        //            }
+
+        //            // Format the header cells
+        //            using (var range = worksheet.Cells[1, 1, 1, 8])
+        //            {
+        //                range.Style.Font.Bold = true;
+        //                range.Style.Fill.PatternType = ExcelFillStyle.Solid;
+        //                range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
+        //                range.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+        //            }
+
+        //            // Convert to byte array
+        //            var stream = new MemoryStream();
+        //            package.SaveAs(stream);
+        //            var fileData = stream.ToArray();
+        //            return new ServiceResponse<byte[]>(true, "Excel generated successfully.", fileData, StatusCodes.Status200OK);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return new ServiceResponse<byte[]>(false, ex.Message, null, StatusCodes.Status500InternalServerError);
+        //    }
+        //}
+        public async Task<ServiceResponse<byte[]>> ExcelDownload(ExcelDownloadRequest request, string format)
         {
             try
             {
@@ -1682,14 +1791,14 @@ WHERE
                             mobile_number AS Mobile,
                             Date_of_Birth AS DateOfBirth,
                             EmailID AS Email
-                         FROM tbl_EmployeeProfileMaster e
-                         LEFT JOIN tbl_Department d ON e.Department_id = d.Department_id
-                         LEFT JOIN tbl_Designation des ON e.Designation_id = des.Designation_id
-                         LEFT JOIN tbl_Gender g ON e.Gender_id = g.Gender_id
-                         WHERE e.Institute_id = @InstituteId
-                         AND (@DesignationId IS NULL OR e.Designation_id = @DesignationId)
-                         AND (@DepartmentId IS NULL OR e.Department_id = @DepartmentId)
-                         AND e.Status = 1";
+                        FROM tbl_EmployeeProfileMaster e
+                        LEFT JOIN tbl_Department d ON e.Department_id = d.Department_id
+                        LEFT JOIN tbl_Designation des ON e.Designation_id = des.Designation_id
+                        LEFT JOIN tbl_Gender g ON e.Gender_id = g.Gender_id
+                        WHERE e.Institute_id = @InstituteId
+                        AND (@DesignationId IS NULL OR e.Designation_id = @DesignationId)
+                        AND (@DepartmentId IS NULL OR e.Department_id = @DepartmentId)
+                        AND e.Status = 1";
 
                 // Execute the query with filters
                 var employeeProfiles = (await _connection.QueryAsync<dynamic>(
@@ -1701,32 +1810,37 @@ WHERE
                         DepartmentId = request.DepartmetnId == 0 ? (int?)null : request.DepartmetnId
                     })).ToList();
 
-                // If no records found, create Excel file with only headers
                 if (!employeeProfiles.Any())
                 {
-                    using (var package = new ExcelPackage())
-                    {
-                        var worksheet = package.Workbook.Worksheets.Add("Employee Data");
-
-                        // Add headers
-                        worksheet.Cells[1, 1].Value = "Employee ID";
-                        worksheet.Cells[1, 2].Value = "Employee Name";
-                        worksheet.Cells[1, 3].Value = "Department";
-                        worksheet.Cells[1, 4].Value = "Designation";
-                        worksheet.Cells[1, 5].Value = "Gender";
-                        worksheet.Cells[1, 6].Value = "Mobile";
-                        worksheet.Cells[1, 7].Value = "Date of Birth";
-                        worksheet.Cells[1, 8].Value = "Email";
-
-                        // Convert to byte array
-                        var stream = new MemoryStream();
-                        package.SaveAs(stream);
-                        var fileData = stream.ToArray();
-                        return new ServiceResponse<byte[]>(true, "No records found, only headers included.", fileData, StatusCodes.Status200OK);
-                    }
+                    return await GenerateFileWithoutData(format);
                 }
 
-                // Create Excel file with data
+                if (format.ToLower() == "csv")
+                {
+                    return GenerateCSVFile(employeeProfiles);
+                }
+                else
+                {
+                    return GenerateExcelFile(employeeProfiles);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<byte[]>(false, ex.Message, null, StatusCodes.Status500InternalServerError);
+            }
+        }
+        private async Task<ServiceResponse<byte[]>> GenerateFileWithoutData(string format)
+        {
+            if (format.ToLower() == "csv")
+            {
+                var csvBuilder = new StringBuilder();
+                csvBuilder.AppendLine("Employee ID,Employee Name,Department,Designation,Gender,Mobile,Date of Birth,Email");
+
+                var csvBytes = Encoding.UTF8.GetBytes(csvBuilder.ToString());
+                return new ServiceResponse<byte[]>(true, "No records found, only headers included.", csvBytes, StatusCodes.Status200OK);
+            }
+            else
+            {
                 using (var package = new ExcelPackage())
                 {
                     var worksheet = package.Workbook.Worksheets.Add("Employee Data");
@@ -1741,39 +1855,69 @@ WHERE
                     worksheet.Cells[1, 7].Value = "Date of Birth";
                     worksheet.Cells[1, 8].Value = "Email";
 
-                    // Add data rows
-                    for (int i = 0; i < employeeProfiles.Count; i++)
-                    {
-                        var profile = employeeProfiles[i];
-                        worksheet.Cells[i + 2, 1].Value = profile.EmployeeId;
-                        worksheet.Cells[i + 2, 2].Value = profile.EmployeeName;
-                        worksheet.Cells[i + 2, 3].Value = profile.Department;
-                        worksheet.Cells[i + 2, 4].Value = profile.Designation;
-                        worksheet.Cells[i + 2, 5].Value = profile.Gender;
-                        worksheet.Cells[i + 2, 6].Value = profile.Mobile;
-                        worksheet.Cells[i + 2, 7].Value = profile.DateOfBirth;
-                        worksheet.Cells[i + 2, 8].Value = profile.Email;
-                    }
-
-                    // Format the header cells
-                    using (var range = worksheet.Cells[1, 1, 1, 8])
-                    {
-                        range.Style.Font.Bold = true;
-                        range.Style.Fill.PatternType = ExcelFillStyle.Solid;
-                        range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
-                        range.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
-                    }
-
-                    // Convert to byte array
                     var stream = new MemoryStream();
                     package.SaveAs(stream);
                     var fileData = stream.ToArray();
-                    return new ServiceResponse<byte[]>(true, "Excel generated successfully.", fileData, StatusCodes.Status200OK);
+                    return new ServiceResponse<byte[]>(true, "No records found, only headers included.", fileData, StatusCodes.Status200OK);
                 }
             }
-            catch (Exception ex)
+        }
+        private ServiceResponse<byte[]> GenerateCSVFile(List<dynamic> employeeProfiles)
+        {
+            var csvBuilder = new StringBuilder();
+            csvBuilder.AppendLine("Employee ID,Employee Name,Department,Designation,Gender,Mobile,Date of Birth,Email");
+
+            foreach (var profile in employeeProfiles)
             {
-                return new ServiceResponse<byte[]>(false, ex.Message, null, StatusCodes.Status500InternalServerError);
+                csvBuilder.AppendLine($"{profile.EmployeeId},{profile.EmployeeName},{profile.Department},{profile.Designation},{profile.Gender},{profile.Mobile},{profile.DateOfBirth},{profile.Email}");
+            }
+
+            var csvBytes = Encoding.UTF8.GetBytes(csvBuilder.ToString());
+            return new ServiceResponse<byte[]>(true, "CSV file generated successfully.", csvBytes, StatusCodes.Status200OK);
+        }
+        private ServiceResponse<byte[]> GenerateExcelFile(List<dynamic> employeeProfiles)
+        {
+            using (var package = new ExcelPackage())
+            {
+                var worksheet = package.Workbook.Worksheets.Add("Employee Data");
+
+                // Add headers
+                worksheet.Cells[1, 1].Value = "Employee ID";
+                worksheet.Cells[1, 2].Value = "Employee Name";
+                worksheet.Cells[1, 3].Value = "Department";
+                worksheet.Cells[1, 4].Value = "Designation";
+                worksheet.Cells[1, 5].Value = "Gender";
+                worksheet.Cells[1, 6].Value = "Mobile";
+                worksheet.Cells[1, 7].Value = "Date of Birth";
+                worksheet.Cells[1, 8].Value = "Email";
+
+                // Add data rows
+                for (int i = 0; i < employeeProfiles.Count; i++)
+                {
+                    var profile = employeeProfiles[i];
+                    worksheet.Cells[i + 2, 1].Value = profile.EmployeeId;
+                    worksheet.Cells[i + 2, 2].Value = profile.EmployeeName;
+                    worksheet.Cells[i + 2, 3].Value = profile.Department;
+                    worksheet.Cells[i + 2, 4].Value = profile.Designation;
+                    worksheet.Cells[i + 2, 5].Value = profile.Gender;
+                    worksheet.Cells[i + 2, 6].Value = profile.Mobile;
+                    worksheet.Cells[i + 2, 7].Value = profile.DateOfBirth;
+                    worksheet.Cells[i + 2, 8].Value = profile.Email;
+                }
+
+                // Format the header cells
+                using (var range = worksheet.Cells[1, 1, 1, 8])
+                {
+                    range.Style.Font.Bold = true;
+                    range.Style.Fill.PatternType = ExcelFillStyle.Solid;
+                    range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
+                    range.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+                }
+
+                var stream = new MemoryStream();
+                package.SaveAs(stream);
+                var fileData = stream.ToArray();
+                return new ServiceResponse<byte[]>(true, "Excel file generated successfully.", fileData, StatusCodes.Status200OK);
             }
         }
         private async Task<bool> CreateUserLoginInfo(int userId, int userType, int instituteId)
@@ -1788,18 +1932,20 @@ WHERE
 
                 // SQL queries for fetching user details based on UserType
                 string employeeSql = @"
-            SELECT TOP (1) [Employee_id], [First_Name], [Last_Name], [mobile_number]
+            SELECT TOP (1) [Employee_id], [First_Name], [Last_Name]
             FROM [tbl_EmployeeProfileMaster]
             WHERE [Employee_id] = @UserId";
 
                 string studentSql = @"
-            SELECT TOP (1) [student_id], [First_Name], [Last_Name], [Admission_Number]
+            SELECT TOP (1) [student_id], [First_Name], [Last_Name]
             FROM [tbl_StudentMaster]
             WHERE [student_id] = @UserId";
 
                 // Initialize variables
                 string username = null;
                 dynamic userDetails = null;
+                string institutesql = @"select Institute_name from tbl_InstituteDetails where Institute_id = @Institute_id;";
+                var instituteName = await _connection.QueryFirstOrDefaultAsync<string>(institutesql, new { Institute_id = instituteId });
 
                 // Fetch user details based on the UserType
                 if (userType == 1) // Employee
@@ -1807,20 +1953,8 @@ WHERE
                     userDetails = await connection.QueryFirstOrDefaultAsync<dynamic>(employeeSql, new { UserId = userId });
                     if (userDetails != null)
                     {
-                        // Construct username for employee
-                        string firstName = userDetails.First_Name;
-                        string lastName = userDetails.Last_Name;
-                        string phoneNumber = userDetails.mobile_number;
-
-                        // Ensure the first name and last name have at least 3 characters and the phone number has at least 4 characters
-                        if (firstName.Length >= 3 && lastName.Length >= 3 && phoneNumber.Length >= 4)
-                        {
-                            username = $"{firstName.Substring(0, 3)}{lastName.Substring(0, 3)}{phoneNumber.Substring(phoneNumber.Length - 4)}";
-                        }
-                        else
-                        {
-                            throw new Exception("First name, last name, or phone number too short for username creation.");
-                        }
+                        // Generate username for employee
+                        username = await GenerateUsername(instituteName, instituteId, "E", userId);
                     }
                 }
                 else if (userType == 2) // Student
@@ -1828,20 +1962,8 @@ WHERE
                     userDetails = await connection.QueryFirstOrDefaultAsync<dynamic>(studentSql, new { UserId = userId });
                     if (userDetails != null)
                     {
-                        // Construct username for student
-                        string firstName = userDetails.First_Name;
-                        string lastName = userDetails.Last_Name;
-                        string admissionNumber = userDetails.Admission_Number;
-
-                        // Ensure the first name and last name have at least 3 characters and the admission number has at least 4 characters
-                        if (firstName.Length >= 3 && lastName.Length >= 3 && admissionNumber.Length >= 4)
-                        {
-                            username = $"{firstName.Substring(0, 3)}{lastName.Substring(0, 3)}{admissionNumber.Substring(admissionNumber.Length - 4)}";
-                        }
-                        else
-                        {
-                            throw new Exception("First name, last name, or admission number too short for username creation.");
-                        }
+                        // Generate username for student
+                        username = await GenerateUsername(instituteName, instituteId, "S", userId);
                     }
                 }
 
@@ -1878,15 +2000,173 @@ WHERE
                 return false;
             }
         }
+
+        private async Task<string> GenerateUsername(string instituteName, int instituteId, string roleIdentifier, int userId)
+        {
+            // Step 1: Get the first four letters of the institute name
+            string institutePrefix = GetInstitutePrefix(instituteName);
+
+            // Step 2: Concatenate the Institute ID and Role Identifier
+            string baseUsername = $"{institutePrefix}{instituteId}{roleIdentifier}";
+
+            // Step 3: Append the sequence number (dynamic based on user type and role)
+            int sequenceNumber = await GetNextSequenceNumber(instituteId, roleIdentifier);
+
+            // Return the generated username
+            return $"{baseUsername}{sequenceNumber}";
+        }
+
+        private string GetInstitutePrefix(string instituteName)
+        {
+            // Logic to extract the first four meaningful letters from the institute name
+            var words = instituteName.Split(' ');
+            string prefix = string.Empty;
+
+            foreach (var word in words)
+            {
+                if (!string.IsNullOrEmpty(word) && prefix.Length < 4)
+                {
+                    prefix += word[0].ToString().ToUpper();
+                }
+            }
+
+            // Ensure the prefix is exactly 4 characters
+            return prefix.PadRight(4, 'X').Substring(0, 4);
+        }
+
+        private async Task<int> GetNextSequenceNumber(int instituteId, string roleIdentifier)
+        {
+            var connection = new SqlConnection(_connectionString);
+
+            // SQL query to get the current max sequence number for the given institute and role
+            string sequenceSql = @"
+        SELECT ISNULL(MAX(CAST(SUBSTRING(UserName, LEN(UserName) - LEN(@RoleIdentifier) + 1, LEN(@RoleIdentifier)) AS INT)), 0)
+        FROM [tblLoginInformationMaster]
+        WHERE InstituteId = @InstituteId AND UserName LIKE @Prefix + '%'";
+
+            string prefix = $"{roleIdentifier}{instituteId}";
+
+            int currentMaxSequence = await connection.ExecuteScalarAsync<int>(sequenceSql, new
+            {
+                InstituteId = instituteId,
+                RoleIdentifier = roleIdentifier,
+                Prefix = prefix
+            });
+
+            return currentMaxSequence + 1; // Return the next sequence number
+        }
+
+        //    private async Task<bool> CreateUserLoginInfo(int userId, int userType, int instituteId)
+        //    {
+        //        try
+        //        {
+        //            var connection = new SqlConnection(_connectionString);
+        //            await connection.OpenAsync(); // Ensure async method for opening
+
+        //            // Define common password
+        //            string commonPassword = "iGuru@1234";
+
+        //            // SQL queries for fetching user details based on UserType
+        //            string employeeSql = @"
+        //        SELECT TOP (1) [Employee_id], [First_Name], [Last_Name], [mobile_number]
+        //        FROM [tbl_EmployeeProfileMaster]
+        //        WHERE [Employee_id] = @UserId";
+
+        //            string studentSql = @"
+        //        SELECT TOP (1) [student_id], [First_Name], [Last_Name], [Admission_Number]
+        //        FROM [tbl_StudentMaster]
+        //        WHERE [student_id] = @UserId";
+
+        //            // Initialize variables
+        //            string username = null;
+        //            dynamic userDetails = null;
+
+        //            // Fetch user details based on the UserType
+        //            if (userType == 1) // Employee
+        //            {
+        //                userDetails = await connection.QueryFirstOrDefaultAsync<dynamic>(employeeSql, new { UserId = userId });
+        //                if (userDetails != null)
+        //                {
+        //                    // Construct username for employee
+        //                    string firstName = userDetails.First_Name;
+        //                    string lastName = userDetails.Last_Name;
+        //                    string phoneNumber = userDetails.mobile_number;
+
+        //                    // Ensure the first name and last name have at least 3 characters and the phone number has at least 4 characters
+        //                    if (firstName.Length >= 3 && lastName.Length >= 3 && phoneNumber.Length >= 4)
+        //                    {
+        //                        username = $"{firstName.Substring(0, 3)}{lastName.Substring(0, 3)}{phoneNumber.Substring(phoneNumber.Length - 4)}";
+        //                    }
+        //                    else
+        //                    {
+        //                        throw new Exception("First name, last name, or phone number too short for username creation.");
+        //                    }
+        //                }
+        //            }
+        //            else if (userType == 2) // Student
+        //            {
+        //                userDetails = await connection.QueryFirstOrDefaultAsync<dynamic>(studentSql, new { UserId = userId });
+        //                if (userDetails != null)
+        //                {
+        //                    // Construct username for student
+        //                    string firstName = userDetails.First_Name;
+        //                    string lastName = userDetails.Last_Name;
+        //                    string admissionNumber = userDetails.Admission_Number;
+
+        //                    // Ensure the first name and last name have at least 3 characters and the admission number has at least 4 characters
+        //                    if (firstName.Length >= 3 && lastName.Length >= 3 && admissionNumber.Length >= 4)
+        //                    {
+        //                        username = $"{firstName.Substring(0, 3)}{lastName.Substring(0, 3)}{admissionNumber.Substring(admissionNumber.Length - 4)}";
+        //                    }
+        //                    else
+        //                    {
+        //                        throw new Exception("First name, last name, or admission number too short for username creation.");
+        //                    }
+        //                }
+        //            }
+
+        //            if (username != null)
+        //            {
+        //                // Ensure the username is unique
+        //                username = await EnsureUniqueUsername(username);
+
+        //                // SQL query to insert login information
+        //                string insertLoginSql = @"
+        //            INSERT INTO [tblLoginInformationMaster] 
+        //            ([UserId], [UserType], [UserName], [Password], [InstituteId], [UserActivity])
+        //            VALUES (@UserId, @UserType, @UserName, @Password, @InstituteId, NULL)";
+
+        //                // Insert login information into the database
+        //                await connection.ExecuteAsync(insertLoginSql, new
+        //                {
+        //                    UserId = userId,
+        //                    UserType = userType,
+        //                    UserName = username,
+        //                    Password = commonPassword,
+        //                    InstituteId = instituteId
+        //                });
+
+        //                return true; // Operation successful
+        //            }
+
+        //            return false; // User details not found or unable to create login info
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            // Log the exception and return false to indicate failure
+        //            Console.WriteLine($"Error creating user login info: {ex.Message}");
+        //            return false;
+        //        }
+        //    }
         private async Task<string> EnsureUniqueUsername(string baseUsername)
         {
             var connection = new SqlConnection(_connectionString);
             connection.Open();
             // Define the SQL query to check if the username exists
             string checkUsernameSql = @"
-    SELECT COUNT(1)
-    FROM [tblLoginInformationMaster]
-    WHERE [UserName] = @UserName";
+        SELECT COUNT(1)
+        FROM [tblLoginInformationMaster]
+        WHERE [UserName] = @UserName";
 
             string uniqueUsername = baseUsername;
             int suffix = 1;

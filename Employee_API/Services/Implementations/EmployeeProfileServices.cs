@@ -97,9 +97,9 @@ namespace Employee_API.Services.Implementations
             return await _employeeProfileRepository.ClassSectionSubjectsMappings(InstituteId);
         }
 
-        public async Task<ServiceResponse<byte[]>> ExcelDownload(ExcelDownloadRequest request)
+        public async Task<ServiceResponse<byte[]>> ExcelDownload(ExcelDownloadRequest request, string format)
         {
-            return await _employeeProfileRepository.ExcelDownload(request);
+            return await _employeeProfileRepository.ExcelDownload(request, format);
         }
 
         public async Task<ServiceResponse<List<BloodGroup>>> GetBloodGroupList()
@@ -239,11 +239,11 @@ namespace Employee_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<bool>> StatusActiveInactive(int employeeId)
+        public async Task<ServiceResponse<bool>> StatusActiveInactive(EmployeeStatusRequest request)
         {
             try
             {
-                return await _employeeProfileRepository.StatusActiveInactive(employeeId);
+                return await _employeeProfileRepository.StatusActiveInactive(request);
             }
             catch (Exception ex)
             {

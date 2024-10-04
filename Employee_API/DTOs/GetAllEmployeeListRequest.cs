@@ -75,4 +75,9 @@
         public string Usertype { get; set; } = string.Empty;
         public string NewPassword { get; set; } = string.Empty;
     }
+    public class EmployeeStatusRequest
+    {
+        public int EmployeeId { set; get; }
+        public string InActiveReason { set; get; }
+    }
 }
