@@ -947,99 +947,153 @@ namespace Employee_API.Repository.Implementations
         {
             try
             {
-                // Start the base SQL query
-                string sql = @"SELECT DISTINCT ep.Employee_id, 
-            ep.First_Name, 
-            ep.Middle_Name, 
-            ep.Last_Name, 
-            ep.Gender_id, 
-            g.Gender_Type as GenderName, 
-            ep.Department_id, 
-            ep.Designation_id, 
-            ep.mobile_number, 
-            ep.Date_of_Joining, 
-            ep.Nationality_id, 
-            ep.Religion_id, 
-            ep.Date_of_Birth, 
-            ep.EmailID, 
-            ep.Employee_code_id, 
-            ep.marrital_status_id, 
-            ep.Blood_Group_id, 
-            ep.aadhar_no, 
-            ep.pan_no, 
-            ep.EPF_no, 
-            ep.ESIC_no, 
-            ep.Institute_id, 
-            ep.EmpPhoto, 
-            ep.uan_no, 
-            ep.Status, 
-            d.DepartmentName, 
-            des.DesignationName, 
-            n.Nationality_Type as NationalityName, 
-            r.Religion_Type as ReligionName, 
-            ms.StatusName as MaritalStatusName, 
-            bg.Blood_Group_Type as BloodGroupName 
-        FROM [dbo].[tbl_EmployeeProfileMaster] ep 
-        LEFT JOIN [dbo].[tbl_Department] d ON ep.Department_id = d.Department_id 
-        LEFT JOIN [dbo].[tbl_Designation] des ON ep.Designation_id = des.Designation_id 
-        LEFT JOIN [dbo].[tbl_Nationality] n ON ep.Nationality_id = n.Nationality_id 
-        LEFT JOIN [dbo].[tbl_Religion] r ON ep.Religion_id = r.Religion_id 
-        LEFT JOIN [dbo].[tbl_MaritalStatus] ms ON ep.marrital_status_id = ms.statusId 
-        LEFT JOIN [dbo].[tbl_BloodGroup] bg ON ep.Blood_Group_id = bg.Blood_Group_id 
-        LEFT JOIN tbl_Gender g on ep.Gender_id = g.Gender_id 
-        WHERE ep.Institute_id = @InstituteId";
+                // Fetch active columns
+                var activeColumns = await GetActiveColumns(request.ActiveColumns);
+                if (activeColumns == null || !activeColumns.Any())
+                {
+                    return new ServiceResponse<List<EmployeeProfileResponseDTO>>(false, "No active columns found", new List<EmployeeProfileResponseDTO>(), 204);
+                }
 
+                // Initialize a list to hold the final results
+                var finalResults = new List<EmployeeProfileResponseDTO>();
+
+                // Initialize parameters
                 var parameters = new DynamicParameters();
                 parameters.Add("InstituteId", request.InstituteId);
 
-                // Add conditional filters with proper checks for existing conditions
+                // Add filtering conditions
                 if (request.DepartmentId > 0)
                 {
-                    sql += " AND ep.Department_id = @DepartmentId";
                     parameters.Add("DepartmentId", request.DepartmentId);
                 }
 
                 if (request.DesignationId > 0)
                 {
-                    sql += " AND ep.Designation_id = @DesignationId";
                     parameters.Add("DesignationId", request.DesignationId);
                 }
 
                 if (!string.IsNullOrWhiteSpace(request.SearchText))
                 {
-                    sql += " AND (ep.First_Name LIKE @SearchText OR ep.Last_Name LIKE @SearchText OR ep.EmailID LIKE @SearchText)";
                     parameters.Add("SearchText", $"%{request.SearchText}%");
                 }
 
-                // Query execution
-                var employees = await _connection.QueryAsync<EmployeeProfileResponseDTO>(sql, parameters);
+                // Dictionary to hold the SQL builders for each table
+                var sqlBuilders = new Dictionary<int, StringBuilder>();
 
-                if (employees != null && employees.Any())
+                // Iterate through active columns to categorize them and build SQL
+                foreach (var column in activeColumns)
                 {
-                    // Apply pagination manually using C# logic
-                    var paginatedEmployees = employees
-                        .Skip((request.PageNumber - 1) * request.PageSize)
-                        .Take(request.PageSize)
-                        .Distinct() // Ensure distinct records
-                        .ToList();
-                    foreach (var data in paginatedEmployees)
+                    // Initialize a SQL builder for each category if not already done
+                    if (!sqlBuilders.ContainsKey(column.CategoryId))
                     {
-                        var doc = await GetEmployeeDocuments(data.Employee_id);
-                        var qua = await GetEmployeeQualificationById(data.Employee_id);
-                        var work = await GetEmployeeWorkExperienceById(data.Employee_id);
-                        var bank = await GetEmployeeBankDetailsById(data.Employee_id);
-                        var fam = await GetEmployeeFamilyDetailsById(data.Employee_id);
-                        var add = await GetEmployeeAddressDetailsById(data.Employee_id);
-                        var mapping = await GetEmployeeMappingById(data.Employee_id);
-                        data.EmployeeDocuments = doc.Data;
-                        data.EmployeeQualifications = qua.Data;
-                        data.EmployeeWorkExperiences = work.Data;
-                        data.EmployeeBankDetails = bank.Data;
-                        data.Family = fam.Data;
-                        data.EmployeeAddressDetails = add.Data;
-                        data.EmployeeStaffMappingResponse = mapping.Data;
+                        sqlBuilders[column.CategoryId] = new StringBuilder();
                     }
-                    return new ServiceResponse<List<EmployeeProfileResponseDTO>>(true, "Records found", paginatedEmployees, 200, paginatedEmployees.Count);
+
+                    switch (column.CategoryId)
+                    {
+                        case 1: // tbl_EmployeeProfileMaster
+                            sqlBuilders[column.CategoryId].Append($"ep.{column.ColumnDatabaseName}, ");
+                            break;
+
+                        case 2: // tbl_EmployeePresentAddress
+                            sqlBuilders[column.CategoryId].Append($"pa.{column.ColumnDatabaseName}, ");
+                            break;
+
+                        case 3: // tbl_EmployeeFamilyMaster
+                            sqlBuilders[column.CategoryId].Append($"ef.{column.ColumnDatabaseName}, ");
+                            break;
+
+                        case 4: // tbl_QualificationInfoMaster
+                            sqlBuilders[column.CategoryId].Append($"qi.{column.ColumnDatabaseName}, ");
+                            break;
+
+                        case 5: // tbl_WorkExperienceMaster
+                            sqlBuilders[column.CategoryId].Append($"we.{column.ColumnDatabaseName}, ");
+                            break;
+
+                        case 6: // tbl_BankDetailsMaster
+                            sqlBuilders[column.CategoryId].Append($"bd.{column.ColumnDatabaseName}, ");
+                            break;
+
+                        default:
+                            throw new Exception($"Unknown CategoryId {column.CategoryId}");
+                    }
+                }
+
+                // Fetch data from each table based on the constructed SQL
+                foreach (var kvp in sqlBuilders)
+                {
+                    var categoryId = kvp.Key;
+                    var columns = kvp.Value.ToString().TrimEnd(',', ' '); // Remove the trailing comma and space
+
+                    switch (categoryId)
+                    {
+                        case 1:
+                            // For Employee Profile Master
+                            var empSql = $"SELECT {columns} FROM [dbo].[tbl_EmployeeProfileMaster] ep WHERE ep.Institute_id = @InstituteId";
+                            if (request.DepartmentId > 0)
+                            {
+                                empSql += " AND ep.Department_id = @DepartmentId";
+                            }
+                            if (request.DesignationId > 0)
+                            {
+                                empSql += " AND ep.Designation_id = @DesignationId";
+                            }
+                            if (!string.IsNullOrWhiteSpace(request.SearchText))
+                            {
+                                empSql += " AND (ep.First_Name LIKE @SearchText OR ep.Last_Name LIKE @SearchText OR ep.EmailID LIKE @SearchText)";
+                            }
+
+                            var empProfiles = await _connection.QueryAsync<EmployeeProfileResponseDTO>(empSql, parameters);
+                            finalResults.AddRange(empProfiles);
+                            break;
+
+                        case 2:
+                            // For Employee Present Address
+                            var addressSql = $"SELECT {columns} FROM [dbo].[tbl_EmployeePresentAddress] pa WHERE pa.Employee_id IN (SELECT Employee_id FROM [dbo].[tbl_EmployeeProfileMaster] WHERE Institute_id = @InstituteId)";
+                            var addresses = await _connection.QueryAsync<EmployeeProfileResponseDTO>(addressSql, parameters);
+                            finalResults.AddRange(addresses);
+                            break;
+
+                        case 3:
+                            // For Employee Family Master
+                            var familySql = $"SELECT {columns} FROM [dbo].[tbl_EmployeeFamilyMaster] ef WHERE ef.Employee_id IN (SELECT Employee_id FROM [dbo].[tbl_EmployeeProfileMaster] WHERE Institute_id = @InstituteId)";
+                            var families = await _connection.QueryAsync<EmployeeProfileResponseDTO>(familySql, parameters);
+                            finalResults.AddRange(families);
+                            break;
+
+                        case 4:
+                            // For Qualification Info Master
+                            var qualificationSql = $"SELECT {columns} FROM [dbo].[tbl_QualificationInfoMaster] qi WHERE qi.Employee_id IN (SELECT Employee_id FROM [dbo].[tbl_EmployeeProfileMaster] WHERE Institute_id = @InstituteId)";
+                            var qualifications = await _connection.QueryAsync<EmployeeProfileResponseDTO>(qualificationSql, parameters);
+                            finalResults.AddRange(qualifications);
+                            break;
+
+                        case 5:
+                            // For Work Experience Master
+                            var workExperienceSql = $"SELECT {columns} FROM [dbo].[tbl_WorkExperienceMaster] we WHERE we.Employee_id IN (SELECT Employee_id FROM [dbo].[tbl_EmployeeProfileMaster] WHERE Institute_id = @InstituteId)";
+                            var workExperiences = await _connection.QueryAsync<EmployeeProfileResponseDTO>(workExperienceSql, parameters);
+                            finalResults.AddRange(workExperiences);
+                            break;
+
+                        case 6:
+                            // For Bank Details Master
+                            var bankDetailsSql = $"SELECT {columns} FROM [dbo].[tbl_BankDetailsMaster] bd WHERE bd.Employee_id IN (SELECT Employee_id FROM [dbo].[tbl_EmployeeProfileMaster] WHERE Institute_id = @InstituteId)";
+                            var bankDetails = await _connection.QueryAsync<EmployeeProfileResponseDTO>(bankDetailsSql, parameters);
+                            finalResults.AddRange(bankDetails);
+                            break;
+                    }
+                }
+
+                // Pagination
+                var paginatedResults = finalResults
+                    .Skip((request.PageNumber - 1) * request.PageSize)
+                    .Take(request.PageSize)
+                    .ToList();
+
+                if (paginatedResults.Any())
+                {
+                    return new ServiceResponse<List<EmployeeProfileResponseDTO>>(true, "Records found", paginatedResults, 200, paginatedResults.Count);
                 }
                 else
                 {
@@ -1051,6 +1105,114 @@ namespace Employee_API.Repository.Implementations
                 return new ServiceResponse<List<EmployeeProfileResponseDTO>>(false, ex.Message, new List<EmployeeProfileResponseDTO>(), 500);
             }
         }
+        //public async Task<ServiceResponse<List<EmployeeProfileResponseDTO>>> GetEmployeeProfileList(GetAllEmployeeListRequest request)
+        //{
+        //    try
+        //    {
+        //        // Start the base SQL query
+        //        string sql = @"SELECT DISTINCT ep.Employee_id, 
+        //    ep.First_Name, 
+        //    ep.Middle_Name, 
+        //    ep.Last_Name, 
+        //    ep.Gender_id, 
+        //    g.Gender_Type as GenderName, 
+        //    ep.Department_id, 
+        //    ep.Designation_id, 
+        //    ep.mobile_number, 
+        //    ep.Date_of_Joining, 
+        //    ep.Nationality_id, 
+        //    ep.Religion_id, 
+        //    ep.Date_of_Birth, 
+        //    ep.EmailID, 
+        //    ep.Employee_code_id, 
+        //    ep.marrital_status_id, 
+        //    ep.Blood_Group_id, 
+        //    ep.aadhar_no, 
+        //    ep.pan_no, 
+        //    ep.EPF_no, 
+        //    ep.ESIC_no, 
+        //    ep.Institute_id, 
+        //    ep.EmpPhoto, 
+        //    ep.uan_no, 
+        //    ep.Status, 
+        //    d.DepartmentName, 
+        //    des.DesignationName, 
+        //    n.Nationality_Type as NationalityName, 
+        //    r.Religion_Type as ReligionName, 
+        //    ms.StatusName as MaritalStatusName, 
+        //    bg.Blood_Group_Type as BloodGroupName 
+        //FROM [dbo].[tbl_EmployeeProfileMaster] ep 
+        //LEFT JOIN [dbo].[tbl_Department] d ON ep.Department_id = d.Department_id 
+        //LEFT JOIN [dbo].[tbl_Designation] des ON ep.Designation_id = des.Designation_id 
+        //LEFT JOIN [dbo].[tbl_Nationality] n ON ep.Nationality_id = n.Nationality_id 
+        //LEFT JOIN [dbo].[tbl_Religion] r ON ep.Religion_id = r.Religion_id 
+        //LEFT JOIN [dbo].[tbl_MaritalStatus] ms ON ep.marrital_status_id = ms.statusId 
+        //LEFT JOIN [dbo].[tbl_BloodGroup] bg ON ep.Blood_Group_id = bg.Blood_Group_id 
+        //LEFT JOIN tbl_Gender g on ep.Gender_id = g.Gender_id 
+        //WHERE ep.Institute_id = @InstituteId";
+
+        //        var parameters = new DynamicParameters();
+        //        parameters.Add("InstituteId", request.InstituteId);
+
+        //        // Add conditional filters with proper checks for existing conditions
+        //        if (request.DepartmentId > 0)
+        //        {
+        //            sql += " AND ep.Department_id = @DepartmentId";
+        //            parameters.Add("DepartmentId", request.DepartmentId);
+        //        }
+
+        //        if (request.DesignationId > 0)
+        //        {
+        //            sql += " AND ep.Designation_id = @DesignationId";
+        //            parameters.Add("DesignationId", request.DesignationId);
+        //        }
+
+        //        if (!string.IsNullOrWhiteSpace(request.SearchText))
+        //        {
+        //            sql += " AND (ep.First_Name LIKE @SearchText OR ep.Last_Name LIKE @SearchText OR ep.EmailID LIKE @SearchText)";
+        //            parameters.Add("SearchText", $"%{request.SearchText}%");
+        //        }
+
+        //        // Query execution
+        //        var employees = await _connection.QueryAsync<EmployeeProfileResponseDTO>(sql, parameters);
+
+        //        if (employees != null && employees.Any())
+        //        {
+        //            // Apply pagination manually using C# logic
+        //            var paginatedEmployees = employees
+        //                .Skip((request.PageNumber - 1) * request.PageSize)
+        //                .Take(request.PageSize)
+        //                .Distinct() // Ensure distinct records
+        //                .ToList();
+        //            foreach (var data in paginatedEmployees)
+        //            {
+        //                var doc = await GetEmployeeDocuments(data.Employee_id);
+        //                var qua = await GetEmployeeQualificationById(data.Employee_id);
+        //                var work = await GetEmployeeWorkExperienceById(data.Employee_id);
+        //                var bank = await GetEmployeeBankDetailsById(data.Employee_id);
+        //                var fam = await GetEmployeeFamilyDetailsById(data.Employee_id);
+        //                var add = await GetEmployeeAddressDetailsById(data.Employee_id);
+        //                var mapping = await GetEmployeeMappingById(data.Employee_id);
+        //                data.EmployeeDocuments = doc.Data;
+        //                data.EmployeeQualifications = qua.Data;
+        //                data.EmployeeWorkExperiences = work.Data;
+        //                data.EmployeeBankDetails = bank.Data;
+        //                data.Family = fam.Data;
+        //                data.EmployeeAddressDetails = add.Data;
+        //                data.EmployeeStaffMappingResponse = mapping.Data;
+        //            }
+        //            return new ServiceResponse<List<EmployeeProfileResponseDTO>>(true, "Records found", paginatedEmployees, 200, paginatedEmployees.Count);
+        //        }
+        //        else
+        //        {
+        //            return new ServiceResponse<List<EmployeeProfileResponseDTO>>(false, "No records found", new List<EmployeeProfileResponseDTO>(), 204);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return new ServiceResponse<List<EmployeeProfileResponseDTO>>(false, ex.Message, new List<EmployeeProfileResponseDTO>(), 500);
+        //    }
+        //}
         public async Task<ServiceResponse<List<EmployeeDocument>>> GetEmployeeDocuments(int employee_id)
         {
             try
@@ -2233,5 +2395,68 @@ WHERE
             string base64String = Convert.ToBase64String(fileBytes);
             return base64String;
         }
+        public async Task<List<ColumnDetails>> GetActiveColumns(List<ActiveColumns>? activeColumns)
+        {
+            if (activeColumns == null || !activeColumns.Any())
+            {
+                // Fetch all columns that are already active in the database, joining with category table to get TableName
+                var activeColumnDetailsFromDB = await _connection.QueryAsync<ColumnDetails>(@"
+            SELECT ecm.ECMId, ecm.CategoryId, ecm.ColumnDatabaseName, cat.CategoryName AS TableName
+            FROM tbl_EmployeeColumnMaster ecm
+            JOIN tbl_EmployeeColumnCategoryMaster cat ON ecm.CategoryId = cat.CategoryId
+            WHERE ecm.Status = 1"); // Assuming 1 means active
+
+                return activeColumnDetailsFromDB.ToList();
+            }
+
+            var activeColumnDetails = new List<ColumnDetails>();
+
+            foreach (var columnRequest in activeColumns)
+            {
+                var updateQuery = @"
+        UPDATE tbl_EmployeeColumnMaster
+        SET Status = @Status
+        WHERE ECMId = @ECMId
+        AND CategoryId = @CategoryId";
+
+                var updateParameters = new DynamicParameters();
+                updateParameters.Add("Status", columnRequest.Status); // Set status based on request
+                updateParameters.Add("ECMId", columnRequest.ECMId);
+                updateParameters.Add("CategoryId", columnRequest.CategoryId);
+
+                await _connection.ExecuteAsync(updateQuery, updateParameters);
+            }
+
+            foreach (var activeColumn in activeColumns)
+            {
+                if (activeColumn.Status) // Only process active columns
+                {
+                    var query = @"
+            SELECT ecm.ECMId, ecm.CategoryId, ecm.ColumnDatabaseName, cat.CategoryName AS TableName
+            FROM tbl_EmployeeColumnMaster ecm
+            JOIN tbl_EmployeeColumnCategoryMaster cat ON ecm.CategoryId = cat.CategoryId
+            WHERE ecm.ECMId = @ECMId AND ecm.CategoryId = @CategoryId";
+
+                    var parameters = new { ECMId = activeColumn.ECMId, CategoryId = activeColumn.CategoryId };
+
+                    var columnDetail = await _connection.QueryFirstOrDefaultAsync<ColumnDetails>(query, parameters);
+
+                    if (columnDetail != null)
+                    {
+                        activeColumnDetails.Add(columnDetail);
+                    }
+                }
+            }
+
+            return activeColumnDetails;
+        }
     }
+    public class ColumnDetails
+    {
+        public int ECMId { get; set; }
+        public int CategoryId { get; set; }
+        public string ColumnDatabaseName { get; set; } // Actual column name in the database
+        public string TableName { get; set; }          // The table the column belongs to
+    }
+
 }

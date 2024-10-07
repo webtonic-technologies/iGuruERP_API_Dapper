@@ -5,9 +5,16 @@
         public int InstituteId { get; set; }
         public int DepartmentId { get; set; }
         public int DesignationId { get; set; }
+        public List<ActiveColumns>? ActiveColumns { get; set; }
         public string SearchText { get; set; } = string.Empty;
         public int PageSize { get; set; }
         public int PageNumber { get; set; }
+    }
+    public class ActiveColumns
+    {
+        public int CategoryId { get; set; }
+        public int ECMId {  get; set; }
+        public bool Status {  get; set; }
     }
     public class EmployeeLoginRequest
     {
