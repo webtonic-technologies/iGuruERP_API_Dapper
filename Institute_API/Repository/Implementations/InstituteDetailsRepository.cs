@@ -375,6 +375,8 @@ namespace Institute_API.Repository.Implementations
             var academicInfos = await _connection.QueryAsync<AcademicInfo>(query, new { Institute_id = instituteId });
             foreach (var data in academicInfos)
             {
+                data.AcademicYearStartMonth.ToString();
+                data.AcademicYearEndMonth.ToString();
                 data.StatusName = data.Status == true ? "Active" : "InActive";
             }
             return academicInfos.ToList();
@@ -668,14 +670,40 @@ namespace Institute_API.Repository.Implementations
                     // Set the Institute ID
                     data.Institute_id = InstitutionId;
 
-                    // Ensure that the day is set to the 1st for both AcademicYearStartMonth and AcademicYearEndMonth
-                    data.AcademicYearStartMonth = new DateTime(data.AcademicYearStartMonth.Year, data.AcademicYearStartMonth.Month, 1);
-                    data.AcademicYearEndMonth = new DateTime(data.AcademicYearEndMonth.Year, data.AcademicYearEndMonth.Month, 1);
+                        // Set the Institute ID
+                        data.Institute_id = InstitutionId;
 
-                    // Generate AcaInfoYearCode
-                    string startMonthName = data.AcademicYearStartMonth.ToString("MMM").ToUpper();
-                    int startYear = data.AcademicYearStartMonth.Year;
-                    data.AcaInfoYearCode = $"AY{startYear}";
+                        // Parse the string AcademicYearStartMonth and AcademicYearEndMonth into DateTime objects
+                        if (DateTime.TryParse(data.AcademicYearStartMonth, out DateTime startMonth))
+                        {
+                            // Set the day to the 1st for AcademicYearStartMonth
+                            startMonth = new DateTime(startMonth.Year, startMonth.Month, 1);
+                            // Assign the modified date back as a string
+                            data.AcademicYearStartMonth = startMonth.ToString("yyyy-MM-dd"); // Format as needed
+                        }
+                        else
+                        {
+                            throw new Exception("Invalid AcademicYearStartMonth format.");
+                        }
+
+                        if (DateTime.TryParse(data.AcademicYearEndMonth, out DateTime endMonth))
+                        {
+                            // Set the day to the 1st for AcademicYearEndMonth
+                            endMonth = new DateTime(endMonth.Year, endMonth.Month, 1);
+                            // Assign the modified date back as a string
+                            data.AcademicYearEndMonth = endMonth.ToString("yyyy-MM-dd"); // Format as needed
+                        }
+                        else
+                        {
+                            throw new Exception("Invalid AcademicYearEndMonth format.");
+                        }
+
+                        // Generate AcaInfoYearCode based on the start month and year
+                        string startMonthName = startMonth.ToString("MMM").ToUpper();  // Get the first 3 letters of the month
+                        int startYear = startMonth.Year;
+                        data.AcaInfoYearCode = $"AY{startYear}";  // e.g., AY2024
+                    
+
 
                     // Check if the AcaInfoYearCode is unique (skip if updating the same record)
                     string checkCodeQuery = @"SELECT COUNT(*) FROM [tbl_AcademicInfo] 
@@ -706,8 +734,8 @@ namespace Institute_API.Repository.Implementations
                         // Insert new record with Status = 1 (latest)
                         string insertQuery = @"
                 INSERT INTO [tbl_AcademicInfo] 
-                (Institute_id, [AcademicYearStartMonth], [AcademicYearEndMonth], [IsSemester], [SemesterStartDate], [SemesterEndDate], [Status], [AcaInfoYearCode])
-                VALUES (@Institute_id, @AcademicYearStartMonth, @AcademicYearEndMonth, @IsSemester, @SemesterStartDate, @SemesterEndDate, 1, @AcaInfoYearCode)";
+                (Institute_id, [AcademicYearStartMonth], [AcademicYearEndMonth], [Status], [AcaInfoYearCode])
+                VALUES (@Institute_id, @AcademicYearStartMonth, @AcademicYearEndMonth, 1, @AcaInfoYearCode)";
 
                         affectedRecords += await _connection.ExecuteAsync(insertQuery, data);
                     }
@@ -717,10 +745,7 @@ namespace Institute_API.Repository.Implementations
                         string updateQuery = @"
                 UPDATE [tbl_AcademicInfo]
                 SET [AcademicYearStartMonth] = @AcademicYearStartMonth, 
-                    [AcademicYearEndMonth] = @AcademicYearEndMonth, 
-                    [IsSemester] = @IsSemester, 
-                    [SemesterStartDate] = @SemesterStartDate, 
-                    [SemesterEndDate] = @SemesterEndDate, 
+                    [AcademicYearEndMonth] = @AcademicYearEndMonth,
                     [Status] = @Status
                 WHERE [Academic_Info_id] = @Academic_Info_id";
 
