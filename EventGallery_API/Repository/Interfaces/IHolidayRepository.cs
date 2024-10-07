@@ -1,5 +1,7 @@
 ﻿using EventGallery_API.DTOs.Requests;
 using EventGallery_API.DTOs.Responses;
+using EventGallery_API.DTOs.ServiceResponse; // Ensure this is included
+
 
 namespace EventGallery_API.Repository.Interfaces
 {
@@ -10,5 +12,7 @@ namespace EventGallery_API.Repository.Interfaces
         Task<HolidayResponse> GetHoliday(int holidayID);
         Task<bool> DeleteHoliday(int holidayID);
         Task<List<HolidayResponse>> GetHolidaysByDateRange(DateRangeRequest request);
+        Task<ServiceResponse<byte[]>> ExportAllHolidays();
+
     }
 }

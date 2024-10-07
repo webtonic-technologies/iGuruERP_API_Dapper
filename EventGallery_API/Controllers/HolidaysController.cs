@@ -128,7 +128,19 @@ namespace EventGallery_API.Controllers
             });
         }
 
-         
+
+        [HttpPost("ExportAllHolidays")]
+        public async Task<IActionResult> ExportAllHolidays()
+        {
+            var response = await _holidayService.ExportAllHolidays();
+            if (response.Success)
+            {
+                string contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                string fileName = "AllHolidays.xlsx";
+                return File(response.Data, contentType, fileName);
+            }
+            return BadRequest(response.Message);
+        }
     }
 }
 

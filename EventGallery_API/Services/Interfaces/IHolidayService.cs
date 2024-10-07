@@ -12,5 +12,7 @@ namespace EventGallery_API.Services.Interfaces
         Task<HolidayResponse> GetHoliday(int holidayID);
         Task<ServiceResponse<bool>> DeleteHoliday(int holidayID);
         Task<List<HolidayResponse>> GetHolidaysByDateRange(DateRangeRequest request);
+        Task<ServiceResponse<byte[]>> ExportAllHolidays();
+
     }
 }

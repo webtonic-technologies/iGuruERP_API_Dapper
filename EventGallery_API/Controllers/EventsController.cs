@@ -59,12 +59,12 @@ namespace EventGallery_API.Controllers
         [HttpPost("ExportAllEvents")]
         public async Task<IActionResult> ExportAllEvents()
         {
-            var response = await _eventService.ExportAllEvents();
+            var response = await _eventService.ExportAllEvents(); // Use the service to handle the export logic
             if (response.Success)
             {
-                return Ok(response);
+                return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "AllEvents.xlsx");
             }
-            return BadRequest(response);
+            return BadRequest(response.Message);
         }
     }
 }

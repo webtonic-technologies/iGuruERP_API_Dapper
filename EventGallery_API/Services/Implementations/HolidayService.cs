@@ -60,5 +60,10 @@ namespace EventGallery_API.Services.Implementations
         {
             return await _holidayRepository.GetHolidaysByDateRange(request);
         }
+
+        public async Task<ServiceResponse<byte[]>> ExportAllHolidays()
+        {
+            return await _holidayRepository.ExportAllHolidays();
+        }
     }
 }

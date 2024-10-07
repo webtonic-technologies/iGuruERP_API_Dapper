@@ -2,6 +2,7 @@ using EventGallery_API.Repository.Implementations;
 using EventGallery_API.Repository.Interfaces;
 using EventGallery_API.Services.Implementations;
 using EventGallery_API.Services.Interfaces;
+using OfficeOpenXml;
 using System.Data;
 using System.Data.SqlClient;
 
@@ -28,6 +29,13 @@ builder.Services.AddScoped<IGalleryService, GalleryService>();
 
 builder.Services.AddScoped<IEventApprovalService, EventApprovalService>();
 builder.Services.AddScoped<IEventApprovalRepository, EventApprovalRepository>();
+
+builder.Services.AddScoped<IHolidayApprovalRepository, HolidayApprovalRepository>();
+builder.Services.AddScoped<IHolidayApprovalService, HolidayApprovalService>();
+
+// Set the EPPlus license context
+ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
 
 var app = builder.Build();
 

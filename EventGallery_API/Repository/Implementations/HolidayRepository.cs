@@ -3,6 +3,9 @@ using System.Data;
 using EventGallery_API.DTOs.Requests;
 using EventGallery_API.DTOs.Responses;
 using EventGallery_API.Repository.Interfaces;
+using EventGallery_API.DTOs.ServiceResponse;
+using OfficeOpenXml;
+
 
 namespace EventGallery_API.Repository.Implementations
 {
@@ -174,6 +177,58 @@ namespace EventGallery_API.Repository.Implementations
         {
             var query = @"SELECT * FROM tblHolidays WHERE InstituteID = @InstituteID AND HolidayDate BETWEEN @StartDate AND @EndDate";
             return (await _dbConnection.QueryAsync<HolidayResponse>(query, request)).ToList();
+        }
+
+        public async Task<ServiceResponse<byte[]>> ExportAllHolidays()
+        {
+            var query = @"
+                SELECT 
+                    h.HolidayID,
+                    h.HolidayName,
+                    CONCAT(CONVERT(VARCHAR, h.FromDate, 103), ' to ', CONVERT(VARCHAR, h.ToDate, 103)) AS Date,
+                    h.Description,
+                    c.class_name,
+                    s.section_name
+                FROM tblHolidays h
+                LEFT JOIN tblHolidayClassSectionMapping hcsm ON hcsm.HolidayID = h.HolidayID
+                LEFT JOIN tbl_Class c ON c.class_id = hcsm.ClassID
+                LEFT JOIN tbl_Section s ON s.section_id = hcsm.SectionID";
+
+            var holidays = await _dbConnection.QueryAsync(query);
+
+            // Generate Excel
+            using var stream = new MemoryStream();
+            using (var package = new ExcelPackage(stream))
+            {
+                var worksheet = package.Workbook.Worksheets.Add("Holidays");
+
+                // Add header row
+                worksheet.Cells[1, 1].Value = "Sr. No";
+                worksheet.Cells[1, 2].Value = "Holiday Name";
+                worksheet.Cells[1, 3].Value = "Date";
+                worksheet.Cells[1, 4].Value = "Class & Section";
+                worksheet.Cells[1, 5].Value = "Description";
+
+                int row = 2;
+                int srNo = 1;
+
+                foreach (var holiday in holidays)
+                {
+                    worksheet.Cells[row, 1].Value = srNo++;
+                    worksheet.Cells[row, 2].Value = holiday.HolidayName;
+                    worksheet.Cells[row, 3].Value = holiday.Date;
+                    worksheet.Cells[row, 4].Value = $"{holiday.class_name} - {holiday.section_name}";
+                    worksheet.Cells[row, 5].Value = holiday.Description;
+                    row++;
+                }
+
+                // Auto-fit columns
+                worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+                package.Save();
+            }
+
+            stream.Position = 0;
+            return new ServiceResponse<byte[]>(true, "Exported all holidays successfully.", stream.ToArray(), 200);
         }
     }
 }

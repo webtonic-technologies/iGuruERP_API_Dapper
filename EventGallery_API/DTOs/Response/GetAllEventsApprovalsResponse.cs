@@ -9,7 +9,7 @@
         public string Document { get; set; } = ""; // Default empty as per response
         public string Location { get; set; } // Location column from tblEvent
         public string EventNotification { get; set; } // 'ScheduleDate (DD-MM-YYYY) at ScheduleTime AM/PM'
-        public string CreatedBy { get; set; } // 'First_Name + Last_Name' from tbl_EmployeeProfileMaster
+         public string ReviewedBy { get; set; }
         public int StatusID { get; set; } // StatusID column from tblEvent
     }
 }

@@ -4,17 +4,24 @@ using EventGallery_API.DTOs.Responses;
 using EventGallery_API.DTOs.ServiceResponse; // Ensure this is included
 using EventGallery_API.Repository.Interfaces;
 using EventGallery_API.Services.Interfaces;
+using OfficeOpenXml;
+using System.Data;
+using System.IO;
+using Dapper;
 
 namespace EventGallery_API.Services.Implementations
 {
     public class EventService : IEventService
     {
         private readonly IEventRepository _eventRepository;
+        private readonly IDbConnection _dbConnection;
 
         public EventService(IEventRepository eventRepository)
         {
             _eventRepository = eventRepository;
         }
+
+         
 
         public async Task<ServiceResponse<int>> AddUpdateEvent(EventRequest request)
         {
@@ -45,9 +52,12 @@ namespace EventGallery_API.Services.Implementations
             return await _eventRepository.DeleteEvent(eventId);
         }
 
-        public async Task<ServiceResponse<bool>> ExportAllEvents() // Ensure the return type matches
+        public async Task<ServiceResponse<byte[]>> ExportAllEvents()
         {
             return await _eventRepository.ExportAllEvents();
         }
+
+
+
     }
 }

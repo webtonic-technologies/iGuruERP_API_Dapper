@@ -6,6 +6,7 @@ using EventGallery_API.DTOs.ServiceResponse; // Ensure this is included
 using EventGallery_API.Repository.Interfaces;
 using EventGallery_API.DTOs.Responses;
 using System.Data.Common;
+using OfficeOpenXml;
 
 namespace EventGallery_API.Repository.Implementations
 {
@@ -24,14 +25,23 @@ namespace EventGallery_API.Repository.Implementations
             var fromDate = DateTime.ParseExact(request.FromDate, "dd-MM-yyyy", null);
             var toDate = DateTime.ParseExact(request.ToDate, "dd-MM-yyyy", null);
             var scheduleDate = DateTime.ParseExact(request.ScheduleDate, "dd-MM-yyyy", null);
-            var scheduleTime = DateTime.ParseExact(request.ScheduleTime, "hh:mm tt", null).TimeOfDay;
+            var scheduleTime = DateTime.ParseExact(request.ScheduleTime, "hh:mm tt", null).TimeOfDay; // Parsed as TimeSpan
 
             var query = request.EventID == 0 ?
                 @"INSERT INTO tblEvent (EventName, FromDate, ToDate, Description, Location, ScheduleDate, ScheduleTime, AcademicYearCode, CreatedBy, InstituteID, IsActive)
-          VALUES (@EventName, @FromDate, @ToDate, @Description, @Location, @ScheduleDate, @ScheduleTime, @AcademicYearCode, @CreatedBy, @InstituteID, 1);
-          SELECT CAST(SCOPE_IDENTITY() as int);"
+      VALUES (@EventName, @FromDate, @ToDate, @Description, @Location, @ScheduleDate, @ScheduleTime, @AcademicYearCode, @CreatedBy, @InstituteID, 1);
+      SELECT CAST(SCOPE_IDENTITY() as int);"
                 :
-                @"UPDATE tblEvent SET EventName = @EventName, FromDate = @FromDate, ToDate = @ToDate, Description = @Description, Location = @Location, ScheduleDate = @ScheduleDate, ScheduleTime = @ScheduleTime, AcademicYearCode = @AcademicYearCode WHERE EventID = @EventID;
+                @"UPDATE tblEvent 
+          SET EventName = @EventName, 
+              FromDate = @FromDate, 
+              ToDate = @ToDate, 
+              Description = @Description, 
+              Location = @Location, 
+              ScheduleDate = @ScheduleDate, 
+              ScheduleTime = @ScheduleTime, 
+              AcademicYearCode = @AcademicYearCode 
+          WHERE EventID = @EventID;
           SELECT @EventID;";
 
             var parameters = new
@@ -42,7 +52,7 @@ namespace EventGallery_API.Repository.Implementations
                 request.Description,
                 request.Location,
                 ScheduleDate = scheduleDate,
-                ScheduleTime = scheduleTime,
+                ScheduleTime = scheduleTime, // Stored as TimeSpan in the database
                 request.AcademicYearCode,
                 request.CreatedBy,
                 request.InstituteID,
@@ -61,7 +71,6 @@ namespace EventGallery_API.Repository.Implementations
                                            INNER JOIN tbl_Section s ON c.class_id = s.class_id
                                            WHERE c.IsDeleted = 0 AND s.IsDeleted = 0 AND c.institute_id = @InstituteID";
                 await _connection.ExecuteAsync(insertAllClassSectionQuery, new { EventID = eventId, request.InstituteID });
-
             }
             else if (request.Students.ClassSection != null)
             {
@@ -106,6 +115,7 @@ namespace EventGallery_API.Repository.Implementations
 
             return new ServiceResponse<int>(true, "Event added/updated successfully.", eventId, 200);
         }
+
 
         //public async Task<ServiceResponse<List<GetAllEventsResponse>>> GetAllEvents(GetAllEventsRequest request)
         //{
@@ -159,7 +169,7 @@ namespace EventGallery_API.Repository.Implementations
         e.Location,
         CASE 
             WHEN e.ScheduleTime IS NOT NULL 
-            THEN CONCAT(CONVERT(VARCHAR, e.ScheduleDate, 105), ' at ', FORMAT(e.ScheduleTime, 'hh:mm tt')) 
+            THEN CONCAT(CONVERT(VARCHAR, e.ScheduleDate, 105), ' at ', RIGHT(CONVERT(VARCHAR(20), e.ScheduleTime, 100), 7)) 
             ELSE CONCAT(CONVERT(VARCHAR, e.ScheduleDate, 105), ' at ', 'N/A')
         END AS EventNotification,
         CASE 
@@ -263,7 +273,7 @@ namespace EventGallery_API.Repository.Implementations
                             e.Location,
                             CASE 
                                 WHEN e.ScheduleTime IS NOT NULL 
-                                THEN CONCAT(CONVERT(VARCHAR, e.ScheduleDate, 105), ' at ', FORMAT(e.ScheduleTime, 'hh:mm tt')) 
+                                THEN CONCAT(CONVERT(VARCHAR, e.ScheduleDate, 105), ' at ', RIGHT(CONVERT(VARCHAR(20), e.ScheduleTime, 100), 7)) 
                                 ELSE CONCAT(CONVERT(VARCHAR, e.ScheduleDate, 105), ' at ', 'N/A')
                             END AS EventNotification,
                             CASE 
@@ -294,10 +304,65 @@ namespace EventGallery_API.Repository.Implementations
             return new ServiceResponse<bool>(true, "Event deleted successfully.", true, 200);
         }
 
-        public async Task<ServiceResponse<bool>> ExportAllEvents() // Ensure return type matches the interface
+        public async Task<ServiceResponse<byte[]>> ExportAllEvents()
         {
-            // Export logic would go here
-            return new ServiceResponse<bool>(true, "Exported all events.", true, 200);
+            // SQL query to fetch the event data
+            var query = @"
+                SELECT 
+                    e.EventName,
+                    CONCAT(CONVERT(VARCHAR, e.FromDate, 103), ' to ', CONVERT(VARCHAR, e.ToDate, 103)) AS Date,
+                    e.Description,
+                    e.Location,
+                    CASE 
+                        WHEN e.ScheduleTime IS NOT NULL 
+                        THEN CONCAT(CONVERT(VARCHAR, e.ScheduleDate, 105), ' at ', RIGHT(CONVERT(VARCHAR(20), e.ScheduleTime, 100), 7)) 
+                        ELSE CONCAT(CONVERT(VARCHAR, e.ScheduleDate, 105), ' at ', 'N/A')
+                    END AS EventNotification,
+                    CONCAT(emp.First_Name, ' ', emp.Last_Name) AS CreatedBy
+                FROM tblEvent e
+                LEFT JOIN tbl_EmployeeProfileMaster emp ON emp.Employee_id = e.CreatedBy";
+
+            // Fetch the data
+            var events = await _connection.QueryAsync<EventExportResponse>(query);
+
+            // Generate Excel file
+            using var stream = new MemoryStream();
+            using (var package = new ExcelPackage(stream))
+            {
+                var worksheet = package.Workbook.Worksheets.Add("Events");
+
+                // Add headers
+                worksheet.Cells[1, 1].Value = "Sr. No";
+                worksheet.Cells[1, 2].Value = "Event Name";
+                worksheet.Cells[1, 3].Value = "Date";
+                worksheet.Cells[1, 4].Value = "Description";
+                worksheet.Cells[1, 5].Value = "Location";
+                worksheet.Cells[1, 6].Value = "Event Notification";
+                worksheet.Cells[1, 7].Value = "CreatedBy";
+
+                // Add rows
+                int row = 2;
+                int srNo = 1;
+                foreach (var ev in events)
+                {
+                    worksheet.Cells[row, 1].Value = srNo++;
+                    worksheet.Cells[row, 2].Value = ev.EventName;
+                    worksheet.Cells[row, 3].Value = ev.Date;
+                    worksheet.Cells[row, 4].Value = ev.Description;
+                    worksheet.Cells[row, 5].Value = ev.Location;
+                    worksheet.Cells[row, 6].Value = ev.EventNotification;
+                    worksheet.Cells[row, 7].Value = ev.CreatedBy;
+                    row++;
+                }
+
+                // Auto-fit columns for all cells
+                worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+                package.Save();
+            }
+
+            stream.Position = 0;
+            return new ServiceResponse<byte[]>(true, "Exported all events successfully.", stream.ToArray(), 200);
         }
+
     }
 }

@@ -19,14 +19,18 @@ namespace EventGallery_API.Services.Implementations
 
         public async Task<ServiceResponse<List<GetAllEventsApprovalsResponse>>> GetAllEventsApprovals(GetAllEventsApprovalsRequest request)
         {
-            var events = await _eventApprovalRepository.GetAllEventsApprovals(request);
+            // Fetch the service response from repository
+            var eventsResponse = await _eventApprovalRepository.GetAllEventsApprovals(request);
+
+            // Check count on the Data property of the response
             return new ServiceResponse<List<GetAllEventsApprovalsResponse>>(
                 true,
-                events.Count > 0 ? "Events fetched successfully." : "No events found.",
-                events,
+                eventsResponse.Data != null && eventsResponse.Data.Count > 0 ? "Events fetched successfully." : "No events found.",
+                eventsResponse.Data,
                 200
             );
         }
+
 
         public async Task<ServiceResponse<bool>> UpdateEventApprovalStatus(UpdateEventApprovalStatusRequest request)
         {
