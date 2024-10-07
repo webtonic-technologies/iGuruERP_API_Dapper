@@ -40,13 +40,13 @@ namespace Institute_API.Repository.Implementations
                         int schContact = request.SchoolContacts != null ? await AddUpdateSchoolContact(request.SchoolContacts, institutionId) : 0;
                         int smMapping = request.InstituteSMMappings != null ? await AddUpdateSMMapping(request.InstituteSMMappings, institutionId) : 0;
                         int desc = request.InstituteDescription != null ? await AddUpdateInstituteDescription(request.InstituteDescription, institutionId) : 0;
-                        int academic = request.AcademicInfos != null ? await AddUpdateAcademicInfo(request.AcademicInfos, institutionId) : 0;
+                        string academic = request.AcademicInfos != null ? await AddUpdateAcademicInfo(request.AcademicInfos, institutionId) : string.Empty;
                         int semester = request.SemesterInfo != null ? await AddUpdateSemesterInfo(request.SemesterInfo, institutionId) : 0;
                         int logosInserted = await InsertInstituteLogos(request.InstituteLogos ??= ([]), institutionId);
                         int stampsInserted = await InsertInstituteDigitalStamps(request.InstituteDigitalStamps ??= ([]), institutionId);
                         int signsInserted = await InsertInstituteDigitalSigns(request.InstituteDigitalSigns ??= ([]), institutionId);
                         int prinSignsInserted = await InsertInstitutePrinSigns(request.InstitutePrinSigns ??= ([]), institutionId);
-                        if (address > 0 && schContact > 0 && smMapping > 0 && desc > 0 && academic > 0 && semester > 0)
+                        if (address > 0 && schContact > 0 && smMapping > 0 && desc > 0 && semester > 0)
                         {
                             return new ServiceResponse<int>(true, "Operation successsful", institutionId, 200);
                         }
@@ -87,7 +87,7 @@ namespace Institute_API.Repository.Implementations
                         int schContact = request.SchoolContacts != null ? await AddUpdateSchoolContact(request.SchoolContacts, request.Institute_id) : 0;
                         int smMapping = request.InstituteSMMappings != null ? await AddUpdateSMMapping(request.InstituteSMMappings, request.Institute_id) : 0;
                         int desc = request.InstituteDescription != null ? await AddUpdateInstituteDescription(request.InstituteDescription, request.Institute_id) : 0;
-                        int academic = request.AcademicInfos != null ? await AddUpdateAcademicInfo(request.AcademicInfos, request.Institute_id) : 0;
+                        string academic = request.AcademicInfos != null ? await AddUpdateAcademicInfo(request.AcademicInfos, request.Institute_id) : string.Empty;
                         int semester = request.SemesterInfo != null ? await AddUpdateSemesterInfo(request.SemesterInfo, request.Institute_id) : 0;
                         if (address > 0 && schContact > 0 && smMapping > 0 && desc > 0)
                         {
@@ -656,9 +656,11 @@ namespace Institute_API.Repository.Implementations
             }
             return rowsAffected;
         }
-        private async Task<int> AddUpdateAcademicInfo(List<AcademicInfo> request, int InstitutionId)
+        private async Task<string> AddUpdateAcademicInfo(List<AcademicInfo> request, int InstitutionId)
         {
-            int addedRecords = 0;
+            int affectedRecords = 0;
+            string responseMessage = "Success";
+
             if (request != null)
             {
                 foreach (var data in request)
@@ -670,46 +672,64 @@ namespace Institute_API.Repository.Implementations
                     data.AcademicYearStartMonth = new DateTime(data.AcademicYearStartMonth.Year, data.AcademicYearStartMonth.Month, 1);
                     data.AcademicYearEndMonth = new DateTime(data.AcademicYearEndMonth.Year, data.AcademicYearEndMonth.Month, 1);
 
-                    // Generate AcaInfoYearCode (since it's not part of the request body)
-                    string startMonthName = data.AcademicYearStartMonth.ToString("MMM").ToUpper();  // Get the first 3 letters of the month
+                    // Generate AcaInfoYearCode
+                    string startMonthName = data.AcademicYearStartMonth.ToString("MMM").ToUpper();
                     int startYear = data.AcademicYearStartMonth.Year;
-                    data.AcaInfoYearCode = $"{data.Institute_id}{startMonthName}{startYear}";  // e.g., 3JUL2024
+                    data.AcaInfoYearCode = $"AY{startYear}";
+
+                    // Check if the AcaInfoYearCode is unique (skip if updating the same record)
+                    string checkCodeQuery = @"SELECT COUNT(*) FROM [tbl_AcademicInfo] 
+                                      WHERE Institute_id = @InstitutionId 
+                                      AND AcaInfoYearCode = @AcaInfoYearCode
+                                      AND Academic_Info_id != @Academic_Info_id";
+
+                    int codeExists = await _connection.ExecuteScalarAsync<int>(checkCodeQuery,
+                                          new { InstitutionId = InstitutionId, AcaInfoYearCode = data.AcaInfoYearCode, Academic_Info_id = data.Academic_Info_id });
+
+                    if (codeExists > 0)
+                    {
+                        // AcaInfoYearCode is not unique, return error message
+                        return $"AcaInfoYearCode '{data.AcaInfoYearCode}' already exists for another record.";
+                    }
+
+                    // Set status of all previous records to 0 for the given institution
+                    string updateOldRecordsQuery = @"
+            UPDATE [tbl_AcademicInfo]
+            SET Status = 0
+            WHERE Institute_id = @InstitutionId";
+
+                    await _connection.ExecuteAsync(updateOldRecordsQuery, new { InstitutionId });
+
+                    // Now insert or update the current record
+                    if (data.Academic_Info_id == 0)
+                    {
+                        // Insert new record with Status = 1 (latest)
+                        string insertQuery = @"
+                INSERT INTO [tbl_AcademicInfo] 
+                (Institute_id, [AcademicYearStartMonth], [AcademicYearEndMonth], [IsSemester], [SemesterStartDate], [SemesterEndDate], [Status], [AcaInfoYearCode])
+                VALUES (@Institute_id, @AcademicYearStartMonth, @AcademicYearEndMonth, @IsSemester, @SemesterStartDate, @SemesterEndDate, 1, @AcaInfoYearCode)";
+
+                        affectedRecords += await _connection.ExecuteAsync(insertQuery, data);
+                    }
+                    else
+                    {
+                        // Update existing record and set Status = 1 (latest)
+                        string updateQuery = @"
+                UPDATE [tbl_AcademicInfo]
+                SET [AcademicYearStartMonth] = @AcademicYearStartMonth, 
+                    [AcademicYearEndMonth] = @AcademicYearEndMonth, 
+                    [IsSemester] = @IsSemester, 
+                    [SemesterStartDate] = @SemesterStartDate, 
+                    [SemesterEndDate] = @SemesterEndDate, 
+                    [Status] = @Status
+                WHERE [Academic_Info_id] = @Academic_Info_id";
+
+                        affectedRecords += await _connection.ExecuteAsync(updateQuery, data);
+                    }
                 }
             }
 
-            // Check if records exist for the institution
-            string query = "SELECT COUNT(*) FROM [tbl_AcademicInfo] WHERE Institute_id = @InstituteId";
-            int count = await _connection.ExecuteScalarAsync<int>(query, new { InstituteId = InstitutionId });
-
-            if (count > 0)
-            {
-                // Delete existing records for the institution
-                string deleteQuery = "DELETE FROM [tbl_AcademicInfo] WHERE Institute_id = @InstituteId";
-                int rowsAffected = await _connection.ExecuteAsync(deleteQuery, new { InstituteId = InstitutionId });
-
-                if (rowsAffected > 0)
-                {
-                    // Insert new academic information after deletion
-                    string insertQuery = @"
-            INSERT INTO [tbl_AcademicInfo] 
-            (Institute_id, [AcademicYearStartMonth], [AcademicYearEndMonth], [AcaInfoYearCode], Status)
-            VALUES (@Institute_id, @AcademicYearStartMonth, @AcademicYearEndMonth, @AcaInfoYearCode, @Status)";
-
-                    addedRecords = await _connection.ExecuteAsync(insertQuery, request);
-                }
-            }
-            else
-            {
-                // Insert directly if no records exist
-                string insertQuery = @"
-        INSERT INTO [tbl_AcademicInfo] 
-        (Institute_id, [AcademicYearStartMonth], [AcademicYearEndMonth], [AcaInfoYearCode], Status)
-        VALUES (@Institute_id, @AcademicYearStartMonth, @AcademicYearEndMonth, @AcaInfoYearCode, @Status)";
-
-                addedRecords = await _connection.ExecuteAsync(insertQuery, request);
-            }
-
-            return addedRecords;
+            return responseMessage;
         }
         //private async Task<int> AddUpdateAcademicInfo(List<AcademicInfo> request, int InstitutionId)
         //{
@@ -718,32 +738,52 @@ namespace Institute_API.Repository.Implementations
         //    {
         //        foreach (var data in request)
         //        {
+        //            // Set the Institute ID
         //            data.Institute_id = InstitutionId;
+
+        //            // Ensure that the day is set to the 1st for both AcademicYearStartMonth and AcademicYearEndMonth
+        //            data.AcademicYearStartMonth = new DateTime(data.AcademicYearStartMonth.Year, data.AcademicYearStartMonth.Month, 1);
+        //            data.AcademicYearEndMonth = new DateTime(data.AcademicYearEndMonth.Year, data.AcademicYearEndMonth.Month, 1);
+
+        //            // Generate AcaInfoYearCode (since it's not part of the request body)
+        //            string startMonthName = data.AcademicYearStartMonth.ToString("MMM").ToUpper();  // Get the first 3 letters of the month
+        //            int startYear = data.AcademicYearStartMonth.Year;
+        //            data.AcaInfoYearCode = $"AY{startYear}";  // e.g., 3JUL2024
         //        }
         //    }
+
+        //    // Check if records exist for the institution
         //    string query = "SELECT COUNT(*) FROM [tbl_AcademicInfo] WHERE Institute_id = @InstituteId";
         //    int count = await _connection.ExecuteScalarAsync<int>(query, new { InstituteId = InstitutionId });
+
         //    if (count > 0)
         //    {
+        //        // Delete existing records for the institution
         //        string deleteQuery = "DELETE FROM [tbl_AcademicInfo] WHERE Institute_id = @InstituteId";
         //        int rowsAffected = await _connection.ExecuteAsync(deleteQuery, new { InstituteId = InstitutionId });
+
         //        if (rowsAffected > 0)
         //        {
+        //            // Insert new academic information after deletion
         //            string insertQuery = @"
-        //        INSERT INTO [tbl_AcademicInfo] (Institute_id, [AcademicYearStartMonth], [AcademicYearEndMonth], Status)
-        //        VALUES (@Institute_id, @AcademicYearStartMonth, @AcademicYearEndMonth, @Status)";
-        //            // Execute the query with multiple parameterized sets of values
+        //    INSERT INTO [tbl_AcademicInfo] 
+        //    (Institute_id, [AcademicYearStartMonth], [AcademicYearEndMonth], [AcaInfoYearCode], Status)
+        //    VALUES (@Institute_id, @AcademicYearStartMonth, @AcademicYearEndMonth, @AcaInfoYearCode, @Status)";
+
         //            addedRecords = await _connection.ExecuteAsync(insertQuery, request);
         //        }
         //    }
         //    else
         //    {
+        //        // Insert directly if no records exist
         //        string insertQuery = @"
-        //        INSERT INTO [tbl_AcademicInfo] (Institute_id, [AcademicYearStartMonth], [AcademicYearEndMonth], Status)
-        //        VALUES (@Institute_id, @AcademicYearStartMonth, @AcademicYearEndMonth, @Status)";
-        //        // Execute the query with multiple parameterized sets of values
+        //INSERT INTO [tbl_AcademicInfo] 
+        //(Institute_id, [AcademicYearStartMonth], [AcademicYearEndMonth], [AcaInfoYearCode], Status)
+        //VALUES (@Institute_id, @AcademicYearStartMonth, @AcademicYearEndMonth, @AcaInfoYearCode, @Status)";
+
         //        addedRecords = await _connection.ExecuteAsync(insertQuery, request);
         //    }
+
         //    return addedRecords;
         //}
         private async Task<int> AddUpdateSemesterInfo(SemesterInfo request, int InstitutionId)
