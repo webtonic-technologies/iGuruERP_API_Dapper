@@ -2,8 +2,8 @@
 {
     public class EmployeeBankDetails
     {
-        public int bank_id { get; set; }
-        public int employee_id { get; set; }
+        public int? bank_id { get; set; }
+        public int? employee_id { get; set; }
         public string bank_name { get; set; } = string.Empty;
         public string account_name { get; set; } = string.Empty;
         public string account_number { get; set; } = string.Empty;

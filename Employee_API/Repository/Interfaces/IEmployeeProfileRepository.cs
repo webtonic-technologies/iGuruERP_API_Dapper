@@ -12,7 +12,7 @@ namespace Employee_API.Repository.Interfaces
         Task<ServiceResponse<int>> AddUpdateEmployeeQualification(List<EmployeeQualification>? request, int employeeId);
         Task<ServiceResponse<int>> AddUpdateEmployeeWorkExp(List<EmployeeWorkExperience>? request, int employeeId);
         Task<ServiceResponse<int>> AddUpdateEmployeeBankDetails(List<EmployeeBankDetails>? request, int employeeId);
-        Task<ServiceResponse<List<EmployeeProfileResponseDTO>>> GetEmployeeProfileList(GetAllEmployeeListRequest request);
+        Task<ServiceResponse<IEnumerable<dynamic>>> GetEmployeeProfileList(GetAllEmployeeListRequest request);
         Task<ServiceResponse<EmployeeProfileResponseDTO>> GetEmployeeProfileById(int employeeId);
         Task<ServiceResponse<List<EmployeeDocument>>> GetEmployeeDocuments(int employeeId);
         Task<ServiceResponse<EmployeeFamily>> GetEmployeeFamilyDetailsById(int employeeId);

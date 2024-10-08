@@ -2,8 +2,8 @@
 {
     public class EmployeeFamily
     {
-        public int Employee_family_id { get; set; }
-        public int Employee_id { get; set; }
+        public int? Employee_family_id { get; set; }
+        public int? Employee_id { get; set; }
         public string Father_Name { get; set; } = string.Empty;
         public string Fathers_Occupation { get; set; } = string.Empty;
         public string Mother_Name { get; set; } = string.Empty;

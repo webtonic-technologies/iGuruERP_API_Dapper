@@ -7,6 +7,7 @@ using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using System.Data;
 using System.Data.SqlClient;
+using System.Dynamic;
 using System.Text;
 
 namespace Employee_API.Repository.Implementations
@@ -943,7 +944,7 @@ namespace Employee_API.Repository.Implementations
                 return new ServiceResponse<EmployeeFamily>(false, ex.Message, new EmployeeFamily(), 500);
             }
         }
-        public async Task<ServiceResponse<List<EmployeeProfileResponseDTO>>> GetEmployeeProfileList(GetAllEmployeeListRequest request)
+        public async Task<ServiceResponse<IEnumerable<dynamic>>> GetEmployeeProfileList(GetAllEmployeeListRequest request)
         {
             try
             {
@@ -951,11 +952,8 @@ namespace Employee_API.Repository.Implementations
                 var activeColumns = await GetActiveColumns(request.ActiveColumns);
                 if (activeColumns == null || !activeColumns.Any())
                 {
-                    return new ServiceResponse<List<EmployeeProfileResponseDTO>>(false, "No active columns found", new List<EmployeeProfileResponseDTO>(), 204);
+                    return new ServiceResponse<IEnumerable<dynamic>>(false, "No active columns found", new List<dynamic>(), 204);
                 }
-
-                // Initialize a list to hold the final results
-                var finalResults = new List<EmployeeProfileResponseDTO>();
 
                 // Initialize parameters
                 var parameters = new DynamicParameters();
@@ -977,132 +975,146 @@ namespace Employee_API.Repository.Implementations
                     parameters.Add("SearchText", $"%{request.SearchText}%");
                 }
 
-                // Dictionary to hold the SQL builders for each table
-                var sqlBuilders = new Dictionary<int, StringBuilder>();
+                // Initialize StringBuilder for building the SQL query
+                var sqlBuilder = new StringBuilder("SELECT DISTINCT ep.Employee_id");
 
-                // Iterate through active columns to categorize them and build SQL
+                // Build dynamic SQL based on active columns
                 foreach (var column in activeColumns)
                 {
-                    // Initialize a SQL builder for each category if not already done
-                    if (!sqlBuilders.ContainsKey(column.CategoryId))
-                    {
-                        sqlBuilders[column.CategoryId] = new StringBuilder();
-                    }
-
                     switch (column.CategoryId)
                     {
                         case 1: // tbl_EmployeeProfileMaster
-                            sqlBuilders[column.CategoryId].Append($"ep.{column.ColumnDatabaseName}, ");
+                            sqlBuilder.Append($", ep.{column.ColumnDatabaseName}");
                             break;
-
                         case 2: // tbl_EmployeePresentAddress
-                            sqlBuilders[column.CategoryId].Append($"pa.{column.ColumnDatabaseName}, ");
+                            sqlBuilder.Append($", pa.{column.ColumnDatabaseName}");
                             break;
-
                         case 3: // tbl_EmployeeFamilyMaster
-                            sqlBuilders[column.CategoryId].Append($"ef.{column.ColumnDatabaseName}, ");
+                            sqlBuilder.Append($", ef.{column.ColumnDatabaseName}");
                             break;
-
                         case 4: // tbl_QualificationInfoMaster
-                            sqlBuilders[column.CategoryId].Append($"qi.{column.ColumnDatabaseName}, ");
+                            sqlBuilder.Append($", qi.{column.ColumnDatabaseName}");
                             break;
-
                         case 5: // tbl_WorkExperienceMaster
-                            sqlBuilders[column.CategoryId].Append($"we.{column.ColumnDatabaseName}, ");
+                            sqlBuilder.Append($", we.{column.ColumnDatabaseName}");
                             break;
-
                         case 6: // tbl_BankDetailsMaster
-                            sqlBuilders[column.CategoryId].Append($"bd.{column.ColumnDatabaseName}, ");
+                            sqlBuilder.Append($", bd.{column.ColumnDatabaseName}");
                             break;
-
                         default:
                             throw new Exception($"Unknown CategoryId {column.CategoryId}");
                     }
                 }
+                sqlBuilder.Append(@"
+            , d.DepartmentName
+            , des.DesignationName
+            , g.Gender_Type
+            , n.Nationality_Type
+            , r.Religion_Type
+            , ms.StatusName
+            , bg.Blood_Group_Type");
+                // Build FROM and JOIN clauses
+                sqlBuilder.Append(@"
+        FROM [dbo].[tbl_EmployeeProfileMaster] ep
+        LEFT JOIN [dbo].[tbl_EmployeePresentAddress] pa ON ep.Employee_id = pa.Employee_id
+        LEFT JOIN [dbo].[tbl_EmployeeFamilyMaster] ef ON ep.Employee_id = ef.Employee_id
+        LEFT JOIN [dbo].[tbl_QualificationInfoMaster] qi ON ep.Employee_id = qi.Employee_id
+        LEFT JOIN [dbo].[tbl_WorkExperienceMaster] we ON ep.Employee_id = we.Employee_id
+        LEFT JOIN [dbo].[tbl_BankDetailsMaster] bd ON ep.Employee_id = bd.Employee_id
+        LEFT JOIN [dbo].[tbl_Department] d ON ep.Department_id = d.Department_id 
+        LEFT JOIN [dbo].[tbl_Designation] des ON ep.Designation_id = des.Designation_id 
+        LEFT JOIN [dbo].[tbl_Nationality] n ON ep.Nationality_id = n.Nationality_id 
+        LEFT JOIN [dbo].[tbl_Religion] r ON ep.Religion_id = r.Religion_id 
+        LEFT JOIN [dbo].[tbl_MaritalStatus] ms ON ep.marrital_status_id = ms.statusId 
+        LEFT JOIN [dbo].[tbl_BloodGroup] bg ON ep.Blood_Group_id = bg.Blood_Group_id 
+        LEFT JOIN tbl_Gender g on ep.Gender_id = g.Gender_id 
+        WHERE ep.Institute_id = @InstituteId");
 
-                // Fetch data from each table based on the constructed SQL
-                foreach (var kvp in sqlBuilders)
+                // Add filtering conditions to the SQL query
+                if (request.DepartmentId > 0)
                 {
-                    var categoryId = kvp.Key;
-                    var columns = kvp.Value.ToString().TrimEnd(',', ' '); // Remove the trailing comma and space
-
-                    switch (categoryId)
-                    {
-                        case 1:
-                            // For Employee Profile Master
-                            var empSql = $"SELECT {columns} FROM [dbo].[tbl_EmployeeProfileMaster] ep WHERE ep.Institute_id = @InstituteId";
-                            if (request.DepartmentId > 0)
-                            {
-                                empSql += " AND ep.Department_id = @DepartmentId";
-                            }
-                            if (request.DesignationId > 0)
-                            {
-                                empSql += " AND ep.Designation_id = @DesignationId";
-                            }
-                            if (!string.IsNullOrWhiteSpace(request.SearchText))
-                            {
-                                empSql += " AND (ep.First_Name LIKE @SearchText OR ep.Last_Name LIKE @SearchText OR ep.EmailID LIKE @SearchText)";
-                            }
-
-                            var empProfiles = await _connection.QueryAsync<EmployeeProfileResponseDTO>(empSql, parameters);
-                            finalResults.AddRange(empProfiles);
-                            break;
-
-                        case 2:
-                            // For Employee Present Address
-                            var addressSql = $"SELECT {columns} FROM [dbo].[tbl_EmployeePresentAddress] pa WHERE pa.Employee_id IN (SELECT Employee_id FROM [dbo].[tbl_EmployeeProfileMaster] WHERE Institute_id = @InstituteId)";
-                            var addresses = await _connection.QueryAsync<EmployeeProfileResponseDTO>(addressSql, parameters);
-                            finalResults.AddRange(addresses);
-                            break;
-
-                        case 3:
-                            // For Employee Family Master
-                            var familySql = $"SELECT {columns} FROM [dbo].[tbl_EmployeeFamilyMaster] ef WHERE ef.Employee_id IN (SELECT Employee_id FROM [dbo].[tbl_EmployeeProfileMaster] WHERE Institute_id = @InstituteId)";
-                            var families = await _connection.QueryAsync<EmployeeProfileResponseDTO>(familySql, parameters);
-                            finalResults.AddRange(families);
-                            break;
-
-                        case 4:
-                            // For Qualification Info Master
-                            var qualificationSql = $"SELECT {columns} FROM [dbo].[tbl_QualificationInfoMaster] qi WHERE qi.Employee_id IN (SELECT Employee_id FROM [dbo].[tbl_EmployeeProfileMaster] WHERE Institute_id = @InstituteId)";
-                            var qualifications = await _connection.QueryAsync<EmployeeProfileResponseDTO>(qualificationSql, parameters);
-                            finalResults.AddRange(qualifications);
-                            break;
-
-                        case 5:
-                            // For Work Experience Master
-                            var workExperienceSql = $"SELECT {columns} FROM [dbo].[tbl_WorkExperienceMaster] we WHERE we.Employee_id IN (SELECT Employee_id FROM [dbo].[tbl_EmployeeProfileMaster] WHERE Institute_id = @InstituteId)";
-                            var workExperiences = await _connection.QueryAsync<EmployeeProfileResponseDTO>(workExperienceSql, parameters);
-                            finalResults.AddRange(workExperiences);
-                            break;
-
-                        case 6:
-                            // For Bank Details Master
-                            var bankDetailsSql = $"SELECT {columns} FROM [dbo].[tbl_BankDetailsMaster] bd WHERE bd.Employee_id IN (SELECT Employee_id FROM [dbo].[tbl_EmployeeProfileMaster] WHERE Institute_id = @InstituteId)";
-                            var bankDetails = await _connection.QueryAsync<EmployeeProfileResponseDTO>(bankDetailsSql, parameters);
-                            finalResults.AddRange(bankDetails);
-                            break;
-                    }
+                    sqlBuilder.Append(" AND ep.Department_id = @DepartmentId");
+                }
+                if (request.DesignationId > 0)
+                {
+                    sqlBuilder.Append(" AND ep.Designation_id = @DesignationId");
+                }
+                if (!string.IsNullOrWhiteSpace(request.SearchText))
+                {
+                    sqlBuilder.Append(" AND (ep.First_Name LIKE @SearchText OR ep.Last_Name LIKE @SearchText OR ep.EmailID LIKE @SearchText)");
                 }
 
-                // Pagination
-                var paginatedResults = finalResults
+                // Execute the query
+                var employeeData = await _connection.QueryAsync<dynamic>(sqlBuilder.ToString(), parameters);
+
+                // Pagination logic
+                var paginatedResults = employeeData
                     .Skip((request.PageNumber - 1) * request.PageSize)
                     .Take(request.PageSize)
                     .ToList();
 
-                if (paginatedResults.Any())
+                // Initialize dynamic response
+                var response = new List<ExpandoObject>();
+
+                foreach (var employee in paginatedResults)
                 {
-                    return new ServiceResponse<List<EmployeeProfileResponseDTO>>(true, "Records found", paginatedResults, 200, paginatedResults.Count);
+                    dynamic dynamicEmployee = new ExpandoObject();
+                    var employeeDict = (IDictionary<string, object>)dynamicEmployee;
+
+                    // Add properties dynamically based on active columns
+                    foreach (var column in activeColumns)
+                    {
+                        var columnName = column.ColumnDatabaseName;
+                        if (((IDictionary<string, object>)employee).ContainsKey(columnName))
+                        {
+                            employeeDict[columnName] = ((IDictionary<string, object>)employee)[columnName];
+                        }
+                    }
+
+                    // Conditionally map these specific fields if related columns are part of activeColumns
+                    if (activeColumns.Any(c => c.ColumnDatabaseName == "Department_id"))
+                    {
+                        employeeDict["DepartmentName"] = employee.DepartmentName;
+                    }
+                    if (activeColumns.Any(c => c.ColumnDatabaseName == "Designation_id"))
+                    {
+                        employeeDict["DesignationName"] = employee.DesignationName;
+                    }
+                    if (activeColumns.Any(c => c.ColumnDatabaseName == "Gender_id"))
+                    {
+                        employeeDict["GenderName"] = employee.Gender_Type;
+                    }
+                    if (activeColumns.Any(c => c.ColumnDatabaseName == "Nationality_id"))
+                    {
+                        employeeDict["NationalityName"] = employee.Nationality_Type;
+                    }
+                    if (activeColumns.Any(c => c.ColumnDatabaseName == "Religion_id"))
+                    {
+                        employeeDict["ReligionName"] = employee.Religion_Type;
+                    }
+                    if (activeColumns.Any(c => c.ColumnDatabaseName == "marrital_status_id"))
+                    {
+                        employeeDict["MaritalStatusName"] = employee.StatusName;
+                    }
+                    if (activeColumns.Any(c => c.ColumnDatabaseName == "Blood_Group_id"))
+                    {
+                        employeeDict["BloodGroupName"] = employee.Blood_Group_Type;
+                    }
+                    response.Add(dynamicEmployee);
+                }
+
+                if (response.Any())
+                {
+                    return new ServiceResponse<IEnumerable<dynamic>>(true, "Records found", response, 200, response.Count);
                 }
                 else
                 {
-                    return new ServiceResponse<List<EmployeeProfileResponseDTO>>(false, "No records found", new List<EmployeeProfileResponseDTO>(), 204);
+                    return new ServiceResponse<IEnumerable<dynamic>>(false, "No records found", new List<dynamic>(), 204);
                 }
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<List<EmployeeProfileResponseDTO>>(false, ex.Message, new List<EmployeeProfileResponseDTO>(), 500);
+                return new ServiceResponse<IEnumerable<dynamic>>(false, ex.Message, new List<dynamic>(), 500);
             }
         }
         //public async Task<ServiceResponse<List<EmployeeProfileResponseDTO>>> GetEmployeeProfileList(GetAllEmployeeListRequest request)
@@ -2397,58 +2409,34 @@ WHERE
         }
         public async Task<List<ColumnDetails>> GetActiveColumns(List<ActiveColumns>? activeColumns)
         {
-            if (activeColumns == null || !activeColumns.Any())
-            {
-                // Fetch all columns that are already active in the database, joining with category table to get TableName
-                var activeColumnDetailsFromDB = await _connection.QueryAsync<ColumnDetails>(@"
-            SELECT ecm.ECMId, ecm.CategoryId, ecm.ColumnDatabaseName, cat.CategoryName AS TableName
-            FROM tbl_EmployeeColumnMaster ecm
-            JOIN tbl_EmployeeColumnCategoryMaster cat ON ecm.CategoryId = cat.CategoryId
-            WHERE ecm.Status = 1"); // Assuming 1 means active
-
-                return activeColumnDetailsFromDB.ToList();
-            }
-
             var activeColumnDetails = new List<ColumnDetails>();
-
-            foreach (var columnRequest in activeColumns)
+            if(activeColumns != null)
             {
-                var updateQuery = @"
+                foreach (var columnRequest in activeColumns)
+                {
+                    var updateQuery = @"
         UPDATE tbl_EmployeeColumnMaster
         SET Status = @Status
         WHERE ECMId = @ECMId
         AND CategoryId = @CategoryId";
 
-                var updateParameters = new DynamicParameters();
-                updateParameters.Add("Status", columnRequest.Status); // Set status based on request
-                updateParameters.Add("ECMId", columnRequest.ECMId);
-                updateParameters.Add("CategoryId", columnRequest.CategoryId);
+                    var updateParameters = new DynamicParameters();
+                    updateParameters.Add("Status", columnRequest.Status); // Set status based on request
+                    updateParameters.Add("ECMId", columnRequest.ECMId);
+                    updateParameters.Add("CategoryId", columnRequest.CategoryId);
 
-                await _connection.ExecuteAsync(updateQuery, updateParameters);
+                    await _connection.ExecuteAsync(updateQuery, updateParameters);
+                }
             }
-
-            foreach (var activeColumn in activeColumns)
-            {
-                if (activeColumn.Status) // Only process active columns
-                {
-                    var query = @"
+          
+            // Fetch all columns that are already active in the database, joining with category table to get TableName
+            var activeColumnDetailsFromDB = await _connection.QueryAsync<ColumnDetails>(@"
             SELECT ecm.ECMId, ecm.CategoryId, ecm.ColumnDatabaseName, cat.CategoryName AS TableName
             FROM tbl_EmployeeColumnMaster ecm
             JOIN tbl_EmployeeColumnCategoryMaster cat ON ecm.CategoryId = cat.CategoryId
-            WHERE ecm.ECMId = @ECMId AND ecm.CategoryId = @CategoryId";
+            WHERE ecm.Status = 1"); // Assuming 1 means active
 
-                    var parameters = new { ECMId = activeColumn.ECMId, CategoryId = activeColumn.CategoryId };
-
-                    var columnDetail = await _connection.QueryFirstOrDefaultAsync<ColumnDetails>(query, parameters);
-
-                    if (columnDetail != null)
-                    {
-                        activeColumnDetails.Add(columnDetail);
-                    }
-                }
-            }
-
-            return activeColumnDetails;
+            return activeColumnDetailsFromDB.ToList();
         }
     }
     public class ColumnDetails

@@ -191,16 +191,9 @@ namespace Employee_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<EmployeeProfileResponseDTO>>> GetEmployeeProfileList(GetAllEmployeeListRequest request)
+        public async Task<ServiceResponse<IEnumerable<dynamic>>> GetEmployeeProfileList(GetAllEmployeeListRequest request)
         {
-            try
-            {
-                return await _employeeProfileRepository.GetEmployeeProfileList(request);
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<List<EmployeeProfileResponseDTO>>(false, ex.Message, [], 500);
-            }
+            return await _employeeProfileRepository.GetEmployeeProfileList(request);
         }
 
         public async Task<ServiceResponse<List<EmployeeQualification>>> GetEmployeeQualificationById(int employeeId)
