@@ -513,6 +513,58 @@ namespace Employee_API.Controllers
 
             return StatusCode(response.StatusCode, response.Message);
         }
+        [HttpPost("BulkUpdate")]
+        public async Task<IActionResult> BulkUpdate([FromBody] GetListRequest request)
+        {
+            // Validate request
+            if (request == null || request.InstituteId == 0)
+            {
+                return BadRequest("Invalid request data.");
+            }
 
+            try
+            {
+                // Call service method
+                var response = await _employeeProfileServices.BulkUpdate(request);
+
+                if (response.Success)
+                {
+                    // Return the Excel file as a downloadable response
+                    var fileName = $"Employee_Data_{DateTime.Now.ToString("yyyyMMddHHmmss")}.xlsx";
+                    return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+                }
+                else
+                {
+                    return StatusCode(response.StatusCode, response.Message);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log exception and return error response
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+        [HttpPut("bulk-update")]
+        public async Task<IActionResult> BulkUpdateEmployeeProfiles([FromBody] List<EmployeeProfile> employeeProfiles)
+        {
+            // Validate input
+            if (employeeProfiles == null || !employeeProfiles.Any())
+            {
+                return BadRequest("Employee profile list cannot be empty.");
+            }
+
+            // Call the service method to perform the bulk update
+            var response = await _employeeProfileServices.BulkUpdateEmployee(employeeProfiles);
+
+            // Handle the response
+            if (response.Success)
+            {
+                return Ok(response);  // Return a 200 status with the response message
+            }
+            else
+            {
+                return StatusCode(response.StatusCode, response);  // Return the error code and message
+            }
+        }
     }
 }

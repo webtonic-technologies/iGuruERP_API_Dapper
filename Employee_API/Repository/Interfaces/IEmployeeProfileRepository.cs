@@ -29,5 +29,7 @@ namespace Employee_API.Repository.Interfaces
         Task<ServiceResponse<List<ClassSectionList>>> GetClassSectionList(int instituteId);
         Task<ServiceResponse<ClassSectionSubjectResponse>> ClassSectionSubjectsList(int classId, int sectionId);
         Task<ServiceResponse<List<ClassSectionSubjectResponse>>> ClassSectionSubjectsMappings(int InstituteId);
+        Task<ServiceResponse<byte[]>> BulkUpdate(GetListRequest request);
+        Task<ServiceResponse<string>> BulkUpdateEmployee(List<EmployeeProfile> request);
     }
 }

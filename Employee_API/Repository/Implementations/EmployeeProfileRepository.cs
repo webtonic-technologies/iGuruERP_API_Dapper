@@ -174,6 +174,109 @@ namespace Employee_API.Repository.Implementations
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
+        public async Task<ServiceResponse<string>> BulkUpdateEmployee(List<EmployeeProfile> request)
+        {
+            try
+            {
+                // Check if the request is null or empty
+                if (request == null || !request.Any())
+                {
+                    return new ServiceResponse<string>(false, "Empty employee list provided", string.Empty, 400);
+                }
+
+                // Iterate through each employee in the list and update their details
+                foreach (var employee in request)
+                {
+                    // Convert Date_of_Joining and Date_of_Birth to IST and format to DD-MM-YYYY
+                    var dateOfJoining = employee.Date_of_Joining?.AddHours(5).AddMinutes(30).ToString("dd-MM-yyyy");
+                    var dateOfBirth = employee.Date_of_Birth?.AddHours(5).AddMinutes(30).ToString("dd-MM-yyyy");
+
+                    string sql = @"UPDATE [dbo].[tbl_EmployeeProfileMaster] SET 
+              First_Name = @First_Name, 
+              Middle_Name = @Middle_Name, 
+              Last_Name = @Last_Name, 
+              Gender_id = @Gender_id, 
+              Department_id = @Department_id, 
+              Designation_id = @Designation_id, 
+              mobile_number = @mobile_number, 
+              Date_of_Joining = @Date_of_Joining, 
+              Nationality_id = @Nationality_id, 
+              Religion_id = @Religion_id, 
+              Date_of_Birth = @Date_of_Birth, 
+              EmailID = @EmailID, 
+              Employee_code_id = @Employee_code_id, 
+              marrital_status_id = @marrital_status_id, 
+              Blood_Group_id = @Blood_Group_id, 
+              aadhar_no = @aadhar_no, 
+              pan_no = @pan_no, 
+              EPF_no = @EPF_no, 
+              ESIC_no = @ESIC_no, 
+              Institute_id = @Institute_id,
+              EmpPhoto = @EmpPhoto,
+              uan_no = @uan_no,
+              Status = @Status
+            WHERE Employee_id = @Employee_id";
+
+                    // Execute the update query for the current employee
+                    int rowsAffected = await _connection.ExecuteAsync(sql, new
+                    {
+                        employee.Employee_id,
+                        employee.First_Name,
+                        employee.Middle_Name,
+                        employee.Last_Name,
+                        employee.Gender_id,
+                        employee.Department_id,
+                        employee.Designation_id,
+                        employee.mobile_number,
+                        Date_of_Joining = dateOfJoining,
+                        employee.Nationality_id,
+                        employee.Religion_id,
+                        Date_of_Birth = dateOfBirth,
+                        employee.EmailID,
+                        employee.Employee_code_id,
+                        employee.marrital_status_id,
+                        employee.Blood_Group_id,
+                        employee.aadhar_no,
+                        employee.pan_no,
+                        employee.EPF_no,
+                        employee.ESIC_no,
+                        employee.Institute_id,
+                        employee.uan_no,
+                        employee.Status,
+                        EmpPhoto = ImageUpload(employee.EmpPhoto) // Handle image upload if necessary
+                    });
+
+                    if (rowsAffected > 0)
+                    {
+                        // Additional logic to handle related entities (family, documents, qualifications, etc.)
+                        employee.Family.Employee_id = employee.Employee_id;
+
+                        var empfam = await AddUpdateEmployeeFamily(employee.Family ?? new EmployeeFamily());
+                        var empdoc = await AddUpdateEmployeeDocuments(employee.EmployeeDocuments ?? new List<EmployeeDocument>(), employee.Employee_id);
+                        var empQua = await AddUpdateEmployeeQualification(employee.EmployeeQualifications ?? new List<EmployeeQualification>(), employee.Employee_id);
+                        var empwork = await AddUpdateEmployeeWorkExp(employee.EmployeeWorkExperiences ?? new List<EmployeeWorkExperience>(), employee.Employee_id);
+                        var empbank = await AddUpdateEmployeeBankDetails(employee.EmployeeBankDetails, employee.Employee_id);
+                        var empadd = await AddUpdateEmployeeAddressDetails(employee.EmployeeAddressDetails, employee.Employee_id);
+
+                        employee.EmployeeStaffMappingRequest.EmployeeId = employee.Employee_id;
+                        var mapp = await AddUpdateEmployeeStaffMapping(employee.EmployeeStaffMappingRequest);
+                    }
+                    else
+                    {
+                        // If any employee fails to update, return failure response
+                        return new ServiceResponse<string>(false, $"Failed to update Employee with ID {employee.Employee_id}", string.Empty, 500);
+                    }
+                }
+
+                // If all employees are successfully updated
+                return new ServiceResponse<string>(true, "All employees updated successfully", string.Empty, 200);
+            }
+            catch (Exception ex)
+            {
+                // Handle exception
+                return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
+            }
+        }
         //public async Task<ServiceResponse<int>> AddUpdateEmployeeProfile(EmployeeProfile request)
         //{
         //    try
@@ -1117,6 +1220,237 @@ namespace Employee_API.Repository.Implementations
                 return new ServiceResponse<IEnumerable<dynamic>>(false, ex.Message, new List<dynamic>(), 500);
             }
         }
+        public async Task<ServiceResponse<byte[]>> BulkUpdate(GetListRequest request)
+        {
+            try
+            {
+                // Fetch active columns
+                var activeColumns = await GetActiveColumns(request.ActiveColumns);
+                if (activeColumns == null || !activeColumns.Any())
+                {
+                    return new ServiceResponse<byte[]>(false, "No active columns found", null, 204);
+                }
+
+                // Initialize parameters
+                var parameters = new DynamicParameters();
+                parameters.Add("InstituteId", request.InstituteId);
+
+                // Add filtering conditions
+                if (request.DepartmentId > 0)
+                {
+                    parameters.Add("DepartmentId", request.DepartmentId);
+                }
+
+                if (request.DesignationId > 0)
+                {
+                    parameters.Add("DesignationId", request.DesignationId);
+                }
+
+                // Build SQL query dynamically
+                var sqlBuilder = new StringBuilder("SELECT DISTINCT ep.Employee_id");
+
+                foreach (var column in activeColumns)
+                {
+                    switch (column.CategoryId)
+                    {
+                        case 1: // tbl_EmployeeProfileMaster
+                            sqlBuilder.Append($", ep.{column.ColumnDatabaseName}");
+                            break;
+                        case 2: // tbl_EmployeePresentAddress
+                            sqlBuilder.Append($", pa.{column.ColumnDatabaseName}");
+                            break;
+                        case 3: // tbl_EmployeeFamilyMaster
+                            sqlBuilder.Append($", ef.{column.ColumnDatabaseName}");
+                            break;
+                        case 4: // tbl_QualificationInfoMaster
+                            sqlBuilder.Append($", qi.{column.ColumnDatabaseName}");
+                            break;
+                        case 5: // tbl_WorkExperienceMaster
+                            sqlBuilder.Append($", we.{column.ColumnDatabaseName}");
+                            break;
+                        case 6: // tbl_BankDetailsMaster
+                            sqlBuilder.Append($", bd.{column.ColumnDatabaseName}");
+                            break;
+                        default:
+                            throw new Exception($"Unknown CategoryId {column.CategoryId}");
+                    }
+                }
+
+                // Add static columns
+                sqlBuilder.Append(@"
+            , d.DepartmentName
+            , des.DesignationName
+            , g.Gender_Type
+            , n.Nationality_Type
+            , r.Religion_Type
+            , ms.StatusName
+            , bg.Blood_Group_Type");
+
+                // FROM and JOIN clauses
+                sqlBuilder.Append(@"
+        FROM [dbo].[tbl_EmployeeProfileMaster] ep
+        LEFT JOIN [dbo].[tbl_EmployeePresentAddress] pa ON ep.Employee_id = pa.Employee_id
+        LEFT JOIN [dbo].[tbl_EmployeeFamilyMaster] ef ON ep.Employee_id = ef.Employee_id
+        LEFT JOIN [dbo].[tbl_QualificationInfoMaster] qi ON ep.Employee_id = qi.Employee_id
+        LEFT JOIN [dbo].[tbl_WorkExperienceMaster] we ON ep.Employee_id = we.Employee_id
+        LEFT JOIN [dbo].[tbl_BankDetailsMaster] bd ON ep.Employee_id = bd.Employee_id
+        LEFT JOIN [dbo].[tbl_Department] d ON ep.Department_id = d.Department_id 
+        LEFT JOIN [dbo].[tbl_Designation] des ON ep.Designation_id = des.Designation_id 
+        LEFT JOIN [dbo].[tbl_Nationality] n ON ep.Nationality_id = n.Nationality_id 
+        LEFT JOIN [dbo].[tbl_Religion] r ON ep.Religion_id = r.Religion_id 
+        LEFT JOIN [dbo].[tbl_MaritalStatus] ms ON ep.marrital_status_id = ms.statusId 
+        LEFT JOIN [dbo].[tbl_BloodGroup] bg ON ep.Blood_Group_id = bg.Blood_Group_id 
+        LEFT JOIN tbl_Gender g on ep.Gender_id = g.Gender_id 
+        WHERE ep.Institute_id = @InstituteId");
+
+                // Add filters if needed
+                if (request.DepartmentId > 0)
+                {
+                    sqlBuilder.Append(" AND ep.Department_id = @DepartmentId");
+                }
+                if (request.DesignationId > 0)
+                {
+                    sqlBuilder.Append(" AND ep.Designation_id = @DesignationId");
+                }
+
+                // Execute the query
+                var employeeData = await _connection.QueryAsync<dynamic>(sqlBuilder.ToString(), parameters);
+
+                // Fetch master data for additional sheets
+                var genderData = await _connection.QueryAsync<dynamic>("SELECT Gender_id, Gender_Type FROM [dbo].[tbl_Gender]");
+                var departmentData = await _connection.QueryAsync<dynamic>("SELECT Department_id, DepartmentName FROM [dbo].[tbl_Department] WHERE Institute_id = @InstituteId", parameters);
+                var designationData = await _connection.QueryAsync<dynamic>("SELECT Designation_id, DesignationName FROM [dbo].[tbl_Designation] WHERE Institute_id = @InstituteId", parameters);
+                var nationalityData = await _connection.QueryAsync<dynamic>("SELECT Nationality_id, Nationality_Type FROM [dbo].[tbl_Nationality]");
+                var religionData = await _connection.QueryAsync<dynamic>("SELECT Religion_id, Religion_Type FROM [dbo].[tbl_Religion]");
+                var maritalStatusData = await _connection.QueryAsync<dynamic>("SELECT statusId, StatusName FROM [dbo].[tbl_MaritalStatus]");
+                var bloodGroupData = await _connection.QueryAsync<dynamic>("SELECT Blood_Group_id, Blood_Group_Type FROM [dbo].[tbl_BloodGroup]");
+
+                // Initialize Excel package
+                using (var package = new ExcelPackage())
+                {
+                    // Main sheet for employee data
+                    var worksheet = package.Workbook.Worksheets.Add("Employee Data");
+                    int columnIndex = 1;
+
+                    // Write column headers dynamically
+                    foreach (var column in activeColumns)
+                    {
+                        worksheet.Cells[1, columnIndex].Value = column.ColumnDatabaseName;
+                        columnIndex++;
+                    }
+
+                    if (activeColumns.Any(c => c.ColumnDatabaseName == "Department_id"))
+                    {
+                        worksheet.Cells[1, columnIndex++].Value = "DepartmentName";
+                    }
+                    if (activeColumns.Any(c => c.ColumnDatabaseName == "Designation_id"))
+                    {
+                        worksheet.Cells[1, columnIndex++].Value = "DesignationName";
+                    }
+                    if (activeColumns.Any(c => c.ColumnDatabaseName == "Gender_id"))
+                    {
+                        worksheet.Cells[1, columnIndex++].Value = "GenderName";
+                    }
+                    if (activeColumns.Any(c => c.ColumnDatabaseName == "Nationality_id"))
+                    {
+                        worksheet.Cells[1, columnIndex++].Value = "NationalityName";
+                    }
+                    if (activeColumns.Any(c => c.ColumnDatabaseName == "Religion_id"))
+                    {
+                        worksheet.Cells[1, columnIndex++].Value = "ReligionName";
+                    }
+                    if (activeColumns.Any(c => c.ColumnDatabaseName == "marrital_status_id"))
+                    {
+                        worksheet.Cells[1, columnIndex++].Value = "MaritalStatusName";
+                    }
+                    if (activeColumns.Any(c => c.ColumnDatabaseName == "Blood_Group_id"))
+                    {
+                        worksheet.Cells[1, columnIndex++].Value = "BloodGroupName";
+                    }
+
+                    // Write employee data rows
+                    int rowIndex = 2;
+                    foreach (var employee in employeeData)
+                    {
+                        columnIndex = 1;
+                        foreach (var column in activeColumns)
+                        {
+                            var columnName = column.ColumnDatabaseName;
+                            worksheet.Cells[rowIndex, columnIndex].Value = ((IDictionary<string, object>)employee)[columnName]?.ToString();
+                            columnIndex++;
+                        }
+
+                        if (activeColumns.Any(c => c.ColumnDatabaseName == "Department_id"))
+                        {
+                            worksheet.Cells[rowIndex, columnIndex++].Value = employee.DepartmentName;
+                        }
+                        if (activeColumns.Any(c => c.ColumnDatabaseName == "Designation_id"))
+                        {
+                            worksheet.Cells[rowIndex, columnIndex++].Value = employee.DesignationName;
+                        }
+                        if (activeColumns.Any(c => c.ColumnDatabaseName == "Gender_id"))
+                        {
+                            worksheet.Cells[rowIndex, columnIndex++].Value = employee.Gender_Type;
+                        }
+                        if (activeColumns.Any(c => c.ColumnDatabaseName == "Nationality_id"))
+                        {
+                            worksheet.Cells[rowIndex, columnIndex++].Value = employee.Nationality_Type;
+                        }
+                        if (activeColumns.Any(c => c.ColumnDatabaseName == "Religion_id"))
+                        {
+                            worksheet.Cells[rowIndex, columnIndex++].Value = employee.Religion_Type;
+                        }
+                        if (activeColumns.Any(c => c.ColumnDatabaseName == "marrital_status_id"))
+                        {
+                            worksheet.Cells[rowIndex, columnIndex++].Value = employee.StatusName;
+                        }
+                        if (activeColumns.Any(c => c.ColumnDatabaseName == "Blood_Group_id"))
+                        {
+                            worksheet.Cells[rowIndex, columnIndex++].Value = employee.Blood_Group_Type;
+                        }
+                        rowIndex++;
+                    }
+
+                    // Create master data sheets
+                    AddMasterSheet(package, "Gender Data", new[] { "Gender_id", "Gender_Type" }, genderData);
+                    AddMasterSheet(package, "Department Data", new[] { "Department_id", "DepartmentName" }, departmentData);
+                    AddMasterSheet(package, "Designation Data", new[] { "Designation_id", "DesignationName" }, designationData);
+                    AddMasterSheet(package, "Nationality Data", new[] { "Nationality_id", "Nationality_Type" }, nationalityData);
+                    AddMasterSheet(package, "Religion Data", new[] { "Religion_id", "Religion_Type" }, religionData);
+                    AddMasterSheet(package, "Marital Status Data", new[] { "statusId", "StatusName" }, maritalStatusData);
+                    AddMasterSheet(package, "Blood Group Data", new[] { "Blood_Group_id", "Blood_Group_Type" }, bloodGroupData);
+
+                    // Save the Excel package to a byte array
+                    var excelFile = package.GetAsByteArray();
+                    return new ServiceResponse<byte[]>(true, "Success", excelFile, 200);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<byte[]>(false, ex.Message, null, 500);
+            }
+        }
+
+        // Helper method to add a master sheet
+        private void AddMasterSheet(ExcelPackage package, string sheetName, string[] headers, IEnumerable<dynamic> data)
+        {
+            var worksheet = package.Workbook.Worksheets.Add(sheetName);
+            for (int i = 0; i < headers.Length; i++)
+            {
+                worksheet.Cells[1, i + 1].Value = headers[i];
+            }
+
+            int rowIndex = 2;
+            foreach (var row in data)
+            {
+                for (int i = 0; i < headers.Length; i++)
+                {
+                    worksheet.Cells[rowIndex, i + 1].Value = ((IDictionary<string, object>)row)[headers[i]]?.ToString();
+                }
+                rowIndex++;
+            }
+        }
+
         //public async Task<ServiceResponse<List<EmployeeProfileResponseDTO>>> GetEmployeeProfileList(GetAllEmployeeListRequest request)
         //{
         //    try

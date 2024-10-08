@@ -87,4 +87,11 @@
         public int EmployeeId { set; get; }
         public string InActiveReason { set; get; }
     }
+    public class GetListRequest
+    {
+        public int InstituteId { get; set; }
+        public int DepartmentId { get; set; }
+        public int DesignationId { get; set; }
+        public List<ActiveColumns>? ActiveColumns { get; set; }
+    }
 }

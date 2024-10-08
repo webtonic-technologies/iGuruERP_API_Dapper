@@ -87,6 +87,16 @@ namespace Employee_API.Services.Implementations
             }
         }
 
+        public async Task<ServiceResponse<byte[]>> BulkUpdate(GetListRequest request)
+        {
+            return await _employeeProfileRepository.BulkUpdate(request);
+        }
+
+        public async Task<ServiceResponse<string>> BulkUpdateEmployee(List<EmployeeProfile> request)
+        {
+            return await _employeeProfileRepository.BulkUpdateEmployee(request);
+        }
+
         public async Task<ServiceResponse<ClassSectionSubjectResponse>> ClassSectionSubjectsList(int classId, int sectionId)
         {
             return await _employeeProfileRepository.ClassSectionSubjectsList(classId, sectionId);
