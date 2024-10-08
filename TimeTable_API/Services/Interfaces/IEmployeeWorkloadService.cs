@@ -8,5 +8,6 @@ namespace TimeTable_API.Services.Interfaces
     public interface IEmployeeWorkloadService
     {
         Task<ServiceResponse<EmployeeWorkloadResponse>> GetEmployeeWorkload(EmployeeWorkloadRequest request);
+        Task<ServiceResponse<int>> AddUpdateWorkload(AddUpdateWorkloadRequest request);
     }
 }

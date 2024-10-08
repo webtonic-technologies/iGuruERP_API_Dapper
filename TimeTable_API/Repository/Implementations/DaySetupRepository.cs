@@ -27,7 +27,7 @@ namespace TimeTable_API.Repository.Implementations
                 string sql = @"
                 SELECT PlanID, PlanName 
                 FROM tblTimeTableDaySetup
-                WHERE InstituteID = @InstituteID
+                WHERE InstituteID = @InstituteID AND IsActive = 1
                 ORDER BY PlanID
                 OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 
@@ -124,9 +124,9 @@ namespace TimeTable_API.Repository.Implementations
                     {
                         // Insert new Plan
                         string insertSql = @"
-                    INSERT INTO tblTimeTableDaySetup (PlanName, DayIDs, InstituteID, IsActive)
-                    VALUES (@PlanName, @DayIDs, @InstituteID, 1);
-                    SELECT CAST(SCOPE_IDENTITY() as int);";
+                INSERT INTO tblTimeTableDaySetup (PlanName, DayIDs, InstituteID, IsActive)
+                VALUES (@PlanName, @DayIDs, @InstituteID, 1);
+                SELECT CAST(SCOPE_IDENTITY() as int);";
 
                         request.PlanID = await _connection.ExecuteScalarAsync<int>(insertSql, new
                         {
@@ -139,9 +139,9 @@ namespace TimeTable_API.Repository.Implementations
                     {
                         // Update existing Plan
                         string updateSql = @"
-                    UPDATE tblTimeTableDaySetup 
-                    SET PlanName = @PlanName, DayIDs = @DayIDs, InstituteID = @InstituteID
-                    WHERE PlanID = @PlanID";
+                UPDATE tblTimeTableDaySetup 
+                SET PlanName = @PlanName, DayIDs = @DayIDs, InstituteID = @InstituteID
+                WHERE PlanID = @PlanID";
 
                         await _connection.ExecuteAsync(updateSql, new
                         {
@@ -152,18 +152,26 @@ namespace TimeTable_API.Repository.Implementations
                         }, transaction);
                     }
 
-                    // Step 2: Add or update Groups in tblTimeTableDayGroupsMapping
+                    // Step 2: Remove any existing group mappings that are not in the request
+                    string deleteGroupMappingsSql = @"
+            DELETE FROM tblTimeTableDayGroupsMapping
+            WHERE PlanID = @PlanID AND GroupID NOT IN @GroupIDs";
+
+                    var groupIdsToKeep = request.Groups.Select(g => g.GroupID).ToList();
+                    await _connection.ExecuteAsync(deleteGroupMappingsSql, new { request.PlanID, GroupIDs = groupIdsToKeep }, transaction);
+
+                    // Step 3: Add or update Groups in tblTimeTableDayGroupsMapping
                     foreach (var group in request.Groups)
                     {
                         // Ensure group.PlanID is set to the current PlanID
                         group.PlanID = request.PlanID;
 
                         string insertGroupSql = @"
-                    IF NOT EXISTS (SELECT 1 FROM tblTimeTableDayGroupsMapping WHERE GroupID = @GroupID AND PlanID = @PlanID)
-                    BEGIN
-                        INSERT INTO tblTimeTableDayGroupsMapping (GroupID, PlanID)
-                        VALUES (@GroupID, @PlanID)
-                    END";
+                IF NOT EXISTS (SELECT 1 FROM tblTimeTableDayGroupsMapping WHERE GroupID = @GroupID AND PlanID = @PlanID)
+                BEGIN
+                    INSERT INTO tblTimeTableDayGroupsMapping (GroupID, PlanID)
+                    VALUES (@GroupID, @PlanID)
+                END";
 
                         await _connection.ExecuteAsync(insertGroupSql, group, transaction);
                     }

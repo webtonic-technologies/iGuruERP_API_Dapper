@@ -25,6 +25,7 @@ namespace TimeTable_API.DTOs.Responses
         public string Class { get; set; }
         public string Section { get; set; }
         public string Subject { get; set; }
+        public decimal DefineWorkLoad { get; set; }
         public int AssignedSession { get; set; }
     }
 

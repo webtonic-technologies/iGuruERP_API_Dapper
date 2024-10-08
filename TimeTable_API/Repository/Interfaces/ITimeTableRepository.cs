@@ -10,5 +10,9 @@ namespace TimeTable_API.Repository.Interfaces
     {
         Task<ServiceResponse<int>> AddUpdateTimeTable(AddUpdateTimeTableRequest request);
         Task<ServiceResponse<List<TimeTableResponse>>> GetAllTimeTables(GetAllTimeTablesRequest request);
+        Task<ServiceResponse<List<EmployeeResponse>>> GetEmployees(GetInstituteRequest request);
+        Task<ServiceResponse<List<SubjectResponse>>> GetSubjects(GetInstituteRequest request);
+
+
     }
 }

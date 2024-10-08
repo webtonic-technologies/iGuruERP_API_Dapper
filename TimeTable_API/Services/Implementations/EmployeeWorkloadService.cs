@@ -20,5 +20,9 @@ namespace TimeTable_API.Services.Implementations
         {
             return await _repository.GetEmployeeWorkload(request);
         }
+        public async Task<ServiceResponse<int>> AddUpdateWorkload(AddUpdateWorkloadRequest request)
+        {
+            return await _repository.AddUpdateWorkload(request);
+        }
     }
 }

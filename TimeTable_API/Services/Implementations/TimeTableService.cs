@@ -26,5 +26,15 @@ namespace TimeTable_API.Services.Implementations
         {
             return await _timeTableRepository.GetAllTimeTables(request);
         }
+
+        public async Task<ServiceResponse<List<EmployeeResponse>>> GetEmployees(GetInstituteRequest request)
+        {
+            return await _timeTableRepository.GetEmployees(request);
+        }
+        public async Task<ServiceResponse<List<SubjectResponse>>> GetSubjects(GetInstituteRequest request)
+        {
+            return await _timeTableRepository.GetSubjects(request);
+        }
+
     }
 }

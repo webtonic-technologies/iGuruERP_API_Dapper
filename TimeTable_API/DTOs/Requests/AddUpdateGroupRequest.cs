@@ -7,8 +7,8 @@ namespace TimeTable_API.DTOs.Requests
     {
         public int? GroupID { get; set; } // If null, create a new group, else update
         public string GroupName { get; set; } = string.Empty;
-        public TimeSpan StartTime { get; set; }
-        public TimeSpan EndTime { get; set; }
+        public string StartTime { get; set; }
+        public string EndTime { get; set; }
         public int InstituteID { get; set; }
         public bool IsActive { get; set; } = true;
         public List<SessionRequest> Sessions { get; set; } = new();
@@ -20,16 +20,16 @@ namespace TimeTable_API.DTOs.Requests
     {
         public int? SessionID { get; set; }
         public string SessionName { get; set; } = string.Empty;
-        public TimeSpan StartTime { get; set; }
-        public TimeSpan EndTime { get; set; }
+        public string StartTime { get; set; }
+        public string EndTime { get; set; }
     }
 
     public class BreakRequest
     {
         public int? BreaksID { get; set; }
         public string BreakName { get; set; } = string.Empty;
-        public TimeSpan StartTime { get; set; }
-        public TimeSpan EndTime { get; set; }
+        public string StartTime { get; set; }
+        public string EndTime { get; set; }
     }
 
     public class ClassSectionRequest

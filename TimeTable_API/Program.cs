@@ -32,7 +32,10 @@ builder.Services.AddScoped<IEmployeeWiseRepository, EmployeeWiseRepository>();
 builder.Services.AddScoped<IEmployeeWiseService, EmployeeWiseService>();
 
 builder.Services.AddScoped<IEmployeeWorkloadService, EmployeeWorkloadService>();
-builder.Services.AddScoped<IEmployeeWorkloadRepository, EmployeeWorkloadRepository>(); 
+builder.Services.AddScoped<IEmployeeWorkloadRepository, EmployeeWorkloadRepository>();
+
+builder.Services.AddScoped<IEmployeeSubstitutionRepository, EmployeeSubstitutionRepository>();
+builder.Services.AddScoped<IEmployeeSubstitutionService, EmployeeSubstitutionService>();
 
 
 var app = builder.Build();

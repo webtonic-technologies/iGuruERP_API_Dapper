@@ -29,6 +29,61 @@ namespace TimeTable_API.Repository.Implementations
             {
                 try
                 {
+                    // Convert string times to TimeSpan
+                    var groupStartTime = DateTime.Parse(request.StartTime).TimeOfDay;
+                    var groupEndTime = DateTime.Parse(request.EndTime).TimeOfDay;
+
+                    // Initialize list to accumulate error messages
+                    var errorMessages = new List<string>();
+
+                    // Validate that all sessions fall within the group's time range
+                    foreach (var session in request.Sessions)
+                    {
+                        var sessionStartTime = DateTime.Parse(session.StartTime).TimeOfDay;
+                        var sessionEndTime = DateTime.Parse(session.EndTime).TimeOfDay;
+
+                        if (sessionStartTime < groupStartTime || sessionEndTime > groupEndTime)
+                        {
+                            errorMessages.Add($"Session '{session.SessionName}' times must fall within the group's start and end times.");
+                        }
+                    }
+
+                    // Validate that all breaks fall within the group's time range
+                    foreach (var breaks in request.Breaks)
+                    {
+                        var breakStartTime = DateTime.Parse(breaks.StartTime).TimeOfDay;
+                        var breakEndTime = DateTime.Parse(breaks.EndTime).TimeOfDay;
+
+                        if (breakStartTime < groupStartTime || breakEndTime > groupEndTime)
+                        {
+                            errorMessages.Add($"Break '{breaks.BreakName}' times must fall within the group's start and end times.");
+                        }
+                    }
+
+                    // Validate that sessions and breaks do not overlap
+                    var allTimeSlots = request.Sessions
+                        .Select(s => new { s.StartTime, s.EndTime, Name = $"Session: {s.SessionName}" })
+                        .Concat(request.Breaks.Select(b => new { b.StartTime, b.EndTime, Name = $"Break: {b.BreakName}" }))
+                        .OrderBy(x => x.StartTime)
+                        .ToList();
+
+                    for (int i = 0; i < allTimeSlots.Count - 1; i++)
+                    {
+                        var currentEndTime = DateTime.Parse(allTimeSlots[i].EndTime).TimeOfDay;
+                        var nextStartTime = DateTime.Parse(allTimeSlots[i + 1].StartTime).TimeOfDay;
+
+                        if (currentEndTime > nextStartTime)
+                        {
+                            errorMessages.Add($"Time overlap detected between '{allTimeSlots[i].Name}' ending at {ConvertTo12HourFormat(currentEndTime)} and '{allTimeSlots[i + 1].Name}' starting at {ConvertTo12HourFormat(nextStartTime)}.");
+                        }
+                    }
+
+                    // If there are any errors, return all of them together
+                    if (errorMessages.Any())
+                    {
+                        return new ServiceResponse<string>(false, string.Join(" ", errorMessages), string.Empty, StatusCodes.Status400BadRequest);
+                    }
+
                     // Step 1: Add or update Group
                     int groupId = request.GroupID ?? 0;
                     if (groupId == 0)
@@ -40,8 +95,8 @@ namespace TimeTable_API.Repository.Implementations
                         groupId = await _connection.ExecuteScalarAsync<int>(query, new
                         {
                             request.GroupName,
-                            request.StartTime,
-                            request.EndTime,
+                            StartTime = groupStartTime,
+                            EndTime = groupEndTime,
                             request.InstituteID,
                             request.IsActive
                         }, transaction);
@@ -56,16 +111,35 @@ namespace TimeTable_API.Repository.Implementations
                         {
                             request.GroupID,
                             request.GroupName,
-                            request.StartTime,
-                            request.EndTime,
+                            StartTime = groupStartTime,
+                            EndTime = groupEndTime,
                             request.InstituteID,
                             request.IsActive
                         }, transaction);
                     }
 
-                    // Step 2: Add or update Sessions
+                    // Step 2: Process sessions
+                    var existingSessions = await _connection.QueryAsync<int>(
+                        "SELECT SessionID FROM tblTimeTableSessions WHERE GroupID = @GroupID",
+                        new { GroupID = groupId }, transaction);
+
+                    var sessionIdsToUpdate = request.Sessions.Select(s => s.SessionID).Where(id => id != null).Cast<int>().ToList();
+
+                    // Remove any sessions not present in the update request
+                    var sessionsToDelete = existingSessions.Except(sessionIdsToUpdate).ToList();
+                    if (sessionsToDelete.Any())
+                    {
+                        await _connection.ExecuteAsync(
+                            "DELETE FROM tblTimeTableSessions WHERE SessionID IN @SessionIDs AND GroupID = @GroupID",
+                            new { SessionIDs = sessionsToDelete, GroupID = groupId }, transaction);
+                    }
+
+                    // Insert or update sessions
                     foreach (var session in request.Sessions)
                     {
+                        var sessionStartTime = DateTime.Parse(session.StartTime).TimeOfDay;
+                        var sessionEndTime = DateTime.Parse(session.EndTime).TimeOfDay;
+
                         if (session.SessionID == null || session.SessionID == 0)
                         {
                             // Insert new session
@@ -75,8 +149,8 @@ namespace TimeTable_API.Repository.Implementations
                             {
                                 GroupID = groupId,
                                 session.SessionName,
-                                session.StartTime,
-                                session.EndTime
+                                StartTime = sessionStartTime,
+                                EndTime = sessionEndTime
                             }, transaction);
                         }
                         else
@@ -90,15 +164,34 @@ namespace TimeTable_API.Repository.Implementations
                                 session.SessionID,
                                 GroupID = groupId,
                                 session.SessionName,
-                                session.StartTime,
-                                session.EndTime
+                                StartTime = sessionStartTime,
+                                EndTime = sessionEndTime
                             }, transaction);
                         }
                     }
 
-                    // Step 3: Add or update Breaks
+                    // Step 3: Process breaks
+                    var existingBreaks = await _connection.QueryAsync<int>(
+                        "SELECT BreaksID FROM tblTimeTableBreaks WHERE GroupID = @GroupID",
+                        new { GroupID = groupId }, transaction);
+
+                    var breaksIdsToUpdate = request.Breaks.Select(b => b.BreaksID).Where(id => id != null).Cast<int>().ToList();
+
+                    // Remove any breaks not present in the update request
+                    var breaksToDelete = existingBreaks.Except(breaksIdsToUpdate).ToList();
+                    if (breaksToDelete.Any())
+                    {
+                        await _connection.ExecuteAsync(
+                            "DELETE FROM tblTimeTableBreaks WHERE BreaksID IN @BreaksIDs AND GroupID = @GroupID",
+                            new { BreaksIDs = breaksToDelete, GroupID = groupId }, transaction);
+                    }
+
+                    // Insert or update breaks
                     foreach (var breaks in request.Breaks)
                     {
+                        var breakStartTime = DateTime.Parse(breaks.StartTime).TimeOfDay;
+                        var breakEndTime = DateTime.Parse(breaks.EndTime).TimeOfDay;
+
                         if (breaks.BreaksID == null || breaks.BreaksID == 0)
                         {
                             // Insert new break
@@ -108,8 +201,8 @@ namespace TimeTable_API.Repository.Implementations
                             {
                                 GroupID = groupId,
                                 BreakName = breaks.BreakName,
-                                breaks.StartTime,
-                                breaks.EndTime
+                                StartTime = breakStartTime,
+                                EndTime = breakEndTime
                             }, transaction);
                         }
                         else
@@ -123,13 +216,19 @@ namespace TimeTable_API.Repository.Implementations
                                 breaks.BreaksID,
                                 GroupID = groupId,
                                 BreakName = breaks.BreakName,
-                                breaks.StartTime,
-                                breaks.EndTime
+                                StartTime = breakStartTime,
+                                EndTime = breakEndTime
                             }, transaction);
                         }
                     }
 
-                    // Step 4: Add Class Sections
+                    // Step 4: Process Class Sections
+                    // Remove existing class-section mappings before adding new ones to avoid duplication
+                    await _connection.ExecuteAsync(
+                        "DELETE FROM tblTimeTableClassSession WHERE GroupID = @GroupID",
+                        new { GroupID = groupId }, transaction);
+
+                    // Insert new class-section mappings
                     foreach (var classSection in request.ClassSections)
                     {
                         string classSectionQuery = @"INSERT INTO tblTimeTableClassSession (GroupID, ClassID, SectionID, IsActive) 
@@ -137,8 +236,8 @@ namespace TimeTable_API.Repository.Implementations
                         await _connection.ExecuteAsync(classSectionQuery, new
                         {
                             GroupID = groupId,
-                            classSection.ClassID,
-                            classSection.SectionID
+                            ClassID = classSection.ClassID,
+                            SectionID = classSection.SectionID
                         }, transaction);
                     }
 
@@ -153,6 +252,14 @@ namespace TimeTable_API.Repository.Implementations
                 }
             }
         }
+
+        // Helper function to convert to 12-hour format
+        private string ConvertTo12HourFormat(TimeSpan time)
+        {
+            return DateTime.Today.Add(time).ToString("hh:mm tt");
+        }
+
+
         public async Task<ServiceResponse<List<GroupResponse>>> GetAllGroups(GetAllGroupsRequest request)
         {
             try
@@ -163,7 +270,9 @@ namespace TimeTable_API.Repository.Implementations
             FROM tblTimeTableGroups 
             WHERE IsActive = 1 AND InstituteID = @InstituteID";
 
+                // Fetching the total count
                 int totalCount = await _connection.ExecuteScalarAsync<int>(countSql, new { request.InstituteID });
+                Console.WriteLine($"Fetched Total Count: {totalCount}"); // Log the count for debugging
 
                 // Updated SQL Query with InstituteID filter
                 string sql = @"
@@ -195,6 +304,14 @@ namespace TimeTable_API.Repository.Implementations
                     {
                         DateTime startDateTime = DateTime.Today.Add(group.StartTime.Value);
                         DateTime endDateTime = DateTime.Today.Add(group.EndTime.Value);
+
+                        // Adjust the end time to ensure proper AM/PM formatting within the same day
+                        if (endDateTime.TimeOfDay < startDateTime.TimeOfDay)
+                        {
+                            // If end time is before start time, assume it's past noon and adjust by adding a day
+                            endDateTime = endDateTime.AddDays(1);
+                        }
+
                         group.StartEndTime = $"{startDateTime:hh:mm tt} - {endDateTime:hh:mm tt}";
                     }
                     else
@@ -204,15 +321,15 @@ namespace TimeTable_API.Repository.Implementations
 
                     // Fetch ClassSection data for each group
                     string classSectionSql = @"
-                SELECT 
-                    cs.ClassID,
-                    cs.SectionID,
-                    c.class_name AS ClassName,
-                    s.section_name AS SectionName
-                FROM tblTimeTableClassSession cs
-                JOIN tbl_Class c ON cs.ClassID = c.class_id
-                JOIN tbl_Section s ON cs.SectionID = s.section_id
-                WHERE cs.GroupID = @GroupID AND cs.IsActive = 1";
+                                            SELECT 
+                                                cs.ClassID,
+                                                cs.SectionID,
+                                                c.class_name AS ClassName,
+                                                s.section_name AS SectionName
+                                            FROM tblTimeTableClassSession cs
+                                            JOIN tbl_Class c ON cs.ClassID = c.class_id
+                                            JOIN tbl_Section s ON cs.SectionID = s.section_id
+                                            WHERE cs.GroupID = @GroupID AND cs.IsActive = 1";
 
                     var classSections = await _connection.QueryAsync<ClassSectionResponse>(classSectionSql, new
                     {
@@ -222,7 +339,8 @@ namespace TimeTable_API.Repository.Implementations
                     group.ClassSections = classSections.ToList();
                 }
 
-                // Pass totalCount in ServiceResponse
+
+                // Return the response with totalCount properly passed
                 return new ServiceResponse<List<GroupResponse>>(true, "Groups retrieved successfully", groupData, StatusCodes.Status200OK, totalCount);
             }
             catch (Exception ex)

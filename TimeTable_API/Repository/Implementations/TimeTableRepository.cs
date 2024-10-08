@@ -406,5 +406,60 @@ namespace TimeTable_API.Repository.Implementations
 
             return response;
         }
+
+        public async Task<ServiceResponse<List<EmployeeResponse>>> GetEmployees(GetInstituteRequest request)
+        {
+            try
+            {
+                string sql = @"
+            SELECT 
+                Employee_id AS EmployeeID,
+                First_Name AS FirstName,
+                Middle_Name AS MiddleName,
+                Last_Name AS LastName,
+                mobile_number AS MobileNumber,
+                EmailID,
+                Employee_code_id AS EmployeeCode,
+                Department_id AS DepartmentID,
+                Designation_id AS DesignationID,
+                EmpPhoto AS EmployeePhoto
+            FROM tbl_EmployeeProfileMaster
+            WHERE Institute_id = @InstituteID AND Status = 1";
+
+                var employees = await _connection.QueryAsync<EmployeeResponse>(sql, new { request.InstituteID });
+
+                return new ServiceResponse<List<EmployeeResponse>>(true, "Employees retrieved successfully", employees.ToList(), 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<EmployeeResponse>>(false, ex.Message, new List<EmployeeResponse>(), 500);
+            }
+        }
+
+        public async Task<ServiceResponse<List<SubjectResponse>>> GetSubjects(GetInstituteRequest request)
+        {
+            try
+            {
+                string sql = @"
+            SELECT 
+                SubjectId AS SubjectID,
+                InstituteId,
+                SubjectName,
+                SubjectCode,
+                subject_type_id AS SubjectTypeID
+            FROM tbl_Subjects
+            WHERE InstituteId = @InstituteID AND IsDeleted = 0";
+
+                var subjects = await _connection.QueryAsync<SubjectResponse>(sql, new { request.InstituteID });
+
+                return new ServiceResponse<List<SubjectResponse>>(true, "Subjects retrieved successfully", subjects.ToList(), 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<SubjectResponse>>(false, ex.Message, new List<SubjectResponse>(), 500);
+            }
+        }
+
+
     }
 }

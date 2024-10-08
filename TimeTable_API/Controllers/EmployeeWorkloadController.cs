@@ -22,5 +22,12 @@ namespace TimeTable_API.Controllers
             var result = await _service.GetEmployeeWorkload(request);
             return Ok(result);
         }
+
+        [HttpPost("AddUpdateWorkLoad")]
+        public async Task<IActionResult> AddUpdateWorkLoad([FromBody] AddUpdateWorkloadRequest request)
+        {
+            var response = await _service.AddUpdateWorkload(request);
+            return StatusCode(response.StatusCode, response);
+        }
     }
 }

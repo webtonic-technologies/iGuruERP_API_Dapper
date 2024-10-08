@@ -30,7 +30,7 @@ namespace TimeTable_API.Repository.Implementations
 
                 // Fetch sessions with employee mapping for given AcademicYearCode and EmployeeID
                 var groupSessions = await _connection.QueryAsync<EmployeeWiseSessionResponse>(
-                    @"SELECT 
+                    @"SELECT DISTINCT
                         d.DayType AS Day,
                         s.SessionName,
                         c.class_name + ' - ' + sec.section_name AS ClassNameSection,

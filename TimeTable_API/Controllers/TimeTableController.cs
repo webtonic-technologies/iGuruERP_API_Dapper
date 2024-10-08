@@ -38,5 +38,20 @@ namespace TimeTable_API.Controllers
             }
         }
 
+        [HttpPost("GetEmployees")]
+        public async Task<IActionResult> GetEmployees([FromBody] GetInstituteRequest request)
+        {
+            var response = await _timeTableService.GetEmployees(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("GetSubjects")]
+        public async Task<IActionResult> GetSubjects([FromBody] GetInstituteRequest request)
+        {
+            var response = await _timeTableService.GetSubjects(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+
     }
 }
