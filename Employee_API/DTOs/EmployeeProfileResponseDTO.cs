@@ -186,4 +186,13 @@ namespace Employee_API.DTOs
         public string UserName { set; get; } = string.Empty;
         public string Email { get; set; } = string.Empty;
     }
+    public class EmployeeColumn
+    {
+        public int ECMId { get; set; }
+        public string ColumnDisplayName { get; set; }
+        public string ColumnDatabaseName { get; set; }
+        public int CategoryId { get; set; }
+        public bool Status { get; set; }
+    }
+
 }

@@ -1430,7 +1430,19 @@ namespace Employee_API.Repository.Implementations
                 return new ServiceResponse<byte[]>(false, ex.Message, null, 500);
             }
         }
+        public async Task<ServiceResponse<IEnumerable<EmployeeColumn>>> GetEmployeeColumnsAsync()
+        {
+            string query = @"
+        SELECT TOP (1000) [ECMId],
+                          [ColumnDisplayName],
+                          [ColumnDatabaseName],
+                          [CategoryId],
+                          [Status]
+        FROM [iGuruERP].[dbo].[tbl_EmployeeColumnMaster]";
 
+            var data = await _connection.QueryAsync<EmployeeColumn>(query);
+            return new ServiceResponse<IEnumerable<EmployeeColumn>>(true, "Records found", data.ToList(), 200);
+        }
         // Helper method to add a master sheet
         private void AddMasterSheet(ExcelPackage package, string sheetName, string[] headers, IEnumerable<dynamic> data)
         {

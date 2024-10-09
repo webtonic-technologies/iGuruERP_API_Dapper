@@ -165,6 +165,11 @@ namespace Employee_API.Services.Implementations
             }
         }
 
+        public async Task<ServiceResponse<IEnumerable<EmployeeColumn>>> GetEmployeeColumnsAsync()
+        {
+            return await _employeeProfileRepository.GetEmployeeColumnsAsync();
+        }
+
         public async Task<ServiceResponse<List<EmployeeDocument>>> GetEmployeeDocuments(int employeeId)
         {
             try

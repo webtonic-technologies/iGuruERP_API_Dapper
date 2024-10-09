@@ -566,5 +566,17 @@ namespace Employee_API.Controllers
                 return StatusCode(response.StatusCode, response);  // Return the error code and message
             }
         }
+        [HttpGet("EmployeeColumn")]
+        public async Task<IActionResult> GetEmployeeColumns()
+        {
+            var result = await _employeeProfileServices.GetEmployeeColumnsAsync();
+
+            if (result == null)
+            {
+                return NotFound("No employee columns found.");
+            }
+
+            return Ok(result);
+        }
     }
 }
