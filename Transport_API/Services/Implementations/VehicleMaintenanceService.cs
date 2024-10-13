@@ -1,4 +1,5 @@
 ﻿using Transport_API.DTOs.Requests;
+using Transport_API.DTOs.Requests.Transport_API.DTOs.Requests;
 using Transport_API.DTOs.Response;
 using Transport_API.DTOs.ServiceResponse;
 using Transport_API.Models;
@@ -21,10 +22,11 @@ namespace Transport_API.Services.Implementations
             return await _vehicleMaintenanceRepository.AddUpdateVehicleExpense(vehicleExpense);
         }
 
-        public async Task<ServiceResponse<IEnumerable<VehicleExpenseResponse>>> GetAllVehicleExpenses(GetAllExpenseRequest request)
+        public async Task<ServiceResponse<IEnumerable<GetAllExpenseResponse>>> GetAllVehicleExpenses(GetAllExpenseRequest request)
         {
             return await _vehicleMaintenanceRepository.GetAllVehicleExpenses(request);
         }
+
 
         public async Task<ServiceResponse<VehicleExpense>> GetVehicleExpenseById(int vehicleExpenseId)
         {

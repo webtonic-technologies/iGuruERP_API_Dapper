@@ -70,5 +70,21 @@ namespace Transport_API.Controllers
                 return BadRequest(e.Message);
             }
         }
+
+        [HttpPost("ExportExcel")]
+        public async Task<IActionResult> ExportExcel(GetAllExportVehiclesRequest request)
+        {
+            var response = await _vehiclesService.ExportExcel(request);
+            return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Vehicles.xlsx");
+        }
+
+        [HttpPost("ExportCSV")]
+        public async Task<IActionResult> ExportCSV(GetAllExportVehiclesRequest request)
+        {
+            var response = await _vehiclesService.ExportCSV(request);
+            return File(response.Data, "text/csv", "Vehicles.csv");
+        }
+
+
     }
 }

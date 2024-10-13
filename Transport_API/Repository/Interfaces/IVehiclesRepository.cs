@@ -9,5 +9,9 @@ namespace Transport_API.Repository.Interfaces
         Task<ServiceResponse<IEnumerable<Vehicle>>> GetAllVehicles(GetAllVehiclesRequest request);
         Task<ServiceResponse<Vehicle>> GetVehicleById(int vehicleId);
         Task<ServiceResponse<bool>> UpdateVehicleStatus(int vehicleId);
+
+        Task<ServiceResponse<byte[]>> ExportExcel(GetAllExportVehiclesRequest request);
+        Task<ServiceResponse<byte[]>> ExportCSV(GetAllExportVehiclesRequest request);
+
     }
 }

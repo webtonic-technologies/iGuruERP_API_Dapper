@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Transport_API.DTOs.Requests;
+using Transport_API.DTOs.Requests.Transport_API.DTOs.Requests;
 using Transport_API.Services.Interfaces;
 
 namespace Transport_API.Controllers
@@ -14,6 +15,7 @@ namespace Transport_API.Controllers
         {
             _vehicleMaintenanceService = vehicleMaintenanceService;
         }
+
 
         [HttpPost("AddExpense")]
         public async Task<IActionResult> AddExpense(VehicleExpenseRequest request)
@@ -42,6 +44,7 @@ namespace Transport_API.Controllers
                 return BadRequest(e.Message);
             }
         }
+
 
         [HttpGet("GetExpense/{VehicleId}")]
         public async Task<IActionResult> GetExpense(int VehicleId)

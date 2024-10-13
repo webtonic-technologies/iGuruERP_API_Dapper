@@ -4,6 +4,7 @@ using Transport_API.DTOs.ServiceResponse;
 using Transport_API.Models;
 using Transport_API.Repository.Interfaces;
 using System.Data;
+using Transport_API.DTOs.Response;
 
 namespace Transport_API.Repository.Implementations
 {
@@ -16,52 +17,102 @@ namespace Transport_API.Repository.Implementations
             _dbConnection = dbConnection;
         }
 
-        public async Task<ServiceResponse<string>> AddUpdateTransportAttendance(TransportAttendance transportAttendance)
+        public async Task<ServiceResponse<string>> AddUpdateTransportAttendance(TransportAttendanceRequest request)
         {
             string sql;
-            if (transportAttendance.TAID == 0) // Assuming TAID is the identifier for tblTransportAttendance
+            if (request.TAID == 0) // Insert operation
             {
-                sql = @"INSERT INTO tblTransportAttendance (RoutePlanID, AttendanceTypeID, StudentID, AttendanceStatus, AttendanceDate, Remarks) 
-                VALUES (@RoutePlanID, @AttendanceTypeID, @StudentID, @AttendanceStatus, @AttendanceDate, @Remarks)";
+                sql = @"INSERT INTO tblTransportAttendance (AttendanceDate, RoutePlanID, TransportAttendanceTypeID, AttendanceStatus, StudentID, Remarks, InstituteID) 
+                VALUES (CONVERT(date, @AttendanceDate, 103), @RoutePlanID, @TransportAttendanceTypeID, @AttendanceStatus, @StudentID, @Remarks, @InstituteID)";
             }
-            else
+            else // Update operation
             {
                 sql = @"UPDATE tblTransportAttendance 
-                SET RoutePlanID = @RoutePlanID, 
-                    AttendanceTypeID = @AttendanceTypeID, 
-                    StudentID = @StudentID, 
-                    AttendanceStatus = @AttendanceStatus, 
-                    AttendanceDate = @AttendanceDate, 
-                    Remarks = @Remarks 
+                SET AttendanceDate = CONVERT(date, @AttendanceDate, 103),
+                    RoutePlanID = @RoutePlanID,
+                    TransportAttendanceTypeID = @TransportAttendanceTypeID,
+                    AttendanceStatus = @AttendanceStatus,
+                    StudentID = @StudentID,
+                    Remarks = @Remarks,
+                    InstituteID = @InstituteID
                 WHERE TAID = @TAID";
             }
 
-            var result = await _dbConnection.ExecuteAsync(sql, transportAttendance);
+            var result = await _dbConnection.ExecuteAsync(sql, request);
             if (result > 0)
             {
-                return new ServiceResponse<string>(true, "Operation Successful", "Transport attendance added/updated successfully", StatusCodes.Status200OK);
+                return new ServiceResponse<string>(true, "Operation Successful", "Attendance record added/updated successfully", StatusCodes.Status200OK);
             }
-            else
-            {
-                return new ServiceResponse<string>(false, "Operation Failed", "Error adding/updating transport attendance", StatusCodes.Status400BadRequest);
-            }
+            return new ServiceResponse<string>(false, "Operation Failed", "Error adding/updating attendance", StatusCodes.Status400BadRequest);
         }
 
-        public async Task<ServiceResponse<IEnumerable<TransportAttendance>>> GetAllTransportAttendance(GetTransportAttendanceRequest request)
+        public async Task<ServiceResponse<IEnumerable<TransportAttendanceResponse>>> GetAllTransportAttendance(GetTransportAttendanceRequest request)
         {
-            string countSql = @"SELECT COUNT(*) FROM tbl_Transport_Attendance";
-            int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql);
+            // SQL to fetch the total number of students for the given criteria
+            string countSql = @"
+                            SELECT COUNT(*)
+                            FROM tbl_StudentMaster s
+                            JOIN tbl_Class c ON s.class_id = c.class_id
+                            JOIN tbl_Section sec ON s.section_id = sec.section_id
+                            LEFT JOIN tblTransportAttendance ta ON ta.StudentID = s.student_id
+                                AND ta.RoutePlanID = @RouteID
+                                AND ta.TransportAttendanceTypeID = @AttendanceTypeID
+                                AND ta.AttendanceDate = CONVERT(DATE, @AttendanceDate, 103)
+                                AND ta.InstituteID = @InstituteID";
 
-            string sql = @"SELECT * FROM tbl_Transport_Attendance ORDER BY TransportAttendanceId OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
-            var transportAttendances = await _dbConnection.QueryAsync<TransportAttendance>(sql, new { Offset = (request.PageNumber - 1) * request.PageSize, PageSize = request.PageSize });
+                                    // SQL to fetch student attendance details
+                                    string sql = @"
+                            SELECT 
+                                s.student_id AS StudentID,
+                                CONCAT(s.First_Name, ' ', s.Last_Name) AS StudentName,
+                                s.Admission_Number AS AdmissionNo,
+                                CONCAT(c.class_name, ' - ', sec.section_name) AS ClassSection,
+                                ISNULL(ta.AttendanceStatus, '-') AS AttendanceStatus,
+                                ISNULL(ta.Remarks, 'No Remarks') AS Remarks
+                            FROM 
+                                tbl_StudentMaster s
+                            JOIN 
+                                tbl_Class c ON s.class_id = c.class_id
+                            JOIN 
+                                tbl_Section sec ON s.section_id = sec.section_id
+                            LEFT JOIN 
+                                tblTransportAttendance ta ON ta.StudentID = s.student_id
+                                AND ta.RoutePlanID = @RouteID
+                                AND ta.TransportAttendanceTypeID = @AttendanceTypeID
+                                AND ta.AttendanceDate = CONVERT(DATE, @AttendanceDate, 103)
+                                AND ta.InstituteID = @InstituteID
+                            ORDER BY 
+                                s.student_id
+                            OFFSET @Offset ROWS 
+                            FETCH NEXT @PageSize ROWS ONLY;";
 
-            if (transportAttendances.Any())
+            // Get total student count
+            int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql, new
             {
-                return new ServiceResponse<IEnumerable<TransportAttendance>>(true, "Records Found", transportAttendances, StatusCodes.Status200OK, totalCount);
+                AttendanceDate = request.AttendanceDate,
+                RouteID = request.RouteID,
+                AttendanceTypeID = request.AttendanceTypeID,
+                InstituteID = request.InstituteID
+            });
+
+            // Get the student attendance records
+            var attendanceRecords = await _dbConnection.QueryAsync<TransportAttendanceResponse>(sql, new
+            {
+                AttendanceDate = request.AttendanceDate,
+                RouteID = request.RouteID,
+                AttendanceTypeID = request.AttendanceTypeID,
+                InstituteID = request.InstituteID,
+                Offset = (request.pageNumber - 1) * request.pageSize,
+                PageSize = request.pageSize
+            });
+
+            if (attendanceRecords.Any())
+            {
+                return new ServiceResponse<IEnumerable<TransportAttendanceResponse>>(true, "Records Found", attendanceRecords, StatusCodes.Status200OK, totalCount);
             }
             else
             {
-                return new ServiceResponse<IEnumerable<TransportAttendance>>(false, "No Records Found", null, StatusCodes.Status204NoContent);
+                return new ServiceResponse<IEnumerable<TransportAttendanceResponse>>(false, "No Records Found", null, StatusCodes.Status204NoContent, totalCount);
             }
         }
 

@@ -8,6 +8,8 @@ using System.Text.RegularExpressions;
 using Transport_API.DTOs.Response;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Hosting.Internal;
+using Transport_API.DTOs.Requests.Transport_API.DTOs.Requests;
+using System.Globalization;
 
 namespace Transport_API.Repository.Implementations
 {
@@ -24,79 +26,194 @@ namespace Transport_API.Repository.Implementations
 
         }
 
+
         public async Task<ServiceResponse<string>> AddUpdateVehicleExpense(VehicleExpenseRequest vehicleExpense)
         {
             string sql;
             if (vehicleExpense.VehicleExpenseID == 0)
             {
-                sql = @"INSERT INTO tblVehicleExpense (ExpenseTypeID, ExpenseDate, Cost, Remarks, VehicleID, InstituteID) 
-                        VALUES (@ExpenseTypeID, @ExpenseDate, @Cost, @Remarks, @VehicleID, @InstituteID)
-                        SELECT CAST(SCOPE_IDENTITY() AS INT);";
+                // Insert operation
+                sql = @"INSERT INTO tblVehicleExpense (VehicleID, VehicleExpenseTypeID, ExpenseDate, Cost, Remarks, InstituteID, IsActive)
+                VALUES (@VehicleID, @VehicleExpenseTypeID, @ExpenseDate, @Cost, @Remarks, @InstituteID, @IsActive);
+                SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
-
-                int result = await _dbConnection.QueryFirstOrDefaultAsync<int>(sql, new { vehicleExpense.ExpenseTypeID, vehicleExpense.ExpenseDate, vehicleExpense.Cost, vehicleExpense.Remarks, vehicleExpense.VehicleID, vehicleExpense.InstituteID });
+                int result = await _dbConnection.QueryFirstOrDefaultAsync<int>(sql, new
+                {
+                    vehicleExpense.VehicleID,
+                    vehicleExpense.VehicleExpenseTypeID,
+                    vehicleExpense.ExpenseDate,
+                    vehicleExpense.Cost,
+                    vehicleExpense.Remarks,
+                    vehicleExpense.InstituteID,
+                    vehicleExpense.IsActive
+                });
 
                 if (result > 0)
                 {
-                    int response = VehicleDocumentMapping(vehicleExpense.VehicleExpenseDocuments, result);
+                    // Insert attachments if there are any
+                    if (vehicleExpense.Attachments != null && vehicleExpense.Attachments.Any())
+                    {
+                        foreach (var doc in vehicleExpense.Attachments)
+                        {
+                            await AddVehicleExpenseDocument(result, doc.Attachment);
+                        }
+                    }
 
-                    return new ServiceResponse<string>(true, "Operation Successful", "Vehicle added/updated successfully", StatusCodes.Status200OK);
-
+                    return new ServiceResponse<string>(true, "Vehicle expense added successfully", null, StatusCodes.Status200OK);
                 }
                 else
                 {
-                    return new ServiceResponse<string>(false, "Operation Failed", "Error adding/updating vehicle", StatusCodes.Status400BadRequest);
+                    return new ServiceResponse<string>(false, "Failed to add vehicle expense", null, StatusCodes.Status400BadRequest);
                 }
-
             }
             else
             {
-                sql = @"UPDATE tblVehicleExpense SET ExpenseTypeID = @ExpenseTypeID, ExpenseDate = @ExpenseDate, 
-                        Cost = @Cost, Remarks = @Remarks, VehicleID = @VehicleID , InstituteID = @InstituteID WHERE VehicleExpenseID = @VehicleExpenseID";
+                // Update operation
+                sql = @"UPDATE tblVehicleExpense 
+                SET VehicleID = @VehicleID, 
+                    VehicleExpenseTypeID = @VehicleExpenseTypeID, 
+                    ExpenseDate = @ExpenseDate, 
+                    Cost = @Cost, 
+                    Remarks = @Remarks, 
+                    InstituteID = @InstituteID, 
+                    IsActive = @IsActive
+                WHERE VehicleExpenseID = @VehicleExpenseID";
 
-                int result = await _dbConnection.ExecuteAsync(sql, new { vehicleExpense.ExpenseTypeID, vehicleExpense.ExpenseDate, vehicleExpense.Cost, vehicleExpense.Remarks, vehicleExpense.VehicleID, vehicleExpense.InstituteID });
+                int result = await _dbConnection.ExecuteAsync(sql, new
+                {
+                    vehicleExpense.VehicleID,
+                    vehicleExpense.VehicleExpenseTypeID,
+                    vehicleExpense.ExpenseDate,
+                    vehicleExpense.Cost,
+                    vehicleExpense.Remarks,
+                    vehicleExpense.InstituteID,
+                    vehicleExpense.IsActive,
+                    vehicleExpense.VehicleExpenseID
+                });
 
                 if (result > 0)
                 {
-                    int response = VehicleDocumentMapping(vehicleExpense.VehicleExpenseDocuments, vehicleExpense.VehicleID);
+                    // Update attachments if there are any
+                    if (vehicleExpense.Attachments != null && vehicleExpense.Attachments.Any())
+                    {
+                        foreach (var doc in vehicleExpense.Attachments)
+                        {
+                            await AddVehicleExpenseDocument(vehicleExpense.VehicleExpenseID, doc.Attachment);
+                        }
+                    }
 
-                    return new ServiceResponse<string>(true, "Operation Successful", "Vehicle added/updated successfully", StatusCodes.Status200OK);
-
+                    return new ServiceResponse<string>(true, "Vehicle expense updated successfully", null, StatusCodes.Status200OK);
                 }
                 else
                 {
-                    return new ServiceResponse<string>(false, "Operation Failed", "Error adding/updating vehicle", StatusCodes.Status400BadRequest);
+                    return new ServiceResponse<string>(false, "Failed to update vehicle expense", null, StatusCodes.Status400BadRequest);
                 }
             }
-
-            
         }
 
-        public async Task<ServiceResponse<IEnumerable<VehicleExpenseResponse>>> GetAllVehicleExpenses(GetAllExpenseRequest request)
+        // Helper method to handle attachments
+        private async Task AddVehicleExpenseDocument(int vehicleExpenseID, string base64Document)
         {
-            //string countSql = @"SELECT COUNT(*) FROM tblVehicleExpense";
- 
+            string filePath = SaveDocumentToDisk(base64Document); // You can implement your method to save the base64 to disk
 
-            //string sql = @"SELECT * FROM tblVehicleExpense ORDER BY VehicleExpenseID OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
-            string sql = @"Select
-                        VE.VehicleExpenseID, VE.VehicleID, VM.VehicleNumber, ET.VehicleExpenseType, SUM(VE.Cost) AS TotalCost
-                        from tblVehicleExpense VE
-                        Left Outer Join tblVehicleMaster VM ON VM.VehicleID = VE.VehicleID
-                        Left Outer Join tblVehicleExpenseType ET ON ET.VehicleExpenseTypeID = VE.ExpenseTypeID
-                        WHERE VE.InstituteID = @InstituteID
-                        GROUP BY VE.VehicleExpenseID, VM.VehicleNumber, ET.VehicleExpenseType, VE.VehicleID 
-                        Order by VE.VehicleExpenseID OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
-              
+            string sql = @"INSERT INTO tblVehicleExpenseDocument (VehicleExpenseID, VehicleExpenseDocument)
+                   VALUES (@VehicleExpenseID, @VehicleExpenseDocument);";
 
-            var vehicleExpenses = await _dbConnection.QueryAsync<VehicleExpenseResponse>(sql, new { Offset = (request.PageNumber - 1) * request.PageSize, PageSize = request.PageSize, request.InstituteID });
+            await _dbConnection.ExecuteAsync(sql, new { VehicleExpenseID = vehicleExpenseID, VehicleExpenseDocument = filePath });
+        }
 
-            if (vehicleExpenses.Any())
+        // Simulate saving document to disk using ContentRootPath
+        private string SaveDocumentToDisk(string base64Document)
+        {
+            // Use ContentRootPath instead of WebRootPath
+            string rootPath = _hostingEnvironment.ContentRootPath;
+
+            // Define the path where files will be stored inside the Assets folder
+            string directoryPath = Path.Combine(rootPath, "Assets", "VehicleDocuments");
+
+            // Ensure the directory exists
+            if (!Directory.Exists(directoryPath))
             {
-                return new ServiceResponse<IEnumerable<VehicleExpenseResponse>>(true, "Records Found", vehicleExpenses, StatusCodes.Status200OK, vehicleExpenses.Count());
+                Directory.CreateDirectory(directoryPath);
+            }
+
+            // Create a unique file name
+            string fileName = Guid.NewGuid().ToString() + ".pdf";  // Assuming document is in PDF format
+            string filePath = Path.Combine(directoryPath, fileName);
+
+            // Convert the base64 string to bytes and write the file to disk
+            byte[] documentBytes = Convert.FromBase64String(base64Document);
+            File.WriteAllBytes(filePath, documentBytes);
+
+            return filePath; // Return the file path for saving to the database
+        }
+
+
+
+        public async Task<ServiceResponse<IEnumerable<GetAllExpenseResponse>>> GetAllVehicleExpenses(GetAllExpenseRequest request)
+        {
+            // Parse StartDate and EndDate from DD-MM-YYYY string format to DateTime
+            DateTime startDate;
+            DateTime endDate;
+
+            if (!DateTime.TryParseExact(request.StartDate, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out startDate) ||
+                !DateTime.TryParseExact(request.EndDate, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out endDate))
+            {
+                return new ServiceResponse<IEnumerable<GetAllExpenseResponse>>(false, "Invalid date format. Please use DD-MM-YYYY.", null, StatusCodes.Status400BadRequest);
+            }
+
+            // SQL to retrieve expense records with filters and pagination
+            string sql = @"
+    SELECT 
+        ve.VehicleExpenseID, -- Include VehicleExpenseID to fetch documents correctly
+        ve.VehicleID, 
+        vm.VehicleNumber, 
+        vet.VehicleExpenseType, 
+        ve.ExpenseDate, 
+        ve.Remarks, 
+        ve.Cost AS Amount
+    FROM 
+        tblVehicleExpense ve
+    JOIN 
+        tblVehicleMaster vm ON ve.VehicleID = vm.VehicleID
+    JOIN 
+        tblVehicleExpenseType vet ON ve.VehicleExpenseTypeID = vet.VehicleExpenseTypeID
+    WHERE 
+        ve.InstituteID = @InstituteID
+        AND ve.ExpenseDate BETWEEN @StartDate AND @EndDate
+        AND (@VehicleID IS NULL OR ve.VehicleID = @VehicleID)
+        AND (@ExpenseTypeID IS NULL OR ve.VehicleExpenseTypeID = @ExpenseTypeID)
+    ORDER BY 
+        ve.ExpenseDate
+    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;
+    ";
+
+            var expenses = await _dbConnection.QueryAsync<GetAllExpenseResponse>(sql, new
+            {
+                InstituteID = request.InstituteID,
+                StartDate = startDate, // Parsed DateTime
+                EndDate = endDate,     // Parsed DateTime
+                VehicleID = request.VehicleID,
+                ExpenseTypeID = request.ExpenseTypeID,
+                Offset = (request.PageNumber - 1) * request.PageSize,
+                PageSize = request.PageSize
+            });
+
+            foreach (var expense in expenses)
+            {
+                // Fetch associated documents for each expense using the VehicleExpenseID
+                string documentSql = @"SELECT VehicleExpenseDocument FROM tblVehicleExpenseDocument WHERE VehicleExpenseID = @VehicleExpenseID";
+                var documents = await _dbConnection.QueryAsync<string>(documentSql, new { VehicleExpenseID = expense.VehicleExpenseID });
+                expense.Documents = documents.ToList();
+            }
+
+            if (expenses.Any())
+            {
+                return new ServiceResponse<IEnumerable<GetAllExpenseResponse>>(true, "Records Found", expenses, StatusCodes.Status200OK, expenses.Count());
             }
             else
             {
-                return new ServiceResponse<IEnumerable<VehicleExpenseResponse>>(false, "No Records Found", null, StatusCodes.Status204NoContent);
+                return new ServiceResponse<IEnumerable<GetAllExpenseResponse>>(false, "No Records Found", null, StatusCodes.Status204NoContent);
             }
         }
 
@@ -142,61 +259,92 @@ namespace Transport_API.Repository.Implementations
 
         private int VehicleDocumentMapping(List<VehicleExpenseDocumentRequest> requests, int VehicleExpenseID)
         {
+            // Ensure the documents have valid VehicleExpenseID set
+
             foreach (var data in requests)
             {
-                data.VehicleExpenseDocument = PDFUpload(data.VehicleExpenseDocument);
+                var uploadedFilePath = PDFUpload(data.Attachment);
+
+                // Ensure that the upload was successful
+                if (string.IsNullOrEmpty(uploadedFilePath))
+                {
+                    throw new Exception("Document upload failed. Please check the base64 string or file saving process.");
+                }
+
+                data.Attachment = uploadedFilePath;  // Store the file path returned by PDFUpload
                 data.VehicleExpenseID = VehicleExpenseID;
             }
 
+            // Check if there are already documents for this VehicleExpenseID
             string query = "SELECT COUNT(*) FROM [tblVehicleExpenseDocument] WHERE [VehicleExpenseID] = @VehicleExpenseID";
             int count = _dbConnection.QueryFirstOrDefault<int>(query, new { VehicleExpenseID });
+
             if (count > 0)
             {
-                var deleteDuery = @"DELETE FROM [tblVehicleExpenseDocument]
-                    WHERE [VehicleID] = @VehicleID;";
-                var rowsAffected = _dbConnection.Execute(deleteDuery, new { VehicleExpenseID });
-                if (rowsAffected > 0)
-                {
-                    var insertquery = @"INSERT INTO [tblVehicleExpenseDocument] ([VehicleExpenseID], [VehicleExpenseDocument])
-                    VALUES (@VehicleExpenseID, @VehicleExpenseDocument);";
-                    var valuesInserted = _dbConnection.Execute(insertquery, requests);
-                    return valuesInserted;
-                }
-                else
-                {
-                    return 0;
-                }
+                // Delete existing documents before adding new ones
+                var deleteQuery = @"DELETE FROM [tblVehicleExpenseDocument] WHERE [VehicleExpenseID] = @VehicleExpenseID;";
+                var rowsAffected = _dbConnection.Execute(deleteQuery, new { VehicleExpenseID });
             }
-            else
+
+            // Insert new documents for this VehicleExpenseID
+            var insertQuery = @"INSERT INTO [tblVehicleExpenseDocument] ([VehicleExpenseID], [VehicleExpenseDocument]) 
+                        VALUES (@VehicleExpenseID, @Attachment);";
+
+            // Using batch insertion for all requests
+            var valuesInserted = 0;
+            foreach (var document in requests)
             {
-                var insertquery = @"INSERT INTO [tblVehicleExpenseDocument] ([VehicleExpenseID], [VehicleExpenseDocument])
-                    VALUES (@VehicleExpenseID, @VehicleExpenseDocument);";
-                var valuesInserted = _dbConnection.Execute(insertquery, requests);
-                return valuesInserted;
+                valuesInserted += _dbConnection.Execute(insertQuery, new
+                {
+                    VehicleExpenseID = document.VehicleExpenseID,
+                    Attachment = document.Attachment // Assuming base64 string converted and returned by PDFUpload
+                });
             }
+
+            return valuesInserted;
         }
 
-        private string PDFUpload(string pdf)
+
+        private string PDFUpload(string base64String)
         {
-            if (string.IsNullOrEmpty(pdf) || pdf == "string")
+            // Check if the input is null or invalid
+            if (string.IsNullOrEmpty(base64String) || base64String == "string")
             {
-                return string.Empty;
+                throw new ArgumentException("Invalid base64 string for document upload.");
             }
-            byte[] imageData = Convert.FromBase64String(pdf);
-            string directoryPath = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "VehicleExpenseDcoumentsPDF");
 
-            if (!Directory.Exists(directoryPath))
+            try
             {
-                Directory.CreateDirectory(directoryPath);
-            }
-            string fileExtension = IsPdf(imageData) == true ? ".pdf" : string.Empty;
-            string fileName = Guid.NewGuid().ToString() + fileExtension;
-            string filePath = Path.Combine(directoryPath, fileName);
+                // Convert base64 string to byte array
+                byte[] fileData = Convert.FromBase64String(base64String);
 
-            // Write the byte array to the image file
-            File.WriteAllBytes(filePath, imageData);
-            return filePath;
+                // Generate a unique file name
+                string directoryPath = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", "VehicleExpenseDocumentsPDF");
+
+                // Ensure directory exists
+                if (!Directory.Exists(directoryPath))
+                {
+                    Directory.CreateDirectory(directoryPath);
+                }
+
+                // Generate a unique file name with extension
+                string fileName = $"{Guid.NewGuid()}.pdf";
+                string filePath = Path.Combine(directoryPath, fileName);
+
+                // Save the file to the directory
+                File.WriteAllBytes(filePath, fileData);
+
+                // Return the saved file path (or a relative URL if needed)
+                return filePath; // Or return a URL if needed: new Uri(filePath).AbsoluteUri;
+            }
+            catch (Exception ex)
+            {
+                // Log the error and return null (or rethrow the exception)
+                // Logging ex.Message for further debugging
+                return null; // Return null to indicate failure
+            }
         }
+
 
         private bool IsPdf(byte[] fileData)
         {
@@ -214,7 +362,7 @@ namespace Transport_API.Repository.Implementations
             var data = _dbConnection.Query<VehicleExpenseDocumentRequest>(boardQuery, new { VehicleExpenseID });
             foreach (var item in data)
             {
-                item.VehicleExpenseDocument = GetPDF(item.VehicleExpenseDocument);
+                item.Attachment = GetPDF(item.Attachment);
             }
             return data != null ? data.AsList() : [];
         }

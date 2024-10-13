@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using OfficeOpenXml;
 using System.Data;
 using System.Data.Common;
 using Transport_API.DTOs.Requests;
@@ -68,25 +69,25 @@ namespace Transport_API.Repository.Implementations
 
                 // Main SQL to retrieve paginated route plans, including the count of routeStops
                 string sql = @"
-        SELECT 
-            rp.RoutePlanID, 
-            rp.RouteName, 
-            rp.VehicleID, 
-            v.VehicleNumber, 
-            (SELECT COUNT(*) FROM tblRouteStopMaster rs WHERE rs.RoutePlanID = rp.RoutePlanID) AS NoOfStops,
-            (SELECT MIN(PickUpTime) FROM tblRouteStopMaster WHERE RoutePlanID = rp.RoutePlanID) AS PickUpTime,
-            (SELECT MAX(DropTime) FROM tblRouteStopMaster WHERE RoutePlanID = rp.RoutePlanID) AS DropTime,
-            ISNULL(CONCAT(e.First_Name, ' ', e.Last_Name), '') AS DriverName
-        FROM 
-            tblRoutePlan rp
-            JOIN tblVehicleMaster v ON rp.VehicleID = v.VehicleID
-            LEFT JOIN tbl_EmployeeProfileMaster e ON v.AssignDriverID = e.Employee_id
-        WHERE 
-            rp.IsActive = 1 
-            AND rp.InstituteID = @InstituteID
-        ORDER BY 
-            rp.RoutePlanID 
-        OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+SELECT 
+    rp.RoutePlanID, 
+    rp.RouteName, 
+    rp.VehicleID, 
+    v.VehicleNumber, 
+    (SELECT COUNT(*) FROM tblRouteStopMaster rs WHERE rs.RoutePlanID = rp.RoutePlanID) AS NoOfStops,
+    (SELECT MIN(PickUpTime) FROM tblRouteStopMaster WHERE RoutePlanID = rp.RoutePlanID) AS PickUpTime,
+    (SELECT MAX(DropTime) FROM tblRouteStopMaster WHERE RoutePlanID = rp.RoutePlanID) AS DropTime,
+    ISNULL(CONCAT(e.First_Name, ' ', e.Last_Name), '') AS DriverName
+FROM 
+    tblRoutePlan rp
+    JOIN tblVehicleMaster v ON rp.VehicleID = v.VehicleID
+    LEFT JOIN tbl_EmployeeProfileMaster e ON v.AssignDriverID = e.Employee_id
+WHERE 
+    rp.IsActive = 1 
+    AND rp.InstituteID = @InstituteID
+ORDER BY 
+    rp.RoutePlanID 
+OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 
                 var routePlans = (await _dbConnection.QueryAsync<RoutePlanResponseDTO>(sql, new
                 {
@@ -118,22 +119,22 @@ namespace Transport_API.Repository.Implementations
             {
                 // SQL to retrieve the route plan by ID
                 string sql = @"
-            SELECT 
-                rp.RoutePlanID, 
-                rp.RouteName, 
-                rp.VehicleID, 
-                v.VehicleNumber, 
-                (SELECT COUNT(*) FROM tblRouteStopMaster rs WHERE rs.RoutePlanID = rp.RoutePlanID) AS NoOfStops,
-                (SELECT MIN(PickUpTime) FROM tblRouteStopMaster WHERE RoutePlanID = rp.RoutePlanID) AS PickUpTime,
-                (SELECT MAX(DropTime) FROM tblRouteStopMaster WHERE RoutePlanID = rp.RoutePlanID) AS DropTime,
-                ISNULL(CONCAT(e.First_Name, ' ', e.Last_Name), '') AS DriverName
-            FROM 
-                tblRoutePlan rp
-                JOIN tblVehicleMaster v ON rp.VehicleID = v.VehicleID
-                LEFT JOIN tbl_EmployeeProfileMaster e ON v.AssignDriverID = e.Employee_id
-            WHERE 
-                rp.RoutePlanID = @RoutePlanID 
-                AND rp.IsActive = 1";
+    SELECT 
+        rp.RoutePlanID, 
+        rp.RouteName, 
+        rp.VehicleID, 
+        v.VehicleNumber, 
+        (SELECT COUNT(*) FROM tblRouteStopMaster rs WHERE rs.RoutePlanID = rp.RoutePlanID) AS NoOfStops,
+        (SELECT MIN(PickUpTime) FROM tblRouteStopMaster WHERE RoutePlanID = rp.RoutePlanID) AS PickUpTime,
+        (SELECT MAX(DropTime) FROM tblRouteStopMaster WHERE RoutePlanID = rp.RoutePlanID) AS DropTime,
+        ISNULL(CONCAT(e.First_Name, ' ', e.Last_Name), '') AS DriverName
+    FROM 
+        tblRoutePlan rp
+        JOIN tblVehicleMaster v ON rp.VehicleID = v.VehicleID
+        LEFT JOIN tbl_EmployeeProfileMaster e ON v.AssignDriverID = e.Employee_id
+    WHERE 
+        rp.RoutePlanID = @RoutePlanID 
+        AND rp.IsActive = 1";
 
                 // Execute the query to get the route plan
                 var routePlan = await _dbConnection.QueryFirstOrDefaultAsync<RoutePlanResponseDTO>(sql, new { RoutePlanID = routePlanID });
@@ -141,18 +142,18 @@ namespace Transport_API.Repository.Implementations
                 // Check if the route plan exists
                 if (routePlan != null)
                 {
-                    // Load stops for this route plan
-                    routePlan.RouteStops = await GetRouteStopsByRoutePlanID(routePlan.RoutePlanID);
+                    // Return the response without `totalCount`
                     return new ServiceResponse<RoutePlanResponseDTO>(true, "Record Found", routePlan, StatusCodes.Status200OK);
                 }
                 else
                 {
-                    // Provide a more informative response
+                    // Provide a response when no record is found
                     return new ServiceResponse<RoutePlanResponseDTO>(false, $"No route plan found for RoutePlanID: {routePlanID}", null, StatusCodes.Status200OK);
                 }
             }
             catch (Exception ex)
             {
+                // Return a failed response in case of an error
                 return new ServiceResponse<RoutePlanResponseDTO>(false, ex.Message, new RoutePlanResponseDTO(), StatusCodes.Status500InternalServerError);
             }
         }
@@ -246,20 +247,37 @@ namespace Transport_API.Repository.Implementations
             {
                 try
                 {
-                    // Delete existing stops and associated payments
-                    string deleteStopsSql = @"DELETE FROM tblRouteStopMaster WHERE RoutePlanID = @RoutePlanID";
-                    await _dbConnection.ExecuteAsync(deleteStopsSql, new { RoutePlanID = routePlanID }, transaction);
+                    // Fetch existing stops for this RoutePlanID
+                    string fetchExistingStopsSql = @"SELECT StopID FROM tblRouteStopMaster WHERE RoutePlanID = @RoutePlanID";
+                    var existingStopIDs = (await _dbConnection.QueryAsync<int>(fetchExistingStopsSql, new { RoutePlanID = routePlanID }, transaction)).ToList();
 
-                    // Insert each stop and retrieve its StopID
-                    string insertStopSql = @"INSERT INTO tblRouteStopMaster (RoutePlanID, StopName, PickUpTime, DropTime, FeeAmount) 
-                                     VALUES (@RoutePlanID, @StopName, @PickUpTime, @DropTime, @FeeAmount);
-                                     SELECT CAST(SCOPE_IDENTITY() AS INT);";
-
+                    // Iterate through new route stops from request
                     foreach (var stop in routeStops)
                     {
                         stop.RoutePlanID = routePlanID;
-                        // Insert stop and get the generated StopID
-                        stop.StopID = await _dbConnection.QuerySingleAsync<int>(insertStopSql, stop, transaction);
+
+                        if (stop.StopID == 0)
+                        {
+                            // New stop, insert and get StopID
+                            string insertStopSql = @"INSERT INTO tblRouteStopMaster (RoutePlanID, StopName, PickUpTime, DropTime, FeeAmount) 
+                                             VALUES (@RoutePlanID, @StopName, @PickUpTime, @DropTime, @FeeAmount);
+                                             SELECT CAST(SCOPE_IDENTITY() AS INT);";
+                            stop.StopID = await _dbConnection.QuerySingleAsync<int>(insertStopSql, stop, transaction);
+                        }
+                        else
+                        {
+                            // Existing stop, update it
+                            string updateStopSql = @"UPDATE tblRouteStopMaster 
+                                             SET StopName = @StopName, PickUpTime = @PickUpTime, DropTime = @DropTime, FeeAmount = @FeeAmount 
+                                             WHERE StopID = @StopID";
+                            await _dbConnection.ExecuteAsync(updateStopSql, stop, transaction);
+
+                            // Remove the updated stop from the existing list (so we can delete the remaining ones later)
+                            existingStopIDs.Remove(stop.StopID);
+                        }
+
+                        // Call the method to delete any existing payments before adding new ones
+                        await DeleteExistingPayments(routePlanID, stop.StopID, transaction);
 
                         // Handle Single Payments
                         if (stop.SinglePayment != null)
@@ -267,10 +285,10 @@ namespace Transport_API.Repository.Implementations
                             foreach (var singlePayment in stop.SinglePayment)
                             {
                                 singlePayment.RoutePlanID = routePlanID;
-                                singlePayment.StopID = stop.StopID; // Use the newly inserted StopID
+                                singlePayment.StopID = stop.StopID;
 
                                 string insertSinglePaymentSql = @"INSERT INTO tblRouteSingleFeesPayment (RoutePlanID, StopID, FeesAmount)
-                                                          VALUES (@RoutePlanID, @StopID, @FeesAmount)";
+                                                  VALUES (@RoutePlanID, @StopID, @FeesAmount)";
                                 await _dbConnection.ExecuteAsync(insertSinglePaymentSql, singlePayment, transaction);
                             }
                         }
@@ -281,10 +299,10 @@ namespace Transport_API.Repository.Implementations
                             foreach (var termPayment in stop.TermPayment)
                             {
                                 termPayment.RoutePlanID = routePlanID;
-                                termPayment.StopID = stop.StopID; // Use the newly inserted StopID
+                                termPayment.StopID = stop.StopID;
 
                                 string insertTermPaymentSql = @"INSERT INTO tblRouteTermFeesPayment (RoutePlanID, StopID, TermName, FeesAmount, DueDate)
-                                                        VALUES (@RoutePlanID, @StopID, @TermName, @FeesAmount, @DueDate)";
+                                                VALUES (@RoutePlanID, @StopID, @TermName, @FeesAmount, @DueDate)";
                                 await _dbConnection.ExecuteAsync(insertTermPaymentSql, termPayment, transaction);
                             }
                         }
@@ -295,12 +313,25 @@ namespace Transport_API.Repository.Implementations
                             foreach (var monthlyPayment in stop.MonthlyPayment)
                             {
                                 monthlyPayment.RoutePlanID = routePlanID;
-                                monthlyPayment.StopID = stop.StopID; // Use the newly inserted StopID
+                                monthlyPayment.StopID = stop.StopID;
 
                                 string insertMonthlyPaymentSql = @"INSERT INTO tblRouteMonthlyFeesPayment (RoutePlanID, StopID, MonthName, FeesAmount)
-                                                           VALUES (@RoutePlanID, @StopID, @MonthName, @FeesAmount)";
+                                                   VALUES (@RoutePlanID, @StopID, @MonthName, @FeesAmount)";
                                 await _dbConnection.ExecuteAsync(insertMonthlyPaymentSql, monthlyPayment, transaction);
                             }
+                        }
+                    }
+
+                    // Delete any remaining stops that were not part of the new stops
+                    if (existingStopIDs.Any())
+                    {
+                        foreach (var stopID in existingStopIDs)
+                        {
+                            // Delete the stop and its associated payments
+                            await DeleteExistingPayments(routePlanID, stopID, transaction);
+
+                            string deleteStopSql = @"DELETE FROM tblRouteStopMaster WHERE StopID = @StopID";
+                            await _dbConnection.ExecuteAsync(deleteStopSql, new { StopID = stopID }, transaction);
                         }
                     }
 
@@ -320,6 +351,25 @@ namespace Transport_API.Repository.Implementations
         }
 
 
+
+        private async Task DeleteExistingPayments(int routePlanID, int stopID, IDbTransaction transaction)
+        {
+            // Delete existing Single Payments
+            string deleteSinglePaymentSql = @"DELETE FROM tblRouteSingleFeesPayment WHERE RoutePlanID = @RoutePlanID AND StopID = @StopID";
+            await _dbConnection.ExecuteAsync(deleteSinglePaymentSql, new { RoutePlanID = routePlanID, StopID = stopID }, transaction);
+
+            // Delete existing Term Payments
+            string deleteTermPaymentSql = @"DELETE FROM tblRouteTermFeesPayment WHERE RoutePlanID = @RoutePlanID AND StopID = @StopID";
+            await _dbConnection.ExecuteAsync(deleteTermPaymentSql, new { RoutePlanID = routePlanID, StopID = stopID }, transaction);
+
+            // Delete existing Monthly Payments
+            string deleteMonthlyPaymentSql = @"DELETE FROM tblRouteMonthlyFeesPayment WHERE RoutePlanID = @RoutePlanID AND StopID = @StopID";
+            await _dbConnection.ExecuteAsync(deleteMonthlyPaymentSql, new { RoutePlanID = routePlanID, StopID = stopID }, transaction);
+        }
+
+
+
+
         //private async Task<List<RouteStopResponse>> GetRouteStopsByRoutePlanID(int routePlanID)
         //{
         //    string sql = @"SELECT StopID, RoutePlanID, StopName, PickUpTime, DropTime, FeeAmount
@@ -328,5 +378,156 @@ namespace Transport_API.Repository.Implementations
 
         //    return (await _dbConnection.QueryAsync<RouteStopResponse>(sql, new { RoutePlanID = routePlanID })).ToList();
         //}
+
+        public async Task<ServiceResponse<RouteDetailsResponseDTO>> GetRouteDetails(GetRouteDetailsRequest request)
+        {
+            try
+            {
+                // SQL to retrieve the route plan details
+                string routeSql = @"
+            SELECT 
+                rp.RoutePlanID, 
+                rp.RouteName
+            FROM 
+                tblRoutePlan rp
+            WHERE 
+                rp.RoutePlanID = @RouteID
+                AND rp.InstituteID = @InstituteID
+                AND rp.IsActive = 1";
+
+                // SQL to retrieve the stops associated with the route
+                string stopsSql = @"
+            SELECT 
+                rs.StopName, 
+                rs.PickUpTime, 
+                rs.DropTime, 
+                rs.FeeAmount AS Fee
+            FROM 
+                tblRouteStopMaster rs
+            WHERE 
+                rs.RoutePlanID = @RouteID";
+
+                // First, fetch the route plan details
+                var routeDetails = await _dbConnection.QueryFirstOrDefaultAsync<RouteDetailsResponseDTO>(routeSql, new
+                {
+                    RouteID = request.RouteID,
+                    InstituteID = request.InstituteID
+                });
+
+                // If the route exists, fetch its stops
+                if (routeDetails != null)
+                {
+                    // Fetch the stops for the given RoutePlanID
+                    var stops = await _dbConnection.QueryAsync<RouteStopResponseDTO>(stopsSql, new
+                    {
+                        RouteID = request.RouteID
+                    });
+
+                    // Attach the stops to the route details
+                    routeDetails.Stops = stops.ToList();
+
+                    // Return the response
+                    return new ServiceResponse<RouteDetailsResponseDTO>(true, "Record Found", routeDetails, StatusCodes.Status200OK);
+                }
+                else
+                {
+                    // Return a no content response if no route plan is found
+                    return new ServiceResponse<RouteDetailsResponseDTO>(false, "No records found", null, StatusCodes.Status204NoContent);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Return an error response in case of exceptions
+                return new ServiceResponse<RouteDetailsResponseDTO>(false, ex.Message, null, StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        public async Task<ServiceResponse<byte[]>> GetRouteDetailsExportExcel(GetRouteDetailsRequest request)
+        {
+            try
+            {
+                // SQL to retrieve the route plan details (without RoutePlanID in the Excel export)
+                string routeSql = @"
+            SELECT 
+                rp.RouteName
+            FROM 
+                tblRoutePlan rp
+            WHERE 
+                rp.RoutePlanID = @RouteID
+                AND rp.InstituteID = @InstituteID
+                AND rp.IsActive = 1";
+
+                // SQL to retrieve the stops associated with the route
+                string stopsSql = @"
+            SELECT 
+                rs.StopName, 
+                rs.PickUpTime, 
+                rs.DropTime, 
+                rs.FeeAmount AS Fee
+            FROM 
+                tblRouteStopMaster rs
+            WHERE 
+                rs.RoutePlanID = @RouteID";
+
+                // Fetch the route plan details
+                var routeDetails = await _dbConnection.QueryFirstOrDefaultAsync<RouteDetailsResponseDTO>(routeSql, new
+                {
+                    RouteID = request.RouteID,
+                    InstituteID = request.InstituteID
+                });
+
+                if (routeDetails == null)
+                {
+                    return new ServiceResponse<byte[]>(false, "No records found", null, StatusCodes.Status204NoContent);
+                }
+
+                // Fetch the stops for the given RoutePlanID
+                var stops = await _dbConnection.QueryAsync<RouteStopResponseDTO>(stopsSql, new
+                {
+                    RouteID = request.RouteID
+                });
+
+                // Create the Excel file
+                using (var package = new OfficeOpenXml.ExcelPackage())
+                {
+                    var worksheet = package.Workbook.Worksheets.Add("RouteDetails");
+
+                    // Add the RouteName as a title in the Excel sheet
+                    worksheet.Cells[1, 1].Value = "Route Name";
+                    worksheet.Cells[1, 2].Value = routeDetails.RouteName;
+
+                    // Add headers for the stops data
+                    worksheet.Cells[3, 1].Value = "Stop Name";
+                    worksheet.Cells[3, 2].Value = "PickUp Time";
+                    worksheet.Cells[3, 3].Value = "Drop Time";
+                    worksheet.Cells[3, 4].Value = "Fee";
+
+                    // Add the data for each stop
+                    var rowIndex = 4;
+                    foreach (var stop in stops)
+                    {
+                        worksheet.Cells[rowIndex, 1].Value = stop.StopName;
+                        worksheet.Cells[rowIndex, 2].Value = stop.PickUpTime;
+                        worksheet.Cells[rowIndex, 3].Value = stop.DropTime;
+                        worksheet.Cells[rowIndex, 4].Value = stop.Fee.ToString();
+                        rowIndex++;
+                    }
+
+                    // Auto-fit the columns
+                    worksheet.Cells.AutoFitColumns();
+
+                    // Convert the Excel package to a byte array
+                    var excelFile = package.GetAsByteArray();
+
+                    return new ServiceResponse<byte[]>(true, "Excel file generated successfully", excelFile, StatusCodes.Status200OK);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Handle exceptions
+                return new ServiceResponse<byte[]>(false, ex.Message, null, StatusCodes.Status500InternalServerError);
+            }
+        }
+
     }
 }

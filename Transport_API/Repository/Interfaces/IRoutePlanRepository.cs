@@ -10,5 +10,8 @@ namespace Transport_API.Repository.Interfaces
         Task<ServiceResponse<IEnumerable<RoutePlanResponseDTO>>> GetAllRoutePlans(GetAllRoutePlanRequest request);
         Task<ServiceResponse<RoutePlanResponseDTO>> GetRoutePlanById(int routePlanId);
         Task<ServiceResponse<bool>> UpdateRoutePlanStatus(int routePlanId);
+        Task<ServiceResponse<RouteDetailsResponseDTO>> GetRouteDetails(GetRouteDetailsRequest request);
+        Task<ServiceResponse<byte[]>> GetRouteDetailsExportExcel(GetRouteDetailsRequest request);
+
     }
 }

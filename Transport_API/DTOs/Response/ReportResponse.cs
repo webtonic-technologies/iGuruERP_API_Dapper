@@ -5,4 +5,6 @@
         public string ReportType { get; set; }
         public string ReportData { get; set; }
     }
+
+
 }

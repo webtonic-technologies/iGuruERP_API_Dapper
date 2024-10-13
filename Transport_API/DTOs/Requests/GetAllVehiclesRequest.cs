@@ -8,6 +8,12 @@
         public string SearchText { get; set; }
     }
 
+    public class GetAllExportVehiclesRequest
+    {
+        public int InstituteID { get; set; }
+    }
+
+
     public class VehicleRequest
     {
 

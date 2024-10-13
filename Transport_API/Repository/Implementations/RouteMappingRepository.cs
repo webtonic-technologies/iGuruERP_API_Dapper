@@ -106,53 +106,59 @@ namespace Transport_API.Repository.Implementations
             try
             {
                 string countSql = @"
-            SELECT COUNT(*) 
+            SELECT COUNT(DISTINCT rp.RoutePlanID)
             FROM tblRoutePlan rp
             JOIN tblAssignRoute ar ON rp.RoutePlanID = ar.RoutePlanID
-            WHERE rp.IsActive = 1 AND rp.InstituteID = @InstituteID";
+            WHERE rp.IsActive = 1 AND rp.InstituteID = @InstituteID;
+";
 
                 int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql, new { request.InstituteID });
 
                 string sql = @"
-            SELECT 
-                rp.RoutePlanID AS RouteMappingId, 
-                rp.RouteName, 
-                v.VehicleID,
-                v.VehicleNumber, 
-                ISNULL(CONCAT(e.First_Name, ' ', e.Last_Name), '') AS DriveName, 
-                ISNULL(CONCAT(ts.First_Name, ' ', ts.Last_Name), '') AS TransportStaffName,
-                (SELECT COUNT(*) 
-                 FROM tblStudentStopMapping ssm 
-                 JOIN tblRouteStopMaster rsm ON ssm.StopID = rsm.StopID 
-                 WHERE rsm.RoutePlanID = rp.RoutePlanID) AS TotalStudents,
-                (SELECT COUNT(*) 
-                 FROM tblEmployeeStopMapping esm 
-                 JOIN tblRouteStopMaster rsm ON esm.StopID = rsm.StopID 
-                 WHERE rsm.RoutePlanID = rp.RoutePlanID) AS TotalEmployee,
-                (v.SeatingCapacity - 
-                    (
+                                SELECT 
+                        rp.RoutePlanID AS RouteMappingId, 
+                        rp.RouteName, 
+                        v.VehicleID,
+                        v.VehicleNumber, 
+                        ISNULL(CONCAT(e.First_Name, ' ', e.Last_Name), '') AS DriveName, 
+                        ISNULL(CONCAT(ts.First_Name, ' ', ts.Last_Name), '') AS TransportStaffName,
                         (SELECT COUNT(*) 
                          FROM tblStudentStopMapping ssm 
                          JOIN tblRouteStopMaster rsm ON ssm.StopID = rsm.StopID 
-                         WHERE rsm.RoutePlanID = rp.RoutePlanID) + 
+                         WHERE rsm.RoutePlanID = rp.RoutePlanID) AS TotalStudents,
                         (SELECT COUNT(*) 
                          FROM tblEmployeeStopMapping esm 
                          JOIN tblRouteStopMaster rsm ON esm.StopID = rsm.StopID 
-                         WHERE rsm.RoutePlanID = rp.RoutePlanID)
-                    )
-                ) AS Availability
-            FROM 
-                tblRoutePlan rp
-                JOIN tblAssignRoute ar ON rp.RoutePlanID = ar.RoutePlanID
-                JOIN tblVehicleMaster v ON ar.VehicleID = v.VehicleID
-                LEFT JOIN tbl_EmployeeProfileMaster e ON ar.DriverID = e.Employee_id
-                LEFT JOIN tbl_EmployeeProfileMaster ts ON ar.TransportStaffID = ts.Employee_id
-            WHERE 
-                rp.IsActive = 1 
-                AND rp.InstituteID = @InstituteID
-            ORDER BY 
-                rp.RoutePlanID 
+                         WHERE rsm.RoutePlanID = rp.RoutePlanID) AS TotalEmployee,
+                        (v.SeatingCapacity - 
+                            (
+                                (SELECT COUNT(*) 
+                                 FROM tblStudentStopMapping ssm 
+                                 JOIN tblRouteStopMaster rsm ON ssm.StopID = rsm.StopID 
+                                 WHERE rsm.RoutePlanID = rp.RoutePlanID) + 
+                                (SELECT COUNT(*) 
+                                 FROM tblEmployeeStopMapping esm 
+                                 JOIN tblRouteStopMaster rsm ON esm.StopID = rsm.StopID 
+                                 WHERE rsm.RoutePlanID = rp.RoutePlanID)
+                            )
+                        ) AS Availability
+                    FROM 
+                        tblRoutePlan rp
+                        JOIN tblAssignRoute ar ON rp.RoutePlanID = ar.RoutePlanID
+                        JOIN tblVehicleMaster v ON ar.VehicleID = v.VehicleID
+                        LEFT JOIN tbl_EmployeeProfileMaster e ON ar.DriverID = e.Employee_id
+                        LEFT JOIN tbl_EmployeeProfileMaster ts ON ar.TransportStaffID = ts.Employee_id
+                    WHERE 
+                        rp.IsActive = 1 
+                        AND rp.InstituteID = @InstituteID
+                    GROUP BY 
+                        rp.RoutePlanID, rp.RouteName, v.VehicleID, v.VehicleNumber, e.First_Name, e.Last_Name, ts.First_Name, ts.Last_Name, v.SeatingCapacity
+                    ORDER BY 
+                        rp.RoutePlanID  
             OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+
+
+                
 
                 var routeMappings = await _dbConnection.QueryAsync<RouteMappingResponse>(sql, new
                 {

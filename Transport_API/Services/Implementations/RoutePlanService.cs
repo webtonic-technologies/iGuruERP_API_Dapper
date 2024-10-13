@@ -34,5 +34,14 @@ namespace Transport_API.Services.Implementations
         {
             return await _routePlanRepository.UpdateRoutePlanStatus(routePlanId);
         }
+        public async Task<ServiceResponse<RouteDetailsResponseDTO>> GetRouteDetails(GetRouteDetailsRequest request)
+        {
+            return await _routePlanRepository.GetRouteDetails(request);
+        }
+        public async Task<ServiceResponse<byte[]>> GetRouteDetailsExportExcel(GetRouteDetailsRequest request)
+        {
+            return await _routePlanRepository.GetRouteDetailsExportExcel(request);
+        }
+
     }
 }

@@ -16,7 +16,7 @@ namespace Transport_API.Controllers
         }
 
         [HttpPost("UpdateTransportAttendance")]
-        public async Task<IActionResult> UpdateTransportAttendance(TransportAttendance request)
+        public async Task<IActionResult> UpdateTransportAttendance(TransportAttendanceRequest request)
         {
             try
             {
@@ -43,32 +43,32 @@ namespace Transport_API.Controllers
             }
         }
 
-        [HttpGet("GetTransportAttendance/{TransportAttendanceId}")]
-        public async Task<IActionResult> GetTransportAttendance(int TransportAttendanceId)
-        {
-            try
-            {
-                var response = await _transportAttendanceService.GetTransportAttendanceById(TransportAttendanceId);
-                return StatusCode(response.StatusCode, response);
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
+        //[HttpGet("GetTransportAttendance/{TransportAttendanceId}")]
+        //public async Task<IActionResult> GetTransportAttendance(int TransportAttendanceId)
+        //{
+        //    try
+        //    {
+        //        var response = await _transportAttendanceService.GetTransportAttendanceById(TransportAttendanceId);
+        //        return StatusCode(response.StatusCode, response);
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        return BadRequest(e.Message);
+        //    }
+        //}
 
-        [HttpPut("Status/{TransportAttendanceId}")]
-        public async Task<IActionResult> UpdateTransportAttendanceStatus(int TransportAttendanceId)
-        {
-            try
-            {
-                var response = await _transportAttendanceService.UpdateTransportAttendanceStatus(TransportAttendanceId);
-                return StatusCode(response.StatusCode, response);
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
-        }
+        //[HttpPut("Status/{TransportAttendanceId}")]
+        //public async Task<IActionResult> UpdateTransportAttendanceStatus(int TransportAttendanceId)
+        //{
+        //    try
+        //    {
+        //        var response = await _transportAttendanceService.UpdateTransportAttendanceStatus(TransportAttendanceId);
+        //        return StatusCode(response.StatusCode, response);
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        return BadRequest(e.Message);
+        //    }
+        //}
     }
 }

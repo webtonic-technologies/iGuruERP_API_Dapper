@@ -70,5 +70,39 @@ namespace Transport_API.Controllers
                 return BadRequest(e.Message);
             }
         }
+
+        [HttpPost("GetReouteDetails")]
+        public async Task<IActionResult> GetReouteDetails(GetRouteDetailsRequest request)
+        {
+            try
+            {
+                var response = await _routePlanService.GetRouteDetails(request);
+                return StatusCode(response.StatusCode, response);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+        [HttpPost("GetRouteDetailsExportExcel")]
+        public async Task<IActionResult> GetRouteDetailsExportExcel(GetRouteDetailsRequest request)
+        {
+            try
+            {
+                var response = await _routePlanService.GetRouteDetailsExportExcel(request);
+                if (response.Success)
+                {
+                    // Return the Excel file as a download
+                    return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "RouteDetails.xlsx");
+                }
+                return StatusCode(response.StatusCode, response);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+
     }
 }

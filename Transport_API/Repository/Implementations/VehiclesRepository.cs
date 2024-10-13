@@ -6,13 +6,17 @@ using System.Data;
 using System.Data.Common;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Collections.Generic;
+using System.Text;
+using OfficeOpenXml;
+
 
 namespace Transport_API.Repository.Implementations
 {
     public class VehiclesRepository : IVehiclesRepository
     {
         private readonly IDbConnection _dbConnection;
-        private readonly IWebHostEnvironment _hostingEnvironment;
+        private readonly IWebHostEnvironment _hostingEnvironment; 
+
 
         public VehiclesRepository(IDbConnection dbConnection, IWebHostEnvironment hostingEnvironment)
         {
@@ -82,29 +86,77 @@ namespace Transport_API.Repository.Implementations
 
         public async Task<ServiceResponse<IEnumerable<Vehicle>>> GetAllVehicles(GetAllVehiclesRequest request)
         {
-            string countSql = @"SELECT COUNT(*) FROM tblVehicleMaster";
-            int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql);
+            // Step 1: Fetch the total count of records
+            string countSql = @"SELECT COUNT(*) FROM tblVehicleMaster WHERE InstituteID = @InstituteID";
+            int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql, new { request.InstituteID });
 
-            string sql = @"SELECT 
-                        VM.VehicleID, VM.VehicleNumber, VM.VehicleModel, VM.RenewalYear, VM.VehicleTypeID, VT.Vehicle_type_name as VehicleTypeName, VM.FuelTypeID, FT.Fuel_type_name as FuelTypeName, VM.SeatingCapacity, VM.ChassieNo, VM.InsurancePolicyNo, VM.RenewalDate, VM.AssignDriverID, EP.First_Name + ' ' + EP.Last_Name as AssignDriverName, VM.GPSIMEINo, VM.TrackingID, VM.InstituteID, VM.IsActive
-                        FROM tblVehicleMaster VM
-                        Left Outer Join tbl_Vehicle_Type VT ON VM.VehicleTypeID = VT.Vehicle_type_id
-                        Left Outer Join tbl_Fuel_Type FT ON VM.FuelTypeID = FT.Fuel_type_id 
-                        Left Outer Join tbl_EmployeeProfileMaster EP ON EP.Employee_id = VM.AssignDriverID 
-                        where VM.InstituteID = @InstituteID 
-                        AND (VM.VehicleNumber LIKE @SearchText OR VM.VehicleModel LIKE @SearchText OR @SearchText is NULL)
-                        ORDER BY VM.VehicleID OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+            // Step 2: Fetch the list of active columns from tblVehicleColumnSetting
+            string columnListSql = @"SELECT STRING_AGG(DatabaseFieldName, ', ') 
+                             FROM tblVehicleColumnSetting
+                             WHERE IsActive = 1";
+            string columnList = await _dbConnection.ExecuteScalarAsync<string>(columnListSql);
 
-            var vehicles = await _dbConnection.QueryAsync<Vehicle>(sql, new { Offset = (request.PageNumber - 1) * request.PageSize, PageSize = request.PageSize, request.InstituteID, request.SearchText });
+            // Step 3: Build the dynamic SQL query
+            string sql = $@"
+        SELECT VehicleID, VehicleTypeID, FuelTypeID, AssignDriverID, InstituteID, {columnList}
+        FROM (
+            SELECT 
+                VM.VehicleID, 
+                VM.VehicleNumber, 
+                VM.VehicleModel, 
+                VM.RenewalYear, 
+                VM.VehicleTypeID, 
+                VT.Vehicle_type_name as VehicleTypeName, 
+                VM.FuelTypeID, 
+                FT.Fuel_type_name as FuelTypeName, 
+                VM.SeatingCapacity, 
+                VM.ChassieNo, 
+                VM.InsurancePolicyNo, 
+                VM.RenewalDate, 
+                VM.AssignDriverID, 
+                EP.First_Name + ' ' + EP.Last_Name as AssignDriverName, 
+                VM.GPSIMEINo, 
+                VM.TrackingID, 
+                VM.InstituteID, 
+                VM.IsActive
+            FROM 
+                tblVehicleMaster VM
+            LEFT OUTER JOIN 
+                tbl_Vehicle_Type VT ON VM.VehicleTypeID = VT.Vehicle_type_id
+            LEFT OUTER JOIN 
+                tbl_Fuel_Type FT ON VM.FuelTypeID = FT.Fuel_type_id 
+            LEFT OUTER JOIN 
+                tbl_EmployeeProfileMaster EP ON EP.Employee_id = VM.AssignDriverID 
+            WHERE 
+                VM.InstituteID = @InstituteID 
+                AND (VM.VehicleNumber LIKE @SearchText OR VM.VehicleModel LIKE @SearchText OR @SearchText IS NULL)
+            ORDER BY 
+                VM.VehicleID 
+            OFFSET @Offset ROWS 
+            FETCH NEXT @PageSize ROWS ONLY
+        ) AS db;
+    ";
 
+            // Step 4: Execute the dynamic SQL
+            var vehicles = await _dbConnection.QueryAsync<Vehicle>(sql, new
+            {
+                Offset = (request.PageNumber - 1) * request.PageSize,
+                PageSize = request.PageSize,
+                request.InstituteID,
+                SearchText = $"%{request.SearchText}%"
+            });
+
+            // Step 5: Check if any vehicles were found
             if (vehicles.Any())
             {
+                // Fetch documents for each vehicle
                 foreach (var data in vehicles)
                 {
                     data.VehicleDocuments = GetListOfVehiclesDocument(data.VehicleID);
                 }
 
-                return new ServiceResponse<IEnumerable<Vehicle>>(true, "Records Found", vehicles, StatusCodes.Status200OK, vehicles.Count());
+                // Return the response with total count and vehicle data
+                return new ServiceResponse<IEnumerable<Vehicle>>(true, "Records Found", vehicles, StatusCodes.Status200OK, totalCount);
             }
             else
             {
@@ -115,22 +167,24 @@ namespace Transport_API.Repository.Implementations
         public async Task<ServiceResponse<Vehicle>> GetVehicleById(int VehicleID)
         {
             string sql = @"SELECT 
-                        VM.VehicleID, VM.VehicleNumber, VM.VehicleModel, VM.RenewalYear, VM.VehicleTypeID, VT.Vehicle_type_name as VehicleTypeName, VM.FuelTypeID, FT.Fuel_type_name as FuelTypeName, VM.SeatingCapacity, VM.ChassieNo, VM.InsurancePolicyNo, VM.RenewalDate, VM.AssignDriverID, EP.First_Name + ' ' + EP.Last_Name as AssignDriverName, VM.GPSIMEINo, VM.TrackingID, VM.InstituteID, VM.IsActive
-                        FROM tblVehicleMaster VM
-                        Left Outer Join tbl_Vehicle_Type VT ON VM.VehicleTypeID = VT.Vehicle_type_id
-                        Left Outer Join tbl_Fuel_Type FT ON VM.FuelTypeID = FT.Fuel_type_id 
-                        Left Outer Join tbl_EmployeeProfileMaster EP ON EP.Employee_id = VM.AssignDriverID WHERE VM.VehicleID = @VehicleID";
+                    VM.VehicleID, VM.VehicleNumber, VM.VehicleModel, VM.RenewalYear, VM.VehicleTypeID, VT.Vehicle_type_name as VehicleTypeName, VM.FuelTypeID, FT.Fuel_type_name as FuelTypeName, VM.SeatingCapacity, VM.ChassieNo, VM.InsurancePolicyNo, VM.RenewalDate, VM.AssignDriverID, EP.First_Name + ' ' + EP.Last_Name as AssignDriverName, VM.GPSIMEINo, VM.TrackingID, VM.InstituteID, VM.IsActive
+                    FROM tblVehicleMaster VM
+                    Left Outer Join tbl_Vehicle_Type VT ON VM.VehicleTypeID = VT.Vehicle_type_id
+                    Left Outer Join tbl_Fuel_Type FT ON VM.FuelTypeID = FT.Fuel_type_id 
+                    Left Outer Join tbl_EmployeeProfileMaster EP ON EP.Employee_id = VM.AssignDriverID 
+                    WHERE VM.VehicleID = @VehicleID";
             var vehicle = await _dbConnection.QueryFirstOrDefaultAsync<Vehicle>(sql, new { VehicleId = VehicleID });
 
             if (vehicle != null)
             {
                 vehicle.VehicleDocuments = GetListOfVehiclesDocument(vehicle.VehicleID);
 
-                return new ServiceResponse<Vehicle>(true, "Record Found", vehicle, StatusCodes.Status200OK);
+                // Adding TotalCount = 1 since it's fetching one vehicle
+                return new ServiceResponse<Vehicle>(true, "Record Found", vehicle, StatusCodes.Status200OK, 1);
             }
             else
             {
-                return new ServiceResponse<Vehicle>(false, "Record Not Found", null, StatusCodes.Status204NoContent);
+                return new ServiceResponse<Vehicle>(false, "Record Not Found", null, StatusCodes.Status204NoContent, 0);
             }
         }
 
@@ -240,8 +294,221 @@ namespace Transport_API.Repository.Implementations
             string base64String = Convert.ToBase64String(fileBytes);
             return base64String;
         }
+         
+        public async Task<ServiceResponse<byte[]>> ExportExcel(GetAllExportVehiclesRequest request)
+        {
+            // Log the input parameters for debugging
+            Console.WriteLine($"InstituteID: {request.InstituteID}");
 
+            // Step 1: Fetch the active column names from tblVehicleColumnSetting
+            string columnListSql = @"SELECT STRING_AGG(DatabaseFieldName, ', ') 
+                             FROM tblVehicleColumnSetting
+                             WHERE IsActive = 1";
+            string columnList = await _dbConnection.ExecuteScalarAsync<string>(columnListSql);
 
+            if (string.IsNullOrEmpty(columnList))
+            {
+                Console.WriteLine("No active columns found to export.");
+                return new ServiceResponse<byte[]>(false, "No columns found to export", null, StatusCodes.Status204NoContent);
+            }
+
+            // Step 2: Build the dynamic SQL query using only active columns
+            string sql = $@"
+    SELECT {columnList}
+    FROM (
+        SELECT 
+            VM.VehicleID, 
+            VM.VehicleNumber, 
+            VM.VehicleModel, 
+            VM.RenewalYear, 
+            VM.VehicleTypeID, 
+            VT.Vehicle_type_name AS VehicleTypeName, 
+            VM.FuelTypeID, 
+            FT.Fuel_type_name AS FuelTypeName, 
+            VM.SeatingCapacity, 
+            VM.ChassieNo, 
+            VM.InsurancePolicyNo, 
+            VM.RenewalDate, 
+            VM.AssignDriverID, 
+            EP.First_Name + ' ' + EP.Last_Name AS AssignDriverName, 
+            VM.GPSIMEINo, 
+            VM.TrackingID, 
+            VM.InstituteID, 
+            VM.IsActive
+        FROM 
+            tblVehicleMaster VM
+        LEFT OUTER JOIN 
+            tbl_Vehicle_Type VT ON VM.VehicleTypeID = VT.Vehicle_type_id
+        LEFT OUTER JOIN 
+            tbl_Fuel_Type FT ON VM.FuelTypeID = FT.Fuel_type_id 
+        LEFT OUTER JOIN 
+            tbl_EmployeeProfileMaster EP ON EP.Employee_id = VM.AssignDriverID 
+        WHERE 
+            VM.InstituteID = @InstituteID
+    ) AS db
+    ORDER BY VehicleID;
+    ";
+
+            // Log the final SQL query for debugging
+            Console.WriteLine("Generated SQL Query: " + sql);
+
+            // Step 3: Execute the SQL query
+            var vehicles = await _dbConnection.QueryAsync<dynamic>(sql, new
+            {
+                request.InstituteID
+            });
+
+            // Step 4: Check if data is returned
+            if (vehicles == null || !vehicles.Any())
+            {
+                Console.WriteLine("No records found for InstituteID: " + request.InstituteID);
+                return new ServiceResponse<byte[]>(false, "No records found", null, StatusCodes.Status204NoContent);
+            }
+
+            // Step 5: Create Excel using EPPlus
+            using (var package = new OfficeOpenXml.ExcelPackage())
+            {
+                var worksheet = package.Workbook.Worksheets.Add("Vehicles");
+
+                // Step 6: Add headers dynamically
+                var firstVehicle = vehicles.FirstOrDefault();
+                if (firstVehicle != null)
+                {
+                    // Dynamically build headers based on the actual column names from the query
+                    var properties = ((IDictionary<string, object>)firstVehicle).Keys;
+                    int colIndex = 1;
+                    foreach (var property in properties)
+                    {
+                        worksheet.Cells[1, colIndex++].Value = property;
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Invalid data format: missing column names.");
+                    return new ServiceResponse<byte[]>(false, "Invalid data format: missing column names", null, StatusCodes.Status204NoContent);
+                }
+
+                // Step 7: Add the data rows dynamically
+                var rowIndex = 2;
+                foreach (var vehicle in vehicles)
+                {
+                    var vehicleData = (IDictionary<string, object>)vehicle;
+                    var colIndex = 1;
+                    foreach (var value in vehicleData.Values)
+                    {
+                        worksheet.Cells[rowIndex, colIndex++].Value = value?.ToString() ?? string.Empty;
+                    }
+                    rowIndex++;
+                }
+
+                // Step 8: Auto-fit the columns to adjust their widths
+                worksheet.Cells.AutoFitColumns();
+
+                // Step 9: Convert the Excel package to a byte array and return the response
+                var excelFile = package.GetAsByteArray();
+                return new ServiceResponse<byte[]>(true, "Excel file generated successfully", excelFile, StatusCodes.Status200OK);
+            }
+        }
+
+        public async Task<ServiceResponse<byte[]>> ExportCSV(GetAllExportVehiclesRequest request)
+        {
+            // Log the input parameters for debugging
+            Console.WriteLine($"InstituteID: {request.InstituteID}");
+
+            // Step 1: Fetch the active column names from tblVehicleColumnSetting
+            string columnListSql = @"SELECT STRING_AGG(DatabaseFieldName, ', ') 
+                             FROM tblVehicleColumnSetting
+                             WHERE IsActive = 1";
+            string columnList = await _dbConnection.ExecuteScalarAsync<string>(columnListSql);
+
+            if (string.IsNullOrEmpty(columnList))
+            {
+                Console.WriteLine("No active columns found to export.");
+                return new ServiceResponse<byte[]>(false, "No columns found to export", null, StatusCodes.Status204NoContent);
+            }
+
+            // Step 2: Build the dynamic SQL query using only active columns
+            string sql = $@"
+    SELECT {columnList}
+    FROM (
+        SELECT 
+            VM.VehicleID, 
+            VM.VehicleNumber, 
+            VM.VehicleModel, 
+            VM.RenewalYear, 
+            VM.VehicleTypeID, 
+            VT.Vehicle_type_name AS VehicleTypeName, 
+            VM.FuelTypeID, 
+            FT.Fuel_type_name AS FuelTypeName, 
+            VM.SeatingCapacity, 
+            VM.ChassieNo, 
+            VM.InsurancePolicyNo, 
+            VM.RenewalDate, 
+            VM.AssignDriverID, 
+            EP.First_Name + ' ' + EP.Last_Name AS AssignDriverName, 
+            VM.GPSIMEINo, 
+            VM.TrackingID, 
+            VM.InstituteID, 
+            VM.IsActive
+        FROM 
+            tblVehicleMaster VM
+        LEFT OUTER JOIN 
+            tbl_Vehicle_Type VT ON VM.VehicleTypeID = VT.Vehicle_type_id
+        LEFT OUTER JOIN 
+            tbl_Fuel_Type FT ON VM.FuelTypeID = FT.Fuel_type_id 
+        LEFT OUTER JOIN 
+            tbl_EmployeeProfileMaster EP ON EP.Employee_id = VM.AssignDriverID 
+        WHERE 
+            VM.InstituteID = @InstituteID
+    ) AS db
+    ORDER BY VehicleID;
+    ";
+
+            // Log the final SQL query for debugging
+            Console.WriteLine("Generated SQL Query: " + sql);
+
+            // Step 3: Execute the SQL query
+            var vehicles = await _dbConnection.QueryAsync<dynamic>(sql, new
+            {
+                request.InstituteID
+            });
+
+            // Step 4: Check if data is returned
+            if (vehicles == null || !vehicles.Any())
+            {
+                Console.WriteLine("No records found for InstituteID: " + request.InstituteID);
+                return new ServiceResponse<byte[]>(false, "No records found", null, StatusCodes.Status204NoContent);
+            }
+
+            // Step 5: Convert data to CSV format
+            var csvBuilder = new StringBuilder();
+
+            // Step 6: Add headers dynamically
+            var firstVehicle = vehicles.FirstOrDefault();
+            if (firstVehicle != null)
+            {
+                // Dynamically build headers based on the actual column names from the query
+                var headerColumns = ((IDictionary<string, object>)firstVehicle).Keys;
+                csvBuilder.AppendLine(string.Join(",", headerColumns));
+            }
+            else
+            {
+                Console.WriteLine("Invalid data format: missing column names.");
+                return new ServiceResponse<byte[]>(false, "Invalid data format: missing column names", null, StatusCodes.Status204NoContent);
+            }
+
+            // Step 7: Add the data rows dynamically
+            foreach (var vehicle in vehicles)
+            {
+                var vehicleData = (IDictionary<string, object>)vehicle;
+                var row = string.Join(",", vehicleData.Values.Select(value => value?.ToString() ?? string.Empty));
+                csvBuilder.AppendLine(row);
+            }
+
+            // Step 8: Convert the CSV content to a byte array and return the response
+            var csvContent = Encoding.UTF8.GetBytes(csvBuilder.ToString());
+            return new ServiceResponse<byte[]>(true, "CSV file generated successfully", csvContent, StatusCodes.Status200OK);
+        }
 
     }
 }

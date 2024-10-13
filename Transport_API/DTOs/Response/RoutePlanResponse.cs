@@ -2,17 +2,27 @@
 {
     public class RoutePlanResponseDTO
     {
-        public int RoutePlanID { get; set; }
-        public string RouteName { get; set; } = string.Empty;
-        public int VehicleID { get; set; }
-        public string VehicleNumber { get; set; } = string.Empty;
-        public int NoOfStops { get; set; }
-        public string PickUpTime { get; set; } = string.Empty;
-        public string DropTime { get; set; } = string.Empty;
-        public string DriverName { get; set; } = string.Empty;
+        //public int RoutePlanID { get; set; }
+        //public string RouteName { get; set; } = string.Empty;
+        //public int VehicleID { get; set; }
+        //public string VehicleNumber { get; set; } = string.Empty;
+        //public int NoOfStops { get; set; }
+        //public string PickUpTime { get; set; } = string.Empty;
+        //public string DropTime { get; set; } = string.Empty;
+        //public string DriverName { get; set; } = string.Empty;
 
-        // Add RouteStops back to the DTO
-        public List<RouteStopResponse>? RouteStops { get; set; }
+        //// Add RouteStops back to the DTO
+        //public List<RouteStopResponse>? RouteStops { get; set; }
+
+
+        public int RoutePlanID { get; set; }
+        public string RouteName { get; set; }
+        public int VehicleID { get; set; }
+        public string VehicleNumber { get; set; }
+        public int NoOfStops { get; set; }   // Number of stops instead of returning routeStops
+        public string PickUpTime { get; set; }
+        public string DropTime { get; set; }
+        public string DriverName { get; set; }
     }
 
     public class RouteStopResponse

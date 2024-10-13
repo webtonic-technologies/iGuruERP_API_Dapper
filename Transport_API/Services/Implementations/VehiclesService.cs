@@ -33,5 +33,15 @@ namespace Transport_API.Services.Implementations
         {
             return await _vehiclesRepository.UpdateVehicleStatus(vehicleId);
         }
+        public async Task<ServiceResponse<byte[]>> ExportExcel(GetAllExportVehiclesRequest request)
+        {
+            return await _vehiclesRepository.ExportExcel(request);
+        }
+
+        public async Task<ServiceResponse<byte[]>> ExportCSV(GetAllExportVehiclesRequest request)
+        {
+            return await _vehiclesRepository.ExportCSV(request);
+        }
+
     }
 }
