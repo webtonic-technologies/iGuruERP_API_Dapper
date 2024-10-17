@@ -1,5 +1,6 @@
 using Employee_API.DTOs;
 using Employee_API.Models;
+using Employee_API.Services.Implementations;
 using Employee_API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -495,7 +496,7 @@ namespace Employee_API.Controllers
             }
         }
         [HttpGet("DownloadEmployeeData")]
-        public async Task<IActionResult> DownloadEmployeeData([FromQuery] ExcelDownloadRequest request, [FromQuery] string format )
+        public async Task<IActionResult> DownloadEmployeeData([FromQuery] ExcelDownloadRequest request, [FromQuery] string format)
         {
             var response = await _employeeProfileServices.ExcelDownload(request, format);
 
@@ -570,6 +571,54 @@ namespace Employee_API.Controllers
         public async Task<IActionResult> GetEmployeeColumns()
         {
             var result = await _employeeProfileServices.GetEmployeeColumnsAsync();
+
+            if (result == null)
+            {
+                return NotFound("No employee columns found.");
+            }
+
+            return Ok(result);
+        }
+        [HttpPost("UploadEmployeeData")]
+        public async Task<IActionResult> UploadEmployeeData(IFormFile file, [FromQuery] int instituteId)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("File is not provided");
+
+            try
+            {
+                // Parse Excel file and read its data
+                var data = await _employeeProfileServices.ParseExcelFile(file, instituteId);
+                if (data != null && data.Any())
+                {
+                    return Ok(data);
+                }
+                else
+                {
+                    return NoContent();
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+        [HttpGet("BulkHistory/{InstituteId}")]
+        public async Task<IActionResult> GetBulkHistoryByInstituteId(int InstituteId)
+        {
+            var result = await _employeeProfileServices.GetBulkHistoryByInstituteId(InstituteId);
+
+            if (result == null)
+            {
+                return NotFound("No data found.");
+            }
+
+            return Ok(result);
+        }
+        [HttpGet("EmployeeExport/{InstituteId}")]
+        public async Task<IActionResult> GetExportHistoryByInstituteId(int InstituteId)
+        {
+            var result = await _employeeProfileServices.GetExportHistoryByInstituteId(InstituteId);
 
             if (result == null)
             {

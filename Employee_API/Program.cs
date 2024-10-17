@@ -21,6 +21,7 @@ builder.Services.AddTransient<IEmployeeDashboardRepository, EmployeeDashboardRep
 builder.Services.AddTransient<IEmployeeDashboardServices, EmployeeDashboardServices>();
 builder.Services.AddTransient<IEmployeeLoginsRepository, EmployeeLoginsRepository>();
 builder.Services.AddTransient<IEmployeeLoginsServices, EmployeeLoginsServices>();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IDbConnection>(c => new SqlConnection(connectionString));
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 // Register JwtHelper

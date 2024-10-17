@@ -31,6 +31,9 @@ namespace Employee_API.Services.Interfaces
         Task<ServiceResponse<List<ClassSectionSubjectResponse>>> ClassSectionSubjectsMappings(int InstituteId);
         Task<ServiceResponse<byte[]>> BulkUpdate(GetListRequest request);
         Task<ServiceResponse<string>> BulkUpdateEmployee(List<EmployeeProfile> request);
-        Task<ServiceResponse<IEnumerable<EmployeeColumn>>> GetEmployeeColumnsAsync();
+        Task<ServiceResponse<IEnumerable<CategoryWiseEmployeeColumns>>> GetEmployeeColumnsAsync();
+        Task<IEnumerable<dynamic>> ParseExcelFile(IFormFile file, int instituteId);
+        Task<ServiceResponse<IEnumerable<EmployeeExportHistoryDto>>> GetBulkHistoryByInstituteId(int instituteId);
+        Task<ServiceResponse<IEnumerable<EmployeeExportHistoryDto>>> GetExportHistoryByInstituteId(int instituteId);
     }
 }

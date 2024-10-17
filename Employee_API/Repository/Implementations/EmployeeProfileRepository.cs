@@ -16,13 +16,135 @@ namespace Employee_API.Repository.Implementations
     {
         private readonly IDbConnection _connection;
         private readonly string _connectionString;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IWebHostEnvironment _hostingEnvironment;
-        public EmployeeProfileRepository(IDbConnection connection, IWebHostEnvironment hostingEnvironment, IConfiguration configuration)
+        public EmployeeProfileRepository(IDbConnection connection, IWebHostEnvironment hostingEnvironment, IConfiguration configuration, IHttpContextAccessor httpContextAccessor)
         {
             _connection = connection;
             _hostingEnvironment = hostingEnvironment;
             _connectionString = configuration.GetConnectionString("DefaultConnection");
+            _httpContextAccessor = httpContextAccessor;
             ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+        }
+
+
+        public async Task<ServiceResponse<IEnumerable<EmployeeExportHistoryDto>>> GetExportHistoryByInstituteId(int instituteId)
+        {
+            try
+            {
+                string query = @"SELECT HistoryId, EmployeeCount, DownloadDate, IPAddress, Username, InstituteId 
+                         FROM tbl_EmployeeExportHistory 
+                         WHERE InstituteId = @InstituteId";
+
+                var historyRecords = await _connection.QueryAsync<EmployeeExportHistoryDto>(query, new { InstituteId = instituteId });
+
+                if (!historyRecords.Any())
+                {
+                    return new ServiceResponse<IEnumerable<EmployeeExportHistoryDto>>(false, "No records found", null, 204);
+                }
+
+                // Format the DownloadDate before returning
+                var formattedRecords = historyRecords.Select(record => new EmployeeExportHistoryDto
+                {
+                    HistoryId = record.HistoryId,
+                    EmployeeCount = record.EmployeeCount,
+                    // Format the date here
+                    DownloadDate = !string.IsNullOrEmpty(record.DownloadDate)
+                   ? DateTime.Parse(record.DownloadDate).ToString("dd-MM-yyyy at hh:mm tt")
+                   : null , // Set to null if DownloadDate is not available
+                    IPAddress = record.IPAddress,
+                    Username = record.Username,
+                    InstituteId = record.InstituteId
+                });
+
+                return new ServiceResponse<IEnumerable<EmployeeExportHistoryDto>>(true, "Records found", formattedRecords, 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<IEnumerable<EmployeeExportHistoryDto>>(false, ex.Message, null, 500);
+            }
+        }
+        public async Task<ServiceResponse<IEnumerable<EmployeeExportHistoryDto>>> GetBulkHistoryByInstituteId(int instituteId)
+        {
+            try
+            {
+                string query = @"SELECT HistoryId, EmployeeCount, DownloadDate, IPAddress, Username, InstituteId 
+                         FROM tbl_EmployeeBulkUpdateHistory 
+                         WHERE InstituteId = @InstituteId";
+
+                var historyRecords = await _connection.QueryAsync<EmployeeExportHistoryDto>(query, new { InstituteId = instituteId });
+
+                if (!historyRecords.Any())
+                {
+                    return new ServiceResponse<IEnumerable<EmployeeExportHistoryDto>>(false, "No records found", null, 204);
+                }
+
+                // Format the DownloadDate before returning
+                var formattedRecords = historyRecords.Select(record => new EmployeeExportHistoryDto
+                {
+                    HistoryId = record.HistoryId,
+                    EmployeeCount = record.EmployeeCount,
+                    // Format the date here
+                    DownloadDate = !string.IsNullOrEmpty(record.DownloadDate)
+                   ? DateTime.Parse(record.DownloadDate).ToString("dd-MM-yyyy at hh:mm tt")
+                   : null, // Set to null if DownloadDate is not available
+                    IPAddress = record.IPAddress,
+                    Username = record.Username,
+                    InstituteId = record.InstituteId
+                });
+
+                return new ServiceResponse<IEnumerable<EmployeeExportHistoryDto>>(true, "Records found", formattedRecords, 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<IEnumerable<EmployeeExportHistoryDto>>(false, ex.Message, null, 500);
+            }
+        }
+        public async Task<IEnumerable<dynamic>> ParseExcelFile(IFormFile file, int instituteId)
+        {
+            var result = new List<ExpandoObject>();
+
+            using (var stream = new MemoryStream())
+            {
+                await file.CopyToAsync(stream);
+                using (var package = new ExcelPackage(stream))
+                {
+                    var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+                    if (worksheet == null)
+                        throw new Exception("No worksheet found");
+
+                    // Get the number of rows and columns in the Excel file
+                    var rowCount = worksheet.Dimension.Rows;
+                    var columnCount = worksheet.Dimension.Columns;
+
+                    // Get the header row (dynamic column names)
+                    var columnHeaders = new List<string>();
+                    for (int col = 1; col <= columnCount; col++)
+                    {
+                        columnHeaders.Add(worksheet.Cells[1, col].Text);
+                    }
+
+                    // Iterate over the rows
+                    for (int row = 2; row <= rowCount; row++) // Skipping header row
+                    {
+                        dynamic rowData = new ExpandoObject();
+                        var rowDict = (IDictionary<string, object>)rowData;
+
+                        for (int col = 1; col <= columnCount; col++)
+                        {
+                            var cellValue = worksheet.Cells[row, col].Text;
+                            var columnHeader = columnHeaders[col - 1];
+
+                            rowDict[columnHeader] = cellValue;
+                        }
+
+                        result.Add(rowData);
+                    }
+                }
+            }
+
+            // You can also apply filters based on the instituteId or other parameters
+            return result;
         }
         public async Task<ServiceResponse<int>> AddUpdateEmployeeProfile(EmployeeProfile request)
         {
@@ -178,6 +300,7 @@ namespace Employee_API.Repository.Implementations
         {
             try
             {
+                int InstituteId = 0;
                 // Check if the request is null or empty
                 if (request == null || !request.Any())
                 {
@@ -187,6 +310,7 @@ namespace Employee_API.Repository.Implementations
                 // Iterate through each employee in the list and update their details
                 foreach (var employee in request)
                 {
+                    InstituteId = employee.Institute_id;
                     // Convert Date_of_Joining and Date_of_Birth to IST and format to DD-MM-YYYY
                     var dateOfJoining = employee.Date_of_Joining?.AddHours(5).AddMinutes(30).ToString("dd-MM-yyyy");
                     var dateOfBirth = employee.Date_of_Birth?.AddHours(5).AddMinutes(30).ToString("dd-MM-yyyy");
@@ -245,7 +369,18 @@ namespace Employee_API.Repository.Implementations
                         employee.Status,
                         EmpPhoto = ImageUpload(employee.EmpPhoto) // Handle image upload if necessary
                     });
-
+                    var ipAddress = GetClientIPAddress();
+                    string historyQuery = @"insert into tbl_EmployeeBulkUpdateHistory ( EmployeeCount ,DownloadDate ,IPAddress,Username, InstituteId)
+                                           VALUES 
+                        ( @EmployeeCount ,@DownloadDate ,@IPAddress,@Username, @InstituteId)";
+                    await _connection.ExecuteAsync(historyQuery, new
+                    {
+                        EmployeeCount = rowsAffected,
+                        DownloadDate = DateTime.Now,
+                        IPAddress = ipAddress,
+                        Username = "", // Assuming you have this in the request
+                        InstituteId = InstituteId
+                    });
                     if (rowsAffected > 0)
                     {
                         // Additional logic to handle related entities (family, documents, qualifications, etc.)
@@ -1430,19 +1565,46 @@ namespace Employee_API.Repository.Implementations
                 return new ServiceResponse<byte[]>(false, ex.Message, null, 500);
             }
         }
-        public async Task<ServiceResponse<IEnumerable<EmployeeColumn>>> GetEmployeeColumnsAsync()
+        public async Task<ServiceResponse<IEnumerable<CategoryWiseEmployeeColumns>>> GetEmployeeColumnsAsync()
         {
             string query = @"
-        SELECT TOP (1000) [ECMId],
-                          [ColumnDisplayName],
-                          [ColumnDatabaseName],
-                          [CategoryId],
-                          [Status]
-        FROM [iGuruERP].[dbo].[tbl_EmployeeColumnMaster]";
+    SELECT TOP (1000) [ECMId],
+                      [ColumnDisplayName],
+                      [ColumnDatabaseName],
+                      [CategoryId],
+                      [Status]
+    FROM [iGuruERP].[dbo].[tbl_EmployeeColumnMaster]";
 
             var data = await _connection.QueryAsync<EmployeeColumn>(query);
-            return new ServiceResponse<IEnumerable<EmployeeColumn>>(true, "Records found", data.ToList(), 200);
+
+            // Group the data by CategoryId
+            var groupedData = data
+                .GroupBy(c => c.CategoryId)
+                .Select(g => new CategoryWiseEmployeeColumns
+                {
+                    CategoryId = g.Key,
+                    EmployeeColumns = g.ToList()
+                });
+
+            return new ServiceResponse<IEnumerable<CategoryWiseEmployeeColumns>>(true, "Records found", groupedData.ToList(), 200);
         }
+
+        // New DTO to represent category-wise employee columns
+
+
+        //public async Task<ServiceResponse<IEnumerable<EmployeeColumn>>> GetEmployeeColumnsAsync()
+        //{
+        //    string query = @"
+        //SELECT TOP (1000) [ECMId],
+        //                  [ColumnDisplayName],
+        //                  [ColumnDatabaseName],
+        //                  [CategoryId],
+        //                  [Status]
+        //FROM [iGuruERP].[dbo].[tbl_EmployeeColumnMaster]";
+
+        //    var data = await _connection.QueryAsync<EmployeeColumn>(query);
+        //    return new ServiceResponse<IEnumerable<EmployeeColumn>>(true, "Records found", data.ToList(), 200);
+        //}
         // Helper method to add a master sheet
         private void AddMasterSheet(ExcelPackage package, string sheetName, string[] headers, IEnumerable<dynamic> data)
         {
@@ -2330,6 +2492,18 @@ WHERE
                         DepartmentId = request.DepartmetnId == 0 ? (int?)null : request.DepartmetnId
                     })).ToList();
 
+                var ipAddress = GetClientIPAddress();
+                string historyQuery = @"insert into tbl_EmployeeExportHistory ( EmployeeCount ,DownloadDate ,IPAddress,Username, InstituteId)
+                                           VALUES 
+                        ( @EmployeeCount ,@DownloadDate ,@IPAddress,@Username, @InstituteId)";
+                await _connection.ExecuteAsync(historyQuery, new
+                {
+                    EmployeeCount = employeeProfiles.Count,
+                    DownloadDate = DateTime.Now,
+                    IPAddress = ipAddress,
+                    Username = "", // Assuming you have this in the request
+                    InstituteId = request.InstituteId
+                });
                 if (!employeeProfiles.Any())
                 {
                     return await GenerateFileWithoutData(format);
@@ -2348,6 +2522,19 @@ WHERE
             {
                 return new ServiceResponse<byte[]>(false, ex.Message, null, StatusCodes.Status500InternalServerError);
             }
+        }
+        private string GetClientIPAddress()
+        {
+            // Getting the forwarded IP address from headers (if behind a proxy or load balancer)
+            var ipAddress = _httpContextAccessor.HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+
+            // If no forwarded IP address is found, use the remote IP address
+            if (string.IsNullOrEmpty(ipAddress))
+            {
+                ipAddress = _httpContextAccessor.HttpContext.Connection.RemoteIpAddress?.MapToIPv4().ToString();
+            }
+
+            return ipAddress ?? "Unknown"; // Return "Unknown" if the IP address could not be retrieved
         }
         private async Task<ServiceResponse<byte[]>> GenerateFileWithoutData(string format)
         {
@@ -2520,7 +2707,6 @@ WHERE
                 return false;
             }
         }
-
         private async Task<string> GenerateUsername(string instituteName, int instituteId, string roleIdentifier, int userId)
         {
             // Step 1: Get the first four letters of the institute name
@@ -2535,7 +2721,6 @@ WHERE
             // Return the generated username
             return $"{baseUsername}{sequenceNumber}";
         }
-
         private string GetInstitutePrefix(string instituteName)
         {
             // Logic to extract the first four meaningful letters from the institute name
@@ -2553,7 +2738,6 @@ WHERE
             // Ensure the prefix is exactly 4 characters
             return prefix.PadRight(4, 'X').Substring(0, 4);
         }
-
         private async Task<int> GetNextSequenceNumber(int instituteId, string roleIdentifier)
         {
             var connection = new SqlConnection(_connectionString);
@@ -2756,7 +2940,7 @@ WHERE
         public async Task<List<ColumnDetails>> GetActiveColumns(List<ActiveColumns>? activeColumns)
         {
             var activeColumnDetails = new List<ColumnDetails>();
-            if(activeColumns != null)
+            if (activeColumns != null)
             {
                 foreach (var columnRequest in activeColumns)
                 {
@@ -2774,7 +2958,7 @@ WHERE
                     await _connection.ExecuteAsync(updateQuery, updateParameters);
                 }
             }
-          
+
             // Fetch all columns that are already active in the database, joining with category table to get TableName
             var activeColumnDetailsFromDB = await _connection.QueryAsync<ColumnDetails>(@"
             SELECT ecm.ECMId, ecm.CategoryId, ecm.ColumnDatabaseName, cat.CategoryName AS TableName

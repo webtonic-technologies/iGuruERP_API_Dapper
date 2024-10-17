@@ -48,6 +48,16 @@ namespace Employee_API.DTOs
         public List<EmployeeAddressDetailsResponse>? PresentAddress { get; set; }
         public List<EmployeeAddressDetailsResponse>? PermanentAddress { get; set; }
     }
+    public class EmployeeExportHistoryDto
+    {
+        public int HistoryId { get; set; }
+        public int EmployeeCount { get; set; }
+        public string DownloadDate { get; set; }
+        public string IPAddress { get; set; }
+        public string Username { get; set; }
+        public int InstituteId { get; set; }
+    }
+
     public class EmployeeAddressDetailsResponse
     {
         public int? Employee_Present_Address_id { get; set; }
@@ -194,5 +204,9 @@ namespace Employee_API.DTOs
         public int CategoryId { get; set; }
         public bool Status { get; set; }
     }
-
+    public class CategoryWiseEmployeeColumns
+    {
+        public int CategoryId { get; set; }
+        public List<EmployeeColumn> EmployeeColumns { get; set; }
+    }
 }

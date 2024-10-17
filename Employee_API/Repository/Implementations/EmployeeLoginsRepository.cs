@@ -4,6 +4,7 @@ using Employee_API.DTOs.ServiceResponse;
 using Employee_API.Repository.Interfaces;
 using OfficeOpenXml;
 using System.Data;
+using System.Text;
 
 namespace Employee_API.Repository.Implementations
 {
@@ -17,87 +18,43 @@ namespace Employee_API.Repository.Implementations
             _hostingEnvironment = hostingEnvironment;
             ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
         }
-        public async Task<ServiceResponse<byte[]>> DownloadExcelSheet(DownloadExcelRequest request)
+        public async Task<ServiceResponse<byte[]>> DownloadExcelSheet(ExcelDownloadRequest request, string format)
         {
             try
             {
                 // SQL query to fetch employee details along with login information
                 string sql = @"
-            SELECT emp.Employee_id, emp.First_Name, emp.Middle_Name, emp.Last_Name, emp.Gender_id, 
-                   emp.Department_id, emp.Designation_id, emp.mobile_number, emp.Date_of_Birth, emp.EmailID,
-                   dep.DepartmentName, des.DesignationName, gen.Gender_Type, 
-                   login.UserName AS LoginId, login.Password, login.UserActivity AS LastActivity
-            FROM tbl_EmployeeProfileMaster emp
-            LEFT JOIN tbl_Department dep ON emp.Department_id = dep.Department_id
-            LEFT JOIN tbl_Designation des ON emp.Designation_id = des.Designation_id
-            LEFT JOIN tbl_Gender gen ON emp.Gender_id = gen.Gender_id
-            LEFT JOIN tblLoginInformationMaster login ON emp.Employee_id = login.UserId
-            WHERE emp.Institute_id = @InstituteId AND emp.Status = 1
-            AND (@DepartmentId = 0 OR emp.Department_id = @DepartmentId)
-            AND (@DesignationId = 0 OR emp.Designation_id = @DesignationId)";
+        SELECT emp.Employee_id, emp.First_Name, emp.Middle_Name, emp.Last_Name, emp.Gender_id, 
+               emp.Department_id, emp.Designation_id, emp.mobile_number, emp.Date_of_Birth, emp.EmailID,
+               dep.DepartmentName, des.DesignationName, gen.Gender_Type, 
+               login.UserName AS LoginId, login.Password, login.UserActivity AS LastActivity
+        FROM tbl_EmployeeProfileMaster emp
+        LEFT JOIN tbl_Department dep ON emp.Department_id = dep.Department_id
+        LEFT JOIN tbl_Designation des ON emp.Designation_id = des.Designation_id
+        LEFT JOIN tbl_Gender gen ON emp.Gender_id = gen.Gender_id
+        LEFT JOIN tblLoginInformationMaster login ON emp.Employee_id = login.UserId
+        WHERE emp.Institute_id = @InstituteId AND emp.Status = 1
+        AND (@DepartmentId = 0 OR emp.Department_id = @DepartmentId)
+        AND (@DesignationId = 0 OR emp.Designation_id = @DesignationId)";
 
                 // Execute the query, using optional filters
-                var employees = await _connection.QueryAsync<dynamic>(sql, new { request.InstituteId, request.DepartmentId, request.DesignationId });
+                var employees = await _connection.QueryAsync<dynamic>(sql, new { request.InstituteId, request.DepartmetnId, request.DesignationId });
 
-                // Initialize EPPlus package to create the Excel sheet
-                using (var package = new ExcelPackage())
+                // Check if employees exist
+                if (!employees.Any())
                 {
-                    var worksheet = package.Workbook.Worksheets.Add("Employee Details");
+                    return new ServiceResponse<byte[]>(false, "No records found.", null, 404);
+                }
 
-                    // Add headers, including the new ones
-                    worksheet.Cells[1, 1].Value = "Sr. No.";
-                    worksheet.Cells[1, 2].Value = "Employee ID";
-                    worksheet.Cells[1, 3].Value = "Employee Name";
-                    worksheet.Cells[1, 4].Value = "Department";
-                    worksheet.Cells[1, 5].Value = "Designation";
-                    worksheet.Cells[1, 6].Value = "Gender";
-                    worksheet.Cells[1, 7].Value = "Mobile";
-                    worksheet.Cells[1, 8].Value = "Date of Birth";
-                    worksheet.Cells[1, 9].Value = "Email";
-                    worksheet.Cells[1, 10].Value = "Login ID";
-                    worksheet.Cells[1, 11].Value = "Password";
-                    worksheet.Cells[1, 12].Value = "Last Activity";
-
-                    // Check if there are employees returned from the query
-                    if (employees.Any())
+                // Check the format and act accordingly
+                if (format.ToLower() == "excel")
+                {
+                    // Generate Excel (.xlsx) file
+                    using (var package = new ExcelPackage())
                     {
-                        // Fill the worksheet with employee data and Sr. No.
-                        int row = 2;
-                        int serialNumber = 1;
+                        var worksheet = package.Workbook.Worksheets.Add("Employee Details");
 
-                        foreach (var employee in employees)
-                        {
-                            // Combine first name, middle name, and last name into employee name
-                            string employeeName = $"{employee.First_Name} {employee.Middle_Name} {employee.Last_Name}".Trim();
-
-                            // Check if LastActivity is not null and is a DateTime
-                            string lastActivityFormatted = employee.LastActivity != null && employee.LastActivity is DateTime
-                                ? ((DateTime)employee.LastActivity).ToString("dd-MM-yyyy hh:mm tt")
-                                : string.Empty;
-
-                            worksheet.Cells[row, 1].Value = serialNumber; // Sr. No.
-                            worksheet.Cells[row, 2].Value = employee.Employee_id;
-                            worksheet.Cells[row, 3].Value = employeeName;
-                            worksheet.Cells[row, 4].Value = employee.DepartmentName;
-                            worksheet.Cells[row, 5].Value = employee.DesignationName;
-                            worksheet.Cells[row, 6].Value = employee.Gender_Type;
-                            worksheet.Cells[row, 7].Value = employee.mobile_number;
-                            worksheet.Cells[row, 8].Value = employee.Date_of_Birth;
-                            worksheet.Cells[row, 9].Value = employee.EmailID;
-                            worksheet.Cells[row, 10].Value = employee.LoginId; // Login ID
-                            worksheet.Cells[row, 11].Value = employee.Password; // Password
-                            worksheet.Cells[row, 12].Value = lastActivityFormatted; // Last Activity
-
-                            row++;
-                            serialNumber++;
-                        }
-
-                        // Auto-fit the columns for better visibility
-                        worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
-                    }
-                    else
-                    {
-                        // If no data is found, return an empty Excel with only headers
+                        // Add headers
                         worksheet.Cells[1, 1].Value = "Sr. No.";
                         worksheet.Cells[1, 2].Value = "Employee ID";
                         worksheet.Cells[1, 3].Value = "Employee Name";
@@ -110,22 +67,185 @@ namespace Employee_API.Repository.Implementations
                         worksheet.Cells[1, 10].Value = "Login ID";
                         worksheet.Cells[1, 11].Value = "Password";
                         worksheet.Cells[1, 12].Value = "Last Activity";
+
+                        // Fill employee data
+                        int row = 2;
+                        int serialNumber = 1;
+                        foreach (var employee in employees)
+                        {
+                            string employeeName = $"{employee.First_Name} {employee.Middle_Name} {employee.Last_Name}".Trim();
+                            string lastActivityFormatted = employee.LastActivity != null && employee.LastActivity is DateTime
+                                ? ((DateTime)employee.LastActivity).ToString("dd-MM-yyyy hh:mm tt")
+                                : string.Empty;
+
+                            worksheet.Cells[row, 1].Value = serialNumber++;
+                            worksheet.Cells[row, 2].Value = employee.Employee_id;
+                            worksheet.Cells[row, 3].Value = employeeName;
+                            worksheet.Cells[row, 4].Value = employee.DepartmentName;
+                            worksheet.Cells[row, 5].Value = employee.DesignationName;
+                            worksheet.Cells[row, 6].Value = employee.Gender_Type;
+                            worksheet.Cells[row, 7].Value = employee.mobile_number;
+                            worksheet.Cells[row, 8].Value = employee.Date_of_Birth;
+                            worksheet.Cells[row, 9].Value = employee.EmailID;
+                            worksheet.Cells[row, 10].Value = employee.LoginId;
+                            worksheet.Cells[row, 11].Value = employee.Password;
+                            worksheet.Cells[row, 12].Value = lastActivityFormatted;
+                            row++;
+                        }
+
+                        // Auto-fit columns for better visibility
+                        worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+
+                        // Convert Excel sheet to byte array
+                        var excelData = package.GetAsByteArray();
+
+                        return new ServiceResponse<byte[]>(true, "Excel file generated successfully", excelData, 200);
+                    }
+                }
+                else if (format.ToLower() == "csv")
+                {
+                    // Generate CSV format
+                    var csv = new StringBuilder();
+                    csv.AppendLine("Sr. No.,Employee ID,Employee Name,Department,Designation,Gender,Mobile,Date of Birth,Email,Login ID,Password,Last Activity");
+
+                    int serialNumber = 1;
+                    foreach (var employee in employees)
+                    {
+                        string employeeName = $"{employee.First_Name} {employee.Middle_Name} {employee.Last_Name}".Trim();
+                        string lastActivityFormatted = employee.LastActivity != null && employee.LastActivity is DateTime
+                            ? ((DateTime)employee.LastActivity).ToString("dd-MM-yyyy hh:mm tt")
+                            : string.Empty;
+
+                        csv.AppendLine($"{serialNumber++},{employee.Employee_id},{employeeName},{employee.DepartmentName},{employee.DesignationName},{employee.Gender_Type},{employee.mobile_number},{employee.Date_of_Birth},{employee.EmailID},{employee.LoginId},{employee.Password},{lastActivityFormatted}");
                     }
 
-                    // Convert the worksheet into a byte array
-                    var excelData = package.GetAsByteArray();
+                    // Convert CSV content to byte array
+                    var csvData = Encoding.UTF8.GetBytes(csv.ToString());
 
-                    // Return the byte array as the service response
-                    return new ServiceResponse<byte[]>(true, "Excel file generated successfully", excelData, 200);
+                    return new ServiceResponse<byte[]>(true, "CSV file generated successfully", csvData, 200);
+                }
+                else
+                {
+                    // Invalid format
+                    return new ServiceResponse<byte[]>(false, "Invalid file format requested. Supported formats: xlsx, csv", null, 400);
                 }
             }
             catch (Exception ex)
             {
-                // Handle any errors during the process
-                return new ServiceResponse<byte[]>(false, $"Error generating Excel file: {ex.Message}", null, 500);
+                // Handle any errors
+                return new ServiceResponse<byte[]>(false, $"Error generating file: {ex.Message}", null, 500);
             }
         }
-        public async Task<ServiceResponse<byte[]>> DownloadExcelSheetNonAppUsers(DownloadExcelRequest request)
+
+        //public async Task<ServiceResponse<byte[]>> DownloadExcelSheet(DownloadExcelRequest request)
+        //{
+        //    try
+        //    {
+        //        // SQL query to fetch employee details along with login information
+        //        string sql = @"
+        //    SELECT emp.Employee_id, emp.First_Name, emp.Middle_Name, emp.Last_Name, emp.Gender_id, 
+        //           emp.Department_id, emp.Designation_id, emp.mobile_number, emp.Date_of_Birth, emp.EmailID,
+        //           dep.DepartmentName, des.DesignationName, gen.Gender_Type, 
+        //           login.UserName AS LoginId, login.Password, login.UserActivity AS LastActivity
+        //    FROM tbl_EmployeeProfileMaster emp
+        //    LEFT JOIN tbl_Department dep ON emp.Department_id = dep.Department_id
+        //    LEFT JOIN tbl_Designation des ON emp.Designation_id = des.Designation_id
+        //    LEFT JOIN tbl_Gender gen ON emp.Gender_id = gen.Gender_id
+        //    LEFT JOIN tblLoginInformationMaster login ON emp.Employee_id = login.UserId
+        //    WHERE emp.Institute_id = @InstituteId AND emp.Status = 1
+        //    AND (@DepartmentId = 0 OR emp.Department_id = @DepartmentId)
+        //    AND (@DesignationId = 0 OR emp.Designation_id = @DesignationId)";
+
+        //        // Execute the query, using optional filters
+        //        var employees = await _connection.QueryAsync<dynamic>(sql, new { request.InstituteId, request.DepartmentId, request.DesignationId });
+
+        //        // Initialize EPPlus package to create the Excel sheet
+        //        using (var package = new ExcelPackage())
+        //        {
+        //            var worksheet = package.Workbook.Worksheets.Add("Employee Details");
+
+        //            // Add headers, including the new ones
+        //            worksheet.Cells[1, 1].Value = "Sr. No.";
+        //            worksheet.Cells[1, 2].Value = "Employee ID";
+        //            worksheet.Cells[1, 3].Value = "Employee Name";
+        //            worksheet.Cells[1, 4].Value = "Department";
+        //            worksheet.Cells[1, 5].Value = "Designation";
+        //            worksheet.Cells[1, 6].Value = "Gender";
+        //            worksheet.Cells[1, 7].Value = "Mobile";
+        //            worksheet.Cells[1, 8].Value = "Date of Birth";
+        //            worksheet.Cells[1, 9].Value = "Email";
+        //            worksheet.Cells[1, 10].Value = "Login ID";
+        //            worksheet.Cells[1, 11].Value = "Password";
+        //            worksheet.Cells[1, 12].Value = "Last Activity";
+
+        //            // Check if there are employees returned from the query
+        //            if (employees.Any())
+        //            {
+        //                // Fill the worksheet with employee data and Sr. No.
+        //                int row = 2;
+        //                int serialNumber = 1;
+
+        //                foreach (var employee in employees)
+        //                {
+        //                    // Combine first name, middle name, and last name into employee name
+        //                    string employeeName = $"{employee.First_Name} {employee.Middle_Name} {employee.Last_Name}".Trim();
+
+        //                    // Check if LastActivity is not null and is a DateTime
+        //                    string lastActivityFormatted = employee.LastActivity != null && employee.LastActivity is DateTime
+        //                        ? ((DateTime)employee.LastActivity).ToString("dd-MM-yyyy hh:mm tt")
+        //                        : string.Empty;
+
+        //                    worksheet.Cells[row, 1].Value = serialNumber; // Sr. No.
+        //                    worksheet.Cells[row, 2].Value = employee.Employee_id;
+        //                    worksheet.Cells[row, 3].Value = employeeName;
+        //                    worksheet.Cells[row, 4].Value = employee.DepartmentName;
+        //                    worksheet.Cells[row, 5].Value = employee.DesignationName;
+        //                    worksheet.Cells[row, 6].Value = employee.Gender_Type;
+        //                    worksheet.Cells[row, 7].Value = employee.mobile_number;
+        //                    worksheet.Cells[row, 8].Value = employee.Date_of_Birth;
+        //                    worksheet.Cells[row, 9].Value = employee.EmailID;
+        //                    worksheet.Cells[row, 10].Value = employee.LoginId; // Login ID
+        //                    worksheet.Cells[row, 11].Value = employee.Password; // Password
+        //                    worksheet.Cells[row, 12].Value = lastActivityFormatted; // Last Activity
+
+        //                    row++;
+        //                    serialNumber++;
+        //                }
+
+        //                // Auto-fit the columns for better visibility
+        //                worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+        //            }
+        //            else
+        //            {
+        //                // If no data is found, return an empty Excel with only headers
+        //                worksheet.Cells[1, 1].Value = "Sr. No.";
+        //                worksheet.Cells[1, 2].Value = "Employee ID";
+        //                worksheet.Cells[1, 3].Value = "Employee Name";
+        //                worksheet.Cells[1, 4].Value = "Department";
+        //                worksheet.Cells[1, 5].Value = "Designation";
+        //                worksheet.Cells[1, 6].Value = "Gender";
+        //                worksheet.Cells[1, 7].Value = "Mobile";
+        //                worksheet.Cells[1, 8].Value = "Date of Birth";
+        //                worksheet.Cells[1, 9].Value = "Email";
+        //                worksheet.Cells[1, 10].Value = "Login ID";
+        //                worksheet.Cells[1, 11].Value = "Password";
+        //                worksheet.Cells[1, 12].Value = "Last Activity";
+        //            }
+
+        //            // Convert the worksheet into a byte array
+        //            var excelData = package.GetAsByteArray();
+
+        //            // Return the byte array as the service response
+        //            return new ServiceResponse<byte[]>(true, "Excel file generated successfully", excelData, 200);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        // Handle any errors during the process
+        //        return new ServiceResponse<byte[]>(false, $"Error generating Excel file: {ex.Message}", null, 500);
+        //    }
+        //}
+        public async Task<ServiceResponse<byte[]>> DownloadExcelSheetNonAppUsers(DownloadExcelRequest request, string format)
         {
             try
             {
@@ -149,60 +269,161 @@ namespace Employee_API.Repository.Implementations
                 // Fetching non-app users from the database with optional filters
                 var nonAppUsers = await _connection.QueryAsync<dynamic>(sql, new { request.InstituteId, request.DepartmentId, request.DesignationId });
 
-                // Initialize EPPlus package to create the Excel file
-                using (var package = new ExcelPackage())
+                // Check the format and act accordingly
+                if (format.ToLower() == "xlsx")
                 {
-                    // Add a worksheet
-                    var worksheet = package.Workbook.Worksheets.Add("Non-App Users");
-
-                    // Add headers to the Excel sheet with "Sr No" as the first column
-                    worksheet.Cells[1, 1].Value = "Sr No";
-                    worksheet.Cells[1, 2].Value = "Employee ID";
-                    worksheet.Cells[1, 3].Value = "Employee Name";
-                    worksheet.Cells[1, 4].Value = "Designation";
-                    worksheet.Cells[1, 5].Value = "Department";
-                    worksheet.Cells[1, 6].Value = "Gender";
-                    worksheet.Cells[1, 7].Value = "Mobile Number";
-
-                    // Check if there are any non-app users to include in the Excel sheet
-                    if (nonAppUsers.Any())
+                    // Initialize EPPlus package to create the Excel file
+                    using (var package = new ExcelPackage())
                     {
-                        // Populate the worksheet with data from the query
-                        int row = 2;
-                        int srNo = 1; // Initialize Sr No counter
-                        foreach (var user in nonAppUsers)
-                        {
-                            // Combine first name, middle name, and last name for the full employee name
-                            string employeeName = $"{user.First_Name} {user.Middle_Name} {user.Last_Name}".Trim();
+                        // Add a worksheet
+                        var worksheet = package.Workbook.Worksheets.Add("Non-App Users");
 
-                            worksheet.Cells[row, 1].Value = srNo++; // Increment Sr No for each row
-                            worksheet.Cells[row, 2].Value = user.Employee_id;
-                            worksheet.Cells[row, 3].Value = employeeName;
-                            worksheet.Cells[row, 4].Value = user.DesignationName;
-                            worksheet.Cells[row, 5].Value = user.DepartmentName;
-                            worksheet.Cells[row, 6].Value = user.Gender_Type;
-                            worksheet.Cells[row, 7].Value = user.mobile_number;
-                            row++;
+                        // Add headers to the Excel sheet with "Sr No" as the first column
+                        worksheet.Cells[1, 1].Value = "Sr No";
+                        worksheet.Cells[1, 2].Value = "Employee ID";
+                        worksheet.Cells[1, 3].Value = "Employee Name";
+                        worksheet.Cells[1, 4].Value = "Designation";
+                        worksheet.Cells[1, 5].Value = "Department";
+                        worksheet.Cells[1, 6].Value = "Gender";
+                        worksheet.Cells[1, 7].Value = "Mobile Number";
+
+                        if (nonAppUsers.Any())
+                        {
+                            int row = 2;
+                            int srNo = 1;
+                            foreach (var user in nonAppUsers)
+                            {
+                                string employeeName = $"{user.First_Name} {user.Middle_Name} {user.Last_Name}".Trim();
+                                worksheet.Cells[row, 1].Value = srNo++;
+                                worksheet.Cells[row, 2].Value = user.Employee_id;
+                                worksheet.Cells[row, 3].Value = employeeName;
+                                worksheet.Cells[row, 4].Value = user.DesignationName;
+                                worksheet.Cells[row, 5].Value = user.DepartmentName;
+                                worksheet.Cells[row, 6].Value = user.Gender_Type;
+                                worksheet.Cells[row, 7].Value = user.mobile_number;
+                                row++;
+                            }
                         }
+
+                        // Auto-fit columns for better readability
+                        worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+
+                        // Convert the worksheet to a byte array
+                        var excelData = package.GetAsByteArray();
+
+                        // Return the byte array as a successful response
+                        return new ServiceResponse<byte[]>(true, "Excel sheet generated successfully", excelData, 200);
+                    }
+                }
+                else if (format.ToLower() == "csv")
+                {
+                    // Generate CSV format
+                    var csv = new StringBuilder();
+                    csv.AppendLine("Sr No,Employee ID,Employee Name,Designation,Department,Gender,Mobile Number");
+
+                    int srNo = 1;
+                    foreach (var user in nonAppUsers)
+                    {
+                        string employeeName = $"{user.First_Name} {user.Middle_Name} {user.Last_Name}".Trim();
+                        csv.AppendLine($"{srNo++},{user.Employee_id},{employeeName},{user.DesignationName},{user.DepartmentName},{user.Gender_Type},{user.mobile_number}");
                     }
 
-                    // Auto-fit columns for better readability
-                    worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+                    // Convert CSV content to byte array
+                    var csvData = Encoding.UTF8.GetBytes(csv.ToString());
 
-                    // Convert the worksheet to a byte array
-                    var excelData = package.GetAsByteArray();
-
-                    // Return the byte array as a successful response
-                    return new ServiceResponse<byte[]>(true, "Excel sheet generated successfully", excelData, 200);
+                    // Return the CSV file as a successful response
+                    return new ServiceResponse<byte[]>(true, "CSV file generated successfully", csvData, 200);
+                }
+                else
+                {
+                    // Invalid format
+                    return new ServiceResponse<byte[]>(false, "Invalid file format requested. Supported formats: xlsx, csv", null, 400);
                 }
             }
             catch (Exception ex)
             {
                 // Handle exceptions and return an error response
-                return new ServiceResponse<byte[]>(false, $"Error generating Excel sheet: {ex.Message}", null, 500);
+                return new ServiceResponse<byte[]>(false, $"Error generating file: {ex.Message}", null, 500);
             }
         }
-        public async Task<ServiceResponse<byte[]>> DownloadExcelSheetEmployeeActivity(DownloadExcelRequest request)
+        //public async Task<ServiceResponse<byte[]>> DownloadExcelSheetNonAppUsers(DownloadExcelRequest request)
+        //{
+        //    try
+        //    {
+        //        // SQL query to fetch non-app users (IsAppUser = false) based on InstituteId and optional filters for DepartmentId and DesignationId
+        //        string sql = @"
+        //SELECT emp.Employee_id, emp.First_Name, emp.Middle_Name, emp.Last_Name, emp.Gender_id, 
+        //       emp.Department_id, emp.Designation_id, emp.mobile_number, 
+        //       dep.DepartmentName, des.DesignationName, gen.Gender_Type
+        //FROM tbl_EmployeeProfileMaster emp
+        //LEFT JOIN tbl_Department dep ON emp.Department_id = dep.Department_id
+        //LEFT JOIN tbl_Designation des ON emp.Designation_id = des.Designation_id
+        //LEFT JOIN tbl_Gender gen ON emp.Gender_id = gen.Gender_id
+        //LEFT JOIN tblUserLogs logs ON logs.UserId = emp.Employee_id
+        //WHERE emp.Institute_id = @InstituteId
+        //  AND logs.UserTypeId = 1
+        //  AND logs.IsAppUser = 0
+        //  AND emp.Status = 1
+        //  AND (@DepartmentId = 0 OR emp.Department_id = @DepartmentId)
+        //  AND (@DesignationId = 0 OR emp.Designation_id = @DesignationId)";
+
+        //        // Fetching non-app users from the database with optional filters
+        //        var nonAppUsers = await _connection.QueryAsync<dynamic>(sql, new { request.InstituteId, request.DepartmentId, request.DesignationId });
+
+        //        // Initialize EPPlus package to create the Excel file
+        //        using (var package = new ExcelPackage())
+        //        {
+        //            // Add a worksheet
+        //            var worksheet = package.Workbook.Worksheets.Add("Non-App Users");
+
+        //            // Add headers to the Excel sheet with "Sr No" as the first column
+        //            worksheet.Cells[1, 1].Value = "Sr No";
+        //            worksheet.Cells[1, 2].Value = "Employee ID";
+        //            worksheet.Cells[1, 3].Value = "Employee Name";
+        //            worksheet.Cells[1, 4].Value = "Designation";
+        //            worksheet.Cells[1, 5].Value = "Department";
+        //            worksheet.Cells[1, 6].Value = "Gender";
+        //            worksheet.Cells[1, 7].Value = "Mobile Number";
+
+        //            // Check if there are any non-app users to include in the Excel sheet
+        //            if (nonAppUsers.Any())
+        //            {
+        //                // Populate the worksheet with data from the query
+        //                int row = 2;
+        //                int srNo = 1; // Initialize Sr No counter
+        //                foreach (var user in nonAppUsers)
+        //                {
+        //                    // Combine first name, middle name, and last name for the full employee name
+        //                    string employeeName = $"{user.First_Name} {user.Middle_Name} {user.Last_Name}".Trim();
+
+        //                    worksheet.Cells[row, 1].Value = srNo++; // Increment Sr No for each row
+        //                    worksheet.Cells[row, 2].Value = user.Employee_id;
+        //                    worksheet.Cells[row, 3].Value = employeeName;
+        //                    worksheet.Cells[row, 4].Value = user.DesignationName;
+        //                    worksheet.Cells[row, 5].Value = user.DepartmentName;
+        //                    worksheet.Cells[row, 6].Value = user.Gender_Type;
+        //                    worksheet.Cells[row, 7].Value = user.mobile_number;
+        //                    row++;
+        //                }
+        //            }
+
+        //            // Auto-fit columns for better readability
+        //            worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+
+        //            // Convert the worksheet to a byte array
+        //            var excelData = package.GetAsByteArray();
+
+        //            // Return the byte array as a successful response
+        //            return new ServiceResponse<byte[]>(true, "Excel sheet generated successfully", excelData, 200);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        // Handle exceptions and return an error response
+        //        return new ServiceResponse<byte[]>(false, $"Error generating Excel sheet: {ex.Message}", null, 500);
+        //    }
+        //}
+        public async Task<ServiceResponse<byte[]>> DownloadEmployeeActivity(DownloadExcelRequest request, string format)
         {
             try
             {
@@ -225,53 +446,21 @@ namespace Employee_API.Repository.Implementations
                 // Fetching employee activity data from the database with optional filters
                 var employeeActivityLogs = await _connection.QueryAsync<dynamic>(sql, new
                 {
-                    InstituteId = request.InstituteId,
-                    DepartmentId = request.DepartmentId,
-                    DesignationId = request.DesignationId
+                    request.InstituteId,
+                    request.DepartmentId,
+                    request.DesignationId
                 });
 
-                // Initialize EPPlus package to create the Excel file
-                using (var package = new ExcelPackage())
+                // Check the requested format (Excel or CSV)
+                if (format.ToLower() == "excel")
                 {
-                    // Add a worksheet
-                    var worksheet = package.Workbook.Worksheets.Add("Employee Activity Logs");
-
-                    // Add headers to the Excel sheet
-                    worksheet.Cells[1, 1].Value = "Sr. No.";
-                    worksheet.Cells[1, 2].Value = "Employee ID";
-                    worksheet.Cells[1, 3].Value = "Employee Name";
-                    worksheet.Cells[1, 4].Value = "Designation";
-                    worksheet.Cells[1, 5].Value = "Department";
-                    worksheet.Cells[1, 6].Value = "Last Action Taken (Login Time)";
-                    worksheet.Cells[1, 7].Value = "App Version";
-
-                    // Check if there are any logs to include in the Excel sheet
-                    if (employeeActivityLogs.Any())
+                    // Generate Excel
+                    using (var package = new ExcelPackage())
                     {
-                        // Populate the worksheet with data from the query
-                        int row = 2;
-                        int serialNumber = 1;  // Initialize serial number
+                        // Add a worksheet
+                        var worksheet = package.Workbook.Worksheets.Add("Employee Activity Logs");
 
-                        foreach (var log in employeeActivityLogs)
-                        {
-                            // Combine first name, middle name, and last name for the full employee name
-                            string employeeName = $"{log.First_Name} {log.Middle_Name} {log.Last_Name}".Trim();
-
-                            worksheet.Cells[row, 1].Value = serialNumber;  // Serial number
-                            worksheet.Cells[row, 2].Value = log.Employee_id;
-                            worksheet.Cells[row, 3].Value = employeeName;
-                            worksheet.Cells[row, 4].Value = log.DesignationName;
-                            worksheet.Cells[row, 5].Value = log.DepartmentName;
-                            worksheet.Cells[row, 6].Value = log.LoginTime?.ToString("yyyy-MM-dd HH:mm:ss");  // Format login time
-                            worksheet.Cells[row, 7].Value = log.appVersion;
-
-                            row++;
-                            serialNumber++;  // Increment serial number
-                        }
-                    }
-                    else
-                    {
-                        // If no data is found, just return headers
+                        // Add headers to the Excel sheet
                         worksheet.Cells[1, 1].Value = "Sr. No.";
                         worksheet.Cells[1, 2].Value = "Employee ID";
                         worksheet.Cells[1, 3].Value = "Employee Name";
@@ -279,24 +468,166 @@ namespace Employee_API.Repository.Implementations
                         worksheet.Cells[1, 5].Value = "Department";
                         worksheet.Cells[1, 6].Value = "Last Action Taken (Login Time)";
                         worksheet.Cells[1, 7].Value = "App Version";
+
+                        if (employeeActivityLogs.Any())
+                        {
+                            int row = 2;
+                            int serialNumber = 1;
+
+                            foreach (var log in employeeActivityLogs)
+                            {
+                                string employeeName = $"{log.First_Name} {log.Middle_Name} {log.Last_Name}".Trim();
+
+                                worksheet.Cells[row, 1].Value = serialNumber++;
+                                worksheet.Cells[row, 2].Value = log.Employee_id;
+                                worksheet.Cells[row, 3].Value = employeeName;
+                                worksheet.Cells[row, 4].Value = log.DesignationName;
+                                worksheet.Cells[row, 5].Value = log.DepartmentName;
+                                worksheet.Cells[row, 6].Value = log.LoginTime?.ToString("yyyy-MM-dd HH:mm:ss");
+                                worksheet.Cells[row, 7].Value = log.appVersion;
+                                row++;
+                            }
+                        }
+
+                        // Auto-fit columns
+                        worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+
+                        // Convert to byte array and return
+                        var excelData = package.GetAsByteArray();
+                        return new ServiceResponse<byte[]>(true, "Excel sheet generated successfully", excelData, 200);
+                    }
+                }
+                else if (format.ToLower() == "csv")
+                {
+                    // Generate CSV
+                    var csvBuilder = new StringBuilder();
+                    csvBuilder.AppendLine("Sr. No.,Employee ID,Employee Name,Designation,Department,Last Action Taken (Login Time),App Version");
+
+                    if (employeeActivityLogs.Any())
+                    {
+                        int serialNumber = 1;
+
+                        foreach (var log in employeeActivityLogs)
+                        {
+                            string employeeName = $"{log.First_Name} {log.Middle_Name} {log.Last_Name}".Trim();
+                            string loginTime = log.LoginTime?.ToString("yyyy-MM-dd HH:mm:ss");
+
+                            csvBuilder.AppendLine($"{serialNumber++},{log.Employee_id},{employeeName},{log.DesignationName},{log.DepartmentName},{loginTime},{log.appVersion}");
+                        }
                     }
 
-                    // Auto-fit columns for better readability
-                    worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
-
-                    // Convert the worksheet to a byte array
-                    var excelData = package.GetAsByteArray();
-
-                    // Return the byte array as a successful response
-                    return new ServiceResponse<byte[]>(true, "Excel sheet generated successfully", excelData, 200);
+                    // Convert the CSV string to a byte array and return
+                    var csvData = Encoding.UTF8.GetBytes(csvBuilder.ToString());
+                    return new ServiceResponse<byte[]>(true, "CSV file generated successfully", csvData, 200);
+                }
+                else
+                {
+                    // Invalid format requested
+                    return new ServiceResponse<byte[]>(false, "Invalid format requested", null, 400);
                 }
             }
             catch (Exception ex)
             {
                 // Handle exceptions and return an error response
-                return new ServiceResponse<byte[]>(false, $"Error generating Excel sheet: {ex.Message}", null, 500);
+                return new ServiceResponse<byte[]>(false, $"Error generating file: {ex.Message}", null, 500);
             }
         }
+
+        //public async Task<ServiceResponse<byte[]>> DownloadExcelSheetEmployeeActivity(DownloadExcelRequest request)
+        //{
+        //    try
+        //    {
+        //        // SQL query to fetch employee activity logs with optional filters
+        //        string sql = @"
+        //SELECT emp.Employee_id, emp.First_Name, emp.Middle_Name, emp.Last_Name, 
+        //       emp.Designation_id, emp.Department_id, 
+        //       dep.DepartmentName, des.DesignationName, 
+        //       logs.LoginTime, logs.appVersion
+        //FROM tblUserLogs logs
+        //LEFT JOIN tbl_EmployeeProfileMaster emp ON logs.UserId = emp.Employee_id
+        //LEFT JOIN tbl_Department dep ON emp.Department_id = dep.Department_id
+        //LEFT JOIN tbl_Designation des ON emp.Designation_id = des.Designation_id
+        //WHERE emp.Institute_id = @InstituteId
+        //  AND logs.UserTypeId = 1
+        //  AND emp.Status = 1
+        //  AND (@DepartmentId = 0 OR emp.Department_id = @DepartmentId)
+        //  AND (@DesignationId = 0 OR emp.Designation_id = @DesignationId)";
+
+        //        // Fetching employee activity data from the database with optional filters
+        //        var employeeActivityLogs = await _connection.QueryAsync<dynamic>(sql, new
+        //        {
+        //            InstituteId = request.InstituteId,
+        //            DepartmentId = request.DepartmentId,
+        //            DesignationId = request.DesignationId
+        //        });
+
+        //        // Initialize EPPlus package to create the Excel file
+        //        using (var package = new ExcelPackage())
+        //        {
+        //            // Add a worksheet
+        //            var worksheet = package.Workbook.Worksheets.Add("Employee Activity Logs");
+
+        //            // Add headers to the Excel sheet
+        //            worksheet.Cells[1, 1].Value = "Sr. No.";
+        //            worksheet.Cells[1, 2].Value = "Employee ID";
+        //            worksheet.Cells[1, 3].Value = "Employee Name";
+        //            worksheet.Cells[1, 4].Value = "Designation";
+        //            worksheet.Cells[1, 5].Value = "Department";
+        //            worksheet.Cells[1, 6].Value = "Last Action Taken (Login Time)";
+        //            worksheet.Cells[1, 7].Value = "App Version";
+
+        //            // Check if there are any logs to include in the Excel sheet
+        //            if (employeeActivityLogs.Any())
+        //            {
+        //                // Populate the worksheet with data from the query
+        //                int row = 2;
+        //                int serialNumber = 1;  // Initialize serial number
+
+        //                foreach (var log in employeeActivityLogs)
+        //                {
+        //                    // Combine first name, middle name, and last name for the full employee name
+        //                    string employeeName = $"{log.First_Name} {log.Middle_Name} {log.Last_Name}".Trim();
+
+        //                    worksheet.Cells[row, 1].Value = serialNumber;  // Serial number
+        //                    worksheet.Cells[row, 2].Value = log.Employee_id;
+        //                    worksheet.Cells[row, 3].Value = employeeName;
+        //                    worksheet.Cells[row, 4].Value = log.DesignationName;
+        //                    worksheet.Cells[row, 5].Value = log.DepartmentName;
+        //                    worksheet.Cells[row, 6].Value = log.LoginTime?.ToString("yyyy-MM-dd HH:mm:ss");  // Format login time
+        //                    worksheet.Cells[row, 7].Value = log.appVersion;
+
+        //                    row++;
+        //                    serialNumber++;  // Increment serial number
+        //                }
+        //            }
+        //            else
+        //            {
+        //                // If no data is found, just return headers
+        //                worksheet.Cells[1, 1].Value = "Sr. No.";
+        //                worksheet.Cells[1, 2].Value = "Employee ID";
+        //                worksheet.Cells[1, 3].Value = "Employee Name";
+        //                worksheet.Cells[1, 4].Value = "Designation";
+        //                worksheet.Cells[1, 5].Value = "Department";
+        //                worksheet.Cells[1, 6].Value = "Last Action Taken (Login Time)";
+        //                worksheet.Cells[1, 7].Value = "App Version";
+        //            }
+
+        //            // Auto-fit columns for better readability
+        //            worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+
+        //            // Convert the worksheet to a byte array
+        //            var excelData = package.GetAsByteArray();
+
+        //            // Return the byte array as a successful response
+        //            return new ServiceResponse<byte[]>(true, "Excel sheet generated successfully", excelData, 200);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        // Handle exceptions and return an error response
+        //        return new ServiceResponse<byte[]>(false, $"Error generating Excel sheet: {ex.Message}", null, 500);
+        //    }
+        //}
         public async Task<ServiceResponse<List<EmployeeCredentialsResponse>>> GetAllEmployeeLoginCred(EmployeeLoginRequest request)
         {
             try

@@ -124,6 +124,11 @@ namespace Employee_API.Services.Implementations
             }
         }
 
+        public async Task<ServiceResponse<IEnumerable<EmployeeExportHistoryDto>>> GetBulkHistoryByInstituteId(int instituteId)
+        {
+            return await _employeeProfileRepository.GetBulkHistoryByInstituteId(instituteId);
+        }
+
         public async Task<ServiceResponse<List<ClassSectionList>>> GetClassSectionList(int instituteId)
         {
             return await _employeeProfileRepository.GetClassSectionList(instituteId);
@@ -165,7 +170,7 @@ namespace Employee_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<IEnumerable<EmployeeColumn>>> GetEmployeeColumnsAsync()
+        public async Task<ServiceResponse<IEnumerable<CategoryWiseEmployeeColumns>>> GetEmployeeColumnsAsync()
         {
             return await _employeeProfileRepository.GetEmployeeColumnsAsync();
         }
@@ -235,6 +240,11 @@ namespace Employee_API.Services.Implementations
             }
         }
 
+        public async Task<ServiceResponse<IEnumerable<EmployeeExportHistoryDto>>> GetExportHistoryByInstituteId(int instituteId)
+        {
+            return await _employeeProfileRepository.GetExportHistoryByInstituteId(instituteId);
+        }
+
         public async Task<ServiceResponse<List<MaritalStatus>>> GetMaritalStatusList()
         {
             try
@@ -245,6 +255,11 @@ namespace Employee_API.Services.Implementations
             {
                 return new ServiceResponse<List<MaritalStatus>>(false, ex.Message, [], 500);
             }
+        }
+
+        public async Task<IEnumerable<dynamic>> ParseExcelFile(IFormFile file, int instituteId)
+        {
+            return await _employeeProfileRepository.ParseExcelFile(file, instituteId);
         }
 
         public async Task<ServiceResponse<bool>> StatusActiveInactive(EmployeeStatusRequest request)

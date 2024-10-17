@@ -14,11 +14,11 @@ namespace Employee_API.Services.Implementations
             _employeeLoginsRepository = employeeLoginsRepository;
         }
 
-        public async Task<ServiceResponse<byte[]>> DownloadExcelSheet(DownloadExcelRequest request)
+        public async Task<ServiceResponse<byte[]>> DownloadExcelSheet(ExcelDownloadRequest request, string format)
         {
             try
             {
-                return await _employeeLoginsRepository.DownloadExcelSheet(request);
+                return await _employeeLoginsRepository.DownloadExcelSheet(request, format);
             }
             catch (Exception ex)
             {
@@ -26,11 +26,11 @@ namespace Employee_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<byte[]>> DownloadExcelSheetEmployeeActivity(DownloadExcelRequest request)
+        public async Task<ServiceResponse<byte[]>> DownloadEmployeeActivity(DownloadExcelRequest request, string format)
         {
             try
             {
-                return await _employeeLoginsRepository.DownloadExcelSheetEmployeeActivity(request);
+                return await _employeeLoginsRepository.DownloadEmployeeActivity(request, format);
             }
             catch (Exception ex)
             {
@@ -38,11 +38,11 @@ namespace Employee_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<byte[]>> DownloadExcelSheetNonAppUsers(DownloadExcelRequest request)
+        public async Task<ServiceResponse<byte[]>> DownloadExcelSheetNonAppUsers(DownloadExcelRequest request, string format)
         {
             try
             {
-                return await _employeeLoginsRepository.DownloadExcelSheetNonAppUsers(request);
+                return await _employeeLoginsRepository.DownloadExcelSheetNonAppUsers(request, format);
             }
             catch (Exception ex)
             {

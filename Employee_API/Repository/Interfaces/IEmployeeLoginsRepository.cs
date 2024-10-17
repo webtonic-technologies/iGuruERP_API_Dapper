@@ -4,9 +4,9 @@ namespace Employee_API.Repository.Interfaces
 {
     public interface IEmployeeLoginsRepository
     {
-        Task<ServiceResponse<byte[]>> DownloadExcelSheet(DownloadExcelRequest request);
-        Task<ServiceResponse<byte[]>> DownloadExcelSheetNonAppUsers(DownloadExcelRequest request);
-        Task<ServiceResponse<byte[]>> DownloadExcelSheetEmployeeActivity(DownloadExcelRequest request);
+        Task<ServiceResponse<byte[]>> DownloadExcelSheet(ExcelDownloadRequest request, string format);
+        Task<ServiceResponse<byte[]>> DownloadExcelSheetNonAppUsers(DownloadExcelRequest request, string format);
+        Task<ServiceResponse<byte[]>> DownloadEmployeeActivity(DownloadExcelRequest request, string format);
         Task<ServiceResponse<List<EmployeeCredentialsResponse>>> GetAllEmployeeLoginCred(EmployeeLoginRequest request);
         Task<ServiceResponse<List<EmployeeNonAppUsersResponse>>> GetAllEmployeeNonAppUsers(EmployeeLoginRequest request);
         Task<ServiceResponse<List<EmployeeActivityResponse>>> GetAllEmployeeActivity(EmployeeLoginRequest request);

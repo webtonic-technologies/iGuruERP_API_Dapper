@@ -82,36 +82,36 @@ namespace Employee_API.Controllers
                 return this.BadRequest(e.Message);
             }
         }
-        [HttpPost("DownloadExcelSheet")]
-        public async Task<IActionResult> DownloadExcelSheet(DownloadExcelRequest request)
-        {
-            var response = await _employeeLoginsServices.DownloadExcelSheet(request);
-            if (response.Success)
-            {
-                return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "EmployeeCredentials.xlsx");
-            }
-            return StatusCode(response.StatusCode, response.Message);
-        }
-        [HttpPost("DownloadExcelSheetNonAppUsers")]
-        public async Task<IActionResult> DownloadExcelSheetNonAppUsers(DownloadExcelRequest request)
-        {
-            var response = await _employeeLoginsServices.DownloadExcelSheetNonAppUsers(request);
-            if (response.Success)
-            {
-                return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "EmployeeNonAppUsers.xlsx");
-            }
-            return StatusCode(response.StatusCode, response.Message);
-        }
-        [HttpPost("DownloadExcelSheetEmployeeActivity")]
-        public async Task<IActionResult> DownloadExcelSheetEmployeeActivity(DownloadExcelRequest request)
-        {
-            var response = await _employeeLoginsServices.DownloadExcelSheetEmployeeActivity(request);
-            if (response.Success)
-            {
-                return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "EmployeeActivity.xlsx");
-            }
-            return StatusCode(response.StatusCode, response.Message);
-        }
+        //[HttpPost("DownloadExcelSheet")]
+        //public async Task<IActionResult> DownloadExcelSheet(DownloadExcelRequest request)
+        //{
+        //    var response = await _employeeLoginsServices.DownloadExcelSheet(request);
+        //    if (response.Success)
+        //    {
+        //        return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "EmployeeCredentials.xlsx");
+        //    }
+        //    return StatusCode(response.StatusCode, response.Message);
+        //}
+        //[HttpPost("DownloadExcelSheetNonAppUsers")]
+        //public async Task<IActionResult> DownloadExcelSheetNonAppUsers(DownloadExcelRequest request)
+        //{
+        //    var response = await _employeeLoginsServices.DownloadExcelSheetNonAppUsers(request);
+        //    if (response.Success)
+        //    {
+        //        return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "EmployeeNonAppUsers.xlsx");
+        //    }
+        //    return StatusCode(response.StatusCode, response.Message);
+        //}
+        //[HttpPost("DownloadExcelSheetEmployeeActivity")]
+        //public async Task<IActionResult> DownloadExcelSheetEmployeeActivity(DownloadExcelRequest request)
+        //{
+        //    var response = await _employeeLoginsServices.DownloadExcelSheetEmployeeActivity(request);
+        //    if (response.Success)
+        //    {
+        //        return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "EmployeeActivity.xlsx");
+        //    }
+        //    return StatusCode(response.StatusCode, response.Message);
+        //}
         [HttpPost("UserLogin")]
         [AllowAnonymous]
         public async Task<IActionResult> UserLogin(string username)
@@ -264,6 +264,65 @@ namespace Employee_API.Controllers
             {
                 return this.BadRequest(e.Message);
             }
+        }
+        [HttpPost("DownloadExcelSheet")]
+        public async Task<IActionResult> DownloadExcelSheet(DownloadExcelRequest request, [FromQuery] string format = "excel")
+        {
+            var response = await _employeeLoginsServices.DownloadEmployeeActivity(request, format);
+
+            if (response.Success)
+            {
+                if (format.ToLower() == "excel")
+                {
+                    return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "EmployeeCredentials.xlsx");
+                }
+                else if (format.ToLower() == "csv")
+                {
+                    return File(response.Data, "text/csv", "EmployeeCredentials.csv");
+                }
+            }
+
+            return StatusCode(response.StatusCode, response.Message);
+        }
+
+        [HttpPost("DownloadExcelSheetNonAppUsers")]
+        public async Task<IActionResult> DownloadExcelSheetNonAppUsers(DownloadExcelRequest request, [FromQuery] string format = "excel")
+        {
+            var response = await _employeeLoginsServices.DownloadEmployeeActivity(request, format);
+
+            if (response.Success)
+            {
+                if (format.ToLower() == "excel")
+                {
+                    return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "EmployeeNonAppUsers.xlsx");
+                }
+                else if (format.ToLower() == "csv")
+                {
+                    return File(response.Data, "text/csv", "EmployeeNonAppUsers.csv");
+                }
+            }
+
+            return StatusCode(response.StatusCode, response.Message);
+        }
+
+        [HttpPost("DownloadExcelSheetEmployeeActivity")]
+        public async Task<IActionResult> DownloadExcelSheetEmployeeActivity(DownloadExcelRequest request, [FromQuery] string format = "excel")
+        {
+            var response = await _employeeLoginsServices.DownloadEmployeeActivity(request, format);
+
+            if (response.Success)
+            {
+                if (format.ToLower() == "excel")
+                {
+                    return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "EmployeeActivity.xlsx");
+                }
+                else if (format.ToLower() == "csv")
+                {
+                    return File(response.Data, "text/csv", "EmployeeActivity.csv");
+                }
+            }
+
+            return StatusCode(response.StatusCode, response.Message);
         }
     }
 }

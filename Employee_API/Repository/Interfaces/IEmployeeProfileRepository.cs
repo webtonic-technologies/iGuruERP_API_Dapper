@@ -6,6 +6,9 @@ namespace Employee_API.Repository.Interfaces
 {
     public interface IEmployeeProfileRepository
     {
+        Task<ServiceResponse<IEnumerable<EmployeeExportHistoryDto>>> GetBulkHistoryByInstituteId(int instituteId);
+        Task<ServiceResponse<IEnumerable<EmployeeExportHistoryDto>>> GetExportHistoryByInstituteId(int instituteId);
+        Task<IEnumerable<dynamic>> ParseExcelFile(IFormFile file, int instituteId);
         Task<ServiceResponse<int>> AddUpdateEmployeeProfile(EmployeeProfile request);
         Task<ServiceResponse<int>> AddUpdateEmployeeFamily(EmployeeFamily request);
         Task<ServiceResponse<int>> AddUpdateEmployeeDocuments(List<EmployeeDocument> request, int employeeId);
@@ -31,6 +34,6 @@ namespace Employee_API.Repository.Interfaces
         Task<ServiceResponse<List<ClassSectionSubjectResponse>>> ClassSectionSubjectsMappings(int InstituteId);
         Task<ServiceResponse<byte[]>> BulkUpdate(GetListRequest request);
         Task<ServiceResponse<string>> BulkUpdateEmployee(List<EmployeeProfile> request);
-        Task<ServiceResponse<IEnumerable<EmployeeColumn>>> GetEmployeeColumnsAsync();
+        Task<ServiceResponse<IEnumerable<CategoryWiseEmployeeColumns>>> GetEmployeeColumnsAsync();
     }
 }
