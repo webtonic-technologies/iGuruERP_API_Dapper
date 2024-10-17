@@ -30,5 +30,13 @@ namespace TimeTable_API.Controllers
             var response = await _substitutionService.UpdateSubstitution(request);
             return StatusCode(response.StatusCode, response);
         }
+
+        [HttpPost("GetSubstituteEmployeeList")]
+        public async Task<IActionResult> GetSubstituteEmployeeList([FromBody] GetSubstituteEmployeeListRequest request)
+        {
+            var result = await _substitutionService.GetSubstituteEmployeeList(request);
+            return StatusCode(result.StatusCode, result);
+        }
+
     }
 }

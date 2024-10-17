@@ -2,9 +2,10 @@
 {
     public class EmployeeSubstitutionRequest
     {
-        public string AcademicYearCode { get; set; }
+        public string AcademicYearCode { get; set; } 
         public string Date { get; set; } // Date in DD-MM-YYYY format
         public int EmployeeID { get; set; }
+        public string SearchBySubject { get; set; }
     }
 
 

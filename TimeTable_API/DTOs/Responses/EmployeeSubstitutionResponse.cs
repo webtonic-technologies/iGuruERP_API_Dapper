@@ -9,6 +9,7 @@
         public string ClassSession { get; set; } // Class - Section Name
         public string SessionTiming { get; set; } // Session Timing in (08:00 AM - 08:40 AM) format
         public string Substitution { get; set; }
+         
     }
 
 }

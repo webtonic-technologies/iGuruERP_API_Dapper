@@ -26,5 +26,9 @@ namespace TimeTable_API.Services.Implementations
         {
             return await _repository.UpdateSubstitution(request);
         }
+        public async Task<ServiceResponse<List<SubstituteEmployeeResponse>>> GetSubstituteEmployeeList(GetSubstituteEmployeeListRequest request)
+        {
+            return await _repository.GetSubstituteEmployeeList(request);
+        }
     }
 }

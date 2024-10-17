@@ -9,5 +9,7 @@ namespace TimeTable_API.Repository.Interfaces
     {
         Task<ServiceResponse<List<EmployeeSubstitutionResponse>>> GetSubstitution(EmployeeSubstitutionRequest request);
         Task<ServiceResponse<int>> UpdateSubstitution(EmployeeSubstitutionRequest_Update request);
+        Task<ServiceResponse<List<SubstituteEmployeeResponse>>> GetSubstituteEmployeeList(GetSubstituteEmployeeListRequest request);
+
     }
 }
