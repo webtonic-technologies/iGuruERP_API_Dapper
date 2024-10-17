@@ -23,6 +23,7 @@ namespace TimeTable_API.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
+
         [HttpPost("Update")]
         public async Task<IActionResult> UpdateSubstitution([FromBody] EmployeeSubstitutionRequest_Update request)
         {

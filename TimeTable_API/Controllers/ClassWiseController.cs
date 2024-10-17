@@ -22,5 +22,12 @@ namespace TimeTable_API.Controllers
             var result = await _classWiseService.GetClassWiseTimeTables(request);
             return StatusCode(result.StatusCode, result);
         }
+
+        [HttpPost("GetTimeTables")]
+        public async Task<IActionResult> GetClassWiseTimeTables([FromBody] GetClassWiseTimeTablesRequest request)
+        {
+            var result = await _classWiseService.GetClassWiseTimeTables(request);
+            return StatusCode(result.StatusCode, result);
+        }
     }
 }

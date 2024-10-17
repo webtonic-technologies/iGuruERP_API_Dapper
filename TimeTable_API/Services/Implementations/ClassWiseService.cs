@@ -20,5 +20,10 @@ namespace TimeTable_API.Services.Implementations
         {
             return await _classWiseRepository.GetClassWiseTimeTables(request);
         }
+
+        public async Task<ServiceResponse<ClassWiseTimeTableResponse>> GetClassWiseTimeTables(GetClassWiseTimeTablesRequest request)
+        {
+            return await _classWiseRepository.GetClassWiseTimeTables(request);
+        }
     }
 }

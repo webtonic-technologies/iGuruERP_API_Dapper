@@ -20,55 +20,70 @@ namespace TimeTable_API.Repository.Implementations
         }
 
 
-
         public async Task<ServiceResponse<List<EmployeeSubstitutionResponse>>> GetSubstitution(EmployeeSubstitutionRequest request)
         {
             try
             {
                 string sql = @"
-            SELECT DISTINCT
-                tse.SubjectID,
-                sub.SubjectName AS Subject,
-                tcs.ClassID,
-                tcs.SectionID,
-                c.class_name + ' - ' + s.section_name AS ClassSession,
-                CONVERT(VARCHAR(5), ses.StartTime, 108) + ' - ' + CONVERT(VARCHAR(5), ses.EndTime, 108) AS SessionTiming,
-                empSub.First_Name + ' ' + empSub.Last_Name AS Substitution
-            FROM tblTimeTableSessionSubjectEmployee tse
-            JOIN tblTimeTableSessionMapping tsm ON tse.TTSessionID = tsm.TTSessionID
-            JOIN tblTimeTableSessions ses ON tsm.SessionID = ses.SessionID
-            JOIN tblTimeTableClassSession tcs ON tsm.GroupID = tcs.GroupID
-            JOIN tbl_Class c ON tcs.ClassID = c.class_id
-            JOIN tbl_Section s ON tcs.SectionID = s.section_id
-            JOIN tbl_Subjects sub ON tse.SubjectID = sub.SubjectID
-            JOIN tblTimeTableMaster tm ON tsm.GroupID = tm.GroupID AND tm.AcademicYearCode = @AcademicYearCode
-            LEFT JOIN tblTimeTableSubstitutes subs ON tse.SubjectID = subs.SubjectID
-                AND tcs.ClassID = subs.ClassID
-                AND tcs.SectionID = subs.SectionID
-                AND tsm.SessionID = subs.SessionID
-                AND tse.EmployeeID = subs.EmployeeID
-                AND FORMAT(subs.SubstitutesDate, 'dd-MM-yyyy') = @SubstitutionDate
-            LEFT JOIN tbl_EmployeeProfileMaster empSub ON subs.SubstitutesEmployeeID = empSub.Employee_id
-            WHERE tse.EmployeeID = @EmployeeID;";
+        SELECT DISTINCT
+            tse.SubjectID,
+            sub.SubjectName AS Subject,
+            tcs.ClassID,
+            tcs.SectionID,
+            c.class_name + ' - ' + s.section_name AS ClassSession,
+            CONVERT(VARCHAR(5), ses.StartTime, 108) + ' - ' + CONVERT(VARCHAR(5), ses.EndTime, 108) AS SessionTiming,
+            empSub.First_Name + ' ' + empSub.Last_Name AS Substitution
+        FROM tblTimeTableSessionSubjectEmployee tse
+        JOIN tblTimeTableSessionMapping tsm ON tse.TTSessionID = tsm.TTSessionID
+        JOIN tblTimeTableSessions ses ON tsm.SessionID = ses.SessionID
+        JOIN tblTimeTableClassSession tcs ON tsm.GroupID = tcs.GroupID
+        JOIN tbl_Class c ON tcs.ClassID = c.class_id
+        JOIN tbl_Section s ON tcs.SectionID = s.section_id
+        JOIN tbl_Subjects sub ON tse.SubjectID = sub.SubjectID
+        JOIN tblTimeTableMaster tm ON tsm.GroupID = tm.GroupID AND tm.AcademicYearCode = @AcademicYearCode
+        LEFT JOIN tblTimeTableSubstitutes subs ON tse.SubjectID = subs.SubjectID
+            AND tcs.ClassID = subs.ClassID
+            AND tcs.SectionID = subs.SectionID
+            AND tsm.SessionID = subs.SessionID
+            AND tse.EmployeeID = subs.EmployeeID
+            AND subs.SubstitutesDate = @SubstitutionDate
+        LEFT JOIN tbl_EmployeeProfileMaster empSub ON subs.SubstitutesEmployeeID = empSub.Employee_id
+        WHERE tse.EmployeeID = @EmployeeID";
 
+                // Convert the date to the format SQL expects
+                var substitutionDate = DateTime.ParseExact(request.Date, "dd-MM-yyyy", CultureInfo.InvariantCulture);
 
-
+                // Execute the SQL query
                 var substitutionData = await _connection.QueryAsync<EmployeeSubstitutionResponse>(sql, new
                 {
                     request.AcademicYearCode,
                     request.EmployeeID,
-                    SubstitutionDate = DateTime.ParseExact(request.Date, "dd-MM-yyyy", CultureInfo.InvariantCulture)
+                    SubstitutionDate = substitutionDate // Pass the correctly formatted date
                 });
 
-                return new ServiceResponse<List<EmployeeSubstitutionResponse>>(
-                    true,
-                    "Substitution fetched successfully",
-                    substitutionData.ToList(),
-                    200
-                );
+                // Check if any data is returned
+                if (substitutionData.Any())
+                {
+                    return new ServiceResponse<List<EmployeeSubstitutionResponse>>(
+                        true,
+                        "Substitution fetched successfully",
+                        substitutionData.ToList(),
+                        200
+                    );
+                }
+                else
+                {
+                    return new ServiceResponse<List<EmployeeSubstitutionResponse>>(
+                        true,
+                        "No substitutions found for the given parameters.",
+                        new List<EmployeeSubstitutionResponse>(),
+                        200
+                    );
+                }
             }
             catch (Exception ex)
             {
+                // Handle error
                 return new ServiceResponse<List<EmployeeSubstitutionResponse>>(
                     false,
                     ex.Message,
@@ -77,6 +92,79 @@ namespace TimeTable_API.Repository.Implementations
                 );
             }
         }
+
+
+
+
+        //public async Task<ServiceResponse<List<EmployeeSubstitutionResponse>>> GetSubstitution(EmployeeSubstitutionRequest request)
+        //{
+        //    try
+        //    {
+        //        string sql = @"
+        //SELECT DISTINCT
+        //    tse.SubjectID,
+        //    sub.SubjectName AS Subject,
+        //    tcs.ClassID,
+        //    tcs.SectionID,
+        //    c.class_name + ' - ' + s.section_name AS ClassSession,
+        //    CONVERT(VARCHAR(5), ses.StartTime, 108) + ' - ' + CONVERT(VARCHAR(5), ses.EndTime, 108) AS SessionTiming,
+        //    empSub.First_Name + ' ' + empSub.Last_Name AS Substitution
+        //FROM tblTimeTableSessionSubjectEmployee tse
+        //JOIN tblTimeTableSessionMapping tsm ON tse.TTSessionID = tsm.TTSessionID
+        //JOIN tblTimeTableSessions ses ON tsm.SessionID = ses.SessionID
+        //JOIN tblTimeTableClassSession tcs ON tsm.GroupID = tcs.GroupID
+        //JOIN tbl_Class c ON tcs.ClassID = c.class_id
+        //JOIN tbl_Section s ON tcs.SectionID = s.section_id
+        //JOIN tbl_Subjects sub ON tse.SubjectID = sub.SubjectID
+        //JOIN tblTimeTableMaster tm ON tsm.GroupID = tm.GroupID AND tm.AcademicYearCode = @AcademicYearCode
+        //LEFT JOIN tblTimeTableSubstitutes subs ON tse.SubjectID = subs.SubjectID
+        //    AND tcs.ClassID = subs.ClassID
+        //    AND tcs.SectionID = subs.SectionID
+        //    AND tsm.SessionID = subs.SessionID
+        //    AND tse.EmployeeID = subs.EmployeeID
+        //    AND FORMAT(subs.SubstitutesDate, 'dd-MM-yyyy') = @SubstitutionDate
+        //LEFT JOIN tbl_EmployeeProfileMaster empSub ON subs.SubstitutesEmployeeID = empSub.Employee_id
+        //WHERE tse.EmployeeID = @EmployeeID";
+
+        //        // Execute the SQL query
+        //        var substitutionData = await _connection.QueryAsync<EmployeeSubstitutionResponse>(sql, new
+        //        {
+        //            request.AcademicYearCode,
+        //            request.EmployeeID,
+        //            SubstitutionDate = DateTime.ParseExact(request.Date, "dd-MM-yyyy", CultureInfo.InvariantCulture)
+        //        });
+
+        //        // Check if any data is returned
+        //        if (substitutionData.Any())
+        //        {
+        //            return new ServiceResponse<List<EmployeeSubstitutionResponse>>(
+        //                true,
+        //                "Substitution fetched successfully",
+        //                substitutionData.ToList(),
+        //                200
+        //            );
+        //        }
+        //        else
+        //        {
+        //            return new ServiceResponse<List<EmployeeSubstitutionResponse>>(
+        //                true,
+        //                "No substitutions found for the given parameters.",
+        //                new List<EmployeeSubstitutionResponse>(),
+        //                200
+        //            );
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        // Handle error
+        //        return new ServiceResponse<List<EmployeeSubstitutionResponse>>(
+        //            false,
+        //            ex.Message,
+        //            new List<EmployeeSubstitutionResponse>(),
+        //            500
+        //        );
+        //    }
+        //}
 
         //public async Task<ServiceResponse<List<EmployeeSubstitutionResponse>>> GetSubstitution(EmployeeSubstitutionRequest request)
         //{

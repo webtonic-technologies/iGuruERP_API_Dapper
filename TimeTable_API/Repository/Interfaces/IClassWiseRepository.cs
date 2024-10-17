@@ -8,5 +8,8 @@ namespace TimeTable_API.Repository.Interfaces
     public interface IClassWiseRepository
     {
         Task<ServiceResponse<ClassWiseResponse>> GetClassWiseTimeTables(ClassWiseRequest request);
+
+        Task<ServiceResponse<ClassWiseTimeTableResponse>> GetClassWiseTimeTables(GetClassWiseTimeTablesRequest request);
+
     }
 }

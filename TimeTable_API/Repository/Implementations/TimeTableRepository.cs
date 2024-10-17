@@ -233,8 +233,6 @@ namespace TimeTable_API.Repository.Implementations
             }
         }
 
-
-
         public async Task<ServiceResponse<List<TimeTableResponse>>> GetAllTimeTables(GetAllTimeTablesRequest request)
         {
             var response = new ServiceResponse<List<TimeTableResponse>>(
@@ -252,77 +250,25 @@ namespace TimeTable_API.Repository.Implementations
                 // Fetch the GroupID based on ClassID and SectionID
                 var groupId = await _connection.ExecuteScalarAsync<int>(
                     @"SELECT GroupID FROM tblTimeTableClassSession 
-                      WHERE ClassID = @ClassID AND SectionID = @SectionID",
+              WHERE ClassID = @ClassID AND SectionID = @SectionID",
                     new { request.ClassID, request.SectionID });
 
                 // Fetch the PlanID based on the GroupID
                 var planId = await _connection.ExecuteScalarAsync<int>(
                     @"SELECT PlanID FROM tblTimeTableDayGroupsMapping 
-                      WHERE GroupID = @GroupID",
+              WHERE GroupID = @GroupID",
                     new { GroupID = groupId });
 
                 // Fetch the Days associated with the PlanID
                 var days = await _connection.QueryAsync<DayResponse>(
                     @"SELECT value AS DayID, tdm.DayType 
-                      FROM tblTimeTableDaySetup tds
-                      CROSS APPLY STRING_SPLIT(tds.DayIDs, ',')
-                      JOIN tblTimeTableDayMaster tdm ON value = tdm.DayID
-                      WHERE tds.PlanID = @PlanID",
+              FROM tblTimeTableDaySetup tds
+              CROSS APPLY STRING_SPLIT(tds.DayIDs, ',')
+              JOIN tblTimeTableDayMaster tdm ON value = tdm.DayID
+              WHERE tds.PlanID = @PlanID",
                     new { PlanID = planId });
 
-                var timeTableResponse = new TimeTableResponse();
-
-                // Fetch and populate Sessions and Breaks for each day
-                //foreach (var day in days)
-                //{
-                //    var dayResponse = new TimeTableResponse
-                //    {
-                //        DayID = day.DayID,
-                //        DayType = day.DayType,
-                //        Sessions = new List<SessionResponse>(),
-                //        Breaks = new List<BreakResponse>()
-                //    };
-
-                //    // Fetch sessions for the day
-                //    var sessions = await _connection.QueryAsync<SessionResponse>(
-                //        @"SELECT tsm.SessionID, ts.SessionName
-                //          FROM tblTimeTableSessionMapping tsm
-                //          JOIN tblTimeTableSessions ts ON tsm.SessionID = ts.SessionID
-                //          WHERE tsm.DayID = @DayID AND tsm.GroupID = @GroupID",
-                //        new { DayID = day.DayID, GroupID = groupId });
-
-                //    dayResponse.Sessions.AddRange(sessions);
-
-                //    // Fetch Employee-Subject Mapping for each session
-                //    foreach (var session in dayResponse.Sessions)
-                //    {
-                //        var employeeSubjects = await _connection.QueryAsync<EmployeeSubjectResponse>(
-                //            @"SELECT tse.SubjectID, sub.SubjectName, tse.EmployeeID, 
-                //                     emp.First_Name + ' ' + emp.Last_Name as EmployeeName
-                //              FROM tblTimeTableSessionSubjectEmployee tse
-                //              JOIN tbl_Subjects sub ON tse.SubjectID = sub.SubjectId
-                //              JOIN tbl_EmployeeProfileMaster emp ON tse.EmployeeID = emp.Employee_id
-                //              WHERE tse.TTSessionID = @SessionID",
-                //            new { SessionID = session.SessionID });
-
-                //        session.EmployeeSubjects.AddRange(employeeSubjects);
-                //    }
-
-                //    // Fetch breaks for the day
-                //    var breaks = await _connection.QueryAsync<BreakResponse>(
-                //        @"SELECT tbm.BreaksID as BreakID, tb.BreaksName as BreakName
-                //          FROM tblTimeTableBreakMapping tbm
-                //          JOIN tblTimeTableBreaks tb ON tbm.BreaksID = tb.BreaksID
-                //          WHERE tbm.DayID = @DayID AND tbm.GroupID = @GroupID",
-                //        new { DayID = day.DayID, GroupID = groupId });
-
-                //    dayResponse.Breaks.AddRange(breaks);
-
-                //    timeTables.Add(dayResponse);
-                //}
-
-
-
+                
                 foreach (var day in days)
                 {
                     var dayResponse = new TimeTableResponse
@@ -333,12 +279,18 @@ namespace TimeTable_API.Repository.Implementations
                         Breaks = new List<BreakResponse>()
                     };
 
-                    // Fetch sessions for the day
+                    // Fetch sessions for the day along with Start and End Time
                     var sessions = await _connection.QueryAsync<SessionResponse>(
-                        @"SELECT tsm.SessionID, ts.SessionName
-          FROM tblTimeTableSessionMapping tsm
-          JOIN tblTimeTableSessions ts ON tsm.SessionID = ts.SessionID
-          WHERE tsm.DayID = @DayID AND tsm.GroupID = @GroupID",
+                        @"SELECT tsm.SessionID, 
+                               ts.SessionName,
+                               CASE 
+                                   WHEN ts.StartTime IS NOT NULL AND ts.EndTime IS NOT NULL 
+                                   THEN CONVERT(VARCHAR, ts.StartTime, 100) + ' - ' + CONVERT(VARCHAR, ts.EndTime, 100)
+                                   ELSE 'Time Not Available'
+                               END AS SessionTime
+                        FROM tblTimeTableSessionMapping tsm
+                        JOIN tblTimeTableSessions ts ON tsm.SessionID = ts.SessionID
+                        WHERE tsm.DayID = @DayID AND tsm.GroupID = @GroupID",
                         new { DayID = day.DayID, GroupID = groupId });
 
                     dayResponse.Sessions.AddRange(sessions);
@@ -346,42 +298,33 @@ namespace TimeTable_API.Repository.Implementations
                     // Fetch EmployeeSubjects for each session
                     foreach (var session in dayResponse.Sessions)
                     {
-                        //          var employeeSubjects = await _connection.QueryAsync<EmployeeSubjectResponse>(
-                        //              @"SELECT tse.SubjectID, sub.SubjectName, tse.EmployeeID, 
-                        //       emp.First_Name + ' ' + emp.Last_Name as EmployeeName
-                        //FROM tblTimeTableSessionSubjectEmployee tse
-                        //JOIN tbl_Subjects sub ON tse.SubjectID = sub.SubjectId
-                        //JOIN tbl_EmployeeProfileMaster emp ON tse.EmployeeID = emp.Employee_id
-                        //WHERE tse.TTSessionID = @TTSessionID",
-                        //              new { TTSessionID = session.SessionID });
-
-
                         var employeeSubjects = await _connection.QueryAsync<EmployeeSubjectResponse>(
                             @"SELECT tse.SubjectID, sub.SubjectName, tse.EmployeeID, 
-                     emp.First_Name + ' ' + emp.Last_Name as EmployeeName
-              FROM tblTimeTableSessionSubjectEmployee tse
-			  JOIN tblTimeTableSessionMapping tts ON tse.TTSessionID = tts.TTSessionID
-              JOIN tbl_Subjects sub ON tse.SubjectID = sub.SubjectId
-              JOIN tbl_EmployeeProfileMaster emp ON tse.EmployeeID = emp.Employee_id
-              WHERE tts.SessionID = @TTSessionID",
-                            new { TTSessionID = session.SessionID });
+                             emp.First_Name + ' ' + emp.Last_Name as EmployeeName
+                      FROM tblTimeTableSessionSubjectEmployee tse
+                      JOIN tbl_Subjects sub ON tse.SubjectID = sub.SubjectId
+                      JOIN tbl_EmployeeProfileMaster emp ON tse.EmployeeID = emp.Employee_id
+                      JOIN tblTimeTableSessionMapping tsm ON tse.TTSessionID = tsm.TTSessionID
+                      WHERE tsm.SessionID = @SessionID",
+                            new { SessionID = session.SessionID });
 
                         session.EmployeeSubjects.AddRange(employeeSubjects);
                     }
 
-                    // Fetch breaks for the day
+                    // Fetch breaks for the day along with Start and End Time
                     var breaks = await _connection.QueryAsync<BreakResponse>(
-                        @"SELECT tbm.BreaksID as BreakID, tb.BreaksName as BreakName
-          FROM tblTimeTableBreakMapping tbm
-          JOIN tblTimeTableBreaks tb ON tbm.BreaksID = tb.BreaksID
-          WHERE tbm.DayID = @DayID AND tbm.GroupID = @GroupID",
+                        @"SELECT tbm.BreaksID as BreakID, 
+                               tb.BreaksName as BreakName,
+                               FORMAT(CAST(tb.StartTime AS DATETIME), 'hh:mm tt') + ' - ' + FORMAT(CAST(tb.EndTime AS DATETIME), 'hh:mm tt') AS BreakTime
+                        FROM tblTimeTableBreakMapping tbm
+                        JOIN tblTimeTableBreaks tb ON tbm.BreaksID = tb.BreaksID
+                        WHERE tbm.DayID = @DayID AND tbm.GroupID = @GroupID",
                         new { DayID = day.DayID, GroupID = groupId });
 
                     dayResponse.Breaks.AddRange(breaks);
 
                     timeTables.Add(dayResponse);
                 }
-
 
                 // Set the correct response details on success
                 response = new ServiceResponse<List<TimeTableResponse>>(
@@ -406,6 +349,180 @@ namespace TimeTable_API.Repository.Implementations
 
             return response;
         }
+
+
+
+        //   public async Task<ServiceResponse<List<TimeTableResponse>>> GetAllTimeTables(GetAllTimeTablesRequest request)
+        //   {
+        //       var response = new ServiceResponse<List<TimeTableResponse>>(
+        //           success: false,
+        //           message: "Initialization failed",
+        //           data: new List<TimeTableResponse>(),
+        //           statusCode: 500,
+        //           totalCount: null
+        //       );
+
+        //       try
+        //       {
+        //           var timeTables = new List<TimeTableResponse>();
+
+        //           // Fetch the GroupID based on ClassID and SectionID
+        //           var groupId = await _connection.ExecuteScalarAsync<int>(
+        //               @"SELECT GroupID FROM tblTimeTableClassSession 
+        //                 WHERE ClassID = @ClassID AND SectionID = @SectionID",
+        //               new { request.ClassID, request.SectionID });
+
+        //           // Fetch the PlanID based on the GroupID
+        //           var planId = await _connection.ExecuteScalarAsync<int>(
+        //               @"SELECT PlanID FROM tblTimeTableDayGroupsMapping 
+        //                 WHERE GroupID = @GroupID",
+        //               new { GroupID = groupId });
+
+        //           // Fetch the Days associated with the PlanID
+        //           var days = await _connection.QueryAsync<DayResponse>(
+        //               @"SELECT value AS DayID, tdm.DayType 
+        //                 FROM tblTimeTableDaySetup tds
+        //                 CROSS APPLY STRING_SPLIT(tds.DayIDs, ',')
+        //                 JOIN tblTimeTableDayMaster tdm ON value = tdm.DayID
+        //                 WHERE tds.PlanID = @PlanID",
+        //               new { PlanID = planId });
+
+        //           var timeTableResponse = new TimeTableResponse();
+
+        //           // Fetch and populate Sessions and Breaks for each day
+        //           //foreach (var day in days)
+        //           //{
+        //           //    var dayResponse = new TimeTableResponse
+        //           //    {
+        //           //        DayID = day.DayID,
+        //           //        DayType = day.DayType,
+        //           //        Sessions = new List<SessionResponse>(),
+        //           //        Breaks = new List<BreakResponse>()
+        //           //    };
+
+        //           //    // Fetch sessions for the day
+        //           //    var sessions = await _connection.QueryAsync<SessionResponse>(
+        //           //        @"SELECT tsm.SessionID, ts.SessionName
+        //           //          FROM tblTimeTableSessionMapping tsm
+        //           //          JOIN tblTimeTableSessions ts ON tsm.SessionID = ts.SessionID
+        //           //          WHERE tsm.DayID = @DayID AND tsm.GroupID = @GroupID",
+        //           //        new { DayID = day.DayID, GroupID = groupId });
+
+        //           //    dayResponse.Sessions.AddRange(sessions);
+
+        //           //    // Fetch Employee-Subject Mapping for each session
+        //           //    foreach (var session in dayResponse.Sessions)
+        //           //    {
+        //           //        var employeeSubjects = await _connection.QueryAsync<EmployeeSubjectResponse>(
+        //           //            @"SELECT tse.SubjectID, sub.SubjectName, tse.EmployeeID, 
+        //           //                     emp.First_Name + ' ' + emp.Last_Name as EmployeeName
+        //           //              FROM tblTimeTableSessionSubjectEmployee tse
+        //           //              JOIN tbl_Subjects sub ON tse.SubjectID = sub.SubjectId
+        //           //              JOIN tbl_EmployeeProfileMaster emp ON tse.EmployeeID = emp.Employee_id
+        //           //              WHERE tse.TTSessionID = @SessionID",
+        //           //            new { SessionID = session.SessionID });
+
+        //           //        session.EmployeeSubjects.AddRange(employeeSubjects);
+        //           //    }
+
+        //           //    // Fetch breaks for the day
+        //           //    var breaks = await _connection.QueryAsync<BreakResponse>(
+        //           //        @"SELECT tbm.BreaksID as BreakID, tb.BreaksName as BreakName
+        //           //          FROM tblTimeTableBreakMapping tbm
+        //           //          JOIN tblTimeTableBreaks tb ON tbm.BreaksID = tb.BreaksID
+        //           //          WHERE tbm.DayID = @DayID AND tbm.GroupID = @GroupID",
+        //           //        new { DayID = day.DayID, GroupID = groupId });
+
+        //           //    dayResponse.Breaks.AddRange(breaks);
+
+        //           //    timeTables.Add(dayResponse);
+        //           //}
+
+
+
+        //           foreach (var day in days)
+        //           {
+        //               var dayResponse = new TimeTableResponse
+        //               {
+        //                   DayID = day.DayID,
+        //                   DayType = day.DayType,
+        //                   Sessions = new List<SessionResponse>(),
+        //                   Breaks = new List<BreakResponse>()
+        //               };
+
+        //               // Fetch sessions for the day
+        //               var sessions = await _connection.QueryAsync<SessionResponse>(
+        //                   @"SELECT tsm.SessionID, ts.SessionName
+        //     FROM tblTimeTableSessionMapping tsm
+        //     JOIN tblTimeTableSessions ts ON tsm.SessionID = ts.SessionID
+        //     WHERE tsm.DayID = @DayID AND tsm.GroupID = @GroupID",
+        //                   new { DayID = day.DayID, GroupID = groupId });
+
+        //               dayResponse.Sessions.AddRange(sessions);
+
+        //               // Fetch EmployeeSubjects for each session
+        //               foreach (var session in dayResponse.Sessions)
+        //               {
+        //                   //          var employeeSubjects = await _connection.QueryAsync<EmployeeSubjectResponse>(
+        //                   //              @"SELECT tse.SubjectID, sub.SubjectName, tse.EmployeeID, 
+        //                   //       emp.First_Name + ' ' + emp.Last_Name as EmployeeName
+        //                   //FROM tblTimeTableSessionSubjectEmployee tse
+        //                   //JOIN tbl_Subjects sub ON tse.SubjectID = sub.SubjectId
+        //                   //JOIN tbl_EmployeeProfileMaster emp ON tse.EmployeeID = emp.Employee_id
+        //                   //WHERE tse.TTSessionID = @TTSessionID",
+        //                   //              new { TTSessionID = session.SessionID });
+
+
+        //                   var employeeSubjects = await _connection.QueryAsync<EmployeeSubjectResponse>(
+        //                       @"SELECT tse.SubjectID, sub.SubjectName, tse.EmployeeID, 
+        //                emp.First_Name + ' ' + emp.Last_Name as EmployeeName
+        //         FROM tblTimeTableSessionSubjectEmployee tse
+        //JOIN tblTimeTableSessionMapping tts ON tse.TTSessionID = tts.TTSessionID
+        //         JOIN tbl_Subjects sub ON tse.SubjectID = sub.SubjectId
+        //         JOIN tbl_EmployeeProfileMaster emp ON tse.EmployeeID = emp.Employee_id
+        //         WHERE tts.SessionID = @TTSessionID",
+        //                       new { TTSessionID = session.SessionID });
+
+        //                   session.EmployeeSubjects.AddRange(employeeSubjects);
+        //               }
+
+        //               // Fetch breaks for the day
+        //               var breaks = await _connection.QueryAsync<BreakResponse>(
+        //                   @"SELECT tbm.BreaksID as BreakID, tb.BreaksName as BreakName
+        //     FROM tblTimeTableBreakMapping tbm
+        //     JOIN tblTimeTableBreaks tb ON tbm.BreaksID = tb.BreaksID
+        //     WHERE tbm.DayID = @DayID AND tbm.GroupID = @GroupID",
+        //                   new { DayID = day.DayID, GroupID = groupId });
+
+        //               dayResponse.Breaks.AddRange(breaks);
+
+        //               timeTables.Add(dayResponse);
+        //           }
+
+
+        //           // Set the correct response details on success
+        //           response = new ServiceResponse<List<TimeTableResponse>>(
+        //               success: true,
+        //               message: "TimeTables fetched successfully.",
+        //               data: timeTables,
+        //               statusCode: 200,
+        //               totalCount: timeTables.Count
+        //           );
+        //       }
+        //       catch (Exception ex)
+        //       {
+        //           // Set the response details on failure
+        //           response = new ServiceResponse<List<TimeTableResponse>>(
+        //               success: false,
+        //               message: ex.Message,
+        //               data: null,
+        //               statusCode: 500,
+        //               totalCount: null
+        //           );
+        //       }
+
+        //       return response;
+        //   }
 
         public async Task<ServiceResponse<List<EmployeeResponse>>> GetEmployees(GetInstituteRequest request)
         {

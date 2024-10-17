@@ -16,19 +16,9 @@ namespace TimeTable_API.Services.Implementations
             _repository = repository;
         }
 
-        public async Task<ServiceResponse<EmployeeSubstitutionResponse>> GetSubstitution(EmployeeSubstitutionRequest request)
+        public async Task<ServiceResponse<List<EmployeeSubstitutionResponse>>> GetSubstitution(EmployeeSubstitutionRequest request)
         {
-            // Your business logic here
-
-            // Create a new EmployeeSubstitutionResponse object
-            var response = new EmployeeSubstitutionResponse
-            {
-                // Populate the response with substitution details
-            };
-
-            // Return the response wrapped in a ServiceResponse
-            return new ServiceResponse<EmployeeSubstitutionResponse>(
-                true, "Substitution fetched successfully", response, 200);
+            return await _repository.GetSubstitution(request);
         }
 
 

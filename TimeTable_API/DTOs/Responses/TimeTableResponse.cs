@@ -36,6 +36,8 @@ namespace TimeTable_API.DTOs.Responses
     {
         public int SessionID { get; set; } // SessionID from tblTimeTableSessions
         public string SessionName { get; set; } // SessionName from tblTimeTableSessions
+        public string SessionTime { get; set; } // Formatted session time (08.00am - 08.45am)
+
         public List<EmployeeSubjectResponse> EmployeeSubjects { get; set; } // List of Employee-Subject Mappings for the Session
 
         public SessionResponse()
@@ -56,6 +58,8 @@ namespace TimeTable_API.DTOs.Responses
     {
         public int BreakID { get; set; } // BreakID from tblTimeTableBreaks
         public string BreakName { get; set; } // BreakName from tblTimeTableBreaks
+        public string BreakTime { get; set; } // Formatted break time (08.00am - 08.45am)
+
     }
 
 
