@@ -119,11 +119,11 @@ namespace Student_API.Repository.Implementations
 
                     SELECT * FROM [dbo].[tbl_StudentHealthInfo] WHERE student_id = @studentId;
 
-                    //SELECT Student_Parent_Office_Info_id, Student_id, Parents_Type_id, Office_Building_no, Street, Area, Pincode, tbl_StudentParentsOfficeInfo.City_id, city_name, tbl_StudentParentsOfficeInfo.State_id, state_name 
-                    //FROM tbl_StudentParentsOfficeInfo
-                    //INNER JOIN tbl_State ON tbl_State.state_id = tbl_StudentParentsOfficeInfo.state_id
-                    //INNER JOIN tbl_City ON tbl_City.city_id = tbl_StudentParentsOfficeInfo.city_id
-  SELECT Student_Parent_Office_Info_id, Student_id, Parents_Type_id, Office_Building_no, Street, Area, Pincode, tbl_StudentParentsOfficeInfo.City, tbl_StudentParentsOfficeInfo.State
+                    --SELECT Student_Parent_Office_Info_id, Student_id, Parents_Type_id, Office_Building_no, Street, Area, Pincode, tbl_StudentParentsOfficeInfo.City_id, city_name, tbl_StudentParentsOfficeInfo.State_id, state_name 
+                    --FROM tbl_StudentParentsOfficeInfo
+                    --INNER JOIN tbl_State ON tbl_State.state_id = tbl_StudentParentsOfficeInfo.state_id
+                    --INNER JOIN tbl_City ON tbl_City.city_id = tbl_StudentParentsOfficeInfo.city_id
+                    SELECT Student_Parent_Office_Info_id, Student_id, Parents_Type_id, Office_Building_no, Street, Area, Pincode, tbl_StudentParentsOfficeInfo.City, tbl_StudentParentsOfficeInfo.State
                     FROM tbl_StudentParentsOfficeInfo
                     WHERE tbl_StudentParentsOfficeInfo.student_id = @studentId;
 
@@ -1483,7 +1483,6 @@ SELECT
     [First_Name], 
     [Middle_Name], 
     [Last_Name], 
-    [Contact_Number],
     [Bank_Account_no], 
     [Bank_IFSC_Code], 
     [Family_Ration_Card_Type], 
@@ -1555,26 +1554,12 @@ FROM
 WHERE 
     student_id IN (SELECT student_id FROM #TempStudentDetails);
 
-SELECT 
-    Student_Parent_Office_Info_id, 
-    Student_id, 
-    Parents_Type_id, 
-    Office_Building_no, 
-    Street, 
-    Area, 
-    Pincode, 
-    tbl_StudentParentsOfficeInfo.City_id, 
-    city_name, 
-    tbl_StudentParentsOfficeInfo.State_id, 
-    state_name 
-FROM 
-    tbl_StudentParentsOfficeInfo
-INNER JOIN 
-    tbl_State ON tbl_State.state_id = tbl_StudentParentsOfficeInfo.state_id
-INNER JOIN 
-    tbl_City ON tbl_City.city_id = tbl_StudentParentsOfficeInfo.city_id 
-WHERE 
-    tbl_StudentParentsOfficeInfo.student_id IN (SELECT student_id FROM #TempStudentDetails);
+
+
+  SELECT Student_Parent_Office_Info_id, Student_id, Parents_Type_id, Office_Building_no, Street, Area, Pincode, tbl_StudentParentsOfficeInfo.City, tbl_StudentParentsOfficeInfo.State
+                    FROM tbl_StudentParentsOfficeInfo
+                    WHERE tbl_StudentParentsOfficeInfo.student_id IN (SELECT student_id FROM #TempStudentDetails);
+
 
 
 
