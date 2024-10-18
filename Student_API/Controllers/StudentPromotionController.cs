@@ -13,7 +13,7 @@ namespace Student_API.Controllers
         private readonly IStudentPromotionService _studentPromotionService;
         public StudentPromotionController(IStudentPromotionService studentPromotionService)
         {
-            _studentPromotionService = studentPromotionService;     
+            _studentPromotionService = studentPromotionService;
         }
 
         [HttpPost]
@@ -22,7 +22,7 @@ namespace Student_API.Controllers
         {
             try
             {
-                obj.sortField = obj.sortField?? "Student_Name";
+                obj.sortField = obj.sortField ?? "Student_Name";
                 obj.sortDirection = obj.sortDirection ?? "ASC";
                 var data = await _studentPromotionService.GetStudentsForPromotion(obj);
                 if (data.Success)
@@ -42,11 +42,11 @@ namespace Student_API.Controllers
 
         [HttpPost]
         [Route("PromoteStudents")]
-        public async Task<IActionResult> PromoteStudents([FromBody]PromoteStudentDTO promoteStudentDTO)
+        public async Task<IActionResult> PromoteStudents([FromBody] PromoteStudentDTO promoteStudentDTO)
         {
             try
             {
-                var data = await _studentPromotionService.PromoteStudents(promoteStudentDTO.studentIds, promoteStudentDTO.nextClassId,promoteStudentDTO.sectionId);
+                var data = await _studentPromotionService.PromoteStudents(promoteStudentDTO.studentIds, promoteStudentDTO.nextClassId, promoteStudentDTO.sectionId);
                 if (data.Success)
                 {
                     return Ok(data);
@@ -107,8 +107,30 @@ namespace Student_API.Controllers
             }
         }
 
+        [HttpPost]
+        [Route("GetToClassIdAsync")]
+        public async Task<IActionResult> GetToClassIdAsync([FromBody] ClassPromotionParams param)
+        {
+            try
+            {
+                var response = await _studentPromotionService.GetToClassIdAsync(param);
+                if (response.Success)
+                {
+                    return Ok(response);
+                }
+                else
+                {
+                    return BadRequest(response.Message);
+                }
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
         [HttpPost("ExportClassPromotionLogToExcel")]
-        public async Task<IActionResult> ExportClassPromotionLogToExcel( GetClassPromotionLogParam obj)
+        public async Task<IActionResult> ExportClassPromotionLogToExcel(GetClassPromotionLogParam obj)
         {
             var response = await _studentPromotionService.ExportClassPromotionLogToExcel(obj);
 

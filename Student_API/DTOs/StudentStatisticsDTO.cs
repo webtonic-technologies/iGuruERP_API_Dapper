@@ -5,6 +5,12 @@
         public GenderWiseStudentDTO GenderCounts { get; set; }
         public List<StatusWiseStudentCountDTO> StatusCounts { get; set; }
         public List<StudentTypeWiseCountDTO> StudentTypeCounts { get; set; }
+        public AppNonAppUserCountDTO appNonAppUserCount { get; set; }    
+    }
+    public class AppNonAppUserCountDTO
+    {
+        public int appUserCount { get; set; }
+        public int nonAppUserCount { get; set; }
     }
     public class GenderWiseStudentDTO
     {

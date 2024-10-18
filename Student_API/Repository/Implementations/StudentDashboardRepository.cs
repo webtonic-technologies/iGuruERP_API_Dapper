@@ -59,15 +59,24 @@ namespace Student_API.Repository.Implementations
             WHERE sm.Institute_id = @Institute_id
             GROUP BY st.Student_Type_Name;
 
+            SELECT 
+            COUNT(DISTINCT CASE WHEN IsAppUser = 1 THEN UserId END) AS appUserCount,
+            COUNT(DISTINCT CASE WHEN IsAppUser = 0 THEN UserId END) AS nonAppUserCount
+            INTO #UserCounts
+            FROM tblUserLogs
+            WHERE UserTypeId = 2;
+
             -- Select data from temp tables
             SELECT * FROM #GenderWiseCount;
             SELECT * FROM #StatusWiseCount;
             SELECT * FROM #StudentTypeWiseCount;
+            select * from #UserCounts;
 
             -- Drop temp tables
             DROP TABLE #GenderWiseCount;
             DROP TABLE #StatusWiseCount;
-            DROP TABLE #StudentTypeWiseCount;";
+            DROP TABLE #StudentTypeWiseCount;
+            DROP TABLE #UserCounts;";
 
             try
             {
@@ -76,6 +85,7 @@ namespace Student_API.Repository.Implementations
                     var genderCounts = multi.Read<GenderWiseStudentCountDTO>().ToList();
                     var statusCounts = multi.Read<StatusWiseStudentCountDTO>().ToList();
                     var studentTypeCounts = multi.Read<StudentTypeWiseCountDTO>().ToList();
+                    var appNonAppUserCount = multi.Read<AppNonAppUserCountDTO>().ToList();
 
                     GenderWiseStudentDTO genderWiseStudentDTO = new GenderWiseStudentDTO();
                     genderWiseStudentDTO.genderWiseStudentCounts = genderCounts;
@@ -84,7 +94,8 @@ namespace Student_API.Repository.Implementations
                     {
                         GenderCounts = genderWiseStudentDTO,
                         StatusCounts = statusCounts,
-                        StudentTypeCounts = studentTypeCounts
+                        StudentTypeCounts = studentTypeCounts,
+                        appNonAppUserCount = appNonAppUserCount.FirstOrDefault()
                     };
 
                     return new ServiceResponse<StudentStatisticsDTO>(true, "Operation successful", studentStatistics, 200);

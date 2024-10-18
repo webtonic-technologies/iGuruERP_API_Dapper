@@ -98,7 +98,7 @@ namespace Student_API.Repository.Implementations
             g.Gender_Type AS Gender, 
             FORMAT(sm.Date_of_Birth, 'dd-MM-yyyy') AS DOB, 
             r.Religion_Type AS Religion, 
-            sp.Father_Name, 
+             CONCAT(sp.First_Name, ' ', sp.Last_Name) AS Father_Name, 
             pur.Status,
             pur.CreatedDateTime,
             pur.UpdatedDateTime
