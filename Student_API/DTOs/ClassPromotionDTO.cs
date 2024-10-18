@@ -16,4 +16,10 @@
         //public int NewSectionId { get; set; }
     }
 
+    public class ClassPromotionParams
+    {
+        public int FromClassId { get; set; }
+        public int InstituteId { get; set; }
+    }
+
 }

@@ -55,7 +55,8 @@ namespace Student_API.Services.Implementations
 
             if (!File.Exists(filePath))
             {
-                throw new Exception("File not found");
+                return "";
+               //throw new Exception("File not found");
             }
 
             byte[] fileBytes = File.ReadAllBytes(filePath);

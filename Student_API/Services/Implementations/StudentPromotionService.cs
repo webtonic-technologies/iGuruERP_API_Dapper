@@ -11,20 +11,20 @@ namespace Student_API.Services.Implementations
     public class StudentPromotionService : IStudentPromotionService
     {
         private readonly IStudentPromotionRepository _studentPromotionRepository;
-        private readonly  IImageService _imageService;
+        private readonly IImageService _imageService;
         public StudentPromotionService(IStudentPromotionRepository studentPromotionRepository, IImageService imageService)
         {
             _studentPromotionRepository = studentPromotionRepository;
-            _imageService = imageService;   
+            _imageService = imageService;
         }
         public async Task<ServiceResponse<List<StudentPromotionDTO>>> GetStudentsForPromotion(GetStudentsForPromotionParam obj)
         {
             try
             {
                 var data = await _studentPromotionRepository.GetStudentsForPromotion(obj.classId, obj.sortField, obj.sortDirection, obj.pageSize, obj.pageNumber);
-                if(data.Data != null)
+                if (data.Data != null)
                 {
-                    foreach(var item in data.Data)
+                    foreach (var item in data.Data)
                     {
                         if (!string.IsNullOrEmpty(item.File_Name) && File.Exists(item.File_Name))
                         {
@@ -44,7 +44,7 @@ namespace Student_API.Services.Implementations
         {
             try
             {
-                var data = await _studentPromotionRepository.PromoteStudents(studentIds, nextClassId,sectionId);
+                var data = await _studentPromotionRepository.PromoteStudents(studentIds, nextClassId, sectionId);
                 return data;
             }
             catch (Exception ex)
@@ -57,6 +57,24 @@ namespace Student_API.Services.Implementations
         {
             try
             {
+                var fromClassIds = new HashSet<int>();
+                var toClassIds = new HashSet<int>();
+
+                foreach (var classSection in classPromotionDTO.ClassSections)
+                {
+                    // Validate FromClassId
+                    if (!fromClassIds.Add(classSection.OldClassId))
+                    {
+                        return new ServiceResponse<bool>(false, $"Duplicate FromClassId: {classSection.OldClassId}", false, 400);
+                    }
+
+                    // Validate ToClassId
+                    if (!toClassIds.Add(classSection.NewClassId))
+                    {
+                        return new ServiceResponse<bool>(false, $"Duplicate ToClassId: {classSection.NewClassId}", false, 400);
+                    }
+                }
+
                 var data = await _studentPromotionRepository.PromoteClasses(classPromotionDTO);
                 return data;
             }
@@ -64,6 +82,14 @@ namespace Student_API.Services.Implementations
             {
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
+        }
+
+        public async Task<ServiceResponse<int?>> GetToClassIdAsync(ClassPromotionParams classPromotionDTO)
+        {
+
+            var data = await _studentPromotionRepository.GetToClassIdAsync(classPromotionDTO.FromClassId,classPromotionDTO.InstituteId);
+            return data;
+
         }
         public async Task<ServiceResponse<List<ClassPromotionLogDTO>>> GetClassPromotionLog(GetClassPromotionLogParam obj)
         {

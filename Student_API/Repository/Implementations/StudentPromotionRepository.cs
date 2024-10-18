@@ -338,7 +338,7 @@ namespace Student_API.Repository.Implementations
         //    }
         //}
 
-        public async Task<ServiceResponse<bool>> PromoteClasses(ClassPromotionDTO classPromotionDTO)
+        public async Task<ServiceResponse<bool>> PromoteClassesStudent(ClassPromotionDTO classPromotionDTO)
         {
             if (_connection.State != ConnectionState.Open)
                 _connection.Open();
@@ -454,6 +454,81 @@ namespace Student_API.Repository.Implementations
                 }
             }
         }
+
+
+        public async Task<ServiceResponse<bool>> PromoteClasses(ClassPromotionDTO classPromotionDTO)
+        {
+            if (_connection.State != ConnectionState.Open)
+                _connection.Open();
+
+            using (var transaction = _connection.BeginTransaction())
+            {
+                try
+                {
+                    foreach (var classSection in classPromotionDTO.ClassSections)
+                    {
+                        // Insert the class promotion relation
+                        string insertPromotionRelationQuery = @"
+                    INSERT INTO tbl_ClassPromotionRelation (InstituteId, FromClassId, ToClassId)
+                    VALUES (@InstituteId, @FromClassId, @ToClassId)";
+
+                        await _connection.ExecuteAsync(insertPromotionRelationQuery, new
+                        {
+                            InstituteId = classPromotionDTO.institute_id,
+                            FromClassId = classSection.OldClassId,
+                            ToClassId = classSection.NewClassId
+                        }, transaction: transaction);
+                    }
+
+                    // Log the promotion
+                    string logQuery = @"
+                INSERT INTO tbl_ClassPromotionLog (UserId, IPAddress, PromotionDateTime, institute_id)
+                VALUES (@UserId, @IPAddress, GETDATE(), @InstituteId)";
+
+                    await _connection.ExecuteAsync(logQuery, new
+                    {
+                        UserId = classPromotionDTO.UserId,
+                        IPAddress = classPromotionDTO.IPAddress,
+                        InstituteId = classPromotionDTO.institute_id
+                    }, transaction: transaction);
+
+                    transaction.Commit();
+                    return new ServiceResponse<bool>(true, "Classes promoted successfully", true, 200);
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    return new ServiceResponse<bool>(false, ex.Message, false, 500);
+                }
+            }
+        }
+        public async Task<ServiceResponse<int?>> GetToClassIdAsync(int fromClassId, int instituteId)
+        {
+            try
+            {
+                string query = @"
+            SELECT ToClassId 
+            FROM tbl_ClassPromotionRelation
+            WHERE FromClassId = @FromClassId
+            AND InstituteId = @InstituteId";
+
+                var toClassId = await _connection.QueryFirstOrDefaultAsync<int?>(query, new { FromClassId = fromClassId, InstituteId = instituteId });
+
+                if (toClassId.HasValue)
+                {
+                    return new ServiceResponse<int?>(true, "ToClassId found", toClassId, 200);
+                }
+                else
+                {
+                    return new ServiceResponse<int?>(false, "No promotion relation found for the given FromClassId.", null, 404);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int?>(false, ex.Message, null, 500);
+            }
+        }
+
 
 
         public async Task<ServiceResponse<List<ClassPromotionLogDTO>>> GetClassPromotionLog(GetClassPromotionLogParam obj)
