@@ -17,21 +17,21 @@ namespace Student_API.Controllers
         }
 
         [HttpPost("addProfileUpdateRequest")]
-        public async Task<IActionResult> AddProfileUpdateRequest(int studentId, int status)
+        public async Task<IActionResult> AddProfileUpdateRequest([FromBody] AddProfileUpdate obj)
         {
-            var response = await _studentProfileUpdateServices.AddProfileUpdateRequest(studentId, status);
+            var response = await _studentProfileUpdateServices.AddProfileUpdateRequest(obj.studentId, obj.status);
             return Ok(response);
         }
 
         [HttpPut("updateProfileUpdateRequest")]
-        public async Task<IActionResult> UpdateProfileUpdateRequest(int requestId, int newStatus)
+        public async Task<IActionResult> UpdateProfileUpdateRequest([FromBody] UpdateProfile obj)
         {
-            var response = await _studentProfileUpdateServices.UpdateProfileUpdateRequest(requestId, newStatus);
+            var response = await _studentProfileUpdateServices.UpdateProfileUpdateRequest(obj.requestId, obj.newStatus);
             return Ok(response);
         }
 
         [HttpGet("getProfileUpdateRequests")]
-        public async Task<IActionResult> GetProfileUpdateRequests([FromQuery] GetStudentProfileRequestModel requestModel)
+        public async Task<IActionResult> GetProfileUpdateRequests([FromBody] GetStudentProfileRequestModel requestModel)
         {
             var response = await _studentProfileUpdateServices.GetProfileUpdateRequests(requestModel);
             return Ok(response);

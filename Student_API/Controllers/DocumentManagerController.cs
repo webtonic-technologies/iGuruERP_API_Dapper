@@ -37,5 +37,43 @@ namespace Student_API.Controllers
             }
             return StatusCode(response.StatusCode, response);
         }
+
+        [HttpPost("ExportStudentDocuments")]
+        public async Task<IActionResult> ExportStudentDocuments(ExportStudentDocumentRequestModel obj)
+        {
+           
+            var response = await _documentManagerService.ExportStudentDocuments(obj.Institute_id, obj.classId, obj.sectionId, "Student_Name", "ASC", int.MaxValue,1, obj.exportFormat);
+            if (response.Success)
+            {
+                var filePath = response.Data;
+                var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+
+                string contentType;
+                string fileExtension = Path.GetExtension(filePath).ToLower();
+
+                // Determine the content type based on file extension (Excel, CSV, or PDF)
+                switch (fileExtension)
+                {
+                    case ".xlsx": // Excel
+                        contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                        break;
+                    case ".csv": // CSV
+                        contentType = "text/csv";
+                        break;
+                    case ".pdf": // PDF
+                        contentType = "application/pdf";
+                        break;
+                    default:
+                        return BadRequest("Unsupported file format.");
+                }
+
+                // Return the file for download with the appropriate content type
+                return File(fileBytes, contentType, Path.GetFileName(filePath));
+            }
+            else
+            {
+                return BadRequest(response.Message);
+            }
+        }
     }
 }
