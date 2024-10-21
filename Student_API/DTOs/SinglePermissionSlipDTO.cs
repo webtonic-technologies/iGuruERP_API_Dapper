@@ -15,5 +15,7 @@
         public int Status { get; set; }
         public string Qr_Code { get; set; }
         public string Parent_File { get; set; }
+       
     }
+
 }

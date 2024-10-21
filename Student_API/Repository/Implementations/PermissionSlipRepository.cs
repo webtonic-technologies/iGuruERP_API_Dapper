@@ -4,6 +4,7 @@ using Student_API.DTOs.RequestDTO;
 using Student_API.DTOs.ServiceResponse;
 using Student_API.Repository.Interfaces;
 using System.Data;
+using System.Data.Common;
 using static Student_API.Models.Enums.Enums;
 
 namespace Student_API.Repository.Implementations
@@ -71,7 +72,7 @@ namespace Student_API.Repository.Implementations
             DROP TABLE IF EXISTS #PermissionSlipTempTable;";
 
                 // Execute the query with pagination
-                using (var multi = await _dbConnection.QueryMultipleAsync(sql, new { ClassId = classId, SectionId = sectionId, Offset = offset, PageSize = actualPageSize, Institute_id= Institute_id }))
+                using (var multi = await _dbConnection.QueryMultipleAsync(sql, new { ClassId = classId, SectionId = sectionId, Offset = offset, PageSize = actualPageSize, Institute_id = Institute_id }))
                 {
                     var permissionSlips = multi.Read<PermissionSlipDTO>().ToList();
                     int? totalRecords = (pageSize.HasValue && pageNumber.HasValue) ? multi.ReadSingle<int>() : null;
@@ -97,7 +98,7 @@ namespace Student_API.Repository.Implementations
             try
             {
                 int status = (int)Permission_Status.Pending;
-                status = isApproved ? (int)Permission_Status.Approved : (int)Permission_Status.Rejected;  
+                status = isApproved ? (int)Permission_Status.Approved : (int)Permission_Status.Rejected;
                 string query = @"
             UPDATE tbl_PermissionSlip 
             SET Status = @Status , ModifiedDate = GETDATE()
@@ -137,7 +138,7 @@ namespace Student_API.Repository.Implementations
                 s.admission_number AS Admission_Number,
                 s.first_name + ' ' + s.last_name AS StudentName,
                 c.class_name AS ClassName,
-                sec.Section_name AS SectionName,
+                sec.Section_name AS SectionName,    
                 FORMAT(ps.RequestedDateTime, 'dd-MM-yyyy hh:mm tt')  AS ApprovalDate,
                 pt.parent_type AS ParentType,
                 p.first_name + ' ' + p.last_name AS ParentName,
@@ -200,7 +201,7 @@ namespace Student_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<SinglePermissionSlipDTO>> GetPermissionSlipById(int permissionSlipId)
+        public async Task<ServiceResponse<SinglePermissionSlipDTO>> GetPermissionSlipById(int permissionSlipId, int Institute_id)
         {
             try
             {
@@ -226,9 +227,11 @@ namespace Student_API.Repository.Implementations
                 JOIN tbl_Class c ON s.class_id = c.class_id
                 JOIN tbl_section sec ON s.section_id = sec.section_id
                 JOIN tbl_Gender g ON s.Gender_id = g.Gender_id
-                WHERE ps.PermissionSlip_Id = @PermissionSlipId;";
+                WHERE ps.PermissionSlip_Id = @PermissionSlipId;
+";
 
                 var permissionSlip = await _dbConnection.QuerySingleOrDefaultAsync<SinglePermissionSlipDTO>(sql, new { PermissionSlipId = permissionSlipId });
+
 
                 if (permissionSlip != null)
                 {

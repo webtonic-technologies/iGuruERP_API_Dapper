@@ -10,6 +10,6 @@ namespace Student_API.Repository.Interfaces
         Task<ServiceResponse<string>> UpdatePermissionSlipStatus(int permissionSlipId, bool isApproved);
         Task<ServiceResponse<List<PermissionSlipDTO>>> GetPermissionSlips(int Institute_id,int classId, int sectionId, string startDate, string endDate, bool isApproved, int? pageNumber = null, int? pageSize = null);
         Task<ServiceResponse<string>> AddPermissionSlip(PermissionSlip permissionSlipDto);
-        Task<ServiceResponse<SinglePermissionSlipDTO>> GetPermissionSlipById(int permissionSlipId);
+        Task<ServiceResponse<SinglePermissionSlipDTO>> GetPermissionSlipById(int permissionSlipId, int Institute_id);
     }
 }

@@ -115,6 +115,23 @@ namespace Student_API.Controllers
         }
 
         [HttpPost]
+        [Route("StudentDetails/GetAllStudentDetailsData1")]
+        public async Task<IActionResult> GetAllStudentDetailsData1(GetStudentRequestModel obj)
+        {
+            try
+            {
+                obj.sortField = obj.sortField ?? "First_Name";
+                obj.sortDirection = obj.sortDirection ?? "ASC";
+                var data = await _studentInformationService.GetAllStudentDetailsData1(obj);
+                return Ok(data);
+            }
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
+        }
+
+        [HttpPost]
         [Route("StudentStatus/ChangeStudentStatus")]
         public async Task<IActionResult> ChangeStudentStatus([FromBody] StudentStatusDTO statusDTO)
         {
@@ -306,6 +323,32 @@ namespace Student_API.Controllers
                 return BadRequest(response.Message);
             }
         }
+        [HttpPost("AddUpdateStudentSetting")]
+        public async Task<IActionResult> AddUpdateStudentSetting(StudentSettingDTO studentSettingDto)
+        {
+            try
+            {
+                var response = await _studentInformationService.AddUpdateStudentSetting(studentSettingDto);
+                return StatusCode(response.StatusCode, response);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
 
+        [HttpGet("GetStudentSettingByInstituteId/{instituteId}")]
+        public async Task<IActionResult> GetStudentSettingByInstituteId(int instituteId)
+        {
+            try
+            {
+                var response = await _studentInformationService.GetStudentSettingByInstituteId(instituteId);
+                return StatusCode(response.StatusCode, response);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
     }
 }
