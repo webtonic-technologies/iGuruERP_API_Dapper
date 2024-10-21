@@ -1986,7 +1986,7 @@ FROM
         }
 
         // Get Student Setting by InstituteId (single entry)
-        public async Task<ServiceResponse<StudentSettingDTO>> GetStudentSettingByInstituteId(int instituteId)
+        public async Task<ServiceResponse<List<StudentSettingDTO>>> GetStudentSettingByInstituteId(int instituteId)
         {
             try
             {
@@ -1995,18 +1995,18 @@ FROM
                 FROM [dbo].[tblStudentSetting]
                 WHERE Institute_id = @Institute_id";
 
-                var setting = await _connection.QuerySingleOrDefaultAsync<StudentSettingDTO>(query, new { Institute_id = instituteId });
+                var setting = await _connection.QueryAsync<StudentSettingDTO>(query, new { Institute_id = instituteId });
 
                 if (setting == null)
                 {
-                    return new ServiceResponse<StudentSettingDTO>(false, "No setting found for the institute", null, 404);
+                    return new ServiceResponse<List<StudentSettingDTO>>(false, "No setting found for the institute", null, 404);
                 }
 
-                return new ServiceResponse<StudentSettingDTO>(true, "Student setting retrieved successfully", setting, 200);
+                return new ServiceResponse<List<StudentSettingDTO>>(true, "Student setting retrieved successfully", setting.ToList(), 200);
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<StudentSettingDTO>(false, ex.Message, null, 500);
+                return new ServiceResponse<List<StudentSettingDTO>>(false, ex.Message, null, 500);
             }
         }
 

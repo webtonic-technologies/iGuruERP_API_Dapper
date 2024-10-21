@@ -25,6 +25,6 @@ namespace Student_API.Repository.Interfaces
         Task<ServiceResponse<List<StudentAllInformationDTO>>> GetAllStudentDetailsData1(GetStudentRequestModel obj);
 
         Task<ServiceResponse<int>> AddUpdateStudentSetting(StudentSettingDTO studentSettingDto);
-        Task<ServiceResponse<StudentSettingDTO>> GetStudentSettingByInstituteId(int instituteId);
+        Task<ServiceResponse<List<StudentSettingDTO>>> GetStudentSettingByInstituteId(int instituteId);
     }
 }

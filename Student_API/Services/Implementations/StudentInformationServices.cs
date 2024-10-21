@@ -478,23 +478,23 @@ namespace Student_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<StudentSettingDTO>> GetStudentSettingByInstituteId(int instituteId)
+        public async Task<ServiceResponse<List<StudentSettingDTO>>> GetStudentSettingByInstituteId(int instituteId)
         {
             try
             {
                 var response = await _studentInformationRepository.GetStudentSettingByInstituteId(instituteId);
                 if (response.Success)
                 {
-                    return new ServiceResponse<StudentSettingDTO>(true, "Student setting retrieved successfully", response.Data, 200);
+                    return new ServiceResponse<List<StudentSettingDTO>>(true, "Student setting retrieved successfully", response.Data, 200);
                 }
                 else
                 {
-                    return new ServiceResponse<StudentSettingDTO>(false, response.Message, null, response.StatusCode);
+                    return new ServiceResponse<List<StudentSettingDTO>>(false, response.Message, null, response.StatusCode);
                 }
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<StudentSettingDTO>(false, ex.Message, null, 500);
+                return new ServiceResponse<List<StudentSettingDTO>>(false, ex.Message, null, 500);
             }
         }
 
