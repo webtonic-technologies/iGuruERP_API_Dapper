@@ -64,7 +64,7 @@ namespace Student_API.Repository.Implementations
             COUNT(DISTINCT CASE WHEN IsAppUser = 0 THEN UserId END) AS nonAppUserCount
             INTO #UserCounts
             FROM tblUserLogs
-            WHERE UserTypeId = 2;
+            WHERE Institute_id = @Institute_id AND UserTypeId = 2;
 
             -- Select data from temp tables
             SELECT * FROM #GenderWiseCount;
@@ -76,7 +76,8 @@ namespace Student_API.Repository.Implementations
             DROP TABLE #GenderWiseCount;
             DROP TABLE #StatusWiseCount;
             DROP TABLE #StudentTypeWiseCount;
-            DROP TABLE #UserCounts;";
+            DROP TABLE #UserCounts;
+";
 
             try
             {
@@ -115,8 +116,8 @@ namespace Student_API.Repository.Implementations
                 COUNT(s.student_id) AS Count,
                 CAST(COUNT(s.student_id) * 100.0 / SUM(COUNT(s.student_id)) OVER () AS DECIMAL(5, 2)) AS Percentage
             FROM tbl_StudentMaster s
-            JOIN tbl_StudentOtherInfo so on s.student_id = so.student_id
-            JOIN tbl_InstituteHouse h ON so.Student_House_id = h.Institute_house_id
+            --JOIN tbl_StudentOtherInfo so on s.student_id = so.student_id
+            JOIN tbl_InstituteHouse h ON s.Institute_house_id = h.Institute_house_id
             GROUP BY h.HouseName;";
 
             try

@@ -366,6 +366,19 @@ namespace Student_API.Services.Implementations
             }
         }
 
+        public async Task<ServiceResponse<List<StudentAllInformationDTO>>> GetAllStudentDetailsData1(GetStudentRequestModel obj)
+        {
+
+            try
+            {
+                return await _studentInformationRepository.GetAllStudentDetailsData1(obj);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<StudentAllInformationDTO>>(false, ex.Message, null, 500);
+            }
+        }
+
         public async Task<ServiceResponse<string>> GetAllStudentDetailsAsExcel(getStudentRequest obj)
         {
             try
@@ -449,6 +462,39 @@ namespace Student_API.Services.Implementations
             catch (Exception ex)
             {
                 return new ServiceResponse<string>(false, ex.Message, null, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<int>> AddUpdateStudentSetting(StudentSettingDTO studentSettingDto)
+        {
+            try
+            {
+                var response = await _studentInformationRepository.AddUpdateStudentSetting(studentSettingDto);
+                return new ServiceResponse<int>(response.Success, response.Message, response.Data, response.StatusCode);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(false, ex.Message, 0, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<StudentSettingDTO>> GetStudentSettingByInstituteId(int instituteId)
+        {
+            try
+            {
+                var response = await _studentInformationRepository.GetStudentSettingByInstituteId(instituteId);
+                if (response.Success)
+                {
+                    return new ServiceResponse<StudentSettingDTO>(true, "Student setting retrieved successfully", response.Data, 200);
+                }
+                else
+                {
+                    return new ServiceResponse<StudentSettingDTO>(false, response.Message, null, response.StatusCode);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<StudentSettingDTO>(false, ex.Message, null, 500);
             }
         }
 

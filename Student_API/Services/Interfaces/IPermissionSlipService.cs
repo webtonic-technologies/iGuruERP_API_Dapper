@@ -10,8 +10,8 @@ namespace Student_API.Services.Interfaces
         Task<ServiceResponse<string>> UpdatePermissionSlipStatus(int permissionSlipId, bool isApproved);
         Task<ServiceResponse<List<PermissionSlipDTO>>> GetPermissionSlips(int Institute_id ,int classId, int sectionId, string startDate, string endDate, bool isApproved, int? pageNumber = null, int? pageSize = null);
         Task<ServiceResponse<string>> AddPermissionSlip(PermissionSlip permissionSlipDto);
-        Task<ServiceResponse<SinglePermissionSlipDTO>> GetPermissionSlipById(int permissionSlipId);
-        Task<ServiceResponse<string>> ExportPermissionSlipsToExcel(int instituteId, int classId, int sectionId);
-        Task<ServiceResponse<string>> ExportPermissionSlipsToExcel(int instituteId, int classId, int sectionId, string startDate, string endDate, bool isApproved);
+        Task<ServiceResponse<SinglePermissionSlipDTO>> GetPermissionSlipById(int permissionSlipId , int Institute_id);
+        Task<ServiceResponse<string>> ExportPermissionSlipsToExcel(int instituteId, int classId, int sectionId, int exportFormat);
+        Task<ServiceResponse<string>> ExportPermissionSlipsToExcel(int instituteId, int classId, int sectionId, string startDate, string endDate, bool isApproved, int exportFormat);
     }
 }
