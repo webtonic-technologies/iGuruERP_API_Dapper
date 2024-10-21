@@ -86,7 +86,9 @@ namespace Student_API.Repository.Implementations
             Student_Name, 
             Class_Section,
             class_id,
-            Section_Id
+            Section_Id,
+            Academic_year_id,
+            File_Name
         FROM 
             #TempStudentDetails
         ORDER BY 
