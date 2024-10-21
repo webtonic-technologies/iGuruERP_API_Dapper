@@ -383,75 +383,103 @@ namespace Student_API.Services.Implementations
         {
             try
             {
-                GetStudentRequestModel model = new GetStudentRequestModel();    
+                GetStudentRequestModel model = new GetStudentRequestModel();
                 model.Academic_year_id = obj.Academic_year_id;
-                model.section_id = obj.section_id;  
+                model.section_id = obj.section_id;
                 model.class_id = obj.class_id;
                 model.Institute_id = obj.Institute_id;
                 model.isActive = obj.isActive;
                 model.pageSize = int.MaxValue;
                 model.pageNumber = 1;
                 model.sortField = null;
-                model.sortDirection = null; 
+                model.sortDirection = null;
+
                 // Call the existing method to get the data
                 var studentDetailsResponse = await _studentInformationRepository.GetAllStudentDetails(model);
 
-                if ( studentDetailsResponse.Data.Any())
+                if (studentDetailsResponse.Data.Any())
                 {
-                    ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-                    // Create an Excel package using EPPlus
-                    using (var package = new ExcelPackage())
+                    var fileName = $"StudentDetails_{DateTime.Now.ToString("yyyyMMddHHmmss")}";
+                    var directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "exports");
+                    Directory.CreateDirectory(directoryPath);
+
+                    // Check export format: 1 for Excel, 2 for CSV
+                    if (obj.exportFormat == 1)
                     {
-                        // Create a worksheet in the Excel workbook
-                        var worksheet = package.Workbook.Worksheets.Add("StudentDetails");
+                        // Generate Excel file using EPPlus
+                        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+                        using (var package = new ExcelPackage())
+                        {
+                            var worksheet = package.Workbook.Worksheets.Add("StudentDetails");
 
-                        // Add headers
-                        worksheet.Cells[1, 1].Value = "Student Name";
-                        worksheet.Cells[1, 2].Value = "Class";
-                        worksheet.Cells[1, 3].Value = "Section";
-                        worksheet.Cells[1, 4].Value = "Admission Number";
-                        worksheet.Cells[1, 5].Value = "Roll Number";
-                        worksheet.Cells[1, 6].Value = "Date of Joining";
-                        worksheet.Cells[1, 7].Value = "Date of Birth";
-                        worksheet.Cells[1, 8].Value = "Religion";
-                        worksheet.Cells[1, 9].Value = "Gender";
-                        worksheet.Cells[1, 10].Value = "Father's Name";
+                            // Add headers
+                            worksheet.Cells[1, 1].Value = "Student Name";
+                            worksheet.Cells[1, 2].Value = "Class";
+                            worksheet.Cells[1, 3].Value = "Section";
+                            worksheet.Cells[1, 4].Value = "Admission Number";
+                            worksheet.Cells[1, 5].Value = "Roll Number";
+                            worksheet.Cells[1, 6].Value = "Date of Joining";
+                            worksheet.Cells[1, 7].Value = "Date of Birth";
+                            worksheet.Cells[1, 8].Value = "Religion";
+                            worksheet.Cells[1, 9].Value = "Gender";
+                            worksheet.Cells[1, 10].Value = "Father's Name";
 
-                        // Add data rows
-                        var rowIndex = 2; // Start from row 2 as row 1 contains headers
+                            // Add data rows
+                            var rowIndex = 2;
+                            foreach (var student in studentDetailsResponse.Data)
+                            {
+                                worksheet.Cells[rowIndex, 1].Value = student.Student_Name;
+                                worksheet.Cells[rowIndex, 2].Value = student.class_course;
+                                worksheet.Cells[rowIndex, 3].Value = student.Section;
+                                worksheet.Cells[rowIndex, 4].Value = student.Admission_Number;
+                                worksheet.Cells[rowIndex, 5].Value = student.Roll_Number;
+                                worksheet.Cells[rowIndex, 6].Value = student.Date_of_Joining;
+                                worksheet.Cells[rowIndex, 7].Value = student.Date_of_Birth;
+                                worksheet.Cells[rowIndex, 8].Value = student.Religion_Type;
+                                worksheet.Cells[rowIndex, 9].Value = student.Gender_Type;
+                                worksheet.Cells[rowIndex, 10].Value = student.Father_Name;
+                                rowIndex++;
+                            }
+
+                            worksheet.Cells.AutoFitColumns();
+                            var excelFile = package.GetAsByteArray();
+                            var excelFilePath = Path.Combine(directoryPath, $"{fileName}.xlsx");
+
+                            await File.WriteAllBytesAsync(excelFilePath, excelFile);
+                            return new ServiceResponse<string>(true, "Excel file generated successfully", excelFilePath, 200);
+                        }
+                    }
+                    else if (obj.exportFormat == 2)
+                    {
+                        // Generate CSV file
+                        var csvFilePath = Path.Combine(directoryPath, $"{fileName}.csv");
+                        var csvLines = new List<string>
+                {
+                    "Student Name,Class,Section,Admission Number,Roll Number,Date of Joining,Date of Birth,Religion,Gender,Father's Name"
+                };
+
                         foreach (var student in studentDetailsResponse.Data)
                         {
-                            worksheet.Cells[rowIndex, 1].Value = student.Student_Name;
-                            worksheet.Cells[rowIndex, 2].Value = student.class_course;
-                            worksheet.Cells[rowIndex, 3].Value = student.Section;
-                            worksheet.Cells[rowIndex, 4].Value = student.Admission_Number;
-                            worksheet.Cells[rowIndex, 5].Value = student.Roll_Number;
-                            worksheet.Cells[rowIndex, 6].Value = student.Date_of_Joining;
-                            worksheet.Cells[rowIndex, 7].Value = student.Date_of_Birth;
-                            worksheet.Cells[rowIndex, 8].Value = student.Religion_Type;
-                            worksheet.Cells[rowIndex, 9].Value = student.Gender_Type;
-                            worksheet.Cells[rowIndex, 10].Value = student.Father_Name;
-                            rowIndex++;
+                            var csvRow = string.Join(",",
+                                student.Student_Name,
+                                student.class_course,
+                                student.Section,
+                                student.Admission_Number,
+                                student.Roll_Number,
+                                student.Date_of_Joining,
+                                student.Date_of_Birth,
+                                student.Religion_Type,
+                                student.Gender_Type,
+                                student.Father_Name);
+                            csvLines.Add(csvRow);
                         }
 
-                        // Auto-fit columns for better readability
-                        worksheet.Cells.AutoFitColumns();
-
-                        // Generate Excel file as a byte array
-                        var excelFile = package.GetAsByteArray();
-
-                        // Save the file to a specific location or return the file content as a downloadable response
-                        var fileName = $"StudentDetails_{DateTime.Now.ToString("yyyyMMddHHmmss")}.xlsx";
-                        var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "exports", fileName);
-
-                        // Ensure the directory exists
-                        Directory.CreateDirectory(Path.GetDirectoryName(filePath));
-
-                        // Write file to the disk
-                        await File.WriteAllBytesAsync(filePath, excelFile);
-
-                        // Return the file path as a response
-                        return new ServiceResponse<string>(true, "Excel file generated successfully", filePath, 200);
+                        await File.WriteAllLinesAsync(csvFilePath, csvLines);
+                        return new ServiceResponse<string>(true, "CSV file generated successfully", csvFilePath, 200);
+                    }
+                    else
+                    {
+                        return new ServiceResponse<string>(false, "Invalid export format", null, 400);
                     }
                 }
                 else
