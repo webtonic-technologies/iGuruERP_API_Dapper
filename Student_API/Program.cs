@@ -39,6 +39,7 @@ builder.Services.AddTransient<IStudentLoginsRepository, StudentLoginsRepository>
 builder.Services.AddTransient<IStudentLoginsServices, StudentLoginsServices>();
 builder.Services.AddTransient<IStudentProfileUpdateRepo, StudentProfileUpdateRepo>();
 builder.Services.AddTransient<IStudentProfileUpdateServices, StudentProfileUpdateServices>();
+builder.Services.AddTransient<ICommonService, CommonService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

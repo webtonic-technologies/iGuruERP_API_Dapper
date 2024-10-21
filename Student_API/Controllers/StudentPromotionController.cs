@@ -46,7 +46,7 @@ namespace Student_API.Controllers
         {
             try
             {
-                var data = await _studentPromotionService.PromoteStudents(promoteStudentDTO.studentIds, promoteStudentDTO.nextClassId, promoteStudentDTO.sectionId);
+                var data = await _studentPromotionService.PromoteStudents(promoteStudentDTO.studentIds, promoteStudentDTO.nextClassId, promoteStudentDTO.sectionId , promoteStudentDTO.CurrentAcademicYear);
                 if (data.Success)
                 {
                     return Ok(data);
@@ -130,7 +130,7 @@ namespace Student_API.Controllers
         }
 
         [HttpPost("ExportClassPromotionLogToExcel")]
-        public async Task<IActionResult> ExportClassPromotionLogToExcel(GetClassPromotionLogParam obj)
+        public async Task<IActionResult> ExportClassPromotionLogToExcel(ExportClassPromotionLogParam obj)
         {
             var response = await _studentPromotionService.ExportClassPromotionLogToExcel(obj);
 
@@ -138,9 +138,27 @@ namespace Student_API.Controllers
             {
                 var filePath = response.Data;
                 var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+                string contentType;
+                string fileExtension = Path.GetExtension(filePath).ToLower();
 
-                // Return the Excel file for download
-                return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", Path.GetFileName(filePath));
+                // Determine the content type based on file extension (Excel, CSV, or PDF)
+                switch (fileExtension)
+                {
+                    case ".xlsx": // Excel
+                        contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                        break;
+                    case ".csv": // CSV
+                        contentType = "text/csv";
+                        break;
+                    case ".pdf": // PDF
+                        contentType = "application/pdf";
+                        break;
+                    default:
+                        return BadRequest("Unsupported file format.");
+                }
+
+                // Return the file for download with the appropriate content type
+                return File(fileBytes, contentType, Path.GetFileName(filePath));
             }
             else
             {

@@ -21,5 +21,8 @@ namespace Student_API.Services.Interfaces
         Task<ServiceResponse<int>> DeleteStudentDocument(int Student_Documents_id);
         Task<ServiceResponse<List<StudentInformationDTO>>> GetAllStudentDetailsData(GetStudentRequestModel obj);
         Task<ServiceResponse<string>> GetAllStudentDetailsAsExcel(getStudentRequest obj);
+        Task<ServiceResponse<int>> AddUpdateStudentSetting(StudentSettingDTO studentSettingDto);
+        Task<ServiceResponse<List<StudentSettingDTO>>> GetStudentSettingByInstituteId(int instituteId);
+        Task<ServiceResponse<List<StudentAllInformationDTO>>> GetAllStudentDetailsData1(GetStudentRequestModel obj);
     }
 }

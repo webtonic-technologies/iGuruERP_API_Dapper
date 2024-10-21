@@ -22,5 +22,9 @@ namespace Student_API.Repository.Interfaces
         Task<ServiceResponse<int>> DeleteStudentDocument(int Student_Documents_id);
         Task<ServiceResponse<int>> AddUpdateStudent(StudentDTO request, List<StudentDocumentListDTO> studentDocuments);
         Task<ServiceResponse<List<StudentInformationDTO>>> GetAllStudentDetailsData(GetStudentRequestModel obj);
+        Task<ServiceResponse<List<StudentAllInformationDTO>>> GetAllStudentDetailsData1(GetStudentRequestModel obj);
+
+        Task<ServiceResponse<int>> AddUpdateStudentSetting(StudentSettingDTO studentSettingDto);
+        Task<ServiceResponse<List<StudentSettingDTO>>> GetStudentSettingByInstituteId(int instituteId);
     }
 }

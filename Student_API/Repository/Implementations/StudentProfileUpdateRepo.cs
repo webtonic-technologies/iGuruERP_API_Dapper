@@ -20,15 +20,14 @@ namespace Student_API.Repository.Implementations
         {
             try
             {
-                string sql = @"INSERT INTO tbl_ProfileUpdateRequest (Student_Id, Status, CreatedDateTime, UpdatedDateTime)
-                       VALUES (@StudentId, @Status, @CreatedDateTime, @UpdatedDateTime)";
+                string sql = @"INSERT INTO tbl_ProfileUpdateRequest (Student_Id, Status, CreatedDateTime)
+                       VALUES (@StudentId, @Status, @CreatedDateTime)";
 
                 var parameters = new
                 {
                     StudentId = studentId,
                     Status = status,
-                    CreatedDateTime = DateTime.Now,
-                    UpdatedDateTime = DateTime.Now
+                    CreatedDateTime = DateTime.Now
                 };
 
                 int rowsAffected = await _connection.ExecuteAsync(sql, parameters);
