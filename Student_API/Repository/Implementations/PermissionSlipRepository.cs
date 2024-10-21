@@ -145,7 +145,8 @@ namespace Student_API.Repository.Implementations
                 ps.Reason AS Remark,
                 Status,
                 ps.Reason,
-                g.Gender_Type AS GenderName
+                g.Gender_Type AS GenderName,
+   FORMAT(ps.ModifiedDate, 'dd-MM-yyyy hh:mm tt') AS ModifiedDate
             INTO #PermissionSlipTempTable
             FROM tbl_PermissionSlip ps
             JOIN tbl_StudentMaster s ON ps.Student_Id = s.student_id
