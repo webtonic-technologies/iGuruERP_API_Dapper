@@ -1616,6 +1616,215 @@ FROM
 
             }
         }
+
+        public async Task<ServiceResponse<List<StudentAllInformationDTO>>> GetAllStudentDetailsData1(GetStudentRequestModel obj)
+        {
+            try
+            {
+                const int MaxPageSize = int.MaxValue;
+                int actualPageSize = obj.pageSize ?? MaxPageSize;
+                int actualPageNumber = obj.pageNumber ?? 1;
+                int offset = (actualPageNumber - 1) * actualPageSize;
+                var allowedSortFields = new List<string> { "First_Name", "Admission_Number", "Date_of_Joining", "Roll_Number" };
+                var allowedSortDirections = new List<string> { "ASC", "DESC" };
+
+                // Validate sort field and direction
+                if (!allowedSortFields.Contains(obj.sortField))
+                {
+                    obj.sortField = "First_Name";
+                }
+
+                obj.sortDirection = obj.sortDirection?.ToUpper() ?? "ASC";
+                if (!allowedSortDirections.Contains(obj.sortDirection))
+                {
+                    obj.sortDirection = "ASC";
+                }
+
+                // SQL query with joins to retrieve the required data
+                string sql = $@"
+        -- Base query for fetching student details with filters, sorting, and pagination
+IF OBJECT_ID('tempdb..#TempStudentDetails') IS NOT NULL DROP TABLE #TempStudentDetails;
+
+SELECT 
+    tbl_StudentMaster.student_id, 
+    tbl_StudentMaster.First_Name, 
+    tbl_StudentMaster.Middle_Name, 
+    tbl_StudentMaster.Last_Name, 
+    tbl_StudentMaster.gender_id, 
+    Gender_Type, 
+    tbl_Class.class_id, 
+    class_name AS class_course, 
+    tbl_Section.section_id, 
+    section_name AS Section, 
+    [Admission_Number], 
+    [Roll_Number],
+    FORMAT([Date_of_Joining], 'dd-MM-yyyy') AS Date_of_Joining, 
+    Academic_year_id, 
+    tbl_AcademicYear.YearName, 
+    tbl_StudentMaster.Nationality_id, 
+    Nationality_Type, 
+    tbl_Religion.Religion_id, 
+    Religion_Type, 
+    FORMAT(tbl_StudentMaster.Date_of_Birth, 'dd-MM-yyyy') AS Date_of_Birth, 
+    tbl_StudentMaster.Mother_Tongue_id, 
+    Mother_Tongue_Name, 
+    tbl_StudentMaster.Caste_id, 
+    caste_type,
+    tbl_StudentMaster.Blood_Group_id, 
+    Blood_Group_Type, 
+    [Aadhar_Number], 
+    [PEN], 
+    [QR_code], 
+    [IsPhysicallyChallenged],
+    [IsSports], 
+    [IsAided], 
+    [IsNCC], 
+    [IsNSS], 
+    [IsScout], 
+    tbl_StudentMaster.File_Name, 
+    [isActive], 
+    tbl_StudentMaster.StudentType_id, 
+    Student_Type_Name,
+    tbl_InstituteHouse.Institute_House_id AS Student_House_id, 
+    tbl_InstituteHouse.HouseName AS Student_House_Name,
+	[Student_Other_Info_id],
+	[email_id], 
+[Identification_Mark_1],
+[Identification_Mark_2], 
+FORMAT([Admission_Date], 'dd-MM-yyyy') AS Admission_Date, 
+FORMAT([Register_Date], 'dd-MM-yyyy') AS Register_Date, 
+[Register_Number], 
+[samagra_ID], 
+[Place_of_Birth], 
+[comments], 
+[language_known],
+ [Student_Prev_School_id], 
+ [Previous_School_Name], 
+ [Previous_Board], 
+ [Previous_Medium], 
+ [Previous_School_Address], 
+ [previous_School_Course], 
+ [Previous_Class], 
+ [TC_number], 
+ FORMAT([TC_date], 'dd-MM-yyyy') AS TC_date, 
+ [isTC_Submitted],
+ [Student_Health_Info_id]
+      ,[Allergies]
+      ,[Medications]
+      ,[Doctor_Name]
+      ,[Doctor_Phone_no]
+      ,[height]
+      ,[weight]
+      ,[Government_ID]
+      ,[Chest]
+      ,[Physical_Deformity]
+      ,[History_Majorillness]
+      ,[History_Accident]
+      ,[Vision]
+      ,[Hearing]
+      ,[Speech]
+      ,[Behavioral_Problem]
+      ,[Remarks_Weakness]
+      ,[Student_Name]
+      ,[Student_Age]
+      ,[Admission_Status]
+INTO 
+    #TempStudentDetails
+FROM 
+    tbl_StudentMaster
+LEFT JOIN tbl_StudentOtherInfo ON tbl_StudentOtherInfo.student_id = tbl_StudentMaster.student_id
+LEFT JOIN 
+    tbl_Class ON tbl_StudentMaster.class_id = tbl_Class.class_id
+LEFT JOIN 
+    tbl_Section ON tbl_StudentMaster.section_id = tbl_Section.section_id
+LEFT JOIN 
+    tbl_Gender ON tbl_StudentMaster.gender_id = tbl_Gender.Gender_id
+LEFT JOIN 
+    tbl_Religion ON tbl_StudentMaster.Religion_id = tbl_Religion.Religion_id
+LEFT JOIN 
+    tbl_Nationality ON tbl_Nationality.Nationality_id = tbl_StudentMaster.Nationality_id 
+LEFT JOIN 
+    tbl_MotherTongue ON tbl_StudentMaster.Mother_Tongue_id = tbl_MotherTongue.Mother_Tongue_id
+LEFT JOIN 
+    tbl_BloodGroup ON tbl_BloodGroup.Blood_Group_id = tbl_StudentMaster.Blood_Group_id
+LEFT JOIN 
+    tbl_CasteMaster ON tbl_CasteMaster.caste_id = tbl_StudentMaster.Caste_id
+LEFT JOIN 
+    tbl_InstituteDetails ON tbl_InstituteDetails.Institute_id = tbl_StudentMaster.Institute_id
+LEFT JOIN 
+    tbl_AcademicYear ON tbl_AcademicYear.Id = tbl_StudentMaster.Academic_year_id
+LEFT JOIN 
+    tbl_InstituteHouse ON tbl_InstituteHouse.Institute_house_id = tbl_StudentMaster.Institute_house_id
+LEFT JOIN 
+    tbl_StudentType ON tbl_StudentType.Student_Type_id = tbl_StudentMaster.StudentType_id
+LEFT JOIN 
+	tbl_StudentPreviousSchool ON tbl_StudentPreviousSchool.student_id = tbl_StudentMaster.student_id
+LEFT JOIN 
+	tbl_StudentHealthInfo ON tbl_StudentHealthInfo.Student_id = tbl_StudentMaster.student_id
+WHERE 
+    tbl_StudentMaster.Institute_id = @InstituteId
+    AND (tbl_StudentMaster.Class_id = @class_id OR @class_id = 0)
+    AND (tbl_StudentMaster.Section_id = @section_id OR @section_id = 0) 
+    AND (tbl_StudentMaster.Academic_year_id = @Academic_year_id OR @Academic_year_id = 0)
+    AND (tbl_StudentMaster.StudentType_id = @StudentType_id OR @StudentType_id = 0)
+    AND tbl_StudentMaster.isActive = @isActive;
+
+-- Query the temporary table with sorting and pagination
+
+   DECLARE @ColumnNames NVARCHAR(MAX);
+DECLARE @SQL NVARCHAR(MAX);
+
+
+-- Get the comma-separated column names into the variable
+SELECT @ColumnNames = STRING_AGG(ss.DbColumnName, ', ')
+FROM tblStudentSetting ss
+WHERE ss.Institute_id = 1 AND ss.IsActive = 1;
+
+SET @SQL = N'SELECT ' + @ColumnNames + ' FROM #TempStudentDetails ORDER BY 
+    {obj.sortField} {obj.sortDirection}, 
+    student_id
+OFFSET 
+    @Offset ROWS
+FETCH NEXT 
+    @PageSize ROWS ONLY;';
+
+EXEC sp_executesql @SQL, 
+    N'@Offset INT, @PageSize INT', 
+    @Offset = @Offset, 
+    @PageSize = @PageSize;
+
+-- Get the total count of records
+SELECT 
+    COUNT(1) 
+FROM 
+   tbl_StudentMaster
+ where tbl_StudentMaster.Institute_id = @InstituteId
+    AND (tbl_StudentMaster.Class_id = @class_id OR @class_id = 0)
+    AND (tbl_StudentMaster.Section_id = @section_id OR @section_id = 0) 
+    AND (tbl_StudentMaster.Academic_year_id = @Academic_year_id OR @Academic_year_id = 0)
+    AND (tbl_StudentMaster.StudentType_id = @StudentType_id OR @StudentType_id = 0)
+    AND tbl_StudentMaster.isActive = @isActive;
+
+";
+
+                using (var result = await _connection.QueryMultipleAsync(sql, new { InstituteId = obj.Institute_id, Offset = offset, PageSize = actualPageSize, class_id = obj.class_id, section_id = obj.section_id, Academic_year_id = obj.Academic_year_id, isActive = obj.isActive, StudentType_id = obj.StudentType_id }))
+                {
+                    var studentDetailsList = (await result.ReadAsync<StudentAllInformationDTO>()).ToList();
+                    
+                    int? totalRecords = (obj.pageSize.HasValue && obj.pageNumber.HasValue) == true ? result.ReadSingle<int>() : null;
+
+                    var studentDetailsDict = studentDetailsList.ToDictionary(sd => sd.student_id);
+
+                  
+                    return new ServiceResponse<List<StudentAllInformationDTO>>(true, "Operation successful", studentDetailsList, 200, totalRecords);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<StudentAllInformationDTO>>(false, "Some error occured", null, 500);
+
+            }
+        }
         private async Task<bool> CreateUserLoginInfo(int userId, int userType, int instituteId)
         {
             try
@@ -1723,6 +1932,82 @@ FROM
             }
 
             return uniqueUsername; // Return the unique username
+        }
+
+        public async Task<ServiceResponse<int>> AddUpdateStudentSetting(StudentSettingDTO studentSettingDto)
+        {
+            try
+            {
+                string query;
+
+                // If settingId exists, we update, otherwise insert a new record
+                if (studentSettingDto.settingId > 0)
+                {
+                    query = @"
+                    UPDATE [dbo].[tblStudentSetting]
+                    SET DbColumnName = @DbColumnName, DisplayName = @DisplayName, 
+                        AliaseName = @AliaseName, categoryId = @categoryId, IsActive = @IsActive
+                    WHERE settingId = @settingId";
+                }
+                else
+                {
+                    // Check if an entry already exists for the institute
+                    var existingSettingId = await _connection.ExecuteScalarAsync<int?>(
+                        "SELECT settingId FROM [dbo].[tblStudentSetting] WHERE Institute_id = @Institute_id",
+                        new { Institute_id = studentSettingDto.Institute_id });
+
+                    if (existingSettingId.HasValue)
+                    {
+                        // If a setting already exists for this institute, update it instead of inserting a new one
+                        studentSettingDto.settingId = existingSettingId.Value;
+                        query = @"
+                        UPDATE [dbo].[tblStudentSetting]
+                        SET DbColumnName = @DbColumnName, DisplayName = @DisplayName, 
+                            AliaseName = @AliaseName, categoryId = @categoryId, IsActive = @IsActive
+                        WHERE settingId = @settingId";
+                    }
+                    else
+                    {
+                        query = @"
+                        INSERT INTO [dbo].[tblStudentSetting] 
+                        (DbColumnName, DisplayName, AliaseName, categoryId, IsActive, Institute_id)
+                        VALUES (@DbColumnName, @DisplayName, @AliaseName, @categoryId, @IsActive, @Institute_id);
+                        SELECT SCOPE_IDENTITY();";
+                    }
+                }
+
+                int id = await _connection.ExecuteScalarAsync<int>(query, studentSettingDto);
+                return new ServiceResponse<int>(true, "Student setting saved successfully", id, 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(false, ex.Message, 0, 500);
+            }
+        }
+
+        // Get Student Setting by InstituteId (single entry)
+        public async Task<ServiceResponse<List<StudentSettingDTO>>> GetStudentSettingByInstituteId(int instituteId)
+        {
+            try
+            {
+                string query = @"
+                SELECT settingId, DbColumnName, DisplayName, AliaseName, categoryId, IsActive, Institute_id
+                FROM [dbo].[tblStudentSetting]
+                WHERE Institute_id = @Institute_id";
+
+                var setting = await _connection.QueryAsync<StudentSettingDTO>(query, new { Institute_id = instituteId });
+
+                if (setting == null)
+                {
+                    return new ServiceResponse<List<StudentSettingDTO>>(false, "No setting found for the institute", null, 404);
+                }
+
+                return new ServiceResponse<List<StudentSettingDTO>>(true, "Student setting retrieved successfully", setting.ToList(), 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<StudentSettingDTO>>(false, ex.Message, null, 500);
+            }
         }
 
     }

@@ -12,10 +12,12 @@ namespace Student_API.Services.Implementations
     {
         private readonly IStudentPromotionRepository _studentPromotionRepository;
         private readonly IImageService _imageService;
-        public StudentPromotionService(IStudentPromotionRepository studentPromotionRepository, IImageService imageService)
+        private readonly ICommonService _commonService;
+        public StudentPromotionService(IStudentPromotionRepository studentPromotionRepository, IImageService imageService,ICommonService commonService)
         {
             _studentPromotionRepository = studentPromotionRepository;
             _imageService = imageService;
+            _commonService = commonService;
         }
         public async Task<ServiceResponse<List<StudentPromotionDTO>>> GetStudentsForPromotion(GetStudentsForPromotionParam obj)
         {
@@ -40,11 +42,11 @@ namespace Student_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<bool>> PromoteStudents(List<int> studentIds, int nextClassId, int sectionId)
+        public async Task<ServiceResponse<bool>> PromoteStudents(List<int> studentIds, int nextClassId, int sectionId, int CurrentAcademicYear)
         {
             try
             {
-                var data = await _studentPromotionRepository.PromoteStudents(studentIds, nextClassId, sectionId);
+                var data = await _studentPromotionRepository.PromoteStudents(studentIds, nextClassId, sectionId,CurrentAcademicYear);
                 return data;
             }
             catch (Exception ex)
@@ -104,63 +106,79 @@ namespace Student_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<string>> ExportClassPromotionLogToExcel(GetClassPromotionLogParam obj)
+        public async Task<ServiceResponse<string>> ExportClassPromotionLogToExcel(ExportClassPromotionLogParam obj)
         {
             try
             {
+                GetClassPromotionLogParam getClassPromotionLogParam = new GetClassPromotionLogParam();
+                getClassPromotionLogParam.institute_id = obj.institute_id;
+                getClassPromotionLogParam.pageNumber = 1;
+                getClassPromotionLogParam.pageSize = int.MaxValue;
+                getClassPromotionLogParam.sortField = "LogId";
+                getClassPromotionLogParam.sortDirection = "ASC";
+
                 // Fetch logs from the repository
-                var logsResponse = await _studentPromotionRepository.GetClassPromotionLog(obj);
+                var logsResponse = await _studentPromotionRepository.GetClassPromotionLog(getClassPromotionLogParam);
 
                 // Check if logs were retrieved successfully
-                if (!logsResponse.Success)
-                {
-                    return new ServiceResponse<string>(false, "No logs found", null, 404);
-                }
+                //if (!logsResponse.Success)
+                //{
+                //    return new ServiceResponse<string>(false, "No logs found", null, 404);
+                //}
 
                 var logs = logsResponse.Data;
-                ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-                // Create an Excel package using EPPlus
-                using (var package = new ExcelPackage())
-                {
-                    // Add a worksheet
-                    var worksheet = package.Workbook.Worksheets.Add("ClassPromotionLogs");
 
-                    // Add headers
-                    worksheet.Cells[1, 1].Value = "Log ID";
-                    worksheet.Cells[1, 2].Value = "User ID";
-                    worksheet.Cells[1, 3].Value = "IP Address";
-                    worksheet.Cells[1, 4].Value = "Promotion Date/Time";
+                var headers = new List<string>
+    {
+        "Log ID", "User ID", "IP Address", "Promotion Date/Time"
+    };
 
-                    // Add data rows
-                    var rowIndex = 2; // Start from row 2 as row 1 contains headers
-                    foreach (var log in logs)
-                    {
-                        worksheet.Cells[rowIndex, 1].Value = log.LogId;
-                        worksheet.Cells[rowIndex, 2].Value = log.UserId;
-                        worksheet.Cells[rowIndex, 3].Value = log.IPAddress;
-                        worksheet.Cells[rowIndex, 4].Value = log.PromotionDateTime.ToString("yyyy-MM-dd HH:mm:ss");
-                        rowIndex++;
-                    }
+                // Call the generic export function
+                return await _commonService.ExportDataToFile(logs, headers, obj.exportFormat, $"ClassPromotionLog_{DateTime.Now:yyyyMMddHHmmss}");
 
-                    // Auto-fit columns for better readability
-                    worksheet.Cells.AutoFitColumns();
+                //ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+                //// Create an Excel package using EPPlus
+                //using (var package = new ExcelPackage())
+                //{
+                //    // Add a worksheet
+                //    var worksheet = package.Workbook.Worksheets.Add("ClassPromotionLogs");
 
-                    // Generate the Excel file as a byte array
-                    var excelFile = package.GetAsByteArray();
+                //    // Add headers
+                //    worksheet.Cells[1, 1].Value = "Log ID";
+                //    worksheet.Cells[1, 2].Value = "User ID";
+                //    worksheet.Cells[1, 3].Value = "IP Address";
+                //    worksheet.Cells[1, 4].Value = "Promotion Date/Time";
 
-                    // Save the file to a specific location or return the file content as a downloadable response
-                    var fileName = $"ClassPromotionLog_{DateTime.Now:yyyyMMddHHmmss}.xlsx";
-                    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "exports", fileName);
+                //    // Add data rows
+                //    var rowIndex = 2; // Start from row 2 as row 1 contains headers
+                //    foreach (var log in logs)
+                //    {
+                //        worksheet.Cells[rowIndex, 1].Value = log.LogId;
+                //        worksheet.Cells[rowIndex, 2].Value = log.UserId;
+                //        worksheet.Cells[rowIndex, 3].Value = log.IPAddress;
+                //        worksheet.Cells[rowIndex, 4].Value = log.PromotionDateTime.ToString("yyyy-MM-dd HH:mm:ss");
+                //        rowIndex++;
+                //    }
 
-                    // Ensure the directory exists
-                    Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+                //    // Auto-fit columns for better readability
+                //    worksheet.Cells.AutoFitColumns();
 
-                    // Write file to disk
-                    await File.WriteAllBytesAsync(filePath, excelFile);
+                //    // Generate the Excel file as a byte array
+                //    var excelFile = package.GetAsByteArray();
 
-                    // Return the file path as a response
-                    return new ServiceResponse<string>(true, "Excel file generated successfully", filePath, 200);
-                }
+                //    // Save the file to a specific location or return the file content as a downloadable response
+                //    var fileName = $"ClassPromotionLog_{DateTime.Now:yyyyMMddHHmmss}.xlsx";
+                //    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "exports", fileName);
+
+                //    // Ensure the directory exists
+                //    Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+
+                //    // Write file to disk
+                //    await File.WriteAllBytesAsync(filePath, excelFile);
+
+                //    // Return the file path as a response
+                //    return new ServiceResponse<string>(true, "Excel file generated successfully", filePath, 200);
+                //}
             }
             catch (Exception ex)
             {

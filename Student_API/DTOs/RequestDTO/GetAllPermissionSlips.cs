@@ -29,6 +29,7 @@ namespace Student_API.DTOs.RequestDTO
         public int Institute_id { get; set; }
         public int classId { get; set; } = 0;
         public int sectionId { get; set; } = 0;
+        public int exportFormat {  get; set; }  
     }
     public class GetAllPermissionSlipsByStatusExport
     {
@@ -41,5 +42,13 @@ namespace Student_API.DTOs.RequestDTO
 
         [ValidDateString("dd-MM-yyyy")]
         public string endDate { get; set; }
+        public int exportFormat { get; set; }
+    }
+
+    public class GetSinglePermissionSlip
+    {
+        public int permissionSlipId { get; set; }   
+        public int Institute_id { get; set; }
+        
     }
 }

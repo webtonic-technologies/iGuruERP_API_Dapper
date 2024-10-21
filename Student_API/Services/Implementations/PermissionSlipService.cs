@@ -15,11 +15,13 @@ namespace Student_API.Services.Implementations
     {
         private readonly IPermissionSlipRepository _repository;
         private readonly IImageService _imageService;
+        private readonly ICommonService _commonService;
 
-        public PermissionSlipService(IPermissionSlipRepository repository, IImageService imageService)
+        public PermissionSlipService(IPermissionSlipRepository repository, IImageService imageService , ICommonService commonService)
         {
             _repository = repository;
             _imageService = imageService;
+            _commonService = commonService;
         }
 
         public async Task<ServiceResponse<List<PermissionSlipDTO>>> GetAllPermissionSlips(int Institute_id, int classId, int sectionId, int? pageNumber = null, int? pageSize = null)
@@ -58,9 +60,9 @@ namespace Student_API.Services.Implementations
             return await _repository.AddPermissionSlip(permissionSlipDto);
         }
 
-        public async Task<ServiceResponse<SinglePermissionSlipDTO>> GetPermissionSlipById(int permissionSlipId)
+        public async Task<ServiceResponse<SinglePermissionSlipDTO>> GetPermissionSlipById(int permissionSlipId , int Institute_id)
         {
-            var data = await _repository.GetPermissionSlipById(permissionSlipId);
+            var data = await _repository.GetPermissionSlipById(permissionSlipId , Institute_id);
             if (data.Data != null)
             {
                 if (!string.IsNullOrEmpty(data.Data.Qr_Code) && File.Exists(data.Data.Qr_Code))
@@ -76,7 +78,7 @@ namespace Student_API.Services.Implementations
             return data;
         }
 
-        public async Task<ServiceResponse<string>> ExportPermissionSlipsToExcel(int instituteId, int classId, int sectionId)
+        public async Task<ServiceResponse<string>> ExportPermissionSlipsToExcel(int instituteId, int classId, int sectionId , int exportFormat)
         {
             try
             {
@@ -84,72 +86,84 @@ namespace Student_API.Services.Implementations
                 var permissionSlipsResponse = await GetAllPermissionSlips(instituteId, classId, sectionId, 1, int.MaxValue);
 
                 // Check if permission slips were retrieved successfully
-                if (!permissionSlipsResponse.Success || permissionSlipsResponse.Data == null || !permissionSlipsResponse.Data.Any())
-                {
-                    return new ServiceResponse<string>(false, "No permission slips found", null, 404);
-                }
-
+                //if (!permissionSlipsResponse.Success || permissionSlipsResponse.Data == null || !permissionSlipsResponse.Data.Any())
+                //{
+                //    return new ServiceResponse<string>(false, "No permission slips found", null, 404);
+                //}
                 var permissionSlips = permissionSlipsResponse.Data;
-                ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-                // Create an Excel package using EPPlus
-                using (var package = new ExcelPackage())
-                {
-                    // Add a worksheet
-                    var worksheet = package.Workbook.Worksheets.Add("PermissionSlips");
 
-                    // Add headers
-                    worksheet.Cells[1, 1].Value = "Permission Slip ID";
-                    worksheet.Cells[1, 2].Value = "Student ID";
-                    worksheet.Cells[1, 3].Value = "Student Name";
-                    worksheet.Cells[1, 4].Value = "Admission Number";
-                    worksheet.Cells[1, 5].Value = "Class Name";
-                    worksheet.Cells[1, 6].Value = "Section Name";
-                    worksheet.Cells[1, 7].Value = "Gender";
-                    worksheet.Cells[1, 8].Value = "Parent Name";
-                    worksheet.Cells[1, 9].Value = "Requested Date";
-                    worksheet.Cells[1, 10].Value = "Reason";
-                    worksheet.Cells[1, 11].Value = "Status";
-                    worksheet.Cells[1, 12].Value = "Modified Date";
+                // Define the headers for permission slips
+                var headers = new List<string>
+    {
+        "Permission Slip ID", "Student ID", "Student Name", "Admission Number", "Class Name",
+        "Section Name", "Gender", "Parent Name", "Requested Date", "Reason", "Status", "Modified Date"
+    };
 
-                    // Add data rows
-                    var rowIndex = 2; // Start from row 2 as row 1 contains headers
-                    foreach (var slip in permissionSlips)
-                    {
-                        worksheet.Cells[rowIndex, 1].Value = slip.PermissionSlip_Id;
-                        worksheet.Cells[rowIndex, 2].Value = slip.Student_Id;
-                        worksheet.Cells[rowIndex, 3].Value = slip.StudentName;
-                        worksheet.Cells[rowIndex, 4].Value = slip.Admission_Number;
-                        worksheet.Cells[rowIndex, 5].Value = slip.ClassName;
-                        worksheet.Cells[rowIndex, 6].Value = slip.SectionName;
-                        worksheet.Cells[rowIndex, 7].Value = slip.GenderName;
-                        worksheet.Cells[rowIndex, 8].Value = slip.ParentName;
-                        worksheet.Cells[rowIndex, 9].Value = slip.RequestedDateTime;
-                        worksheet.Cells[rowIndex, 10].Value = slip.Reason;
-                        worksheet.Cells[rowIndex, 11].Value = slip.Status;
-                        worksheet.Cells[rowIndex, 12].Value = slip.ModifiedDate;
+                // Call the generic export function
+                return await _commonService.ExportDataToFile(permissionSlips, headers, exportFormat, $"PermissionSlips_{ DateTime.Now:yyyyMMddHHmmss}");
 
-                        rowIndex++;
-                    }
 
-                    // Auto-fit columns for better readability
-                    worksheet.Cells.AutoFitColumns();
+                //var permissionSlips = permissionSlipsResponse.Data;
+                //ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+                //// Create an Excel package using EPPlus
+                //using (var package = new ExcelPackage())
+                //{
+                //    // Add a worksheet
+                //    var worksheet = package.Workbook.Worksheets.Add("PermissionSlips");
 
-                    // Generate the Excel file as a byte array
-                    var excelFile = package.GetAsByteArray();
+                //    // Add headers
+                //    worksheet.Cells[1, 1].Value = "Permission Slip ID";
+                //    worksheet.Cells[1, 2].Value = "Student ID";
+                //    worksheet.Cells[1, 3].Value = "Student Name";
+                //    worksheet.Cells[1, 4].Value = "Admission Number";
+                //    worksheet.Cells[1, 5].Value = "Class Name";
+                //    worksheet.Cells[1, 6].Value = "Section Name";
+                //    worksheet.Cells[1, 7].Value = "Gender";
+                //    worksheet.Cells[1, 8].Value = "Parent Name";
+                //    worksheet.Cells[1, 9].Value = "Requested Date";
+                //    worksheet.Cells[1, 10].Value = "Reason";
+                //    worksheet.Cells[1, 11].Value = "Status";
+                //    worksheet.Cells[1, 12].Value = "Modified Date";
 
-                    // Save the file to a specific location or return the file content as a downloadable response
-                    var fileName = $"PermissionSlips_{DateTime.Now:yyyyMMddHHmmss}.xlsx";
-                    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "exports", fileName);
+                //    // Add data rows
+                //    var rowIndex = 2; // Start from row 2 as row 1 contains headers
+                //    foreach (var slip in permissionSlips)
+                //    {
+                //        worksheet.Cells[rowIndex, 1].Value = slip.PermissionSlip_Id;
+                //        worksheet.Cells[rowIndex, 2].Value = slip.Student_Id;
+                //        worksheet.Cells[rowIndex, 3].Value = slip.StudentName;
+                //        worksheet.Cells[rowIndex, 4].Value = slip.Admission_Number;
+                //        worksheet.Cells[rowIndex, 5].Value = slip.ClassName;
+                //        worksheet.Cells[rowIndex, 6].Value = slip.SectionName;
+                //        worksheet.Cells[rowIndex, 7].Value = slip.GenderName;
+                //        worksheet.Cells[rowIndex, 8].Value = slip.ParentName;
+                //        worksheet.Cells[rowIndex, 9].Value = slip.RequestedDateTime;
+                //        worksheet.Cells[rowIndex, 10].Value = slip.Reason;
+                //        worksheet.Cells[rowIndex, 11].Value = slip.Status;
+                //        worksheet.Cells[rowIndex, 12].Value = slip.ModifiedDate;
 
-                    // Ensure the directory exists
-                    Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+                //        rowIndex++;
+                //    }
 
-                    // Write file to disk
-                    await File.WriteAllBytesAsync(filePath, excelFile);
+                //    // Auto-fit columns for better readability
+                //    worksheet.Cells.AutoFitColumns();
 
-                    // Return the file path as a response
-                    return new ServiceResponse<string>(true, "Excel file generated successfully", filePath, 200);
-                }
+                //    // Generate the Excel file as a byte array
+                //    var excelFile = package.GetAsByteArray();
+
+                //    // Save the file to a specific location or return the file content as a downloadable response
+                //    var fileName = $"PermissionSlips_{DateTime.Now:yyyyMMddHHmmss}.xlsx";
+                //    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "exports", fileName);
+
+                //    // Ensure the directory exists
+                //    Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+
+                //    // Write file to disk
+                //    await File.WriteAllBytesAsync(filePath, excelFile);
+
+                //    // Return the file path as a response
+                //    return new ServiceResponse<string>(true, "Excel file generated successfully", filePath, 200);
+            //}
             }
             catch (Exception ex)
             {
@@ -157,7 +171,7 @@ namespace Student_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<string>> ExportPermissionSlipsToExcel(int instituteId, int classId, int sectionId, string startDate, string endDate, bool isApproved)
+        public async Task<ServiceResponse<string>> ExportPermissionSlipsToExcel(int instituteId, int classId, int sectionId, string startDate, string endDate, bool isApproved,int exportFormat)
         {
             try
             {
@@ -165,81 +179,92 @@ namespace Student_API.Services.Implementations
                 var permissionSlipsResponse = await GetPermissionSlips(instituteId, classId, sectionId, startDate, endDate, isApproved, 1, int.MaxValue);
 
                 // Check if permission slips were retrieved successfully
-                if (!permissionSlipsResponse.Success || permissionSlipsResponse.Data == null || !permissionSlipsResponse.Data.Any())
-                {
-                    return new ServiceResponse<string>(false, "No permission slips found", null, 404);
-                }
+                //if (!permissionSlipsResponse.Success || permissionSlipsResponse.Data == null || !permissionSlipsResponse.Data.Any())
+                //{
+                //    return new ServiceResponse<string>(false, "No permission slips found", null, 404);
+                //}
 
                 var permissionSlips = permissionSlipsResponse.Data;
-                ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-                // Create an Excel package using EPPlus
-                using (var package = new ExcelPackage())
-                {
-                    // Add a worksheet
-                    var worksheet = package.Workbook.Worksheets.Add("PermissionSlips");
 
-                    // Add headers
-                    worksheet.Cells[1, 1].Value = "Permission Slip ID";
-                    worksheet.Cells[1, 2].Value = "Student ID";
-                    worksheet.Cells[1, 3].Value = "Student Name";
-                    worksheet.Cells[1, 4].Value = "Admission Number";
-                    worksheet.Cells[1, 5].Value = "Class Name";
-                    worksheet.Cells[1, 6].Value = "Section Name";
-                    worksheet.Cells[1, 7].Value = "Gender";
-                    worksheet.Cells[1, 8].Value = "Parent Name";
-                    worksheet.Cells[1, 9].Value = "Requested Date";
-                    worksheet.Cells[1, 10].Value = "Reason";
-                    worksheet.Cells[1, 11].Value = "Status";
-                    worksheet.Cells[1, 12].Value = "Modified Date";
+                var headers = new List<string>
+    {
+        "Permission Slip ID", "Student ID", "Student Name", "Admission Number", "Class Name",
+        "Section Name", "Gender", "Parent Name", "Requested Date", "Reason", "Status", "Modified Date"
+    };
 
-                    // Add data rows
-                    var rowIndex = 2; // Start from row 2 as row 1 contains headers
-                    foreach (var slip in permissionSlips)
-                    {
-                        worksheet.Cells[rowIndex, 1].Value = slip.PermissionSlip_Id;
-                        worksheet.Cells[rowIndex, 2].Value = slip.Student_Id;
-                        worksheet.Cells[rowIndex, 3].Value = slip.StudentName;
-                        worksheet.Cells[rowIndex, 4].Value = slip.Admission_Number;
-                        worksheet.Cells[rowIndex, 5].Value = slip.ClassName;
-                        worksheet.Cells[rowIndex, 6].Value = slip.SectionName;
-                        worksheet.Cells[rowIndex, 7].Value = slip.GenderName;
-                        worksheet.Cells[rowIndex, 8].Value = slip.ParentName;
-                        worksheet.Cells[rowIndex, 9].Value = slip.RequestedDateTime;
-                        worksheet.Cells[rowIndex, 10].Value = slip.Reason;
-                        worksheet.Cells[rowIndex, 11].Value = slip.Status;
-                        worksheet.Cells[rowIndex, 12].Value = slip.ModifiedDate;
+                // Call the generic export function
+                return await _commonService.ExportDataToFile(permissionSlips, headers, exportFormat, isApproved ? "Approved_PermissionSlips" : "Rejected_PermissionSlips");
 
-                        rowIndex++;
-                    }
 
-                    // Auto-fit columns for better readability
-                    worksheet.Cells.AutoFitColumns();
+                //ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+                //// Create an Excel package using EPPlus
+                //using (var package = new ExcelPackage())
+                //{
+                //    // Add a worksheet
+                //    var worksheet = package.Workbook.Worksheets.Add("PermissionSlips");
 
-                    // Generate the Excel file as a byte array
-                    var excelFile = package.GetAsByteArray();
-                    var fileName = "";
+                //    // Add headers
+                //    worksheet.Cells[1, 1].Value = "Permission Slip ID";
+                //    worksheet.Cells[1, 2].Value = "Student ID";
+                //    worksheet.Cells[1, 3].Value = "Student Name";
+                //    worksheet.Cells[1, 4].Value = "Admission Number";
+                //    worksheet.Cells[1, 5].Value = "Class Name";
+                //    worksheet.Cells[1, 6].Value = "Section Name";
+                //    worksheet.Cells[1, 7].Value = "Gender";
+                //    worksheet.Cells[1, 8].Value = "Parent Name";
+                //    worksheet.Cells[1, 9].Value = "Requested Date";
+                //    worksheet.Cells[1, 10].Value = "Reason";
+                //    worksheet.Cells[1, 11].Value = "Status";
+                //    worksheet.Cells[1, 12].Value = "Modified Date";
 
-                    if (isApproved)
-                    {
-                         fileName = $"Approved_PermissionSlips_{DateTime.Now:yyyyMMddHHmmss}.xlsx";
-                    }
-                    else
-                    {
-                        fileName = $"Rejected_PermissionSlips_{DateTime.Now:yyyyMMddHHmmss}.xlsx";
-                    }
-                    // Save the file to a specific location or return the file content as a downloadable response
-                    
-                    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "exports", fileName);
+                //    // Add data rows
+                //    var rowIndex = 2; // Start from row 2 as row 1 contains headers
+                //    foreach (var slip in permissionSlips)
+                //    {
+                //        worksheet.Cells[rowIndex, 1].Value = slip.PermissionSlip_Id;
+                //        worksheet.Cells[rowIndex, 2].Value = slip.Student_Id;
+                //        worksheet.Cells[rowIndex, 3].Value = slip.StudentName;
+                //        worksheet.Cells[rowIndex, 4].Value = slip.Admission_Number;
+                //        worksheet.Cells[rowIndex, 5].Value = slip.ClassName;
+                //        worksheet.Cells[rowIndex, 6].Value = slip.SectionName;
+                //        worksheet.Cells[rowIndex, 7].Value = slip.GenderName;
+                //        worksheet.Cells[rowIndex, 8].Value = slip.ParentName;
+                //        worksheet.Cells[rowIndex, 9].Value = slip.RequestedDateTime;
+                //        worksheet.Cells[rowIndex, 10].Value = slip.Reason;
+                //        worksheet.Cells[rowIndex, 11].Value = slip.Status;
+                //        worksheet.Cells[rowIndex, 12].Value = slip.ModifiedDate;
 
-                    // Ensure the directory exists
-                    Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+                //        rowIndex++;
+                //    }
 
-                    // Write file to disk
-                    await File.WriteAllBytesAsync(filePath, excelFile);
+                //    // Auto-fit columns for better readability
+                //    worksheet.Cells.AutoFitColumns();
 
-                    // Return the file path as a response
-                    return new ServiceResponse<string>(true, "Excel file generated successfully", filePath, 200);
-                }
+                //    // Generate the Excel file as a byte array
+                //    var excelFile = package.GetAsByteArray();
+                //    var fileName = "";
+
+                //    if (isApproved)
+                //    {
+                //         fileName = $"Approved_PermissionSlips_{DateTime.Now:yyyyMMddHHmmss}.xlsx";
+                //    }
+                //    else
+                //    {
+                //        fileName = $"Rejected_PermissionSlips_{DateTime.Now:yyyyMMddHHmmss}.xlsx";
+                //    }
+                //    // Save the file to a specific location or return the file content as a downloadable response
+
+                //    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "exports", fileName);
+
+                //    // Ensure the directory exists
+                //    Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+
+                //    // Write file to disk
+                //    await File.WriteAllBytesAsync(filePath, excelFile);
+
+                //    // Return the file path as a response
+                //    return new ServiceResponse<string>(true, "Excel file generated successfully", filePath, 200);
+                //}
             }
             catch (Exception ex)
             {

@@ -2,6 +2,7 @@
 using Student_API.DTOs;
 using Student_API.DTOs.RequestDTO;
 using Student_API.Services.Interfaces;
+using System.Net.Mime;
 
 namespace Student_API.Controllers
 {
@@ -10,10 +11,12 @@ namespace Student_API.Controllers
     public class PermissionSlipController : ControllerBase
     {
         private readonly IPermissionSlipService _permissionSlipService;
+       
 
-        public PermissionSlipController(IPermissionSlipService permissionSlipService)
+        public PermissionSlipController(IPermissionSlipService permissionSlipService )
         {
             _permissionSlipService = permissionSlipService;
+          
         }
 
         [HttpPost("GetAllPermissionSlips")]
@@ -69,9 +72,9 @@ namespace Student_API.Controllers
         }
 
         [HttpGet("GetPermissionSlipById")]
-        public async Task<IActionResult> GetPermissionSlipById(int permissionSlipId)
+        public async Task<IActionResult> GetPermissionSlipById(GetSinglePermissionSlip obj)
         {
-            var response = await _permissionSlipService.GetPermissionSlipById(permissionSlipId);
+            var response = await _permissionSlipService.GetPermissionSlipById(obj.permissionSlipId , obj.Institute_id);
             if (response.Success)
             {
                 return Ok(response);
@@ -82,15 +85,34 @@ namespace Student_API.Controllers
         [HttpPost("ExportPermissionSlipsToExcel")]
         public async Task<IActionResult> ExportPermissionSlipsToExcel(GetAllPermissionSlip obj)
         {
-            var response = await _permissionSlipService.ExportPermissionSlipsToExcel(obj.Institute_id, obj.classId, obj.sectionId);
+            var response = await _permissionSlipService.ExportPermissionSlipsToExcel(obj.Institute_id, obj.classId, obj.sectionId , obj.exportFormat);
 
             if (response.Success)
             {
                 var filePath = response.Data;
                 var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
 
-                // Return the Excel file for download
-                return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", Path.GetFileName(filePath));
+                string contentType;
+                string fileExtension = Path.GetExtension(filePath).ToLower();
+
+                // Determine the content type based on file extension (Excel, CSV, or PDF)
+                switch (fileExtension)
+                {
+                    case ".xlsx": // Excel
+                        contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                        break;
+                    case ".csv": // CSV
+                        contentType = "text/csv";
+                        break;
+                    case ".pdf": // PDF
+                        contentType = "application/pdf";
+                        break;
+                    default:
+                        return BadRequest("Unsupported file format.");
+                }
+
+                // Return the file for download with the appropriate content type
+                return File(fileBytes, contentType, Path.GetFileName(filePath));
             }
             else
             {
@@ -101,14 +123,32 @@ namespace Student_API.Controllers
         [HttpPost("ExportStudentApprovedToExcel")]
         public async Task<IActionResult> ExportStudentApprovedToExcel(GetAllPermissionSlipsByStatusExport obj)
         {
-            var response = await _permissionSlipService.ExportPermissionSlipsToExcel(obj.Institute_id, obj.classId, obj.sectionId, obj.startDate, obj.endDate, true);
+            var response = await _permissionSlipService.ExportPermissionSlipsToExcel(obj.Institute_id, obj.classId, obj.sectionId, obj.startDate, obj.endDate, true, obj.exportFormat);
             if (response.Success)
             {
                 var filePath = response.Data;
                 var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+                string contentType;
+                string fileExtension = Path.GetExtension(filePath).ToLower();
 
-                // Return the Excel file for download
-                return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", Path.GetFileName(filePath));
+                // Determine the content type based on file extension (Excel, CSV, or PDF)
+                switch (fileExtension)
+                {
+                    case ".xlsx": // Excel
+                        contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                        break;
+                    case ".csv": // CSV
+                        contentType = "text/csv";
+                        break;
+                    case ".pdf": // PDF
+                        contentType = "application/pdf";
+                        break;
+                    default:
+                        return BadRequest("Unsupported file format.");
+                }
+
+                // Return the file for download with the appropriate content type
+                return File(fileBytes, contentType, Path.GetFileName(filePath));
             }
             else
             {
@@ -118,7 +158,7 @@ namespace Student_API.Controllers
         [HttpPost("ExportStudentRejectedToExcel")]
         public async Task<IActionResult> ExportStudentRejectedToExcel(GetAllPermissionSlipsByStatusExport obj)
         {
-            var response = await _permissionSlipService.ExportPermissionSlipsToExcel(obj.Institute_id, obj.classId, obj.sectionId, obj.startDate, obj.endDate, false);
+            var response = await _permissionSlipService.ExportPermissionSlipsToExcel(obj.Institute_id, obj.classId, obj.sectionId, obj.startDate, obj.endDate, false, obj.exportFormat);
             if (response.Success)
             {
                 var filePath = response.Data;

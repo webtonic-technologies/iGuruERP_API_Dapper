@@ -52,14 +52,12 @@ namespace Student_API.Repository.Implementations
                 }
 
                 string query = $@"
-        IF OBJECT_ID('tempdb..#TempStudentDetails') IS NOT NULL
-    DROP TABLE #TempStudentDetails;
-
+        DROP TABLE IF EXISTS #TempStudentDetails
         SELECT 
             student_id, 
             CONCAT(first_name, ' ', last_name) AS Student_Name, 
             CONCAT(tbl_Class.class_name, ' - ', tbl_Section.Section_name) AS Class_Section,
-            tbl_StudentMaster.File_Name
+            tbl_StudentMaster.File_Name,
             tbl_StudentMaster.class_id,
             tbl_StudentMaster.Section_Id,
             tbl_StudentMaster.Academic_year_id
@@ -86,7 +84,8 @@ namespace Student_API.Repository.Implementations
             Student_Name, 
             Class_Section,
             class_id,
-            Section_Id
+            Section_Id,
+            Academic_year_id
         FROM 
             #TempStudentDetails
         ORDER BY 
@@ -96,8 +95,8 @@ namespace Student_API.Repository.Implementations
         FETCH NEXT 
             @PageSize ROWS ONLY;
 
-       IF OBJECT_ID('tempdb..#TempStudentDetails') IS NOT NULL
-    DROP TABLE #TempStudentDetails;
+       
+    DROP TABLE IF EXISTS #TempStudentDetails;
 
         ";
 
@@ -134,16 +133,16 @@ namespace Student_API.Repository.Implementations
         }
 
 
-        public async Task<ServiceResponse<bool>> PromoteStudents(List<int> studentIds, int nextClassId, int sectionId)
+        public async Task<ServiceResponse<bool>> PromoteStudents(List<int> studentIds, int nextClassId, int sectionId, int CurrentAcademicYear)
         {
             try
             {
                 string query = @"
                 UPDATE tbl_StudentMaster
-                SET class_id = @NextClassId , section_id= @sectionId
+                SET class_id = @NextClassId , section_id= @sectionId , Academic_year_id = @CurrentAcademicYear
                 WHERE student_id IN @StudentIds";
 
-                await _connection.ExecuteAsync(query, new { NextClassId = nextClassId, StudentIds = studentIds, sectionId = sectionId });
+                await _connection.ExecuteAsync(query, new { NextClassId = nextClassId, StudentIds = studentIds, sectionId = sectionId, CurrentAcademicYear = CurrentAcademicYear });
 
                 return new ServiceResponse<bool>(true, "Students promoted successfully", true, 200);
             }
@@ -556,7 +555,7 @@ namespace Student_API.Repository.Implementations
         FROM tbl_ClassPromotionLog 
         WHERE institute_id = @institute_id;
 
-        SELECT LogId, UserId, IPAddress, PromotionDateTime 
+        SELECT LogId, UserId, IPAddress,  FORMAT(PromotionDateTime, 'dd-MM-yyyy hh:mm tt') AS PromotionDateTime 
         FROM tbl_ClassPromotionLog 
         WHERE institute_id = @institute_id
         ORDER BY {obj.sortField} {obj.sortDirection}
