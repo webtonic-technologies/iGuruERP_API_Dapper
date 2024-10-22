@@ -627,5 +627,34 @@ namespace Employee_API.Controllers
 
             return Ok(result);
         }
+        [HttpGet("DownloadSheet")]
+        public async Task<IActionResult> DownloadSheetImport(int instituteId)
+        {
+            var result = await _employeeProfileServices.DownloadSheetImport(instituteId);
+
+            if (result.Success)
+            {
+                return File(result.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "EmployeeData.xlsx");
+            }
+            else
+            {
+                return BadRequest(result.Message);
+            }
+        }
+        [HttpPost("upload")]
+        public async Task<IActionResult> UploadEmployeedata(IFormFile file, int instituteId)
+        {
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest("No file uploaded");
+            }
+
+            var response = await _employeeProfileServices.UploadEmployeedata(file, instituteId);
+            if (response.Success)
+            {
+                return Ok(response.Message);
+            }
+            return StatusCode(response.StatusCode, response.Message);
+        }
     }
 }
