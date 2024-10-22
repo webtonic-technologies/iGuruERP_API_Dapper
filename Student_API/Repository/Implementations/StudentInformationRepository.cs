@@ -1147,7 +1147,7 @@ namespace Student_API.Repository.Implementations
                 }
 
                 // Validate sort direction
-                
+
                 if (!allowedSortDirections.Contains(obj.sortDirection))
                 {
                     obj.sortDirection = "ASC";  // Default to ASC if invalid
@@ -1618,7 +1618,7 @@ FROM
             }
         }
 
-        public async Task<ServiceResponse<List<StudentAllInformationDTO>>> GetAllStudentDetailsData1(GetStudentRequestModel obj)
+        public async Task<ServiceResponse<List<dynamic>>> GetAllStudentDetailsData1(GetStudentRequestModel obj)
         {
             try
             {
@@ -1654,9 +1654,9 @@ SELECT
     tbl_StudentMaster.gender_id, 
     Gender_Type, 
     tbl_Class.class_id, 
-    class_name AS class_course, 
+    class_name , 
     tbl_Section.section_id, 
-    section_name AS Section, 
+    section_name, 
     [Admission_Number], 
     [Roll_Number],
     FORMAT([Date_of_Joining], 'dd-MM-yyyy') AS Date_of_Joining, 
@@ -1690,27 +1690,27 @@ SELECT
     tbl_InstituteHouse.HouseName AS Student_House_Name,
 	[Student_Other_Info_id],
 	[email_id], 
-[Identification_Mark_1],
-[Identification_Mark_2], 
-FORMAT([Admission_Date], 'dd-MM-yyyy') AS Admission_Date, 
-FORMAT([Register_Date], 'dd-MM-yyyy') AS Register_Date, 
-[Register_Number], 
-[samagra_ID], 
-[Place_of_Birth], 
-[comments], 
-[language_known],
- [Student_Prev_School_id], 
- [Previous_School_Name], 
- [Previous_Board], 
- [Previous_Medium], 
- [Previous_School_Address], 
- [previous_School_Course], 
- [Previous_Class], 
- [TC_number], 
- FORMAT([TC_date], 'dd-MM-yyyy') AS TC_date, 
- [isTC_Submitted],
- [Student_Health_Info_id]
-      ,[Allergies]
+    [Identification_Mark_1],
+    [Identification_Mark_2], 
+    FORMAT([Admission_Date], 'dd-MM-yyyy') AS Admission_Date, 
+    FORMAT([Register_Date], 'dd-MM-yyyy') AS Register_Date, 
+    [Register_Number], 
+    [samagra_ID], 
+    [Place_of_Birth], 
+    [comments], 
+    [language_known],
+    [Student_Prev_School_id], 
+    [Previous_School_Name], 
+    [Previous_Board], 
+    [Previous_Medium], 
+    [Previous_School_Address], 
+    [previous_School_Course], 
+    [Previous_Class], 
+    [TC_number], 
+    FORMAT([TC_date], 'dd-MM-yyyy') AS TC_date, 
+    [isTC_Submitted],
+    [Student_Health_Info_id]
+	 ,[Allergies]
       ,[Medications]
       ,[Doctor_Name]
       ,[Doctor_Phone_no]
@@ -1729,6 +1729,39 @@ FORMAT([Register_Date], 'dd-MM-yyyy') AS Register_Date,
       ,[Student_Name]
       ,[Student_Age]
       ,[Admission_Status]
+    -- Parent details dynamically included
+    Father_First_Name, Father_Middle_Name, Father_Last_Name, Father_Bank_Account_no, Father_Bank_IFSC_Code, Father_Family_Ration_Card_Type, 
+    Father_Family_Ration_Card_no, Father_Mobile_Number, Father_Date_of_Birth, Father_Aadhar_no, Father_PAN_card_no, Father_Residential_Address, 
+    Father_Occupation_Type, Father_Designation, Father_Name_of_the_Employer, Father_Office_no, Father_Email_id, Father_Annual_Income, Father_File_Name, 
+    Mother_First_Name, Mother_Middle_Name, Mother_Last_Name, Mother_Bank_Account_no, Mother_Bank_IFSC_Code, Mother_Family_Ration_Card_Type, 
+    Mother_Family_Ration_Card_no, Mother_Mobile_Number, Mother_Date_of_Birth, Mother_Aadhar_no, Mother_PAN_card_no, Mother_Residential_Address, 
+    Mother_Occupation_Type, Mother_Designation, Mother_Name_of_the_Employer, Mother_Office_no, Mother_Email_id, Mother_Annual_Income, Mother_File_Name, 
+    Guardian_First_Name, Guardian_Middle_Name, Guardian_Last_Name, Guardian_Bank_Account_no, Guardian_Bank_IFSC_Code, Guardian_Family_Ration_Card_Type, 
+    Guardian_Family_Ration_Card_no, Guardian_Mobile_Number, Guardian_Date_of_Birth, Guardian_Aadhar_no, Guardian_PAN_card_no, Guardian_Residential_Address, 
+    Guardian_Occupation_Type, Guardian_Designation, Guardian_Name_of_the_Employer, Guardian_Office_no, Guardian_Email_id, Guardian_Annual_Income, Guardian_File_Name,
+	 OfficeInfo.Father_Office_Building_no,
+    OfficeInfo.Father_Street,
+    OfficeInfo.Father_Area,
+    OfficeInfo.Father_Pincode,
+    OfficeInfo.Father_City,
+    OfficeInfo.Father_State,
+
+    -- Mother's Office Info
+    OfficeInfo.Mother_Office_Building_no,
+    OfficeInfo.Mother_Street,
+    OfficeInfo.Mother_Area,
+    OfficeInfo.Mother_Pincode,
+    OfficeInfo.Mother_City,
+    OfficeInfo.Mother_State,
+
+    -- Guardian's Office Info
+    OfficeInfo.Guardian_Office_Building_no,
+    OfficeInfo.Guardian_Street,
+    OfficeInfo.Guardian_Area,
+    OfficeInfo.Guardian_Pincode,
+    OfficeInfo.Guardian_City,
+    OfficeInfo.Guardian_State
+    ,SiblingDetails.SiblingInfo
 INTO 
     #TempStudentDetails
 FROM 
@@ -1762,26 +1795,171 @@ LEFT JOIN
 	tbl_StudentPreviousSchool ON tbl_StudentPreviousSchool.student_id = tbl_StudentMaster.student_id
 LEFT JOIN 
 	tbl_StudentHealthInfo ON tbl_StudentHealthInfo.Student_id = tbl_StudentMaster.student_id
-WHERE 
-    tbl_StudentMaster.Institute_id = @InstituteId
+LEFT JOIN
+(
+    -- Pivot Parent Info based on Parent_Type_id
+    SELECT 
+        student_id, 
+        MAX(CASE WHEN Parent_Type_id = 1 THEN First_Name END) AS Father_First_Name,
+        MAX(CASE WHEN Parent_Type_id = 1 THEN Middle_Name END) AS Father_Middle_Name,
+        MAX(CASE WHEN Parent_Type_id = 1 THEN Last_Name END) AS Father_Last_Name,
+        MAX(CASE WHEN Parent_Type_id = 1 THEN Bank_Account_no END) AS Father_Bank_Account_no,
+        MAX(CASE WHEN Parent_Type_id = 1 THEN Bank_IFSC_Code END) AS Father_Bank_IFSC_Code,
+        MAX(CASE WHEN Parent_Type_id = 1 THEN Family_Ration_Card_Type END) AS Father_Family_Ration_Card_Type,
+        MAX(CASE WHEN Parent_Type_id = 1 THEN Family_Ration_Card_no END) AS Father_Family_Ration_Card_no,
+        MAX(CASE WHEN Parent_Type_id = 1 THEN Mobile_Number END) AS Father_Mobile_Number,
+        MAX(CASE WHEN Parent_Type_id = 1 THEN FORMAT(Date_of_Birth, 'dd-MM-yyyy') END) AS Father_Date_of_Birth,
+        MAX(CASE WHEN Parent_Type_id = 1 THEN Aadhar_no END) AS Father_Aadhar_no,
+        MAX(CASE WHEN Parent_Type_id = 1 THEN PAN_card_no END) AS Father_PAN_card_no,
+        MAX(CASE WHEN Parent_Type_id = 1 THEN Residential_Address END) AS Father_Residential_Address,
+        MAX(CASE WHEN Parent_Type_id = 1 THEN tbl_Occupation.Occupation_Type END) AS Father_Occupation_Type,
+        MAX(CASE WHEN Parent_Type_id = 1 THEN Designation END) AS Father_Designation,
+        MAX(CASE WHEN Parent_Type_id = 1 THEN Name_of_the_Employer END) AS Father_Name_of_the_Employer,
+        MAX(CASE WHEN Parent_Type_id = 1 THEN Office_no END) AS Father_Office_no,
+        MAX(CASE WHEN Parent_Type_id = 1 THEN Email_id END) AS Father_Email_id,
+        MAX(CASE WHEN Parent_Type_id = 1 THEN Annual_Income END) AS Father_Annual_Income,
+        MAX(CASE WHEN Parent_Type_id = 1 THEN File_Name END) AS Father_File_Name,
+        
+        -- Same for Mother
+        MAX(CASE WHEN Parent_Type_id = 2 THEN First_Name END) AS Mother_First_Name,
+        MAX(CASE WHEN Parent_Type_id = 2 THEN Middle_Name END) AS Mother_Middle_Name,
+        MAX(CASE WHEN Parent_Type_id = 2 THEN Last_Name END) AS Mother_Last_Name,
+        MAX(CASE WHEN Parent_Type_id = 2 THEN Bank_Account_no END) AS Mother_Bank_Account_no,
+        MAX(CASE WHEN Parent_Type_id = 2 THEN Bank_IFSC_Code END) AS Mother_Bank_IFSC_Code,
+        MAX(CASE WHEN Parent_Type_id = 2 THEN Family_Ration_Card_Type END) AS Mother_Family_Ration_Card_Type,
+        MAX(CASE WHEN Parent_Type_id = 2 THEN Family_Ration_Card_no END) AS Mother_Family_Ration_Card_no,
+        MAX(CASE WHEN Parent_Type_id = 2 THEN Mobile_Number END) AS Mother_Mobile_Number,
+        MAX(CASE WHEN Parent_Type_id = 2 THEN FORMAT(Date_of_Birth, 'dd-MM-yyyy') END) AS Mother_Date_of_Birth,
+        MAX(CASE WHEN Parent_Type_id = 2 THEN Aadhar_no END) AS Mother_Aadhar_no,
+        MAX(CASE WHEN Parent_Type_id = 2 THEN PAN_card_no END) AS Mother_PAN_card_no,
+        MAX(CASE WHEN Parent_Type_id = 2 THEN Residential_Address END) AS Mother_Residential_Address,
+        MAX(CASE WHEN Parent_Type_id = 2 THEN tbl_Occupation.Occupation_Type END) AS Mother_Occupation_Type,
+        MAX(CASE WHEN Parent_Type_id = 2 THEN Designation END) AS Mother_Designation,
+        MAX(CASE WHEN Parent_Type_id = 2 THEN Name_of_the_Employer END) AS Mother_Name_of_the_Employer,
+        MAX(CASE WHEN Parent_Type_id = 2 THEN Office_no END) AS Mother_Office_no,
+        MAX(CASE WHEN Parent_Type_id = 2 THEN Email_id END) AS Mother_Email_id,
+        MAX(CASE WHEN Parent_Type_id = 2 THEN Annual_Income END) AS Mother_Annual_Income,
+        MAX(CASE WHEN Parent_Type_id = 2 THEN File_Name END) AS Mother_File_Name,
+
+        -- Same for Guardian
+        MAX(CASE WHEN Parent_Type_id = 3 THEN First_Name END) AS Guardian_First_Name,
+        MAX(CASE WHEN Parent_Type_id = 3 THEN Middle_Name END) AS Guardian_Middle_Name,
+        MAX(CASE WHEN Parent_Type_id = 3 THEN Last_Name END) AS Guardian_Last_Name,
+        MAX(CASE WHEN Parent_Type_id = 3 THEN Bank_Account_no END) AS Guardian_Bank_Account_no,
+        MAX(CASE WHEN Parent_Type_id = 3 THEN Bank_IFSC_Code END) AS Guardian_Bank_IFSC_Code,
+        MAX(CASE WHEN Parent_Type_id = 3 THEN Family_Ration_Card_Type END) AS Guardian_Family_Ration_Card_Type,
+        MAX(CASE WHEN Parent_Type_id = 3 THEN Family_Ration_Card_no END) AS Guardian_Family_Ration_Card_no,
+        MAX(CASE WHEN Parent_Type_id = 3 THEN Mobile_Number END) AS Guardian_Mobile_Number,
+        MAX(CASE WHEN Parent_Type_id = 3 THEN FORMAT(Date_of_Birth, 'dd-MM-yyyy') END) AS Guardian_Date_of_Birth,
+        MAX(CASE WHEN Parent_Type_id = 3 THEN Aadhar_no END) AS Guardian_Aadhar_no,
+        MAX(CASE WHEN Parent_Type_id = 3 THEN PAN_card_no END) AS Guardian_PAN_card_no,
+        MAX(CASE WHEN Parent_Type_id = 3 THEN Residential_Address END) AS Guardian_Residential_Address,
+        MAX(CASE WHEN Parent_Type_id = 3 THEN tbl_Occupation.Occupation_Type END) AS Guardian_Occupation_Type,
+        MAX(CASE WHEN Parent_Type_id = 3 THEN Designation END) AS Guardian_Designation,
+        MAX(CASE WHEN Parent_Type_id = 3 THEN Name_of_the_Employer END) AS Guardian_Name_of_the_Employer,
+        MAX(CASE WHEN Parent_Type_id = 3 THEN Office_no END) AS Guardian_Office_no,
+        MAX(CASE WHEN Parent_Type_id = 3 THEN Email_id END) AS Guardian_Email_id,
+        MAX(CASE WHEN Parent_Type_id = 3 THEN Annual_Income END) AS Guardian_Annual_Income,
+        MAX(CASE WHEN Parent_Type_id = 3 THEN File_Name END) AS Guardian_File_Name
+
+    FROM 
+        tbl_StudentParentsInfo
+    LEFT JOIN tbl_Occupation ON tbl_StudentParentsInfo.Occupation_id = tbl_Occupation.Occupation_id
+    GROUP BY 
+        student_id
+) ParentInfo
+ON ParentInfo.student_id = tbl_StudentMaster.student_id
+LEFT JOIN
+(
+    SELECT 
+        student_id,
+        -- Father's Office Info
+        MAX(CASE WHEN Parents_Type_id = 1 THEN Office_Building_no END) AS Father_Office_Building_no,
+        MAX(CASE WHEN Parents_Type_id = 1 THEN Street END) AS Father_Street,
+        MAX(CASE WHEN Parents_Type_id = 1 THEN Area END) AS Father_Area,
+        MAX(CASE WHEN Parents_Type_id = 1 THEN Pincode END) AS Father_Pincode,
+        MAX(CASE WHEN Parents_Type_id = 1 THEN City END) AS Father_City,
+        MAX(CASE WHEN Parents_Type_id = 1 THEN State END) AS Father_State,
+
+        -- Mother's Office Info
+        MAX(CASE WHEN Parents_Type_id = 2 THEN Office_Building_no END) AS Mother_Office_Building_no,
+        MAX(CASE WHEN Parents_Type_id = 2 THEN Street END) AS Mother_Street,
+        MAX(CASE WHEN Parents_Type_id = 2 THEN Area END) AS Mother_Area,
+        MAX(CASE WHEN Parents_Type_id = 2 THEN Pincode END) AS Mother_Pincode,
+        MAX(CASE WHEN Parents_Type_id = 2 THEN City END) AS Mother_City,
+        MAX(CASE WHEN Parents_Type_id = 2 THEN State END) AS Mother_State,
+
+        -- Guardian's Office Info
+        MAX(CASE WHEN Parents_Type_id = 3 THEN Office_Building_no END) AS Guardian_Office_Building_no,
+        MAX(CASE WHEN Parents_Type_id = 3 THEN Street END) AS Guardian_Street,
+        MAX(CASE WHEN Parents_Type_id = 3 THEN Area END) AS Guardian_Area,
+        MAX(CASE WHEN Parents_Type_id = 3 THEN Pincode END) AS Guardian_Pincode,
+        MAX(CASE WHEN Parents_Type_id = 3 THEN City END) AS Guardian_City,
+        MAX(CASE WHEN Parents_Type_id = 3 THEN State END) AS Guardian_State
+    FROM tbl_StudentParentsOfficeInfo
+    GROUP BY student_id
+) OfficeInfo ON OfficeInfo.student_id = tbl_StudentMaster.student_id
+LEFT JOIN (
+    SELECT 
+        ss.Student_id,
+        (
+             SELECT 
+                ss2.Student_Siblings_id ,
+                ss2.Name,
+                ss2.Middle_Name ,
+                ss2.Last_Name ,
+                ss2.Class,
+                ss2.Section AS section,
+                FORMAT(ss2.Date_of_Birth, 'dd-MM-yyyy') AS Date_of_Birth,
+                ss2.Aadhar_no
+            FROM tbl_StudentSiblings ss2
+            WHERE ss2.Student_id = ss.Student_id
+            FOR JSON PATH
+        ) AS SiblingInfo
+    FROM tbl_StudentSiblings ss
+    GROUP BY ss.Student_id
+) AS SiblingDetails ON SiblingDetails.Student_id = tbl_StudentMaster.student_id
+where tbl_StudentMaster.Institute_id = @InstituteId
     AND (tbl_StudentMaster.Class_id = @class_id OR @class_id = 0)
     AND (tbl_StudentMaster.Section_id = @section_id OR @section_id = 0) 
     AND (tbl_StudentMaster.Academic_year_id = @Academic_year_id OR @Academic_year_id = 0)
     AND (tbl_StudentMaster.StudentType_id = @StudentType_id OR @StudentType_id = 0)
     AND tbl_StudentMaster.isActive = @isActive;
 
--- Query the temporary table with sorting and pagination
 
-   DECLARE @ColumnNames NVARCHAR(MAX);
+
+--select * from #TempStudentDetails
+
+
+
+ DECLARE @ColumnNames NVARCHAR(MAX);
 DECLARE @SQL NVARCHAR(MAX);
+DECLARE @StudentSiblingColumns NVARCHAR(MAX);
 
 
 -- Get the comma-separated column names into the variable
 SELECT @ColumnNames = STRING_AGG(ss.DbColumnName, ', ')
 FROM tblStudentSetting ss
-WHERE ss.Institute_id = 1 AND ss.IsActive = 1;
+WHERE ss.Institute_id = 1 AND ss.IsActive = 1 AND categoryId = 1;
+SET @SQL = N'SELECT ' + @ColumnNames + ' FROM #TempStudentDetails ';
 
-SET @SQL = N'SELECT ' + @ColumnNames + ' FROM #TempStudentDetails ORDER BY 
+SELECT @StudentSiblingColumns = STRING_AGG(
+    CASE 
+        WHEN ss.DbColumnName = 'Name' THEN 'SiblingData.[Name] AS Sibling_FirstName'
+        WHEN ss.DbColumnName = 'Middle_Name' THEN 'SiblingData.[Middle_Name] AS Sibling_MiddleName'
+        WHEN ss.DbColumnName = 'Last_Name' THEN 'SiblingData.[Last_Name] AS Sibling_LastName'
+        WHEN ss.DbColumnName = 'Class' THEN 'SiblingData.[Class] AS Sibling_Class'
+        WHEN ss.DbColumnName = 'Section' THEN 'SiblingData.[Section] AS Sibling_Section'
+        WHEN ss.DbColumnName = 'DateOfBirth' THEN 'SiblingData.[DateOfBirth] AS Sibling_DateOfBirth'
+        WHEN ss.DbColumnName = 'AadharNo' THEN 'SiblingData.[AadharNo] AS Sibling_AadharNo'
+        -- Add more cases for other sibling-related columns here
+    END, ', '
+)
+FROM tblStudentSetting ss
+WHERE ss.Institute_id = 1 AND ss.IsActive = 1 AND categoryId = 7;
+
+SET @SQL = N'SELECT ' + @ColumnNames + '
+FROM #TempStudentDetails ORDER BY 
     {obj.sortField} {obj.sortDirection}, 
     student_id
 OFFSET 
@@ -1789,7 +1967,7 @@ OFFSET
 FETCH NEXT 
     @PageSize ROWS ONLY;';
 
-EXEC sp_executesql @SQL, 
+	EXEC sp_executesql @SQL, 
     N'@Offset INT, @PageSize INT', 
     @Offset = @Offset, 
     @PageSize = @PageSize;
@@ -1810,19 +1988,19 @@ FROM
 
                 using (var result = await _connection.QueryMultipleAsync(sql, new { InstituteId = obj.Institute_id, Offset = offset, PageSize = actualPageSize, class_id = obj.class_id, section_id = obj.section_id, Academic_year_id = obj.Academic_year_id, isActive = obj.isActive, StudentType_id = obj.StudentType_id }))
                 {
-                    var studentDetailsList = (await result.ReadAsync<StudentAllInformationDTO>()).ToList();
-                    
+                    var studentDetailsList = (await result.ReadAsync<dynamic>()).ToList();
+
                     int? totalRecords = (obj.pageSize.HasValue && obj.pageNumber.HasValue) == true ? result.ReadSingle<int>() : null;
 
                     var studentDetailsDict = studentDetailsList.ToDictionary(sd => sd.student_id);
 
-                  
-                    return new ServiceResponse<List<StudentAllInformationDTO>>(true, "Operation successful", studentDetailsList, 200, totalRecords);
+
+                    return new ServiceResponse<List<dynamic>>(true, "Operation successful", studentDetailsList, 200, totalRecords);
                 }
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<List<StudentAllInformationDTO>>(false, "Some error occured", null, 500);
+                return new ServiceResponse<List<dynamic>>(false, "Some error occured", null, 500);
 
             }
         }

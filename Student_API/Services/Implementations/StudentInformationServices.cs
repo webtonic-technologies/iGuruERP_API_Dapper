@@ -1,4 +1,5 @@
-﻿using OfficeOpenXml;
+﻿using iText.Commons.Utils;
+using OfficeOpenXml;
 using QRCoder;
 using Student_API.DTOs;
 using Student_API.DTOs.RequestDTO;
@@ -8,6 +9,8 @@ using Student_API.Services.Interfaces;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Reflection.Metadata;
+using System.Text.Json;
+using static iText.Kernel.Pdf.Colorspace.PdfPattern;
 using static System.Net.Mime.MediaTypeNames;
 
 namespace Student_API.Services.Implementations
@@ -366,7 +369,7 @@ namespace Student_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<StudentAllInformationDTO>>> GetAllStudentDetailsData1(GetStudentRequestModel obj)
+        public async Task<ServiceResponse<List<dynamic>>> GetAllStudentDetailsData1(GetStudentRequestModel obj)
         {
 
             try
@@ -375,11 +378,11 @@ namespace Student_API.Services.Implementations
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<List<StudentAllInformationDTO>>(false, ex.Message, null, 500);
+                return new ServiceResponse<List<dynamic>>(false, ex.Message, null, 500);
             }
         }
 
-        public async Task<ServiceResponse<string>> GetAllStudentDetailsAsExcel(getStudentRequest obj)
+        public async Task<ServiceResponse<string>> GetAllStudentDetailsAsExcelOld(getStudentRequest obj)
         {
             try
             {
@@ -471,6 +474,276 @@ namespace Student_API.Services.Implementations
                                 student.Religion_Type,
                                 student.Gender_Type,
                                 student.Father_Name);
+                            csvLines.Add(csvRow);
+                        }
+
+                        await File.WriteAllLinesAsync(csvFilePath, csvLines);
+                        return new ServiceResponse<string>(true, "CSV file generated successfully", csvFilePath, 200);
+                    }
+                    else
+                    {
+                        return new ServiceResponse<string>(false, "Invalid export format", null, 400);
+                    }
+                }
+                else
+                {
+                    return new ServiceResponse<string>(false, "No student data found", null, 404);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<string>(false, ex.Message, null, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<string>> GetAllStudentDetailsAsExcel1(getStudentRequest obj)
+        {
+            try
+            {
+                GetStudentRequestModel model = new GetStudentRequestModel
+                {
+                    Academic_year_id = obj.Academic_year_id,
+                    section_id = obj.section_id,
+                    class_id = obj.class_id,
+                    Institute_id = obj.Institute_id,
+                    isActive = obj.isActive,
+                    pageSize = int.MaxValue,
+                    pageNumber = 1,
+                    sortField = null,
+                    sortDirection = null
+                };
+
+                // Call the existing method to get the data
+                var studentDetailsResponse = await _studentInformationRepository.GetAllStudentDetailsData1(model);
+
+                if (studentDetailsResponse.Data.Any())
+                {
+                    var fileName = $"StudentDetails_{DateTime.Now:yyyyMMddHHmmss}";
+                    var directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "exports");
+                    Directory.CreateDirectory(directoryPath);
+
+                    // Check export format: 1 for Excel, 2 for CSV
+                    if (obj.exportFormat == 1)
+                    {
+                        // Generate Excel file using EPPlus
+                        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+                        using (var package = new ExcelPackage())
+                        {
+                            var worksheet = package.Workbook.Worksheets.Add("StudentDetails");
+
+                            // Get the first item to determine the headers
+                            dynamic firstStudent = studentDetailsResponse.Data.First();
+                            var properties = ((IDictionary<string, object>)firstStudent).Keys.ToList();
+
+                            // Add headers
+                            for (int i = 0; i < properties.Count; i++)
+                            {
+                                worksheet.Cells[1, i + 1].Value = properties[i];
+                            }
+
+                            // Add data rows dynamically
+                            var rowIndex = 2;
+                            foreach (dynamic student in studentDetailsResponse.Data)
+                            {
+                                var studentDict = (IDictionary<string, object>)student;
+                                for (int i = 0; i < properties.Count; i++)
+                                {
+                                    if (studentDict.TryGetValue(properties[i], out var value))
+                                    {
+                                        worksheet.Cells[rowIndex, i + 1].Value = value;
+                                    }
+                                }
+                                rowIndex++;
+                            }
+
+                            worksheet.Cells.AutoFitColumns();
+                            var excelFile = package.GetAsByteArray();
+                            var excelFilePath = Path.Combine(directoryPath, $"{fileName}.xlsx");
+
+                            await File.WriteAllBytesAsync(excelFilePath, excelFile);
+                            return new ServiceResponse<string>(true, "Excel file generated successfully", excelFilePath, 200);
+                        }
+                    }
+                    else if (obj.exportFormat == 2)
+                    {
+                        // Generate CSV file
+                        var csvFilePath = Path.Combine(directoryPath, $"{fileName}.csv");
+                        var csvLines = new List<string>
+                {
+                    string.Join(",", ((IDictionary<string, object>)studentDetailsResponse.Data.First()).Keys) // Use keys as headers
+                };
+
+                        foreach (dynamic student in studentDetailsResponse.Data)
+                        {
+                            var studentDict = (IDictionary<string, object>)student;
+                            var csvRow = string.Join(",", studentDict.Values.Select(value => value?.ToString().Replace(",", ";"))); // Replace commas in values
+                            csvLines.Add(csvRow);
+                        }
+
+                        await File.WriteAllLinesAsync(csvFilePath, csvLines);
+                        return new ServiceResponse<string>(true, "CSV file generated successfully", csvFilePath, 200);
+                    }
+                    else
+                    {
+                        return new ServiceResponse<string>(false, "Invalid export format", null, 400);
+                    }
+                }
+                else
+                {
+                    return new ServiceResponse<string>(false, "No student data found", null, 404);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<string>(false, ex.Message, null, 500);
+            }
+        }
+
+
+        public async Task<ServiceResponse<string>> GetAllStudentDetailsAsExcel(getStudentRequest obj)
+        {
+            try
+            {
+                GetStudentRequestModel model = new GetStudentRequestModel
+                {
+                    Academic_year_id = obj.Academic_year_id,
+                    section_id = obj.section_id,
+                    class_id = obj.class_id,
+                    Institute_id = obj.Institute_id,
+                    isActive = obj.isActive,
+                    pageSize = int.MaxValue,
+                    pageNumber = 1,
+                    sortField = null,
+                    sortDirection = null
+                };
+
+                // Call the existing method to get the data
+                var studentDetailsResponse = await _studentInformationRepository.GetAllStudentDetailsData1(model);
+
+                if (studentDetailsResponse.Data.Any())
+                {
+                    var fileName = $"StudentDetails_{DateTime.Now:yyyyMMddHHmmss}";
+                    var directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "exports");
+                    Directory.CreateDirectory(directoryPath);
+
+                    // Check export format: 1 for Excel, 2 for CSV
+                    if (obj.exportFormat == 1)
+                    {
+                        // Generate Excel file using EPPlus
+                        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+                        using (var package = new ExcelPackage())
+                        {
+                            var worksheet = package.Workbook.Worksheets.Add("StudentDetails");
+
+                            // Get the first item to determine the headers
+                            dynamic firstStudent = studentDetailsResponse.Data.First();
+                            var properties = ((IDictionary<string, object>)firstStudent).Keys.ToList();
+
+                            // Prepare a list to hold dynamic headers
+                            var headers = new List<string>(properties);
+
+                            // Add dynamic sibling headers if SiblingInfo exists
+                            foreach (dynamic student in studentDetailsResponse.Data)
+                            {
+                                if (student.SiblingInfo != null)
+                                {
+                                    var siblings = JsonSerializer.Deserialize<List<StudentSiblings>>(student.SiblingInfo.ToString());
+                                    for (int i = 0; i < siblings.Count; i++)
+                                    {
+                                        // Construct sibling header names
+                                        var siblingNameHeader = $"sibling{i + 1}_Name";
+                                        var siblingMiddleNameHeader = $"sibling{i + 1}_Middle_Name";
+                                        var siblingLastNameHeader = $"sibling{i + 1}_Last_Name";
+                                        var siblingClassHeader = $"sibling{i + 1}_Class";
+                                        var siblingSectionHeader = $"sibling{i + 1}_Section";
+                                        var siblingDOBHeader = $"sibling{i + 1}_DateOfBirth";
+                                        var siblingAadharNoHeader = $"sibling{i + 1}_AadharNo";
+
+                                        // Check if the headers are already in the list before adding
+                                        if (!headers.Contains(siblingNameHeader)) headers.Add(siblingNameHeader);
+                                        if (!headers.Contains(siblingMiddleNameHeader)) headers.Add(siblingMiddleNameHeader);
+                                        if (!headers.Contains(siblingLastNameHeader)) headers.Add(siblingLastNameHeader);
+                                        if (!headers.Contains(siblingClassHeader)) headers.Add(siblingClassHeader);
+                                        if (!headers.Contains(siblingSectionHeader)) headers.Add(siblingSectionHeader);
+                                        if (!headers.Contains(siblingDOBHeader)) headers.Add(siblingDOBHeader);
+                                        if (!headers.Contains(siblingAadharNoHeader)) headers.Add(siblingAadharNoHeader);
+
+                                    }
+                                }
+                            }
+                            headers.Remove("SiblingInfo");
+                            // Add headers to worksheet
+                            for (int i = 0; i < headers.Count; i++)
+                            {
+                                worksheet.Cells[1, i + 1].Value = headers[i];
+                            }
+
+                            // Add data rows dynamically
+                            var rowIndex = 2;
+                            foreach (dynamic student in studentDetailsResponse.Data)
+                            {
+                                var studentDict = (IDictionary<string, object>)student;
+
+                                // Add student details to the row
+                                for (int i = 0; i < properties.Count; i++)
+                                {
+                                    if (studentDict.TryGetValue(properties[i], out var value) )
+                                    {
+                                        if(properties[i] != "SiblingInfo")
+                                        {
+                                            worksheet.Cells[rowIndex, i + 1].Value = value;
+                                        }
+                                     
+                                    }
+                                }
+
+                                // Add sibling details if present
+                                if (student.SiblingInfo != null)
+                                {
+                                    var count = properties.Count;
+                                    var siblings = JsonSerializer.Deserialize<List<StudentSiblings>>(student.SiblingInfo.ToString());
+                                    for (int i = 0; i < siblings.Count; i++)
+                                    {
+                                       
+                                        if (i == 0)
+                                        {
+                                            count = properties.Count - 1;
+                                        }
+                                        
+                                        worksheet.Cells[rowIndex, count + i * 6 + 1].Value = siblings[i].Name;
+                                        worksheet.Cells[rowIndex, count + i * 6 + 2].Value = siblings[i].Middle_Name;
+                                        worksheet.Cells[rowIndex, count + i * 6 + 3].Value = siblings[i].Last_Name;
+                                        worksheet.Cells[rowIndex, count + i * 6 + 4].Value = siblings[i].Class;
+                                        worksheet.Cells[rowIndex, count + i * 6 + 5].Value = siblings[i].section;
+                                        worksheet.Cells[rowIndex, count + i * 6 + 6].Value = siblings[i].Date_of_Birth;
+                                        worksheet.Cells[rowIndex, count + i * 6 + 7].Value = siblings[i].Aadhar_no;
+                                    }
+                                }
+
+                                rowIndex++;
+                            }
+
+                            worksheet.Cells.AutoFitColumns();
+                            var excelFile = package.GetAsByteArray();
+                            var excelFilePath = Path.Combine(directoryPath, $"{fileName}.xlsx");
+
+                            await File.WriteAllBytesAsync(excelFilePath, excelFile);
+                            return new ServiceResponse<string>(true, "Excel file generated successfully", excelFilePath, 200);
+                        }
+                    }
+                    else if (obj.exportFormat == 2)
+                    {
+                        // Generate CSV file
+                        var csvFilePath = Path.Combine(directoryPath, $"{fileName}.csv");
+                        var csvLines = new List<string>
+                {
+                    string.Join(",", ((IDictionary<string, object>)studentDetailsResponse.Data.First()).Keys) // Use keys as headers
+                };
+
+                        foreach (dynamic student in studentDetailsResponse.Data)
+                        {
+                            var studentDict = (IDictionary<string, object>)student;
+                            var csvRow = string.Join(",", studentDict.Values.Select(value => value?.ToString().Replace(",", ";"))); // Replace commas in values
                             csvLines.Add(csvRow);
                         }
 
