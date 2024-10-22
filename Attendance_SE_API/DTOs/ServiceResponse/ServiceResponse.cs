@@ -1,4 +1,4 @@
-﻿namespace Attendance_API.ServiceResponse
+﻿namespace Attendance_SE_API.ServiceResponse
 {
     public class ServiceResponse<T>
     {

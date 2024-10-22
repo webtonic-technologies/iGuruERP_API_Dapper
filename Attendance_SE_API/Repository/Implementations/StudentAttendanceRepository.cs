@@ -1,14 +1,14 @@
-﻿using Attendance_API.Models;
-using Attendance_API.Repository.Interfaces;
-using Attendance_API.DTOs.Requests;
-using Attendance_API.DTOs.Response;
+﻿using Attendance_SE_API.Models;
+using Attendance_SE_API.Repository.Interfaces;
+using Attendance_SE_API.DTOs.Requests;
+using Attendance_SE_API.DTOs.Response;
 using Dapper;
 using System.Data;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Globalization;
 
-namespace Attendance_API.Repository.Implementations
+namespace Attendance_SE_API.Repository.Implementations
 {
     public class StudentAttendanceRepository : IStudentAttendanceRepository
     {

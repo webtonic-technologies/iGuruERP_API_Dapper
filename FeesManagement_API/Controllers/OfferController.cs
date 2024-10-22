@@ -39,16 +39,16 @@ namespace FeesManagement_API.Controllers
             return BadRequest(response);
         }
 
-        [HttpGet("GetOfferById/{offerID}")]
-        public async Task<IActionResult> GetOfferById(int offerID)
-        {
-            var response = await _offerService.GetOfferById(offerID);
-            if (response.Success)
-            {
-                return Ok(response);
-            }
-            return NotFound(response);
-        }
+        //[HttpGet("GetOfferById/{offerID}")]
+        //public async Task<IActionResult> GetOfferById(int offerID)
+        //{
+        //    var response = await _offerService.GetOfferById(offerID);
+        //    if (response.Success)
+        //    {
+        //        return Ok(response);
+        //    }
+        //    return NotFound(response);
+        //}
 
         [HttpPut("DeleteOffer/{offerID}")]
         public async Task<IActionResult> DeleteOffer(int offerID)

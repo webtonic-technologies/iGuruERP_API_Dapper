@@ -56,12 +56,19 @@ namespace FeesManagement_API.Repository.Implementations
 
         public async Task<IEnumerable<FeeHeadResponse>> GetAllFeeHead(GetAllFeeHeadRequest request)
         {
-            var query = @"SELECT FeeHeadID, FeeHead AS FeeHeadName, ShortName, RegTypeID, IsActive, InstituteID 
-                          FROM tblFeeHead
-                          WHERE InstituteID = @InstituteID
-                          ORDER BY FeeHeadID
-                          OFFSET @Offset ROWS
-                          FETCH NEXT @PageSize ROWS ONLY";
+            var query = @"SELECT fh.FeeHeadID, 
+                         fh.FeeHead AS FeeHeadName, 
+                         fh.ShortName, 
+                         fh.RegTypeID, 
+                         rt.RegType, 
+                         fh.IsActive, 
+                         fh.InstituteID 
+                  FROM tblFeeHead fh
+                  INNER JOIN tblFeeHeadingRegType rt ON fh.RegTypeID = rt.RegTypeID
+                  WHERE fh.InstituteID = @InstituteID and fh.IsActive = 1
+                  ORDER BY fh.FeeHeadID
+                  OFFSET @Offset ROWS
+                  FETCH NEXT @PageSize ROWS ONLY";
 
             var parameters = new
             {
@@ -73,14 +80,28 @@ namespace FeesManagement_API.Repository.Implementations
             return await _connection.QueryAsync<FeeHeadResponse>(query, parameters);
         }
 
+
         public async Task<FeeHeadResponse> GetFeeHeadById(int feeHeadId)
         {
-            var query = @"SELECT FeeHeadID, FeeHead AS FeeHeadName, ShortName, RegTypeID, IsActive, InstituteID 
-                          FROM tblFeeHead
-                          WHERE FeeHeadID = @FeeHeadID";
+            var query = @"
+        SELECT 
+            fh.FeeHeadID, 
+            fh.FeeHead AS FeeHeadName, 
+            fh.ShortName, 
+            fh.RegTypeID, 
+            rt.RegType, -- Fetch the RegType name
+            fh.IsActive, 
+            fh.InstituteID 
+        FROM 
+            tblFeeHead fh
+        LEFT JOIN 
+            tblFeeHeadingRegType rt ON fh.RegTypeID = rt.RegTypeID
+        WHERE 
+            fh.FeeHeadID = @FeeHeadID";
 
             return await _connection.QueryFirstOrDefaultAsync<FeeHeadResponse>(query, new { FeeHeadID = feeHeadId });
         }
+
 
         public async Task<int> DeleteFeeHead(int feeHeadId)
         {

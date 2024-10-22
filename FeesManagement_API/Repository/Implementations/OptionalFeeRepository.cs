@@ -92,7 +92,7 @@ namespace FeesManagement_API.Repository.Implementations
             var query = @"
                 SELECT OptionalFeeID, HeadName, ShortName, FeeAmount, InstituteID, IsActive
                 FROM tblOptionalFee
-                WHERE InstituteID = @InstituteID
+                WHERE InstituteID = @InstituteID and IsActive = 1
                 ORDER BY OptionalFeeID
                 OFFSET @PageSize * (@PageNumber - 1) ROWS
                 FETCH NEXT @PageSize ROWS ONLY";

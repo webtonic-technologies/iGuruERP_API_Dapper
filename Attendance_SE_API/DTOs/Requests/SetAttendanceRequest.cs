@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Attendance_API.DTOs.Requests
+namespace Attendance_SE_API.DTOs.Requests
 {
     public class SetAttendanceRequest
     {

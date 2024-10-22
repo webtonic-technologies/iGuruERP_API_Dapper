@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Attendance_API.Models
+namespace Attendance_SE_API.Models
 {
     public class AttendanceStatus
     {

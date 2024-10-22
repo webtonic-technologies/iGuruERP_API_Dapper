@@ -5,8 +5,8 @@
         public int OfferID { get; set; }
         public string OfferName { get; set; }
         public string AcademicYear { get; set; }
-        public DateTime OpeningDate { get; set; }
-        public DateTime ClosingDate { get; set; }
+        public string OpeningDate { get; set; } // Change to string to handle 'DD-MM-YYYY' format
+        public string ClosingDate { get; set; } // Change to string to handle 'DD-MM-YYYY' format
         public int StudentTypeID { get; set; }
         public bool isAmount { get; set; }
         public bool isPercentage { get; set; }
@@ -26,6 +26,8 @@
     public class OfferFeeTenureMappingRequest
     {
         public int FeeTenurityID { get; set; }
+        public int? STMTenurityID { get; set; } // Nullable to handle optional values
+        public int? FeeCollectionID { get; set; } // Nullable to handle optional values
     }
 
     public class OfferClassSectionMappingRequest

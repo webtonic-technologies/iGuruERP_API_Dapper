@@ -1,4 +1,4 @@
-﻿namespace Attendance_API.Models
+﻿namespace Attendance_SE_API.Models
 {
     public class StudentAttendance
     {

@@ -1,6 +1,6 @@
-﻿using Attendance_API.Models;
+﻿using Attendance_SE_API.Models;
 
-namespace Attendance_API.DTOs.Requests
+namespace Attendance_SE_API.DTOs.Requests
 {
     public class AddUpdateAttendanceStatusRequest
     {

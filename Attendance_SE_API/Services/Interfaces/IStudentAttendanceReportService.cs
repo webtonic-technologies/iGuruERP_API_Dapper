@@ -1,8 +1,8 @@
 ﻿using System.Threading.Tasks;
-using Attendance_API.DTOs.Requests;
-using Attendance_API.DTOs.Response;
+using Attendance_SE_API.DTOs.Requests;
+using Attendance_SE_API.DTOs.Response;
 
-namespace Attendance_API.Services.Interfaces
+namespace Attendance_SE_API.Services.Interfaces
 {
     public interface IStudentAttendanceReportService
     {
