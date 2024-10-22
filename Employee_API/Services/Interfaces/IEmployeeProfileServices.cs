@@ -35,5 +35,7 @@ namespace Employee_API.Services.Interfaces
         Task<IEnumerable<dynamic>> ParseExcelFile(IFormFile file, int instituteId);
         Task<ServiceResponse<IEnumerable<EmployeeExportHistoryDto>>> GetBulkHistoryByInstituteId(int instituteId);
         Task<ServiceResponse<IEnumerable<EmployeeExportHistoryDto>>> GetExportHistoryByInstituteId(int instituteId);
+        Task<ServiceResponse<byte[]>> DownloadSheetImport(int InstituteId);
+        Task<ServiceResponse<int>> UploadEmployeedata(IFormFile file, int instituteId);
     }
 }

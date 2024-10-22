@@ -3,6 +3,7 @@ using Employee_API.DTOs.ServiceResponse;
 using Employee_API.Models;
 using Employee_API.Repository.Interfaces;
 using Employee_API.Services.Interfaces;
+using Microsoft.SqlServer.Server;
 
 namespace Employee_API.Services.Implementations
 {
@@ -105,6 +106,11 @@ namespace Employee_API.Services.Implementations
         public async Task<ServiceResponse<List<ClassSectionSubjectResponse>>> ClassSectionSubjectsMappings(int InstituteId)
         {
             return await _employeeProfileRepository.ClassSectionSubjectsMappings(InstituteId);
+        }
+
+        public async Task<ServiceResponse<byte[]>> DownloadSheetImport(int InstituteId)
+        {
+            return await _employeeProfileRepository.DownloadSheetImport(InstituteId);
         }
 
         public async Task<ServiceResponse<byte[]>> ExcelDownload(ExcelDownloadRequest request, string format)
@@ -284,6 +290,12 @@ namespace Employee_API.Services.Implementations
             {
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
+        }
+
+        public async Task<ServiceResponse<int>> UploadEmployeedata(IFormFile file, int instituteId)
+        {
+
+            return await _employeeProfileRepository.UploadEmployeedata(file, instituteId);
         }
     }
 }
