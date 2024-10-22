@@ -35,5 +35,7 @@ namespace Employee_API.Repository.Interfaces
         Task<ServiceResponse<byte[]>> BulkUpdate(GetListRequest request);
         Task<ServiceResponse<string>> BulkUpdateEmployee(List<EmployeeProfile> request);
         Task<ServiceResponse<IEnumerable<CategoryWiseEmployeeColumns>>> GetEmployeeColumnsAsync();
+        Task<ServiceResponse<byte[]>> DownloadSheetImport(int InstituteId);
+        Task<ServiceResponse<int>> UploadEmployeedata(IFormFile file, int instituteId);
     }
 }
