@@ -139,11 +139,14 @@ namespace Student_API.Repository.Implementations
                 s.first_name + ' ' + s.last_name AS StudentName,
                 c.class_name AS ClassName,
                 sec.Section_name AS SectionName,    
-                FORMAT(ps.RequestedDateTime, 'dd-MM-yyyy hh:mm tt')  AS ApprovalDate,
+                FORMAT(ps.RequestedDateTime, 'dd-MM-yyyy hh:mm tt')  AS RequestedDateTime,
                 pt.parent_type AS ParentType,
                 p.first_name + ' ' + p.last_name AS ParentName,
                 ps.Reason AS Remark,
-                Status
+                Status,
+                ps.Reason,
+                g.Gender_Type AS GenderName,
+   FORMAT(ps.ModifiedDate, 'dd-MM-yyyy hh:mm tt') AS ModifiedDate
             INTO #PermissionSlipTempTable
             FROM tbl_PermissionSlip ps
             JOIN tbl_StudentMaster s ON ps.Student_Id = s.student_id
@@ -151,6 +154,7 @@ namespace Student_API.Repository.Implementations
             JOIN tbl_Class c ON s.class_id = c.class_id
             JOIN tbl_section sec ON s.section_id = sec.section_id
             JOIN tbl_ParentType pt ON p.parent_type_id = pt.parent_type_id
+            LEFT JOIN tbl_Gender g ON s.gender_id = g.Gender_Id
             WHERE ps.Institute_id = @Institute_id
               AND (s.class_id = @ClassId OR  @ClassId=0)
               AND (s.section_id = @SectionId OR  @SectionId =0)
@@ -160,7 +164,7 @@ namespace Student_API.Repository.Implementations
 
             SELECT * 
             FROM #PermissionSlipTempTable
-            ORDER BY ApprovalDate DESC
+            ORDER BY RequestedDateTime DESC
             OFFSET @Offset ROWS
             FETCH NEXT @PageSize ROWS ONLY;
 

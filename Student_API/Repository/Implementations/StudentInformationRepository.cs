@@ -1147,11 +1147,12 @@ namespace Student_API.Repository.Implementations
                 }
 
                 // Validate sort direction
-                obj.sortDirection = obj.sortDirection.ToUpper();
+                
                 if (!allowedSortDirections.Contains(obj.sortDirection))
                 {
                     obj.sortDirection = "ASC";  // Default to ASC if invalid
                 }
+                //obj.sortDirection = obj.sortDirection.ToUpper();
                 // Assume that Parent_Type_id = 1 means father
                 string sql = $@"
             -- Insert data into the temporary table using SELECT INTO

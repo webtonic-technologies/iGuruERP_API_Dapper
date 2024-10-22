@@ -7,6 +7,7 @@ namespace Student_API.Services.Interfaces
     {
         Task<ServiceResponse<List<StudentDocumentInfo>>> GetStudentDocuments(int Institute_id, int classId, int sectionId, string sortColumn, string sortDirection, int? pageSize, int? pageNumber);
         Task<ServiceResponse<bool>> UpdateStudentDocumentStatuses(List<DocumentUpdateRequest> updates);
+        Task<ServiceResponse<string>> ExportStudentDocuments(int Institute_id, int classId, int sectionId, string sortColumn, string sortDirection, int? pageSize, int? pageNumber, int exportFormat);
 
     }
 }
