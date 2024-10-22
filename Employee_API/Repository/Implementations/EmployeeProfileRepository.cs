@@ -257,7 +257,7 @@ namespace Employee_API.Repository.Implementations
                WHERE Employee_id = @Employee_id";
 
                     // Execute the query
-                     var connection = new SqlConnection(_connectionString);
+                    var connection = new SqlConnection(_connectionString);
                     int rowsAffected = await connection.ExecuteAsync(sql, new
                     {
                         request.Employee_id,
@@ -289,7 +289,14 @@ namespace Employee_API.Repository.Implementations
                     if (rowsAffected > 0)
                     {
                         var famdata = connection.QueryFirstOrDefault<dynamic>(@"select * from [tbl_EmployeeFamilyMaster] where Employee_id = @Employee_id", new { Employee_id = request.Employee_id });
-                        request.Family.Employee_family_id = famdata.Employee_family_id;
+                        if (famdata == null)
+                        {
+                            request.Family.Employee_family_id = 0;
+                        }
+                        else
+                        {
+                            request.Family.Employee_family_id = famdata.Employee_family_id;
+                        }
                         // Additional logic to handle related entities
                         request.Family.Employee_id = request.Employee_id;
                         var empfam = await AddUpdateEmployeeFamily(request.Family ??= new EmployeeFamily());
