@@ -19,4 +19,15 @@
         public bool isActive { get; set; } = true;
         public string Keyword { get; set; } 
     }
+
+    public class UpdateProfile
+    {
+        public int requestId { get; set; }
+        public int newStatus { get; set; }
+    }
+    public class AddProfileUpdate
+    {
+        public int studentId { get; set; }
+        public int status { get; set; }
+    }
 }

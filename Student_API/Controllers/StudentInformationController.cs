@@ -3,6 +3,7 @@ using Student_API.DTOs;
 using Student_API.DTOs.RequestDTO;
 using Student_API.Services.Implementations;
 using Student_API.Services.Interfaces;
+using System.Net.Mime;
 
 namespace Student_API.Controllers
 {
@@ -314,9 +315,25 @@ namespace Student_API.Controllers
             {
                 var filePath = response.Data;
                 var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+                string contentType;
+                string fileExtension = Path.GetExtension(filePath).ToLower();
+                switch (fileExtension)
+                {
+                    case ".xlsx": // Excel
+                        contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                        break;
+                    case ".csv": // CSV
+                        contentType = "text/csv";
+                        break;
+                    case ".pdf": // PDF
+                        contentType = "application/pdf";
+                        break;
+                    default:
+                        return BadRequest("Unsupported file format.");
+                }
 
-                // Return the Excel file for download
-                return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", Path.GetFileName(filePath));
+                // Return the file for download with the appropriate content type
+                return File(fileBytes, contentType, Path.GetFileName(filePath));
             }
             else
             {
