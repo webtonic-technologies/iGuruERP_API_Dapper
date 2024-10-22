@@ -2763,12 +2763,39 @@ WHERE
                 "Primary_Emergency_Contact_no", "Secondary_Emergency_Contact_no",
                 "bank_name", "account_name", "account_number", "IFSC_code", "Bank_address"
             };
+                    if (!employeeData.Any())
+                    {
 
-                    // Populate the main sheet with dynamic data
-                    PopulateSheetWithDynamicData(mainSheet, employeeData, columnOrder,
-                        genderLookup, departmentLookup, designationLookup,
-                        nationalityLookup, religionLookup, maritalStatusLookup,
-                        bloodGroupLookup);
+                        // Add column headers
+                        for (int i = 0; i < columnOrder.Length; i++)
+                        {
+                            var columnName = columnOrder[i];
+                            mainSheet.Cells[1, i + 1].Value = columnName;
+
+                            // Set the background color for mandatory columns
+                            if (new[] {"Employee_id", "First_Name", "Last_Name", "Gender_id", "Department_id", "Designation_id",
+             "mobile_number", "Date_of_Birth", "Date_of_Joining", "Religion_id",
+             "Nationality_id", "Employee_code_id", "aadhar_no" }.Contains(columnName))
+                            {
+                                mainSheet.Cells[1, i + 1].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                                mainSheet.Cells[1, i + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.Red);
+                            }
+                        }
+
+                    }
+                    else
+                    {
+                        // If employee data exists, populate the sheet with data and column headers
+                        PopulateSheetWithDynamicData(mainSheet, employeeData, columnOrder,
+                            genderLookup, departmentLookup, designationLookup,
+                            nationalityLookup, religionLookup, maritalStatusLookup,
+                            bloodGroupLookup);
+                    }
+                    //// Populate the main sheet with dynamic data
+                    //PopulateSheetWithDynamicData(mainSheet, employeeData, columnOrder,
+                    //    genderLookup, departmentLookup, designationLookup,
+                    //    nationalityLookup, religionLookup, maritalStatusLookup,
+                    //    bloodGroupLookup);
                     // Add master sheets
                     var genderSheet = package.Workbook.Worksheets.Add("Gender");
                     PopulateSheetWithDynamicData(genderSheet, genderData, new string[] { "Gender_id", "Gender_Type" });
