@@ -4,8 +4,12 @@
     {
         public int NumberSchemeID { get; set; }
         public int SchemeTypeID { get; set; }
-        public DateTime FromDate { get; set; }
-        public DateTime ToDate { get; set; }
+        public string SchemeType { get; set; } // New property for SchemeType
+        public DateTime FromDate { get; set; } // Added property for FromDate
+        public DateTime ToDate { get; set; } // Added property for ToDate
+        public string FromDateFormatted { get; set; } // Formatted date as string
+        public string ToDateFormatted { get; set; } // Formatted date as string
+        public string DateRange { get; set; } // Combined date range
         public string Prefix { get; set; }
         public string Suffix { get; set; }
         public int StartingNumber { get; set; }

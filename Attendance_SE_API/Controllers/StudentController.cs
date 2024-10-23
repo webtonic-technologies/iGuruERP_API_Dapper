@@ -1,11 +1,11 @@
-﻿using Attendance_API.DTOs.Requests;
-using Attendance_API.DTOs.Response;
-using Attendance_API.Services.Interfaces;
+﻿using Attendance_SE_API.DTOs.Requests;
+using Attendance_SE_API.DTOs.Response;
+using Attendance_SE_API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using System.Linq;
 
-namespace Attendance_API.Controllers
+namespace Attendance_SE_API.Controllers
 {
     [Route("iGuru/Student/Configuration")]
     [ApiController]

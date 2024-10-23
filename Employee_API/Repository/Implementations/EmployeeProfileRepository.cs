@@ -199,14 +199,27 @@ namespace Employee_API.Repository.Implementations
                     {
                         // Additional logic to handle related entities
                         request.Family.Employee_id = employeeId;
+                        request.Family.Employee_family_id = 0;
                         var empfam = await AddUpdateEmployeeFamily(request.Family ??= new EmployeeFamily());
-                        var empdoc = await AddUpdateEmployeeDocuments(request.EmployeeDocuments ??= [], employeeId);
-                        var empQua = await AddUpdateEmployeeQualification(request.EmployeeQualifications ??= [], employeeId);
-                        var empwork = await AddUpdateEmployeeWorkExp(request.EmployeeWorkExperiences ??= [], employeeId);
+                        if (request.EmployeeDocuments != null)
+                        {
+                            var empdoc = await AddUpdateEmployeeDocuments(request.EmployeeDocuments ??= [], request.Employee_id);
+                        }
+                        if (request.EmployeeQualifications != null)
+                        {
+                            var empQua = await AddUpdateEmployeeQualification(request.EmployeeQualifications ??= [], request.Employee_id);
+                        }
+                        if (request.EmployeeWorkExperiences != null)
+                        {
+                            var empwork = await AddUpdateEmployeeWorkExp(request.EmployeeWorkExperiences ??= [], request.Employee_id);
+                        }
                         var empbank = await AddUpdateEmployeeBankDetails(request.EmployeeBankDetails ??= [], employeeId);
                         var empadd = await AddUpdateEmployeeAddressDetails(request.EmployeeAddressDetails, employeeId);
-                        request.EmployeeStaffMappingRequest.EmployeeId = employeeId;
-                        var mapp = await AddUpdateEmployeeStaffMapping(request.EmployeeStaffMappingRequest);
+                        if (request.EmployeeStaffMappingRequest != null)
+                        {
+                            request.EmployeeStaffMappingRequest.EmployeeId = request.Employee_id;
+                            var mapp = await AddUpdateEmployeeStaffMapping(request.EmployeeStaffMappingRequest);
+                        }
                         var userlog = await CreateUserLoginInfo(employeeId, 1, request.Institute_id);
                         return new ServiceResponse<int>(true, "Operation successful", employeeId, 200);
                     }
@@ -244,7 +257,7 @@ namespace Employee_API.Repository.Implementations
                WHERE Employee_id = @Employee_id";
 
                     // Execute the query
-                     var connection = new SqlConnection(_connectionString);
+                    var connection = new SqlConnection(_connectionString);
                     int rowsAffected = await connection.ExecuteAsync(sql, new
                     {
                         request.Employee_id,
@@ -275,12 +288,30 @@ namespace Employee_API.Repository.Implementations
 
                     if (rowsAffected > 0)
                     {
+                        var famdata = connection.QueryFirstOrDefault<dynamic>(@"select * from [tbl_EmployeeFamilyMaster] where Employee_id = @Employee_id", new { Employee_id = request.Employee_id });
+                        if (famdata == null)
+                        {
+                            request.Family.Employee_family_id = 0;
+                        }
+                        else
+                        {
+                            request.Family.Employee_family_id = famdata.Employee_family_id;
+                        }
                         // Additional logic to handle related entities
                         request.Family.Employee_id = request.Employee_id;
                         var empfam = await AddUpdateEmployeeFamily(request.Family ??= new EmployeeFamily());
-                        var empdoc = await AddUpdateEmployeeDocuments(request.EmployeeDocuments ??= [], request.Employee_id);
-                        var empQua = await AddUpdateEmployeeQualification(request.EmployeeQualifications ??= [], request.Employee_id);
-                        var empwork = await AddUpdateEmployeeWorkExp(request.EmployeeWorkExperiences ??= [], request.Employee_id);
+                        if (request.EmployeeDocuments != null)
+                        {
+                            var empdoc = await AddUpdateEmployeeDocuments(request.EmployeeDocuments ??= [], request.Employee_id);
+                        }
+                        if (request.EmployeeQualifications != null)
+                        {
+                            var empQua = await AddUpdateEmployeeQualification(request.EmployeeQualifications ??= [], request.Employee_id);
+                        }
+                        if (request.EmployeeWorkExperiences != null)
+                        {
+                            var empwork = await AddUpdateEmployeeWorkExp(request.EmployeeWorkExperiences ??= [], request.Employee_id);
+                        }
                         var empbank = await AddUpdateEmployeeBankDetails(request.EmployeeBankDetails ??= [], request.Employee_id);
                         var empadd = await AddUpdateEmployeeAddressDetails(request.EmployeeAddressDetails ??= [], request.Employee_id);
                         if (request.EmployeeStaffMappingRequest != null)
@@ -2739,12 +2770,39 @@ WHERE
                 "Primary_Emergency_Contact_no", "Secondary_Emergency_Contact_no",
                 "bank_name", "account_name", "account_number", "IFSC_code", "Bank_address"
             };
+                    if (!employeeData.Any())
+                    {
 
-                    // Populate the main sheet with dynamic data
-                    PopulateSheetWithDynamicData(mainSheet, employeeData, columnOrder,
-                        genderLookup, departmentLookup, designationLookup,
-                        nationalityLookup, religionLookup, maritalStatusLookup,
-                        bloodGroupLookup);
+                        // Add column headers
+                        for (int i = 0; i < columnOrder.Length; i++)
+                        {
+                            var columnName = columnOrder[i];
+                            mainSheet.Cells[1, i + 1].Value = columnName;
+
+                            // Set the background color for mandatory columns
+                            if (new[] {"Employee_id", "First_Name", "Last_Name", "Gender_id", "Department_id", "Designation_id",
+             "mobile_number", "Date_of_Birth", "Date_of_Joining", "Religion_id",
+             "Nationality_id", "Employee_code_id", "aadhar_no" }.Contains(columnName))
+                            {
+                                mainSheet.Cells[1, i + 1].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                                mainSheet.Cells[1, i + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.Red);
+                            }
+                        }
+
+                    }
+                    else
+                    {
+                        // If employee data exists, populate the sheet with data and column headers
+                        PopulateSheetWithDynamicData(mainSheet, employeeData, columnOrder,
+                            genderLookup, departmentLookup, designationLookup,
+                            nationalityLookup, religionLookup, maritalStatusLookup,
+                            bloodGroupLookup);
+                    }
+                    //// Populate the main sheet with dynamic data
+                    //PopulateSheetWithDynamicData(mainSheet, employeeData, columnOrder,
+                    //    genderLookup, departmentLookup, designationLookup,
+                    //    nationalityLookup, religionLookup, maritalStatusLookup,
+                    //    bloodGroupLookup);
                     // Add master sheets
                     var genderSheet = package.Workbook.Worksheets.Add("Gender");
                     PopulateSheetWithDynamicData(genderSheet, genderData, new string[] { "Gender_id", "Gender_Type" });

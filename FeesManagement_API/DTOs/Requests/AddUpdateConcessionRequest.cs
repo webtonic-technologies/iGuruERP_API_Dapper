@@ -14,6 +14,9 @@
     {
         public int ConcessionRulesID { get; set; }
         public int FeeHeadID { get; set; }
+        public int FeeTenurityID { get; set; }
+        public int STMTenurityID { get; set; }
+        public int FeeCollectionID { get; set; }
         public int Amount { get; set; }
     }
 }

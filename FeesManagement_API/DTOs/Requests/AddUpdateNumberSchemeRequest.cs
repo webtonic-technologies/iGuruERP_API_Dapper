@@ -4,8 +4,8 @@
     {
         public int NumberSchemeID { get; set; }
         public int SchemeTypeID { get; set; }
-        public DateTime FromDate { get; set; }
-        public DateTime ToDate { get; set; }
+        public string FromDate { get; set; } // Changed to string to store formatted date
+        public string ToDate { get; set; } // Changed to string to store formatted date
         public string Prefix { get; set; }
         public string Suffix { get; set; }
         public int StartingNumber { get; set; }

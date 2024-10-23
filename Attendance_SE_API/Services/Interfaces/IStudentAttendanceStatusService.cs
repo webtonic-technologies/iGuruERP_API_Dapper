@@ -1,8 +1,8 @@
-﻿using Attendance_API.DTOs.Requests;
-using Attendance_API.Models;
-using Attendance_API.ServiceResponse;
+﻿using Attendance_SE_API.DTOs.Requests;
+using Attendance_SE_API.Models;
+using Attendance_SE_API.ServiceResponse;
 
-namespace Attendance_API.Services.Interfaces
+namespace Attendance_SE_API.Services.Interfaces
 {
     public interface IStudentAttendanceStatusService
     {

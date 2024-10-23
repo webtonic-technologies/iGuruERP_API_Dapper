@@ -4,12 +4,12 @@ using System.Data;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
-using Attendance_API.DTOs.Requests;
-using Attendance_API.DTOs.Response;
-using Attendance_API.Repository.Interfaces;
+using Attendance_SE_API.DTOs.Requests;
+using Attendance_SE_API.DTOs.Response;
+using Attendance_SE_API.Repository.Interfaces;
 using Dapper;
 
-namespace Attendance_API.Repository.Implementations
+namespace Attendance_SE_API.Repository.Implementations
 {
     public class StudentAttendanceReportRepository : IStudentAttendanceReportRepository
     {

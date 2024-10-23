@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Attendance_API.DTOs.Response
+namespace Attendance_SE_API.DTOs.Response
 {
     public class StudentAttendanceReportResponse
     {

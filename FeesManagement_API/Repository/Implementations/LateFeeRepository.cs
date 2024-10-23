@@ -103,29 +103,29 @@ namespace FeesManagement_API.Repository.Implementations
         public async Task<IEnumerable<LateFeeResponse>> GetAllLateFee(GetAllLateFeeRequest request)
         {
             var query = @"
-                SELECT 
-                    lf.LateFeeRuleID,
-                    fh.FeeHeadID,
-                    fh.FeeHead AS FeeHead,
-                    ft.FeeTenurityID,
-                    ft.FeeTenurityType AS FeeTenurity,
-                    lf.DueDate,
-                    lf.InstituteID,
-                    fr.FeeRulesID,
-                    fr.MinDays,
-                    fr.MaxDays,
-                    fr.LateFee,
-                    fr.PerDay,
-                    fr.TotalLateFee,
-                    fr.ConsolidatedAmount
-                FROM tblLateFeeRuleSetup lf
-                LEFT JOIN tblFeeHead fh ON lf.FeeHeadID = fh.FeeHeadID
-                LEFT JOIN tblFeeTenurityMaster ft ON lf.FeeTenurityID = ft.FeeTenurityID
-                LEFT JOIN tblFeesRules fr ON lf.LateFeeRuleID = fr.LateFeeRuleID
-                WHERE lf.InstituteID = @InstituteID
-                ORDER BY lf.LateFeeRuleID
-                OFFSET @PageSize * (@PageNumber - 1) ROWS
-                FETCH NEXT @PageSize ROWS ONLY";
+        SELECT 
+            lf.LateFeeRuleID,
+            fh.FeeHeadID,
+            fh.FeeHead AS FeeHead,
+            ft.FeeTenurityID,
+            ft.FeeTenurityType AS FeeTenurity,
+            lf.DueDate,
+            lf.InstituteID,
+            fr.FeeRulesID,
+            fr.MinDays,
+            fr.MaxDays,
+            fr.LateFee,
+            fr.PerDay,
+            fr.TotalLateFee,
+            fr.ConsolidatedAmount
+        FROM tblLateFeeRuleSetup lf
+        LEFT JOIN tblFeeHead fh ON lf.FeeHeadID = fh.FeeHeadID
+        LEFT JOIN tblFeeTenurityMaster ft ON lf.FeeTenurityID = ft.FeeTenurityID
+        LEFT JOIN tblFeesRules fr ON lf.LateFeeRuleID = fr.LateFeeRuleID
+        WHERE lf.InstituteID = @InstituteID AND lf.IsActive = 1
+        ORDER BY lf.LateFeeRuleID
+        OFFSET @PageSize * (@PageNumber - 1) ROWS
+        FETCH NEXT @PageSize ROWS ONLY";
 
             var lookup = new Dictionary<int, LateFeeResponse>();
 
@@ -139,7 +139,10 @@ namespace FeesManagement_API.Repository.Implementations
                         lateFee.FeesRules = new List<FeesRuleResponse>();
                         lookup.Add(lf.LateFeeRuleID, lateFee);
                     }
-                    lateFee.FeesRules.Add(fr);
+                    if (fr != null)
+                    {
+                        lateFee.FeesRules.Add(fr);
+                    }
                     return lateFee;
                 },
                 new { request.InstituteID, request.PageNumber, request.PageSize },
@@ -148,14 +151,74 @@ namespace FeesManagement_API.Repository.Implementations
             return lookup.Values;
         }
 
+        //public async Task<LateFeeResponse> GetLateFeeById(int lateFeeRuleID)
+        //{
+        //    var query = @"SELECT LateFeeRuleID, FeeHeadID, FeeTenurityID, DueDate, InstituteID 
+        //                  FROM tblLateFeeRuleSetup
+        //                  WHERE LateFeeRuleID = @LateFeeRuleID";
+
+        //    return await _connection.QueryFirstOrDefaultAsync<LateFeeResponse>(query, new { LateFeeRuleID = lateFeeRuleID });
+        //}
+
         public async Task<LateFeeResponse> GetLateFeeById(int lateFeeRuleID)
         {
-            var query = @"SELECT LateFeeRuleID, FeeHeadID, FeeTenurityID, DueDate, InstituteID 
-                          FROM tblLateFeeRuleSetup
-                          WHERE LateFeeRuleID = @LateFeeRuleID";
+            var query = @"
+        SELECT 
+            lf.LateFeeRuleID,
+            fh.FeeHeadID,
+            fh.FeeHead AS FeeHead,
+            ft.FeeTenurityID,
+            ft.FeeTenurityType AS FeeTenurity,
+            lf.DueDate,
+            lf.InstituteID,
+            fr.FeeRulesID,
+            fr.MinDays,
+            fr.MaxDays,
+            fr.LateFee,
+            fr.PerDay,
+            fr.TotalLateFee,
+            fr.ConsolidatedAmount,
+            c.class_name AS ClassName,
+            s.section_name AS SectionName
+        FROM tblLateFeeRuleSetup lf
+        LEFT JOIN tblFeeHead fh ON lf.FeeHeadID = fh.FeeHeadID
+        LEFT JOIN tblFeeTenurityMaster ft ON lf.FeeTenurityID = ft.FeeTenurityID
+        LEFT JOIN tblFeesRules fr ON lf.LateFeeRuleID = fr.LateFeeRuleID
+        LEFT JOIN tblLateFeeClassSectionMapping fcs ON lf.LateFeeRuleID = fcs.LateFeeRuleID
+        LEFT JOIN tbl_Class c ON fcs.ClassID = c.class_id
+        LEFT JOIN tbl_Section s ON fcs.SectionID = s.section_id
+        WHERE lf.LateFeeRuleID = @LateFeeRuleID";
 
-            return await _connection.QueryFirstOrDefaultAsync<LateFeeResponse>(query, new { LateFeeRuleID = lateFeeRuleID });
+            var lookup = new Dictionary<int, LateFeeResponse>();
+
+            var result = await _connection.QueryAsync<LateFeeResponse, FeesRuleResponse, ClassSectionResponse, LateFeeResponse>(
+                query,
+                (lf, fr, classSection) =>
+                {
+                    if (!lookup.TryGetValue(lf.LateFeeRuleID, out var lateFee))
+                    {
+                        lateFee = lf;
+                        lateFee.FeesRules = new List<FeesRuleResponse>();
+                        lateFee.ClassSections = new List<ClassSectionResponse>();
+                        lookup.Add(lf.LateFeeRuleID, lateFee);
+                    }
+                    if (fr != null)
+                    {
+                        lateFee.FeesRules.Add(fr);
+                    }
+                    if (classSection != null)
+                    {
+                        lateFee.ClassSections.Add(classSection);
+                    }
+                    return lateFee;
+                },
+                new { LateFeeRuleID = lateFeeRuleID },
+                splitOn: "FeeRulesID, ClassName"
+            );
+
+            return lookup.Values.FirstOrDefault();
         }
+
 
         public async Task<int> UpdateLateFeeStatus(int lateFeeRuleID)
         {

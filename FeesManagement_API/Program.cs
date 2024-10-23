@@ -41,6 +41,16 @@ builder.Services.AddScoped<INumberSchemeRepository, NumberSchemeRepository>();
 builder.Services.AddScoped<IOfferService, OfferService>();
 builder.Services.AddScoped<IOfferRepository, OfferRepository>();
 
+builder.Services.AddScoped<IFeeStructureService, FeeStructureService>();
+builder.Services.AddScoped<IFeeStructureRepository, FeeStructureRepository>();
+
+builder.Services.AddScoped<IStudentFeeService, StudentFeeService>();
+builder.Services.AddScoped<IStudentFeeRepository, StudentFeeRepository>();
+
+builder.Services.AddScoped<IConcessionMappingService, ConcessionMappingService>();
+builder.Services.AddScoped<IConcessionMappingRepository, ConcessionMappingRepository>();
+
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
