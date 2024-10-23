@@ -1851,7 +1851,7 @@ FROM
                 string username = null;
                 dynamic userDetails = null;
                 string institutesql = @"select Institute_name from tbl_InstituteDetails where Institute_id = @Institute_id;";
-                var instituteName = await _connection.QueryFirstOrDefaultAsync<string>(institutesql, new { Institute_id = instituteId });
+                var instituteName = await connection.QueryFirstOrDefaultAsync<string>(institutesql, new { Institute_id = instituteId });
 
                 // Fetch user details based on the UserType
                 if (userType == 1) // Employee
