@@ -201,7 +201,7 @@ namespace Student_API.Repository.Implementations
                         SELECT CAST(SCOPE_IDENTITY() as int);";
 
                             studentId = await _connection.ExecuteScalarAsync<int>(insertStudentSql, request, transaction);
-                            var userlog = await CreateUserLoginInfo(studentId, 2, request.Institute_id);
+                          
                             if (studentId <= 0)
                             {
                                 transaction.Rollback();
@@ -613,6 +613,8 @@ namespace Student_API.Repository.Implementations
                         }
 
                         transaction.Commit();
+
+                        var userlog = await CreateUserLoginInfo(studentId, 2, request.Institute_id);
                         return new ServiceResponse<int>(true, "Student data saved successfully.", studentId, 200);
                     }
                     catch (Exception ex)
