@@ -66,9 +66,9 @@ namespace Student_API.DTOs
         public int? gender_id { get; set; }
         public string Gender_Type { get; set; }
         public int? class_id { get; set; }
-        public string class_course { get; set; }
+        public string class_name { get; set; }
         public int? section_id { get; set; }
-        public string Section { get; set; }
+        public string section_name { get; set; }
         public string Admission_Number { get; set; }
         public string Roll_Number { get; set; }
         public string Date_of_Joining { get; set; }
@@ -186,5 +186,95 @@ namespace Student_API.DTOs
         public string Student_Name { get; set; }
         [Range(0, 99)]
         public int Student_Age { get; set; }
+
+        // Father's Details
+        public string Father_First_Name { get; set; }
+        public string Father_Middle_Name { get; set; }
+        public string Father_Last_Name { get; set; }
+        public string Father_Bank_Account_no { get; set; }
+        public string Father_Bank_IFSC_Code { get; set; }
+        public string Father_Family_Ration_Card_Type { get; set; }
+        public string Father_Family_Ration_Card_no { get; set; }
+        public string Father_Mobile_Number { get; set; }
+        public string Father_Date_of_Birth { get; set; }
+        public string Father_Aadhar_no { get; set; }
+        public string Father_PAN_card_no { get; set; }
+        public string Father_Residential_Address { get; set; }
+        public string Father_Occupation_Type { get; set; }
+        public string Father_Designation { get; set; }
+        public string Father_Name_of_the_Employer { get; set; }
+        public string Father_Office_no { get; set; }
+        public string Father_Email_id { get; set; }
+        public decimal Father_Annual_Income { get; set; }
+        public string Father_File_Name { get; set; }
+
+        // Mother's Details
+        public string Mother_First_Name { get; set; }
+        public string Mother_Middle_Name { get; set; }
+        public string Mother_Last_Name { get; set; }
+        public string Mother_Bank_Account_no { get; set; }
+        public string Mother_Bank_IFSC_Code { get; set; }
+        public string Mother_Family_Ration_Card_Type { get; set; }
+        public string Mother_Family_Ration_Card_no { get; set; }
+        public string Mother_Mobile_Number { get; set; }
+        public string Mother_Date_of_Birth { get; set; }
+        public string Mother_Aadhar_no { get; set; }
+        public string Mother_PAN_card_no { get; set; }
+        public string Mother_Residential_Address { get; set; }
+        public string Mother_Occupation_Type { get; set; }
+        public string Mother_Designation { get; set; }
+        public string Mother_Name_of_the_Employer { get; set; }
+        public string Mother_Office_no { get; set; }
+        public string Mother_Email_id { get; set; }
+        public decimal Mother_Annual_Income { get; set; }
+        public string Mother_File_Name { get; set; }
+
+        // Guardian's Details
+        public string Guardian_First_Name { get; set; }
+        public string Guardian_Middle_Name { get; set; }
+        public string Guardian_Last_Name { get; set; }
+        public string Guardian_Bank_Account_no { get; set; }
+        public string Guardian_Bank_IFSC_Code { get; set; }
+        public string Guardian_Family_Ration_Card_Type { get; set; }
+        public string Guardian_Family_Ration_Card_no { get; set; }
+        public string Guardian_Mobile_Number { get; set; }
+        public string Guardian_Date_of_Birth { get; set; }
+        public string Guardian_Aadhar_no { get; set; }
+        public string Guardian_PAN_card_no { get; set; }
+        public string Guardian_Residential_Address { get; set; }
+        public string Guardian_Occupation_Type { get; set; }
+        public string Guardian_Designation { get; set; }
+        public string Guardian_Name_of_the_Employer { get; set; }
+        public string Guardian_Office_no { get; set; }
+        public string Guardian_Email_id { get; set; }
+        public decimal Guardian_Annual_Income { get; set; }
+        public string Guardian_File_Name { get; set; }
+
+        // Father's Office Info
+        public string Father_Office_Building_no { get; set; }
+        public string Father_Street { get; set; }
+        public string Father_Area { get; set; }
+        public string Father_Pincode { get; set; }
+        public string Father_City { get; set; }
+        public string Father_State { get; set; }
+
+        // Mother's Office Info
+        public string Mother_Office_Building_no { get; set; }
+        public string Mother_Street { get; set; }
+        public string Mother_Area { get; set; }
+        public string Mother_Pincode { get; set; }
+        public string Mother_City { get; set; }
+        public string Mother_State { get; set; }
+
+        // Guardian's Office Info
+        public string Guardian_Office_Building_no { get; set; }
+        public string Guardian_Street { get; set; }
+        public string Guardian_Area { get; set; }
+        public string Guardian_Pincode { get; set; }
+        public string Guardian_City { get; set; }
+        public string Guardian_State { get; set; }
+
+        // Sibling Details
+        public string SiblingDetails { get; set; }
     }
 }

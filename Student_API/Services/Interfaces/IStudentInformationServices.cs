@@ -23,6 +23,6 @@ namespace Student_API.Services.Interfaces
         Task<ServiceResponse<string>> GetAllStudentDetailsAsExcel(getStudentRequest obj);
         Task<ServiceResponse<int>> AddUpdateStudentSetting(StudentSettingDTO studentSettingDto);
         Task<ServiceResponse<List<StudentSettingDTO>>> GetStudentSettingByInstituteId(int instituteId);
-        Task<ServiceResponse<List<StudentAllInformationDTO>>> GetAllStudentDetailsData1(GetStudentRequestModel obj);
+        Task<ServiceResponse<List<dynamic>>> GetAllStudentDetailsData1(GetStudentRequestModel obj);
     }
 }
