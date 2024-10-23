@@ -1831,50 +1831,45 @@ FROM
             try
             {
                 var connection = new SqlConnection(_connectionString);
-                connection.Open();
+                await connection.OpenAsync(); // Ensure async method for opening
+
                 // Define common password
                 string commonPassword = "iGuru@1234";
 
                 // SQL queries for fetching user details based on UserType
                 string employeeSql = @"
-        SELECT TOP (1) [Employee_id], [First_Name], [Last_Name], [mobile_number]
-        FROM [tbl_EmployeeProfileMaster]
-        WHERE [Employee_id] = @UserId";
+            SELECT TOP (1) [Employee_id], [First_Name], [Last_Name]
+            FROM [tbl_EmployeeProfileMaster]
+            WHERE [Employee_id] = @UserId";
 
                 string studentSql = @"
-        SELECT TOP (1) [student_id], [First_Name], [Last_Name], [Admission_Number]
-        FROM [tbl_StudentMaster]
-        WHERE [student_id] = @UserId";
+            SELECT TOP (1) [student_id], [First_Name], [Last_Name]
+            FROM [tbl_StudentMaster]
+            WHERE [student_id] = @UserId";
 
                 // Initialize variables
                 string username = null;
                 dynamic userDetails = null;
+                string institutesql = @"select Institute_name from tbl_InstituteDetails where Institute_id = @Institute_id;";
+                var instituteName = await _connection.QueryFirstOrDefaultAsync<string>(institutesql, new { Institute_id = instituteId });
 
                 // Fetch user details based on the UserType
                 if (userType == 1) // Employee
                 {
-                    userDetails = await _connection.QueryFirstOrDefaultAsync<dynamic>(employeeSql, new { UserId = userId });
+                    userDetails = await connection.QueryFirstOrDefaultAsync<dynamic>(employeeSql, new { UserId = userId });
                     if (userDetails != null)
                     {
-                        // Construct username for employee
-                        string firstName = userDetails.First_Name;
-                        string lastName = userDetails.Last_Name;
-                        string phoneNumber = userDetails.mobile_number;
-
-                        username = $"{firstName.Substring(0, 3)}{lastName.Substring(0, 3)}{phoneNumber.Substring(phoneNumber.Length - 4)}";
+                        // Generate username for employee
+                        username = await GenerateUsername(instituteName, instituteId, "E", userId);
                     }
                 }
                 else if (userType == 2) // Student
                 {
-                    userDetails = await _connection.QueryFirstOrDefaultAsync<dynamic>(studentSql, new { UserId = userId });
+                    userDetails = await connection.QueryFirstOrDefaultAsync<dynamic>(studentSql, new { UserId = userId });
                     if (userDetails != null)
                     {
-                        // Construct username for student
-                        string firstName = userDetails.First_Name;
-                        string lastName = userDetails.Last_Name;
-                        string admissionNumber = userDetails.Admission_Number;
-
-                        username = $"{firstName.Substring(0, 3)}{lastName.Substring(0, 3)}{admissionNumber.Substring(admissionNumber.Length - 4)}";
+                        // Generate username for student
+                        username = await GenerateUsername(instituteName, instituteId, "S", userId);
                     }
                 }
 
@@ -1885,12 +1880,12 @@ FROM
 
                     // SQL query to insert login information
                     string insertLoginSql = @"
-            INSERT INTO [tblLoginInformationMaster] 
-            ([UserId], [UserType], [UserName], [Password], [InstituteId], [UserActivity])
-            VALUES (@UserId, @UserType, @UserName, @Password, @InstituteId, NULL)";
+                INSERT INTO [tblLoginInformationMaster] 
+                ([UserId], [UserType], [UserName], [Password], [InstituteId], [UserActivity])
+                VALUES (@UserId, @UserType, @UserName, @Password, @InstituteId, NULL)";
 
                     // Insert login information into the database
-                    await _connection.ExecuteAsync(insertLoginSql, new
+                    await connection.ExecuteAsync(insertLoginSql, new
                     {
                         UserId = userId,
                         UserType = userType,
@@ -1910,6 +1905,58 @@ FROM
                 Console.WriteLine($"Error creating user login info: {ex.Message}");
                 return false;
             }
+        }
+        private async Task<string> GenerateUsername(string instituteName, int instituteId, string roleIdentifier, int userId)
+        {
+            // Step 1: Get the first four letters of the institute name
+            string institutePrefix = GetInstitutePrefix(instituteName);
+
+            // Step 2: Concatenate the Institute ID and Role Identifier
+            string baseUsername = $"{institutePrefix}{instituteId}{roleIdentifier}";
+
+            // Step 3: Append the sequence number (dynamic based on user type and role)
+            int sequenceNumber = await GetNextSequenceNumber(instituteId, roleIdentifier);
+
+            // Return the generated username
+            return $"{baseUsername}{sequenceNumber}";
+        }
+        private string GetInstitutePrefix(string instituteName)
+        {
+            // Logic to extract the first four meaningful letters from the institute name
+            var words = instituteName.Split(' ');
+            string prefix = string.Empty;
+
+            foreach (var word in words)
+            {
+                if (!string.IsNullOrEmpty(word) && prefix.Length < 4)
+                {
+                    prefix += word[0].ToString().ToUpper();
+                }
+            }
+
+            // Ensure the prefix is exactly 4 characters
+            return prefix.PadRight(4, 'X').Substring(0, 4);
+        }
+        private async Task<int> GetNextSequenceNumber(int instituteId, string roleIdentifier)
+        {
+            var connection = new SqlConnection(_connectionString);
+
+            // SQL query to get the current max sequence number for the given institute and role
+            string sequenceSql = @"
+        SELECT ISNULL(MAX(CAST(SUBSTRING(UserName, LEN(UserName) - LEN(@RoleIdentifier) + 1, LEN(@RoleIdentifier)) AS INT)), 0)
+        FROM [tblLoginInformationMaster]
+        WHERE InstituteId = @InstituteId AND UserName LIKE @Prefix + '%'";
+
+            string prefix = $"{roleIdentifier}{instituteId}";
+
+            int currentMaxSequence = await connection.ExecuteScalarAsync<int>(sequenceSql, new
+            {
+                InstituteId = instituteId,
+                RoleIdentifier = roleIdentifier,
+                Prefix = prefix
+            });
+
+            return currentMaxSequence + 1; // Return the next sequence number
         }
         private async Task<string> EnsureUniqueUsername(string baseUsername)
         {
