@@ -27,8 +27,8 @@ namespace Student_API.Repository.Implementations
         SELECT stu.Admission_Number AS AdmissionNumber,
                stu.student_id AS StudentId,
                stu.First_Name + ' ' + ISNULL(stu.Middle_Name, '') + ' ' + stu.Last_Name AS Name,
-               cls.ClassName AS Class,
-               sec.SectionName AS Section,
+               cls.class_name AS Class,
+               sec.section_name AS Section,
                stu.LoginId,
                stu.Password,
                CASE WHEN stu.gender_id = 1 THEN 'Male' 
@@ -101,8 +101,8 @@ namespace Student_API.Repository.Implementations
         SELECT DISTINCT stu.Admission_Number AS AdmissionNumber,
                stu.student_id AS StudentId,
                stu.First_Name + ' ' + ISNULL(stu.Middle_Name, '') + ' ' + stu.Last_Name AS Name,
-               cls.ClassName AS Class,
-               sec.SectionName AS Section,
+               cls.class_name AS Class,
+               sec.section_name AS Section,
                stu.MobileNumber
         FROM tbl_StudentMaster stu
         LEFT JOIN tbl_Class cls ON stu.class_id = cls.class_id
@@ -167,8 +167,8 @@ namespace Student_API.Repository.Implementations
         SELECT stu.Admission_Number AS AdmissionNumber,
                stu.student_id AS StudentId,
                stu.First_Name + ' ' + ISNULL(stu.Middle_Name, '') + ' ' + stu.Last_Name AS Name,
-               cls.ClassName AS Class,
-               sec.SectionName AS Section,
+               cls.class_name AS Class,
+               sec.section_name AS Section,
                stu.MobileNumber AS Mobile,
                logs.LastActionTaken,
                logs.AppVersion
@@ -244,8 +244,8 @@ namespace Student_API.Repository.Implementations
         SELECT stu.Admission_Number AS AdmissionNumber,
                stu.student_id AS StudentId,
                stu.First_Name + ' ' + ISNULL(stu.Middle_Name, '') + ' ' + stu.Last_Name AS Name,
-               cls.ClassName AS Class,
-               sec.SectionName AS Section,
+               cls.class_name AS Class,
+               sec.section_name AS Section,
                stu.Mobile AS Mobile,
                logs.LoginTime AS LastActionTaken,  -- Latest login action
                logs.appVersion AS AppVersion
@@ -327,8 +327,8 @@ namespace Student_API.Repository.Implementations
 SELECT stu.Admission_Number AS AdmissionNumber,
        stu.student_id AS StudentId,
        stu.First_Name + ' ' + ISNULL(stu.Middle_Name, '') + ' ' + stu.Last_Name AS Name,
-       cls.ClassName AS Class,
-       sec.SectionName AS Section,
+       cls.class_name AS Class,
+       sec.section_name AS Section,
        login.LoginId AS LoginId,  -- Added login join
        login.Password AS Password, -- Added login join
        gen.Gender_Type AS Gender,
@@ -411,8 +411,8 @@ OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;
     SELECT stu.Admission_Number AS AdmissionNumber,
            stu.student_id AS StudentId,
            stu.First_Name + ' ' + ISNULL(stu.Middle_Name, '') + ' ' + stu.Last_Name AS Name,
-           cls.ClassName AS Class,
-           sec.SectionName AS Section,
+           cls.class_name AS Class,
+           sec.section_name AS Section,
            stu.MobileNumber AS MobileNumber
     FROM tbl_StudentMaster stu
     LEFT JOIN tbl_Class cls ON stu.class_id = cls.ClassId
