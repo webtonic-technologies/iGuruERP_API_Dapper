@@ -50,23 +50,25 @@ namespace Student_API.Services.Implementations
             {
                 var worksheet = package.Workbook.Worksheets.Add("Sheet1");
 
-                // Add headers dynamically
+                // Add headers dynamically, with Serial Number as the first column
+                worksheet.Cells[1, 1].Value = "Serial Number";
                 for (int i = 0; i < headers.Count; i++)
                 {
-                    worksheet.Cells[1, i + 1].Value = headers[i];
+                    worksheet.Cells[1, i + 2].Value = headers[i];
                 }
 
-                // Add data rows dynamically
+                // Add data rows dynamically, with Serial Number as the first column
                 var rowIndex = 2;
-
                 if (data != null)
                 {
+                    int serialNumber = 1;
                     foreach (var item in data)
                     {
+                        worksheet.Cells[rowIndex, 1].Value = serialNumber++; // Serial Number
                         var properties = typeof(T).GetProperties();
                         for (int i = 0; i < properties.Length; i++)
                         {
-                            worksheet.Cells[rowIndex, i + 1].Value = properties[i].GetValue(item);
+                            worksheet.Cells[rowIndex, i + 2].Value = properties[i].GetValue(item);
                         }
                         rowIndex++;
                     }
@@ -82,22 +84,25 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<string>(true, "Excel file generated successfully", filePath, 200);
             }
         }
+
         private async Task<ServiceResponse<string>> ExportToCsv<T>(List<T> data, List<string> headers, string fileName)
         {
             var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "exports", $"{fileName}.csv");
             Directory.CreateDirectory(Path.GetDirectoryName(filePath));
 
-            var csvLines = new List<string>
-    {
-        string.Join(",", headers) // Add header row
-    };
+            // Add "Serial Number" as the first header
+            var csvLines = new List<string> { "Serial Number," + string.Join(",", headers) };
+
             if (data != null)
             {
+                int serialNumber = 1;
                 foreach (var item in data)
                 {
                     var properties = typeof(T).GetProperties();
-                    var values = properties.Select(p => p.GetValue(item)?.ToString().Replace(",", " ")); // Escape commas
-                    csvLines.Add(string.Join(",", values));
+                    var values = properties.Select(p => p.GetValue(item)?.ToString().Replace(",", " "));
+
+                    // Prepend the serial number to each row
+                    csvLines.Add(serialNumber++ + "," + string.Join(",", values));
                 }
             }
 
@@ -105,6 +110,7 @@ namespace Student_API.Services.Implementations
 
             return new ServiceResponse<string>(true, "CSV file generated successfully", filePath, 200);
         }
+
 
 
         private async Task<ServiceResponse<string>> ExportToPdf1<T>(List<T> data, List<string> headers, string fileName)

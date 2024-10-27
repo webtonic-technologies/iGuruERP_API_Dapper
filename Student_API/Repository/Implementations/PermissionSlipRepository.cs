@@ -2,6 +2,7 @@
 using Student_API.DTOs;
 using Student_API.DTOs.RequestDTO;
 using Student_API.DTOs.ServiceResponse;
+using Student_API.Helper;
 using Student_API.Repository.Interfaces;
 using System.Data;
 using System.Data.Common;
@@ -127,6 +128,10 @@ namespace Student_API.Repository.Implementations
                 int actualPageSize = pageSize ?? MaxPageSize;
                 int actualPageNumber = pageNumber ?? 1;
                 int offset = (actualPageNumber - 1) * actualPageSize;
+
+                startDate = DateTimeHelper.ConvertToDateTime(startDate, "dd-MM-yyyy").ToString("yyyy-MM-dd");
+                endDate = DateTimeHelper.ConvertToDateTime(endDate, "dd-MM-yyyy").ToString("yyyy-MM-dd");
+
 
                 // SQL query with filters and pagination
                 string sql = @"
