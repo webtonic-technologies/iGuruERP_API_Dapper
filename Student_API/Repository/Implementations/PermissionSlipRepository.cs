@@ -159,8 +159,9 @@ namespace Student_API.Repository.Implementations
               AND (s.class_id = @ClassId OR  @ClassId=0)
               AND (s.section_id = @SectionId OR  @SectionId =0)
               AND ps.Status = @Status
-              AND (@StartDate IS NULL OR ps.RequestedDateTime >= CONVERT(datetime, @StartDate, 105))
-              AND (@EndDate IS NULL OR ps.RequestedDateTime <= CONVERT(datetime, @EndDate, 105));
+              AND (@StartDate IS NULL OR CAST(ps.RequestedDateTime AS DATE) >= CAST(@StartDate AS DATE))
+AND (@EndDate IS NULL OR CAST(ps.RequestedDateTime AS DATE) <= CAST(@EndDate AS DATE));
+
 
             SELECT * 
             FROM #PermissionSlipTempTable
