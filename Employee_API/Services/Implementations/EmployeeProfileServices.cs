@@ -93,9 +93,9 @@ namespace Employee_API.Services.Implementations
             return await _employeeProfileRepository.BulkUpdate(request);
         }
 
-        public async Task<ServiceResponse<string>> BulkUpdateEmployee(List<EmployeeProfile> request)
+        public async Task<ServiceResponse<string>> BulkUpdateEmployee(List<EmployeeProfile> request, string IpAddress)
         {
-            return await _employeeProfileRepository.BulkUpdateEmployee(request);
+            return await _employeeProfileRepository.BulkUpdateEmployee(request, IpAddress);
         }
 
         public async Task<ServiceResponse<ClassSectionSubjectResponse>> ClassSectionSubjectsList(int classId, int sectionId)
@@ -249,6 +249,11 @@ namespace Employee_API.Services.Implementations
         public async Task<ServiceResponse<IEnumerable<EmployeeExportHistoryDto>>> GetExportHistoryByInstituteId(int instituteId)
         {
             return await _employeeProfileRepository.GetExportHistoryByInstituteId(instituteId);
+        }
+
+        public async Task<ServiceResponse<IEnumerable<EmployeeExportHistoryDto>>> GetImportHistoryByInstituteId(int instituteId)
+        {
+            return await _employeeProfileRepository.GetImportHistoryByInstituteId(instituteId);
         }
 
         public async Task<ServiceResponse<List<MaritalStatus>>> GetMaritalStatusList()

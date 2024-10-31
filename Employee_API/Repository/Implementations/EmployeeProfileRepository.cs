@@ -101,6 +101,47 @@ namespace Employee_API.Repository.Implementations
                 return new ServiceResponse<IEnumerable<EmployeeExportHistoryDto>>(false, ex.Message, null, 500);
             }
         }
+        public async Task<ServiceResponse<IEnumerable<EmployeeExportHistoryDto>>> GetImportHistoryByInstituteId(int instituteId)
+        {
+            try
+            {
+                // Query to fetch data from the tbl_EmployeeImportHistory table
+                string query = @"SELECT HistoryId, EmployeeCount, DownloadDate, IPAddress, Username, InstituteId 
+                         FROM tbl_EmployeeImportHistory 
+                         WHERE InstituteId = @InstituteId";
+
+                // Fetch the history records from the database
+                var historyRecords = await _connection.QueryAsync<EmployeeExportHistoryDto>(query, new { InstituteId = instituteId });
+
+                // Check if there are any records
+                if (!historyRecords.Any())
+                {
+                    return new ServiceResponse<IEnumerable<EmployeeExportHistoryDto>>(false, "No records found", null, 204);
+                }
+
+                // Format the DownloadDate before returning
+                var formattedRecords = historyRecords.Select(record => new EmployeeExportHistoryDto
+                {
+                    HistoryId = record.HistoryId,
+                    EmployeeCount = record.EmployeeCount,
+                    // Format the date here
+                    DownloadDate = !string.IsNullOrEmpty(record.DownloadDate)
+                        ? DateTime.Parse(record.DownloadDate).ToString("dd-MM-yyyy at hh:mm tt")
+                        : null, // Set to null if DownloadDate is not available
+                    IPAddress = record.IPAddress,
+                    Username = record.Username,
+                    InstituteId = record.InstituteId
+                });
+
+                // Return success with formatted records
+                return new ServiceResponse<IEnumerable<EmployeeExportHistoryDto>>(true, "Records found", formattedRecords, 200);
+            }
+            catch (Exception ex)
+            {
+                // Handle any exceptions and return an error response
+                return new ServiceResponse<IEnumerable<EmployeeExportHistoryDto>>(false, ex.Message, null, 500);
+            }
+        }
         public async Task<IEnumerable<dynamic>> ParseExcelFile(IFormFile file, int instituteId)
         {
             var result = new List<ExpandoObject>();
@@ -332,7 +373,7 @@ namespace Employee_API.Repository.Implementations
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
-        public async Task<ServiceResponse<string>> BulkUpdateEmployee(List<EmployeeProfile> request)
+        public async Task<ServiceResponse<string>> BulkUpdateEmployee(List<EmployeeProfile> request, string IpAddress)
         {
             try
             {
@@ -405,7 +446,6 @@ namespace Employee_API.Repository.Implementations
                         employee.Status,
                         EmpPhoto = ImageUpload(employee.EmpPhoto) // Handle image upload if necessary
                     });
-                    var ipAddress = GetClientIPAddress();
                     string historyQuery = @"insert into tbl_EmployeeBulkUpdateHistory ( EmployeeCount ,DownloadDate ,IPAddress,Username, InstituteId)
                                            VALUES 
                         ( @EmployeeCount ,@DownloadDate ,@IPAddress,@Username, @InstituteId)";
@@ -413,7 +453,7 @@ namespace Employee_API.Repository.Implementations
                     {
                         EmployeeCount = rowsAffected,
                         DownloadDate = DateTime.Now,
-                        IPAddress = ipAddress,
+                        IPAddress = IpAddress,
                         Username = "", // Assuming you have this in the request
                         InstituteId = InstituteId
                     });
@@ -2254,7 +2294,6 @@ WHERE
                         DepartmentId = request.DepartmetnId == 0 ? (int?)null : request.DepartmetnId
                     })).ToList();
 
-                var ipAddress = GetClientIPAddress();
                 string historyQuery = @"insert into tbl_EmployeeExportHistory ( EmployeeCount ,DownloadDate ,IPAddress,Username, InstituteId)
                                            VALUES 
                         ( @EmployeeCount ,@DownloadDate ,@IPAddress,@Username, @InstituteId)";
@@ -2262,7 +2301,7 @@ WHERE
                 {
                     EmployeeCount = employeeProfiles.Count,
                     DownloadDate = DateTime.Now,
-                    IPAddress = ipAddress,
+                    IPAddress = request.IpAddress,
                     Username = "", // Assuming you have this in the request
                     InstituteId = request.InstituteId
                 });
@@ -2284,19 +2323,6 @@ WHERE
             {
                 return new ServiceResponse<byte[]>(false, ex.Message, null, StatusCodes.Status500InternalServerError);
             }
-        }
-        private string GetClientIPAddress()
-        {
-            // Getting the forwarded IP address from headers (if behind a proxy or load balancer)
-            var ipAddress = _httpContextAccessor.HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
-
-            // If no forwarded IP address is found, use the remote IP address
-            if (string.IsNullOrEmpty(ipAddress))
-            {
-                ipAddress = _httpContextAccessor.HttpContext.Connection.RemoteIpAddress?.MapToIPv4().ToString();
-            }
-
-            return ipAddress ?? "Unknown"; // Return "Unknown" if the IP address could not be retrieved
         }
         private async Task<ServiceResponse<byte[]>> GenerateFileWithoutData(string format)
         {
@@ -2761,14 +2787,14 @@ WHERE
                     // Specify the required column order
                     var columnOrder = new[]
                     {
-               "Employee_id", "First_Name", "Middle_Name", "Last_Name", "Gender_id", "Department_id", "Designation_id",
-                "mobile_number", "Date_of_Birth", "Date_of_Joining", "Religion_id", "Nationality_id",
-                "Employee_code_id", "Blood_Group_id", "aadhar_no", "pan_no", "EPF_no", "ESIC_no", "uan_no",
-                "Address", "CountryName", "StateName", "CityName", "DistrictName", "Pin_code",
-                "Father_Name", "Fathers_Occupation", "Mother_Name", "Mothers_Occupation",
-                "Spouse_Name", "Spouses_Occupation", "Guardian_Name", "Guardians_Occupation",
-                "Primary_Emergency_Contact_no", "Secondary_Emergency_Contact_no",
-                "bank_name", "account_name", "account_number", "IFSC_code", "Bank_address"
+                "First Name", "Middle Name", "Last Name", "Gender", "Department", "Designation",
+                "Mobile No", "Date of Birth", "Date of Joining", "Religion", "Nationality","Email Id", "Marital Status",
+                "Employee Id", "Blood Group", "Aadhar Number", "PAN", "EPF Number", "ESIC Number", "UAN number",
+                "Address", "Country", "State", "City", "District", "Pin Code",
+                "Father's Name", "Father's Occupation", "Mother's Name", "Mothers's Occupation",
+                "Spouse's Name", "Spouses's Occupation", "Guardian's Name", "Guardian's Occupation",
+                "Primary Emergency Contact no", "Secondary Emergency Contact no",
+                "Bank Name", "Account Name", "Account Number", "IFSC code", "Bank Address"
             };
                     if (!employeeData.Any())
                     {
@@ -2780,9 +2806,9 @@ WHERE
                             mainSheet.Cells[1, i + 1].Value = columnName;
 
                             // Set the background color for mandatory columns
-                            if (new[] {"Employee_id", "First_Name", "Last_Name", "Gender_id", "Department_id", "Designation_id",
-             "mobile_number", "Date_of_Birth", "Date_of_Joining", "Religion_id",
-             "Nationality_id", "Employee_code_id", "aadhar_no" }.Contains(columnName))
+                            if (new[] { "First Name", "Last Name", "Gender", "Department", "Designation",
+             "Mobile No", "Date of Birth", "Date of Joining", "Religion",
+             "Nationality", "Employee Id", "Aadhar Number" }.Contains(columnName))
                             {
                                 mainSheet.Cells[1, i + 1].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
                                 mainSheet.Cells[1, i + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.Red);
@@ -2879,9 +2905,9 @@ WHERE
                 sheet.Cells[1, i + 1].Value = columnName;
 
                 // Set the background color for mandatory columns
-                if (new[] {"Employee_id", "First_Name", "Last_Name", "Gender_id", "Department_id", "Designation_id",
-             "mobile_number", "Date_of_Birth", "Date_of_Joining", "Religion_id",
-             "Nationality_id", "Employee_code_id", "aadhar_no" }.Contains(columnName))
+                if (new[] {"First Name", "Last Name", "Gender", "Department", "Designation",
+             "mobile_number", "Date of Birth", "Date of Joining", "Religion",
+             "Nationality", "Employee Id", "Aadhar Number" }.Contains(columnName))
                 {
                     sheet.Cells[1, i + 1].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
                     sheet.Cells[1, i + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.Red);
@@ -3230,7 +3256,7 @@ WHERE
         {
             using (var connection = new SqlConnection(_connectionString))
             {
-                var departments = await connection.QueryAsync<Department>("SELECT DepartmentName, Department_id FROM tbl_Department");
+                var departments = await connection.QueryAsync<Department>("SELECT DepartmentName, Department_id FROM tbl_Department where IsDeleted = 0");
                 return departments.ToDictionary(d => d.DepartmentName, d => d.Department_id);
             }
         }
@@ -3239,7 +3265,7 @@ WHERE
         {
             using (var connection = new SqlConnection(_connectionString))
             {
-                var designations = await connection.QueryAsync<Designation>("SELECT DesignationName, Designation_id FROM tbl_Designation");
+                var designations = await connection.QueryAsync<Designation>("SELECT DesignationName, Designation_id FROM tbl_Designation where IsDeleted = 0");
                 return designations.ToDictionary(d => d.DesignationName, d => d.Designation_id);
             }
         }
@@ -3293,5 +3319,4 @@ WHERE
         public string ColumnDatabaseName { get; set; } // Actual column name in the database
         public string TableName { get; set; }          // The table the column belongs to
     }
-
 }

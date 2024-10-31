@@ -546,7 +546,7 @@ namespace Employee_API.Controllers
             }
         }
         [HttpPut("bulk-update")]
-        public async Task<IActionResult> BulkUpdateEmployeeProfiles([FromBody] List<EmployeeProfile> employeeProfiles)
+        public async Task<IActionResult> BulkUpdateEmployeeProfiles([FromBody] List<EmployeeProfile> employeeProfiles, string IpAddress)
         {
             // Validate input
             if (employeeProfiles == null || !employeeProfiles.Any())
@@ -555,7 +555,7 @@ namespace Employee_API.Controllers
             }
 
             // Call the service method to perform the bulk update
-            var response = await _employeeProfileServices.BulkUpdateEmployee(employeeProfiles);
+            var response = await _employeeProfileServices.BulkUpdateEmployee(employeeProfiles, IpAddress);
 
             // Handle the response
             if (response.Success)
@@ -611,6 +611,18 @@ namespace Employee_API.Controllers
             if (result == null)
             {
                 return NotFound("No data found.");
+            }
+
+            return Ok(result);
+        }
+        [HttpGet("ImportHistiry/{InstituteId}")]
+        public async Task<IActionResult> GetImportHistoryByInstituteId(int InstituteId)
+        {
+            var result = await _employeeProfileServices.GetImportHistoryByInstituteId(InstituteId);
+
+            if (result == null)
+            {
+                return NotFound("No employee columns found.");
             }
 
             return Ok(result);

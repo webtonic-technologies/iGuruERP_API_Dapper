@@ -65,6 +65,7 @@
         public int InstituteId { set; get; }
         public int DesignationId { set; get; }
         public int DepartmetnId { set; get; }
+        public string IpAddress { set; get; }
     }
     public class UserSwitchOverRequest
     {
