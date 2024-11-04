@@ -495,8 +495,8 @@ namespace Employee_API.Controllers
                 return this.BadRequest(e.Message);
             }
         }
-        [HttpGet("DownloadEmployeeData")]
-        public async Task<IActionResult> DownloadEmployeeData([FromQuery] ExcelDownloadRequest request, [FromQuery] string format)
+        [HttpPost("DownloadEmployeeData")]
+        public async Task<IActionResult> DownloadEmployeeData([FromBody] ExcelDownloadRequest request, [FromQuery] string format)
         {
             var response = await _employeeProfileServices.ExcelDownload(request, format);
 
