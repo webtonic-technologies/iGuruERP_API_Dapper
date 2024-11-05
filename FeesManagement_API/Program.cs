@@ -81,6 +81,13 @@ builder.Services.AddScoped<IChequeBounceService, ChequeBounceService>();
 builder.Services.AddScoped<IChequeTrackingRepository, ChequeTrackingRepository>();
 builder.Services.AddScoped<IChequeTrackingService, ChequeTrackingService>();
 
+builder.Services.AddScoped<IFeesReportsRepository, FeesReportsRepository>();
+builder.Services.AddScoped<IFeesReportsService, FeesReportsService>();
+
+builder.Services.AddScoped<IFeesDashboardRepository, FeesDashboardRepository>();
+builder.Services.AddScoped<IFeesDashboardService, FeesDashboardService>();
+
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
