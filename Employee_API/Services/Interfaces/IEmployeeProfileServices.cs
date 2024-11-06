@@ -37,6 +37,6 @@ namespace Employee_API.Services.Interfaces
         Task<ServiceResponse<IEnumerable<EmployeeExportHistoryDto>>> GetImportHistoryByInstituteId(int instituteId);
         Task<ServiceResponse<IEnumerable<EmployeeExportHistoryDto>>> GetExportHistoryByInstituteId(int instituteId);
         Task<ServiceResponse<byte[]>> DownloadSheetImport(int InstituteId);
-        Task<ServiceResponse<int>> UploadEmployeedata(IFormFile file, int instituteId);
+        Task<ServiceResponse<int>> UploadEmployeedata(IFormFile file, int instituteId, string IpAddress);
     }
 }

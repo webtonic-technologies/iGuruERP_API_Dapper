@@ -3176,7 +3176,7 @@ WHERE
 
             // Additional static instructions can be added here
         }
-        public async Task<ServiceResponse<int>> UploadEmployeedata(IFormFile file, int instituteId)
+        public async Task<ServiceResponse<int>> UploadEmployeedata(IFormFile file, int instituteId, string IpAddress)
         {
             try
             {
@@ -3194,10 +3194,11 @@ WHERE
                 var bloodGroupMappings = await GetBloodGroupMappings();
                 var maritalStatusMappings = await GetMaritalStatusMappings();
                 bool success = true;
-
+                int count = 0;
                 // Read the Excel file
                 using (var stream = new MemoryStream())
                 {
+                  
                     await file.CopyToAsync(stream);
                     using (var package = new ExcelPackage(stream))
                     {
@@ -3285,6 +3286,7 @@ WHERE
                             var response = await AddUpdateEmployeeProfile(employeeProfile);
                             if (response.Success)
                             {
+                                count++;
                                 success = true;
                             }
                             else
@@ -3298,6 +3300,17 @@ WHERE
 
                 if (success)
                 {
+                    string historyQuery = @"insert into tbl_EmployeeImportHistory ( EmployeeCount ,DownloadDate ,IPAddress,Username, InstituteId)
+                                           VALUES 
+                        ( @EmployeeCount ,@DownloadDate ,@IPAddress,@Username, @InstituteId)";
+                    await _connection.ExecuteAsync(historyQuery, new
+                    {
+                        EmployeeCount = count,
+                        DownloadDate = DateTime.Now,
+                        IPAddress = IpAddress,
+                        Username = "", // Assuming you have this in the request
+                        InstituteId = instituteId
+                    });
                     return new ServiceResponse<int>(true, "Operation successful", 0, 200);
                 }
                 else

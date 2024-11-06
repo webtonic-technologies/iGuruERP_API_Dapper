@@ -654,14 +654,14 @@ namespace Employee_API.Controllers
             }
         }
         [HttpPost("upload")]
-        public async Task<IActionResult> UploadEmployeedata(IFormFile file, int instituteId)
+        public async Task<IActionResult> UploadEmployeedata(IFormFile file, int instituteId, string IpAddress)
         {
             if (file == null || file.Length == 0)
             {
                 return BadRequest("No file uploaded");
             }
 
-            var response = await _employeeProfileServices.UploadEmployeedata(file, instituteId);
+            var response = await _employeeProfileServices.UploadEmployeedata(file, instituteId, IpAddress);
             if (response.Success)
             {
                 return Ok(response.Message);

@@ -297,10 +297,10 @@ namespace Employee_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<int>> UploadEmployeedata(IFormFile file, int instituteId)
+        public async Task<ServiceResponse<int>> UploadEmployeedata(IFormFile file, int instituteId, string IpAddress)
         {
 
-            return await _employeeProfileRepository.UploadEmployeedata(file, instituteId);
+            return await _employeeProfileRepository.UploadEmployeedata(file, instituteId, IpAddress);
         }
     }
 }
