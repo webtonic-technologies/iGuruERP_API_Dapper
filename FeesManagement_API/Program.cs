@@ -6,7 +6,8 @@ using System.Data.SqlClient;
 using System.Data;
 using Configuration.Repository.Implementations;
 using Configuration.Repository.Interfaces;
- 
+using OfficeOpenXml;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,9 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<IDbConnection>(sp =>
     new SqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Set the license context for EPPlus to NonCommercial
+ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
 // Dependency Injection for Repositories and Services
 builder.Services.AddScoped<IFeeHeadRepository, FeeHeadRepository>();

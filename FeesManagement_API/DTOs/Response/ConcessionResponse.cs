@@ -7,6 +7,7 @@
         public bool IsAmount { get; set; }
         public bool IsPercentage { get; set; }
         public int InstituteID { get; set; }
+        public bool IsActive { get; set; }
         public List<ConcessionRuleResponse> ConcessionRules { get; set; } = new List<ConcessionRuleResponse>();
     }
 

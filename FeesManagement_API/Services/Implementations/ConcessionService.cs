@@ -25,9 +25,20 @@ namespace FeesManagement_API.Services.Implementations
 
         public async Task<ServiceResponse<IEnumerable<ConcessionResponse>>> GetAllConcessions(GetAllConcessionRequest request)
         {
-            var result = await _concessionRepository.GetAllConcessions(request);
-            return new ServiceResponse<IEnumerable<ConcessionResponse>>(true, "Concession groups retrieved successfully", result, 200);
+            // Get the response from the repository
+            var response = await _concessionRepository.GetAllConcessions(request);
+
+            // Check if the repository response is successful
+            if (response != null)
+            {
+                // Return a new ServiceResponse, extracting the Data from the repository response
+                return new ServiceResponse<IEnumerable<ConcessionResponse>>(true, "Concession groups retrieved successfully", response.Data, 200, response.TotalCount);
+            }
+
+            // If there's an issue, return an appropriate error response
+            return new ServiceResponse<IEnumerable<ConcessionResponse>>(false, "No concession groups found", null, 404);
         }
+
 
         public async Task<ServiceResponse<ConcessionResponse>> GetConcessionById(int concessionGroupID)
         {

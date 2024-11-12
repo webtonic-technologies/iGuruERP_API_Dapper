@@ -18,7 +18,7 @@ namespace FeesManagement_API.Controllers
         }
 
         [HttpPost("AddUpdateFeeGroup")]
-        public async Task<IActionResult> AddUpdateFeeGroup([FromBody] AddUpdateFeeGroupRequest request)
+        public async Task<IActionResult> AddUpdateFeeGroup([FromBody] AddUpdateFeeGroupsRequest request)
         {
             // Assuming no extra validation is needed, or the logic is handled elsewhere
             var response = await _feeGroupService.AddUpdateFeeGroup(request);
@@ -52,9 +52,14 @@ namespace FeesManagement_API.Controllers
         }
 
         [HttpPut("Status/{feeGroupID}")]
-        public async Task<IActionResult> UpdateFeeGroupStatus(int feeGroupID)
+        public async Task<IActionResult> UpdateFeeGroupStatus(int feeGroupID, [FromBody] UpdateFeeGroupStatusRequest request)
         {
-            var response = await _feeGroupService.UpdateFeeGroupStatus(feeGroupID);
+            if (request == null)
+            {
+                return BadRequest("Request body cannot be null.");
+            }
+
+            var response = await _feeGroupService.UpdateFeeGroupStatus(feeGroupID, request);
             if (response.Success)
             {
                 return Ok(response);
@@ -64,3 +69,5 @@ namespace FeesManagement_API.Controllers
 
     }
 }
+
+

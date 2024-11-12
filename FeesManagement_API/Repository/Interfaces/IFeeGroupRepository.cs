@@ -7,9 +7,9 @@ namespace FeesManagement_API.Repository.Interfaces
 {
     public interface IFeeGroupRepository
     {
-        Task<int> AddUpdateFeeGroup(AddUpdateFeeGroupRequest request);
+        Task<int> AddUpdateFeeGroups(AddUpdateFeeGroupsRequest request);
         Task<IEnumerable<FeeGroupResponse>> GetAllFeeGroups(GetAllFeeGroupRequest request);
         Task<FeeGroupResponse> GetFeeGroupById(int feeGroupID);
-        Task<int> UpdateFeeGroupStatus(int feeGroupID);
+        Task<int> UpdateFeeGroupStatus(int feeGroupID, string reason);
     }
 }

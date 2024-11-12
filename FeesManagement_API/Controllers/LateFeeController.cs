@@ -60,5 +60,22 @@ namespace FeesManagement_API.Controllers
             }
             return BadRequest(response);
         }
+
+        [HttpPost("GetFeeTenureDDL")]
+        public async Task<IActionResult> GetFeeTenureDDL([FromBody] GetFeeTenureDDLRequest request)
+        {
+            if (request == null)
+            {
+                return BadRequest("Request body cannot be null.");
+            }
+
+            var response = await _lateFeeService.GetFeeTenureDDL(request);
+            if (response.Success)
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
+        }
+
     }
 }

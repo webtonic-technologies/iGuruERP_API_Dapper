@@ -29,9 +29,38 @@ namespace FeesManagement_API.Services.Implementations
 
         public async Task<ServiceResponse<IEnumerable<FeeHeadResponse>>> GetAllFeeHead(GetAllFeeHeadRequest request)
         {
-            var feeHeads = await _feeHeadRepository.GetAllFeeHead(request);
-            return new ServiceResponse<IEnumerable<FeeHeadResponse>>(true, "FeeHeads retrieved successfully", feeHeads, 200);
+            var feeHeadResponse = await _feeHeadRepository.GetAllFeeHead(request);
+
+            if (feeHeadResponse.Success)
+            {
+                return new ServiceResponse<IEnumerable<FeeHeadResponse>>(true, "FeeHeads retrieved successfully", feeHeadResponse.Data, 200, feeHeadResponse.TotalCount);
+            }
+            else
+            {
+                return new ServiceResponse<IEnumerable<FeeHeadResponse>>(false, "Failed to retrieve FeeHeads", null, 500);
+            }
         }
+
+        public async Task<ServiceResponse<IEnumerable<FeeHeadResponse>>> GetAllFeeHeadDDL(GetAllFeeHeadDDLRequest request)
+        {
+            var feeHeadResponse = await _feeHeadRepository.GetAllFeeHeadDDL(request);
+
+            if (feeHeadResponse.Success)
+            {
+                return new ServiceResponse<IEnumerable<FeeHeadResponse>>(true, "FeeHeads retrieved successfully", feeHeadResponse.Data, 200);
+            }
+            else
+            {
+                return new ServiceResponse<IEnumerable<FeeHeadResponse>>(false, "Failed to retrieve FeeHeads", null, 500);
+            }
+        }
+
+
+        //public async Task<ServiceResponse<IEnumerable<FeeHeadResponse>>> GetAllFeeHead(GetAllFeeHeadRequest request)
+        //{
+        //    var feeHeads = await _feeHeadRepository.GetAllFeeHead(request);
+        //    return new ServiceResponse<IEnumerable<FeeHeadResponse>>(true, "FeeHeads retrieved successfully", feeHeads, 200);
+        //}
 
         public async Task<ServiceResponse<FeeHeadResponse>> GetFeeHeadById(int feeHeadId)
         {

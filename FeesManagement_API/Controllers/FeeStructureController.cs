@@ -21,5 +21,20 @@ namespace FeesManagement_API.Controllers
             var response = _feeStructureService.GetFeeStructure(request);
             return Ok(response);
         }
+
+        [HttpPost("GetFeeStructure_Excel")]
+        public async Task<IActionResult> GetFeeStructure_Excel([FromBody] FeeStructureRequest request)
+        {
+            var response = await _feeStructureService.GetFeeStructureExcel(request);  // Service call to handle Excel logic
+
+            if (!response.Success)
+            {
+                return BadRequest(response);
+            }
+
+            var fileBytes = response.Data;  // Retrieve the Excel file data as byte array
+            return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "FeeStructure.xlsx");
+        }
+
     }
 }

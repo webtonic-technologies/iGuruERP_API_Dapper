@@ -11,6 +11,9 @@ namespace FeesManagement_API.Services.Interfaces
         Task<ServiceResponse<int>> AddUpdateNumberScheme(AddUpdateNumberSchemeRequest request);
         Task<ServiceResponse<IEnumerable<NumberSchemeResponse>>> GetAllNumberSchemes(GetAllNumberSchemesRequest request);
         Task<ServiceResponse<NumberSchemeResponse>> GetNumberSchemeById(int numberSchemeID); 
-        Task<ServiceResponse<int>> UpdateNumberSchemeStatus(int numberSchemeID);  // Add this method
+        Task<ServiceResponse<int>> UpdateNumberSchemeStatus(int numberSchemeID);
+        Task<ServiceResponse<IEnumerable<NumberSchemeTypeResponse>>> GetNumberSchemeType();
+
+
     }
 }

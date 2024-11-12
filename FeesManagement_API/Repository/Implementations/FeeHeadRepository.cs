@@ -5,6 +5,8 @@ using FeesManagement_API.Repository.Interfaces;
 using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
+using FeesManagement_API.DTOs.ServiceResponse;
+
 
 namespace FeesManagement_API.Repository.Implementations
 {
@@ -54,21 +56,29 @@ namespace FeesManagement_API.Repository.Implementations
             return rowsAffected;
         }
 
-        public async Task<IEnumerable<FeeHeadResponse>> GetAllFeeHead(GetAllFeeHeadRequest request)
+        public async Task<ServiceResponse<IEnumerable<FeeHeadResponse>>> GetAllFeeHead(GetAllFeeHeadRequest request)
         {
+            // Query to get the total count of fee heads
+            var countQuery = @"SELECT COUNT(*) 
+                       FROM tblFeeHead fh
+                       WHERE fh.InstituteID = @InstituteID AND fh.IsActive = 1";
+
+            var totalCount = await _connection.ExecuteScalarAsync<int>(countQuery, new { request.InstituteID });
+
+            // Main query to get the paginated fee heads
             var query = @"SELECT fh.FeeHeadID, 
-                         fh.FeeHead AS FeeHeadName, 
-                         fh.ShortName, 
-                         fh.RegTypeID, 
-                         rt.RegType, 
-                         fh.IsActive, 
-                         fh.InstituteID 
-                  FROM tblFeeHead fh
-                  INNER JOIN tblFeeHeadingRegType rt ON fh.RegTypeID = rt.RegTypeID
-                  WHERE fh.InstituteID = @InstituteID and fh.IsActive = 1
-                  ORDER BY fh.FeeHeadID
-                  OFFSET @Offset ROWS
-                  FETCH NEXT @PageSize ROWS ONLY";
+                 fh.FeeHead AS FeeHeadName, 
+                 fh.ShortName, 
+                 fh.RegTypeID, 
+                 rt.RegType, 
+                 fh.IsActive, 
+                 fh.InstituteID 
+          FROM tblFeeHead fh
+          INNER JOIN tblFeeHeadingRegType rt ON fh.RegTypeID = rt.RegTypeID
+          WHERE fh.InstituteID = @InstituteID AND fh.IsActive = 1
+          ORDER BY fh.FeeHeadID
+          OFFSET @Offset ROWS
+          FETCH NEXT @PageSize ROWS ONLY";
 
             var parameters = new
             {
@@ -77,8 +87,58 @@ namespace FeesManagement_API.Repository.Implementations
                 request.InstituteID
             };
 
-            return await _connection.QueryAsync<FeeHeadResponse>(query, parameters);
+            var feeHeads = await _connection.QueryAsync<FeeHeadResponse>(query, parameters);
+
+            return new ServiceResponse<IEnumerable<FeeHeadResponse>>(true, "FeeHeads retrieved successfully", feeHeads, 200, totalCount);
         }
+
+        public async Task<ServiceResponse<IEnumerable<FeeHeadResponse>>> GetAllFeeHeadDDL(GetAllFeeHeadDDLRequest request)
+        {
+            // Main query to get all active fee heads
+            var query = @"SELECT fh.FeeHeadID, 
+                  fh.FeeHead AS FeeHeadName, 
+                  fh.ShortName, 
+                  fh.RegTypeID, 
+                  rt.RegType, 
+                  fh.IsActive, 
+                  fh.InstituteID 
+                  FROM tblFeeHead fh
+                  INNER JOIN tblFeeHeadingRegType rt ON fh.RegTypeID = rt.RegTypeID
+                  WHERE fh.InstituteID = @InstituteID AND fh.IsActive = 1
+                  ORDER BY fh.FeeHeadID";
+
+            var feeHeads = await _connection.QueryAsync<FeeHeadResponse>(query, new { request.InstituteID });
+
+            return new ServiceResponse<IEnumerable<FeeHeadResponse>>(true, "FeeHeads retrieved successfully", feeHeads, 200);
+        }
+
+
+
+        //public async Task<IEnumerable<FeeHeadResponse>> GetAllFeeHead(GetAllFeeHeadRequest request)
+        //{
+        //    var query = @"SELECT fh.FeeHeadID, 
+        //                 fh.FeeHead AS FeeHeadName, 
+        //                 fh.ShortName, 
+        //                 fh.RegTypeID, 
+        //                 rt.RegType, 
+        //                 fh.IsActive, 
+        //                 fh.InstituteID 
+        //          FROM tblFeeHead fh
+        //          INNER JOIN tblFeeHeadingRegType rt ON fh.RegTypeID = rt.RegTypeID
+        //          WHERE fh.InstituteID = @InstituteID and fh.IsActive = 1
+        //          ORDER BY fh.FeeHeadID
+        //          OFFSET @Offset ROWS
+        //          FETCH NEXT @PageSize ROWS ONLY";
+
+        //    var parameters = new
+        //    {
+        //        Offset = (request.PageNumber - 1) * request.PageSize,
+        //        request.PageSize,
+        //        request.InstituteID
+        //    };
+
+        //    return await _connection.QueryAsync<FeeHeadResponse>(query, parameters);
+        //}
 
 
         public async Task<FeeHeadResponse> GetFeeHeadById(int feeHeadId)
@@ -96,8 +156,8 @@ namespace FeesManagement_API.Repository.Implementations
             tblFeeHead fh
         LEFT JOIN 
             tblFeeHeadingRegType rt ON fh.RegTypeID = rt.RegTypeID
-        WHERE 
-            fh.FeeHeadID = @FeeHeadID";
+        WHERE  
+            fh.FeeHeadID = @FeeHeadID AND  fh.IsActive = 1";
 
             return await _connection.QueryFirstOrDefaultAsync<FeeHeadResponse>(query, new { FeeHeadID = feeHeadId });
         }

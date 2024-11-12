@@ -9,7 +9,9 @@ namespace FeesManagement_API.Services.Interfaces
     public interface IConcessionService
     {
         Task<ServiceResponse<int>> AddUpdateConcession(AddUpdateConcessionRequest request);
+        //Task<ServiceResponse<IEnumerable<ConcessionResponse>>> GetAllConcessions(GetAllConcessionRequest request);
         Task<ServiceResponse<IEnumerable<ConcessionResponse>>> GetAllConcessions(GetAllConcessionRequest request);
+
         Task<ServiceResponse<ConcessionResponse>> GetConcessionById(int concessionGroupID);
         Task<int> UpdateConcessionGroupStatus(int concessionGroupID);
     }

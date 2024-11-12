@@ -14,5 +14,7 @@ namespace FeesManagement_API.Services.Interfaces
         Task<ServiceResponse<IEnumerable<OfferResponse>>> GetAllOffers(GetAllOffersRequest request);
         Task<ServiceResponse<OfferResponse>> GetOfferById(int offerID);
         Task<ServiceResponse<int>> DeleteOffer(int offerID);
+        Task<IEnumerable<OfferStudentTypeResponse>> GetOfferStudentTypes();
+
     }
 }

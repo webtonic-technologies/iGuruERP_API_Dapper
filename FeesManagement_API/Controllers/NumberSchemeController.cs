@@ -65,5 +65,16 @@ namespace FeesManagement_API.Controllers
             return BadRequest(response);
         }
 
+        [HttpPost("GetNumberSchemeType")]
+        public async Task<IActionResult> GetNumberSchemeType()
+        {
+            var response = await _numberSchemeService.GetNumberSchemeType();
+            if (response.Success)
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
+        }
+
     }
 }

@@ -29,7 +29,7 @@ namespace FeesManagement_API.Services.Implementations
         public async Task<ServiceResponse<IEnumerable<OfferResponse>>> GetAllOffers(GetAllOffersRequest request)
         {
             var result = await _offerRepository.GetAllOffers(request);
-            return new ServiceResponse<IEnumerable<OfferResponse>>(true, "Offers retrieved successfully", result, 200);
+            return result; // Directly return the result from the repository
         }
 
         public async Task<ServiceResponse<OfferResponse>> GetOfferById(int offerID)
@@ -50,6 +50,10 @@ namespace FeesManagement_API.Services.Implementations
                 return new ServiceResponse<int>(true, "Offer status updated successfully", result, 200);
             }
             return new ServiceResponse<int>(false, "Failed to update offer status", 0, 400);
+        }
+        public async Task<IEnumerable<OfferStudentTypeResponse>> GetOfferStudentTypes()
+        {
+            return await _offerRepository.GetOfferStudentTypes();
         }
     }
 }

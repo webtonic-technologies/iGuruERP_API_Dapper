@@ -8,6 +8,11 @@ namespace FeesManagement_API.Repository.Interfaces
     {
         string AddUpdateConcession(AddUpdateConcessionMappingRequest request);
         List<GetAllConcessionMappingResponse> GetAllConcessionMapping(GetAllConcessionMappingRequest request);
+        byte[] GetConcessionListExcel(GetAllConcessionMappingRequest request);
+        Task<List<GetAllConcessionMappingResponse>> GetConcessionListForExport(GetAllConcessionMappingRequest request);
+
         string UpdateStatus(int studentConcessionID);
+        Task<IEnumerable<ConcessionListResponse>> GetConcessionList(int instituteID);
+
     }
 }
