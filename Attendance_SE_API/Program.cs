@@ -41,6 +41,8 @@ builder.Services.AddScoped<IEmployeeShiftService, EmployeeShiftService>();
 builder.Services.AddScoped<IGeoFencingRepository, GeoFencingRepository>();
 builder.Services.AddScoped<IGeoFencingService, GeoFencingService>();
 
+builder.Services.AddScoped<IMarkAttendanceService, MarkAttendanceService>();
+builder.Services.AddScoped<IMarkAttendanceRepository, MarkAttendanceRepository>();
 
 var app = builder.Build();
 

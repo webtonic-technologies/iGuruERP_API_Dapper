@@ -49,10 +49,20 @@ namespace Attendance_SE_API.Repository.Implementations
         {
             try
             {
-                string query = "SELECT * FROM tblStudentAttendanceStatus WHERE IsActive = 1";
-                var statuses = await _connection.QueryAsync<AttendanceStatus>(query);
+                // Start query to get records with IsDefault = 1
+                string query = "SELECT * FROM tblStudentAttendanceStatus WHERE IsActive = 1 AND IsDefault = 1"; 
+                       query += " UNION ALL SELECT * FROM tblStudentAttendanceStatus WHERE IsActive = 1 AND IsDefault = 0 AND InstituteID = @InstituteID";
+                 
 
-                var paginatedList = statuses.Skip((request.PageNumber - 1) * request.PageSize).Take(request.PageSize).ToList();
+                // Execute the query
+                var statuses = await _connection.QueryAsync<AttendanceStatus>(query, new { InstituteID = request.InstituteID });
+
+                // Pagination logic
+                var paginatedList = statuses
+                    .Skip((request.PageNumber - 1) * request.PageSize)
+                    .Take(request.PageSize)
+                    .ToList();
+
                 return new ServiceResponse<List<AttendanceStatus>>(true, "Records found", paginatedList, 200, statuses.Count());
             }
             catch (Exception ex)
@@ -61,11 +71,30 @@ namespace Attendance_SE_API.Repository.Implementations
             }
         }
 
+        public async Task<ServiceResponse<List<AttendanceStatus>>> GetAllAttendanceStatusesDDL(GetAllAttendanceStatusDDLRequest request)
+        {
+            try
+            {
+                // Start query to get records with IsDefault = 1
+                string query = "SELECT * FROM tblStudentAttendanceStatus WHERE IsActive = 1 AND IsDefault = 1";
+                query += " UNION ALL SELECT * FROM tblStudentAttendanceStatus WHERE IsActive = 1 AND IsDefault = 0 AND InstituteID = @InstituteID";
+
+                // Execute the query
+                var statuses = await _connection.QueryAsync<AttendanceStatus>(query, new { InstituteID = request.InstituteID });
+
+                return new ServiceResponse<List<AttendanceStatus>>(true, "Records found", statuses.ToList(), 200, statuses.Count());
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<AttendanceStatus>>(false, ex.Message, null, 500);
+            }
+        }
+         
         public async Task<ServiceResponse<AttendanceStatus>> GetAttendanceStatusById(int statusId)
         {
             try
             {
-                string query = "SELECT * FROM tblStudentAttendanceStatus WHERE StatusID = @StatusID";
+                string query = "SELECT * FROM tblStudentAttendanceStatus WHERE StatusID = @StatusID AND IsActive = 1";
                 var status = await _connection.QueryFirstOrDefaultAsync<AttendanceStatus>(query, new { StatusID = statusId });
 
                 if (status != null)

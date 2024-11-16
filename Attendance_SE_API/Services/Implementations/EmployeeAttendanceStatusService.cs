@@ -34,6 +34,11 @@ namespace Attendance_SE_API.Services.Implementations
             return await _repository.GetAllAttendanceStatuses(request);
         }
 
+        public async Task<ServiceResponse<List<AttendanceStatus>>> GetAllAttendanceStatusesDDL(GetAllAttendanceStatusDDLRequest request)
+        {
+            return await _repository.GetAllAttendanceStatusesDDL(request);
+        }
+
         public async Task<ServiceResponse<AttendanceStatus>> GetAttendanceStatusById(int statusId)
         {
             return await _repository.GetAttendanceStatusById(statusId);

@@ -3,9 +3,9 @@
     public class ShiftResponse
     {
         public int ShiftID { get; set; }
-        public TimeSpan ClockIn { get; set; }
-        public TimeSpan ClockOut { get; set; }
-        public TimeSpan LateComing { get; set; }
+        public string ClockIn { get; set; }  // Changed to string
+        public string ClockOut { get; set; }  // Changed to string
+        public string LateComing { get; set; }  // Changed to string
         public List<DesignationResponse> Designations { get; set; } // New property for designations
     }
 

@@ -18,64 +18,121 @@ namespace Attendance_SE_API.Repository.Implementations
             _connection = connection;
         }
 
-        public async Task<ServiceResponse<string>> AddGeoFancing(GeoFencingRequest request)
-        {
-            string query = @"INSERT INTO tblGeoFencingMaster (Latitude, Longitude, DepartmentID, RadiusInMeters, InstituteID) 
-                             VALUES (@Latitude, @Longitude, @DepartmentID, @RadiusInMeters, @InstituteID);
-                             SELECT CAST(SCOPE_IDENTITY() as int)";
+        //public async Task<ServiceResponse<string>> AddGeoFancing(GeoFencingRequest request)
+        //{
+        //    string query = @"INSERT INTO tblGeoFencingMaster (Latitude, Longitude, DepartmentID, RadiusInMeters, InstituteID) 
+        //                     VALUES (@Latitude, @Longitude, @DepartmentID, @RadiusInMeters, @InstituteID);
+        //                     SELECT CAST(SCOPE_IDENTITY() as int)";
 
-            await _connection.ExecuteAsync(query, request);
-            return new ServiceResponse<string>(true, "Geo-fencing entry added successfully.", null, 201);
+        //    await _connection.ExecuteAsync(query, request);
+        //    return new ServiceResponse<string>(true, "Geo-fencing entry added successfully.", null, 201);
+        //}
+
+        public async Task<ServiceResponse<string>> AddGeoFancing(List<GeoFencingRequest> requests)
+        {
+            try
+            {
+                // Open the connection synchronously (works for all connection types)
+                if (_connection.State != System.Data.ConnectionState.Open)
+                {
+                    _connection.Open(); // Synchronous open
+                }
+
+                // Start a transaction to ensure atomicity if you are inserting multiple records.
+                using (var transaction = _connection.BeginTransaction())
+                {
+                    foreach (var request in requests)
+                    {
+                        string query = @"INSERT INTO tblGeoFencingMaster (Latitude, Longitude, DepartmentID, RadiusInMeters, InstituteID) 
+                                 VALUES (@Latitude, @Longitude, @DepartmentID, @RadiusInMeters, @InstituteID);
+                                 SELECT CAST(SCOPE_IDENTITY() as int)";  // Capture the generated ID.
+
+                        // Execute the query for each geo-fencing entry in the list
+                        await _connection.ExecuteAsync(query, request, transaction);
+                    }
+
+                    // Commit the transaction if all inserts succeed
+                    transaction.Commit();
+                }
+
+                return new ServiceResponse<string>(true, "Geo-fencing entries added successfully.", null, 201);
+            }
+            catch (Exception ex)
+            {
+                // Rollback transaction if there is any error
+                return new ServiceResponse<string>(false, $"Error adding geo-fencing entries: {ex.Message}", null, 500);
+            }
         }
+
+
+
+
 
         public async Task<ServiceResponse<List<GetGeoFencingResponse>>> GetAllGeoFancing(PaginationRequest request)
         {
-            // Update the query to include department name and support pagination
-            string query = @"
-    SELECT 
-        g.GeoFencingID, 
-        g.Latitude, 
-        g.Longitude, 
-        d.DepartmentName, 
-        g.RadiusInMeters, 
-        g.InstituteID, 
-        g.IsActive 
-    FROM 
-        tblGeoFencingMaster g
-    JOIN 
-        tbl_Department d ON g.DepartmentID = d.Department_id
-    WHERE 
-        g.IsActive = 1
-    ORDER BY 
-        g.GeoFencingID
-    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
-
-            var parameters = new
+            try
             {
-                Offset = (request.PageNumber - 1) * request.PageSize,
-                PageSize = request.PageSize
-            };
+                // Define the query to retrieve geo-fencing data with pagination and filter by InstituteID
+                string query = @"
+                    SELECT 
+                        g.GeoFencingID, 
+                        g.Latitude, 
+                        g.Longitude, 
+                        d.DepartmentName, 
+                        g.RadiusInMeters, 
+                        g.InstituteID, 
+                        g.IsActive 
+                    FROM 
+                        tblGeoFencingMaster g
+                    JOIN 
+                        tbl_Department d ON g.DepartmentID = d.Department_id
+                    WHERE 
+                        g.IsActive = 1 
+                        AND g.InstituteID = @InstituteID
+                    ORDER BY 
+                        g.GeoFencingID
+                    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
-            // Query the geo-fencing data
-            var geoFencings = await _connection.QueryAsync<GetGeoFencingResponse>(query, parameters);
+                // Prepare parameters including InstituteID, pagination
+                var parameters = new
+                {
+                    InstituteID = request.InstituteID,
+                    Offset = (request.PageNumber - 1) * request.PageSize,  // Calculate the offset
+                    PageSize = request.PageSize
+                };
 
-            // Get total count of active geo-fencing records for pagination
-            string countQuery = "SELECT COUNT(*) FROM tblGeoFencingMaster WHERE IsActive = 1";
-            var totalCount = await _connection.ExecuteScalarAsync<int>(countQuery);
+                // Execute the query to retrieve geo-fencing data
+                var geoFencings = await _connection.QueryAsync<GetGeoFencingResponse>(query, parameters);
 
-            // Create and return the ServiceResponse
-            return new ServiceResponse<List<GetGeoFencingResponse>>(
-                success: true,                       // First argument: success
-                message: "Geo-fencing records retrieved successfully.", // Second argument: message
-                data: geoFencings.AsList(),         // Third argument: data
-                statusCode: 200,                     // Fourth argument: statusCode
-                totalCount: totalCount               // Fifth argument: totalCount
-            );
+                // Query to get the total count of active geo-fencing records for pagination
+                string countQuery = "SELECT COUNT(*) FROM tblGeoFencingMaster WHERE IsActive = 1 AND InstituteID = @InstituteID";
+                var totalCount = await _connection.ExecuteScalarAsync<int>(countQuery, new { InstituteID = request.InstituteID });
+
+                // Return the results in a ServiceResponse
+                return new ServiceResponse<List<GetGeoFencingResponse>>(
+                    success: true,
+                    message: "Geo-fencing records retrieved successfully.",
+                    data: geoFencings.ToList(),
+                    statusCode: 200,
+                    totalCount: totalCount  // Return total count for pagination
+                );
+            }
+            catch (Exception ex)
+            {
+                // Handle errors and return a failure response
+                return new ServiceResponse<List<GetGeoFencingResponse>>(
+                    success: false,
+                    message: $"Error retrieving geo-fencing records: {ex.Message}",
+                    data: null,
+                    statusCode: 500,
+                    totalCount: null  // No total count in case of error
+                );
+            }
         }
 
         public async Task<ServiceResponse<GeoFencingResponse>> GetGeoFancing(int geoFencingID)
         {
-            string query = "SELECT * FROM tblGeoFencingMaster WHERE GeoFencingID = @GeoFencingID";
+            string query = "SELECT * FROM tblGeoFencingMaster WHERE GeoFencingID = @GeoFencingID AND IsActive = 1";
             var geoFencing = await _connection.QueryFirstOrDefaultAsync<GeoFencingResponse>(query, new { GeoFencingID = geoFencingID });
 
             if (geoFencing != null)

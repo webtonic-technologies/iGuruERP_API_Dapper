@@ -38,6 +38,14 @@ namespace Attendance_SE_API.Controllers
             return StatusCode(response.StatusCode, response);
         }
 
+        [HttpPost("GetAllAttendanceStatusDDL")]
+        public async Task<IActionResult> GetAllAttendanceStatusDDL([FromBody] GetAllAttendanceStatusDDLRequest request)
+        {
+            var response = await _attendanceStatusService.GetAllAttendanceStatusesDDL(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+
         [HttpGet("GetAttendanceStatusByID/{StatusID}")]
         public async Task<IActionResult> GetAttendanceStatusByID(int StatusID)
         {

@@ -19,12 +19,26 @@ namespace Attendance_SE_API.Controllers
             _geoFencingRepository = geoFencingRepository;
         }
 
+        //[HttpPost("AddGeoFancing")]
+        //public async Task<IActionResult> AddGeoFancing([FromBody] GeoFencingRequest request)
+        //{
+        //    var response = await _geoFencingRepository.AddGeoFancing(request);
+        //    return StatusCode(response.StatusCode, response);
+        //}
+
         [HttpPost("AddGeoFancing")]
-        public async Task<IActionResult> AddGeoFancing([FromBody] GeoFencingRequest request)
+        public async Task<IActionResult> AddGeoFancing([FromBody] List<GeoFencingRequest> geoFencings)
         {
-            var response = await _geoFencingRepository.AddGeoFancing(request);
+            if (geoFencings == null || !geoFencings.Any())
+            {
+                return BadRequest("Geo-fencing list is required.");
+            }
+
+            var response = await _geoFencingRepository.AddGeoFancing(geoFencings); // Call service method
             return StatusCode(response.StatusCode, response);
         }
+
+
 
         [HttpPost("GetAllGeoFancing")]
         public async Task<IActionResult> GetAllGeoFancing([FromBody] PaginationRequest request)
