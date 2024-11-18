@@ -20,7 +20,7 @@
         public int VehicleID { get; set; }
         public string VehicleNumber { get; set; }
         public string VehicleModel { get; set; }
-        public string RenewalYear { get; set; }
+        public string RegistrationYear { get; set; }
         public int VehicleTypeID { get; set; }
         public int FuelTypeID { get; set; }
         public int SeatingCapacity { get; set; }

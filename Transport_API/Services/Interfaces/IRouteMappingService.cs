@@ -1,5 +1,6 @@
 ﻿using Transport_API.DTOs.Requests;
 using Transport_API.DTOs.Response;
+using Transport_API.DTOs.Responses;
 using Transport_API.DTOs.ServiceResponse;
 
 namespace Transport_API.Services.Interfaces
@@ -15,6 +16,10 @@ namespace Transport_API.Services.Interfaces
         Task<ServiceResponse<string>> RemoveEmployeeStopMapping(List<EmployeeStopMapping> request);
         Task<ServiceResponse<string>> RemoveStudentStopMapping(List<StudentStopMapping> request);
         Task<ServiceResponse<List<EmployeeStopMappingResponse>>> GetEmployeeStopMappings(int RoutePlanId);
-        Task<ServiceResponse<List<StudentStopMappingResponse>>> GetStudentStopMappings(int RoutePlanId);
+        Task<ServiceResponse<List<StudentStopMappingResponse>>> GetStudentStopMappings(int RoutePlanId); 
+        Task<ServiceResponse<RouteVehicleDriverInfoResponse>> GetRouteVehicleDriverInfo(RouteVehicleDriverInfoRequest request); // Correct the method signature
+        Task<ServiceResponse<IEnumerable<GetStudentsForRouteMappingResponse>>> GetStudentsForRouteMapping(GetStudentsForRouteMappingRequest request);
+        Task<ServiceResponse<IEnumerable<GetEmployeesForRouteMappingResponse>>> GetEmployeesForRouteMapping(GetEmployeesForRouteMappingRequest request);
+
     }
 }

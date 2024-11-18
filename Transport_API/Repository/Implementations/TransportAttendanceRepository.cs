@@ -17,34 +17,65 @@ namespace Transport_API.Repository.Implementations
             _dbConnection = dbConnection;
         }
 
+        //public async Task<ServiceResponse<string>> AddUpdateTransportAttendance(TransportAttendanceRequest request)
+        //{
+        //    string sql;
+        //    if (request.TAID == 0) // Insert operation
+        //    {
+        //        sql = @"INSERT INTO tblTransportAttendance (AttendanceDate, RoutePlanID, TransportAttendanceTypeID, AttendanceStatus, StudentID, Remarks, InstituteID) 
+        //        VALUES (CONVERT(date, @AttendanceDate, 103), @RoutePlanID, @TransportAttendanceTypeID, @AttendanceStatus, @StudentID, @Remarks, @InstituteID)";
+        //    }
+        //    else // Update operation
+        //    {
+        //        sql = @"UPDATE tblTransportAttendance 
+        //        SET AttendanceDate = CONVERT(date, @AttendanceDate, 103),
+        //            RoutePlanID = @RoutePlanID,
+        //            TransportAttendanceTypeID = @TransportAttendanceTypeID,
+        //            AttendanceStatus = @AttendanceStatus,
+        //            StudentID = @StudentID,
+        //            Remarks = @Remarks,
+        //            InstituteID = @InstituteID
+        //        WHERE TAID = @TAID";
+        //    }
+
+        //    var result = await _dbConnection.ExecuteAsync(sql, request);
+        //    if (result > 0)
+        //    {
+        //        return new ServiceResponse<string>(true, "Operation Successful", "Attendance record added/updated successfully", StatusCodes.Status200OK);
+        //    }
+        //    return new ServiceResponse<string>(false, "Operation Failed", "Error adding/updating attendance", StatusCodes.Status400BadRequest);
+        //}
+
         public async Task<ServiceResponse<string>> AddUpdateTransportAttendance(TransportAttendanceRequest request)
         {
             string sql;
             if (request.TAID == 0) // Insert operation
             {
                 sql = @"INSERT INTO tblTransportAttendance (AttendanceDate, RoutePlanID, TransportAttendanceTypeID, AttendanceStatus, StudentID, Remarks, InstituteID) 
-                VALUES (CONVERT(date, @AttendanceDate, 103), @RoutePlanID, @TransportAttendanceTypeID, @AttendanceStatus, @StudentID, @Remarks, @InstituteID)";
+                        VALUES (CONVERT(date, @AttendanceDate, 103), @RoutePlanID, @TransportAttendanceTypeID, @AttendanceStatus, @StudentID, @Remarks, @InstituteID)";
             }
             else // Update operation
             {
                 sql = @"UPDATE tblTransportAttendance 
-                SET AttendanceDate = CONVERT(date, @AttendanceDate, 103),
-                    RoutePlanID = @RoutePlanID,
-                    TransportAttendanceTypeID = @TransportAttendanceTypeID,
-                    AttendanceStatus = @AttendanceStatus,
-                    StudentID = @StudentID,
-                    Remarks = @Remarks,
-                    InstituteID = @InstituteID
-                WHERE TAID = @TAID";
+                        SET AttendanceDate = CONVERT(date, @AttendanceDate, 103),
+                            RoutePlanID = @RoutePlanID,
+                            TransportAttendanceTypeID = @TransportAttendanceTypeID,
+                            AttendanceStatus = @AttendanceStatus,
+                            StudentID = @StudentID,
+                            Remarks = @Remarks,
+                            InstituteID = @InstituteID
+                        WHERE TAID = @TAID";
             }
 
             var result = await _dbConnection.ExecuteAsync(sql, request);
             if (result > 0)
             {
-                return new ServiceResponse<string>(true, "Operation Successful", "Attendance record added/updated successfully", StatusCodes.Status200OK);
+                return new ServiceResponse<string>(true, "Operation Successful", "Attendance record added/updated successfully", 200);
             }
-            return new ServiceResponse<string>(false, "Operation Failed", "Error adding/updating attendance", StatusCodes.Status400BadRequest);
+
+            return new ServiceResponse<string>(false, "Operation Failed", "Error adding/updating attendance", 400);
         }
+
 
         public async Task<ServiceResponse<IEnumerable<TransportAttendanceResponse>>> GetAllTransportAttendance(GetTransportAttendanceRequest request)
         {

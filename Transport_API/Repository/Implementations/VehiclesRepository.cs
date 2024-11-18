@@ -29,11 +29,11 @@ namespace Transport_API.Repository.Implementations
             string sql;
             if (vehicle.VehicleID == 0)
             {
-                sql = @"INSERT INTO tblVehicleMaster (VehicleNumber, VehicleModel, RenewalYear, VehicleTypeID, FuelTypeID, SeatingCapacity, ChassieNo, InsurancePolicyNo, RenewalDate, AssignDriverID, GPSIMEINo, TrackingID, InstituteID) 
-                        VALUES (@VehicleNumber, @VehicleModel, @RenewalYear, @VehicleTypeID, @FuelTypeID, @SeatingCapacity, @ChassieNo, @InsurancePolicyNo, @RenewalDate, @AssignDriverID, @GPSIMEINo, @TrackingID, @InstituteID)
+                sql = @"INSERT INTO tblVehicleMaster (VehicleNumber, VehicleModel, RegistrationYear, VehicleTypeID, FuelTypeID, SeatingCapacity, ChassieNo, InsurancePolicyNo, RenewalDate, AssignDriverID, GPSIMEINo, TrackingID, InstituteID) 
+                        VALUES (@VehicleNumber, @VehicleModel, @RegistrationYear, @VehicleTypeID, @FuelTypeID, @SeatingCapacity, @ChassieNo, @InsurancePolicyNo, @RenewalDate, @AssignDriverID, @GPSIMEINo, @TrackingID, @InstituteID)
                         SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
-                int result = await _dbConnection.QueryFirstOrDefaultAsync<int>(sql, new {vehicle.VehicleNumber, vehicle.VehicleModel, vehicle.RenewalYear, vehicle.VehicleTypeID, vehicle.FuelTypeID, vehicle.SeatingCapacity, vehicle.ChassieNo, vehicle.InsurancePolicyNo, vehicle.RenewalDate, vehicle.AssignDriverID, vehicle.GPSIMEINo, vehicle.TrackingID, vehicle.InstituteID });
+                int result = await _dbConnection.QueryFirstOrDefaultAsync<int>(sql, new {vehicle.VehicleNumber, vehicle.VehicleModel, vehicle.RegistrationYear, vehicle.VehicleTypeID, vehicle.FuelTypeID, vehicle.SeatingCapacity, vehicle.ChassieNo, vehicle.InsurancePolicyNo, vehicle.RenewalDate, vehicle.AssignDriverID, vehicle.GPSIMEINo, vehicle.TrackingID, vehicle.InstituteID });
 
                 if (result >0)
                 {
@@ -52,7 +52,7 @@ namespace Transport_API.Repository.Implementations
                 sql = @"UPDATE tblVehicleMaster SET 
                         VehicleNumber = @VehicleNumber,
                         VehicleModel = @VehicleModel,
-                        RenewalYear = @RenewalYear,
+                        RegistrationYear = @RegistrationYear,
                         VehicleTypeID = @VehicleTypeID,
                         FuelTypeID = @FuelTypeID,
                         SeatingCapacity = @SeatingCapacity,
@@ -66,7 +66,7 @@ namespace Transport_API.Repository.Implementations
                         WHERE VehicleID = @VehicleID";
 
 
-                int result = await _dbConnection.ExecuteAsync(sql, new { vehicle.VehicleID, vehicle.VehicleNumber, vehicle.VehicleModel, vehicle.RenewalYear, vehicle.VehicleTypeID, vehicle.FuelTypeID, vehicle.SeatingCapacity, vehicle.ChassieNo, vehicle.InsurancePolicyNo, vehicle.RenewalDate, vehicle.AssignDriverID, vehicle.GPSIMEINo, vehicle.TrackingID, vehicle.InstituteID });
+                int result = await _dbConnection.ExecuteAsync(sql, new { vehicle.VehicleID, vehicle.VehicleNumber, vehicle.VehicleModel, vehicle.RegistrationYear, vehicle.VehicleTypeID, vehicle.FuelTypeID, vehicle.SeatingCapacity, vehicle.ChassieNo, vehicle.InsurancePolicyNo, vehicle.RenewalDate, vehicle.AssignDriverID, vehicle.GPSIMEINo, vehicle.TrackingID, vehicle.InstituteID });
 
                 if (result > 0)
                 {
@@ -104,7 +104,7 @@ namespace Transport_API.Repository.Implementations
                 VM.VehicleID, 
                 VM.VehicleNumber, 
                 VM.VehicleModel, 
-                VM.RenewalYear, 
+                VM.RegistrationYear, 
                 VM.VehicleTypeID, 
                 VT.Vehicle_type_name as VehicleTypeName, 
                 VM.FuelTypeID, 
@@ -112,7 +112,7 @@ namespace Transport_API.Repository.Implementations
                 VM.SeatingCapacity, 
                 VM.ChassieNo, 
                 VM.InsurancePolicyNo, 
-                VM.RenewalDate, 
+                CONVERT(VARCHAR, VM.RenewalDate, 105) AS RenewalDate,  -- Format as DD-MM-YYYY 
                 VM.AssignDriverID, 
                 EP.First_Name + ' ' + EP.Last_Name as AssignDriverName, 
                 VM.GPSIMEINo, 
@@ -167,7 +167,7 @@ namespace Transport_API.Repository.Implementations
         public async Task<ServiceResponse<Vehicle>> GetVehicleById(int VehicleID)
         {
             string sql = @"SELECT 
-                    VM.VehicleID, VM.VehicleNumber, VM.VehicleModel, VM.RenewalYear, VM.VehicleTypeID, VT.Vehicle_type_name as VehicleTypeName, VM.FuelTypeID, FT.Fuel_type_name as FuelTypeName, VM.SeatingCapacity, VM.ChassieNo, VM.InsurancePolicyNo, VM.RenewalDate, VM.AssignDriverID, EP.First_Name + ' ' + EP.Last_Name as AssignDriverName, VM.GPSIMEINo, VM.TrackingID, VM.InstituteID, VM.IsActive
+                    VM.VehicleID, VM.VehicleNumber, VM.VehicleModel, VM.RegistrationYear, VM.VehicleTypeID, VT.Vehicle_type_name as VehicleTypeName, VM.FuelTypeID, FT.Fuel_type_name as FuelTypeName, VM.SeatingCapacity, VM.ChassieNo, VM.InsurancePolicyNo, CONVERT(VARCHAR, VM.RenewalDate, 105) AS RenewalDate, VM.AssignDriverID, EP.First_Name + ' ' + EP.Last_Name as AssignDriverName, VM.GPSIMEINo, VM.TrackingID, VM.InstituteID, VM.IsActive
                     FROM tblVehicleMaster VM
                     Left Outer Join tbl_Vehicle_Type VT ON VM.VehicleTypeID = VT.Vehicle_type_id
                     Left Outer Join tbl_Fuel_Type FT ON VM.FuelTypeID = FT.Fuel_type_id 
@@ -320,7 +320,7 @@ namespace Transport_API.Repository.Implementations
             VM.VehicleID, 
             VM.VehicleNumber, 
             VM.VehicleModel, 
-            VM.RenewalYear, 
+            VM.RegistrationYear, 
             VM.VehicleTypeID, 
             VT.Vehicle_type_name AS VehicleTypeName, 
             VM.FuelTypeID, 
@@ -435,7 +435,7 @@ namespace Transport_API.Repository.Implementations
             VM.VehicleID, 
             VM.VehicleNumber, 
             VM.VehicleModel, 
-            VM.RenewalYear, 
+            VM.RegistrationYear, 
             VM.VehicleTypeID, 
             VT.Vehicle_type_name AS VehicleTypeName, 
             VM.FuelTypeID, 

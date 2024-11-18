@@ -1,5 +1,6 @@
 ﻿using Transport_API.DTOs.Requests;
 using Transport_API.DTOs.Response;
+using Transport_API.DTOs.Responses;
 using Transport_API.DTOs.ServiceResponse;
 using Transport_API.Models;
 using Transport_API.Repository.Interfaces;
@@ -72,6 +73,42 @@ namespace Transport_API.Services.Implementations
         public async Task<ServiceResponse<bool>> UpdateRouteMappingStatus(int routeMappingId)
         {
             return await _routeMappingRepository.UpdateRouteMappingStatus(routeMappingId);
+        }
+
+        public async Task<ServiceResponse<RouteVehicleDriverInfoResponse>> GetRouteVehicleDriverInfo(RouteVehicleDriverInfoRequest request)
+        {
+            var routeInfo = await _routeMappingRepository.GetRouteVehicleDriverInfo(request.RoutePlanID);
+
+            if (routeInfo == null)
+            {
+                return new ServiceResponse<RouteVehicleDriverInfoResponse>(false, "No data found", null, 404);
+            }
+
+            return new ServiceResponse<RouteVehicleDriverInfoResponse>(true, "Data found", routeInfo, 200);
+        }
+
+        public async Task<ServiceResponse<IEnumerable<GetStudentsForRouteMappingResponse>>> GetStudentsForRouteMapping(GetStudentsForRouteMappingRequest request)
+        {
+            var students = await _routeMappingRepository.GetStudentsForRouteMapping(request.ClassID, request.SectionID, request.InstituteID, request.Search);
+
+            if (students == null || !students.Any())
+            {
+                return new ServiceResponse<IEnumerable<GetStudentsForRouteMappingResponse>>(false, "No students found", null, 404);
+            }
+
+            return new ServiceResponse<IEnumerable<GetStudentsForRouteMappingResponse>>(true, "Students found", students, 200);
+        }
+
+        public async Task<ServiceResponse<IEnumerable<GetEmployeesForRouteMappingResponse>>> GetEmployeesForRouteMapping(GetEmployeesForRouteMappingRequest request)
+        {
+            var employees = await _routeMappingRepository.GetEmployeesForRouteMapping(request.DepartmentID, request.DesignationID, request.InstituteID, request.Search);
+
+            if (employees == null || !employees.Any())
+            {
+                return new ServiceResponse<IEnumerable<GetEmployeesForRouteMappingResponse>>(false, "No employees found", null, 404);
+            }
+
+            return new ServiceResponse<IEnumerable<GetEmployeesForRouteMappingResponse>>(true, "Employees found", employees, 200);
         }
     }
 }

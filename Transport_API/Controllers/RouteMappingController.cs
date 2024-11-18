@@ -153,5 +153,26 @@ namespace Transport_API.Controllers
                 return BadRequest(e.Message);
             }
         }
+
+        [HttpPost("GetRouteVehicleDriverInfo")]
+        public async Task<IActionResult> GetRouteVehicleDriverInfo([FromBody] RouteVehicleDriverInfoRequest request)
+        {
+            var response = await _routeMappingService.GetRouteVehicleDriverInfo(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("GetStudentsForRouteMapping")]
+        public async Task<IActionResult> GetStudentsForRouteMapping([FromBody] GetStudentsForRouteMappingRequest request)
+        {
+            var response = await _routeMappingService.GetStudentsForRouteMapping(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("GetEmployeesForRouteMapping")]
+        public async Task<IActionResult> GetEmployeesForRouteMapping([FromBody] GetEmployeesForRouteMappingRequest request)
+        {
+            var response = await _routeMappingService.GetEmployeesForRouteMapping(request);
+            return StatusCode(response.StatusCode, response);
+        }
     }
 }
