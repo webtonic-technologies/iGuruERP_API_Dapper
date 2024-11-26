@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using EventGallery_API.DTOs.Requests;
 using EventGallery_API.Models;
 using EventGallery_API.Repository.Interfaces;
 using System.Collections.Generic;
@@ -17,21 +18,39 @@ namespace EventGallery_API.Repository.Implementations
             _dbConnection = dbConnection;
         }
 
-        public async Task<int> UploadGalleryImage(int eventID, GalleryImage galleryImage)
+        public async Task<int> UploadGalleryImage(int eventID, GalleryImageRequest galleryImage)
         {
-            var query = @"INSERT INTO tblGallery (EventID, InstituteID, FileName, IsActive) 
-                  VALUES (@EventID, @InstituteID, @FileName, 1);
-                  SELECT CAST(SCOPE_IDENTITY() AS INT);";
+            var query = @"
+        INSERT INTO tblGallery (EventID, InstituteID, FileName, AcademicYearCode, IsActive) 
+        VALUES (@EventID, @InstituteID, @FileName, @AcademicYearCode, 1);
+        SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
             var galleryID = await _dbConnection.QuerySingleAsync<int>(query, new
             {
-                EventID = eventID, // Use the eventID passed from the method argument
+                EventID = eventID,
                 InstituteID = galleryImage.InstituteID,
-                FileName = galleryImage.FileName
+                FileName = galleryImage.FileName,
+                AcademicYearCode = galleryImage.AcademicYearCode // Include the new parameter in the query
             });
 
             return galleryID;
         }
+
+        //public async Task<int> UploadGalleryImage(int eventID, GalleryImage galleryImage)
+        //{
+        //    var query = @"INSERT INTO tblGallery (EventID, InstituteID, FileName, IsActive) 
+        //          VALUES (@EventID, @InstituteID, @FileName, 1);
+        //          SELECT CAST(SCOPE_IDENTITY() AS INT);";
+
+        //    var galleryID = await _dbConnection.QuerySingleAsync<int>(query, new
+        //    {
+        //        EventID = eventID, // Use the eventID passed from the method argument
+        //        InstituteID = galleryImage.InstituteID,
+        //        FileName = galleryImage.FileName
+        //    });
+
+        //    return galleryID;
+        //}
 
 
         public async Task<GalleryImage> DownloadGalleryImage(int galleryID)
@@ -70,15 +89,35 @@ namespace EventGallery_API.Repository.Implementations
             return await _dbConnection.QuerySingleOrDefaultAsync<EventDetails>(query, new { EventID = eventID, InstituteID = instituteID });
         }
 
-        public async Task<List<EventGallery_API.DTOs.Responses.EventDetails>> GetAllEvents(int instituteID)
+        //public async Task<List<EventGallery_API.DTOs.Responses.EventDetails>> GetAllEvents(int instituteID)
+        //{
+        //    var query = @"
+        //        SELECT EventID, EventName 
+        //        FROM tblEvent 
+        //        WHERE InstituteID = @InstituteID AND IsActive = 1 AND IsDelete = 0";
+
+        //    var events = await _dbConnection.QueryAsync<EventGallery_API.DTOs.Responses.EventDetails>(query, new { InstituteID = instituteID });
+        //    return events.ToList();
+        //}
+
+        public async Task<List<EventDetailsList>> GetAllEvents(int instituteID, string academicYearCode)
         {
             var query = @"
                 SELECT EventID, EventName 
                 FROM tblEvent 
-                WHERE InstituteID = @InstituteID AND IsActive = 1 AND IsDelete = 0";
+                WHERE InstituteID = @InstituteID 
+                AND AcademicYearCode = @AcademicYearCode 
+                AND IsActive = 1 
+                AND IsDelete = 0";
 
-            var events = await _dbConnection.QueryAsync<EventGallery_API.DTOs.Responses.EventDetails>(query, new { InstituteID = instituteID });
-            return events.ToList();
+            // Execute the query and return the result
+            var events = await _dbConnection.QueryAsync<EventDetailsList>(query, new
+            {
+                InstituteID = instituteID,
+                AcademicYearCode = academicYearCode
+            });
+
+            return events.AsList();
         }
 
     }

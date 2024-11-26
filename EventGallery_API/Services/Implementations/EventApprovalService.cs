@@ -22,14 +22,30 @@ namespace EventGallery_API.Services.Implementations
             // Fetch the service response from repository
             var eventsResponse = await _eventApprovalRepository.GetAllEventsApprovals(request);
 
-            // Check count on the Data property of the response
+            // Access the Data property from ServiceResponse to get the actual list of events
             return new ServiceResponse<List<GetAllEventsApprovalsResponse>>(
-                true,
-                eventsResponse.Data != null && eventsResponse.Data.Count > 0 ? "Events fetched successfully." : "No events found.",
-                eventsResponse.Data,
-                200
+                eventsResponse.Success,
+                eventsResponse.Message,  // Use the message from the ServiceResponse
+                eventsResponse.Data,     // Use the Data from the ServiceResponse
+                eventsResponse.StatusCode,
+                eventsResponse.TotalCount
             );
         }
+
+
+        //public async Task<ServiceResponse<List<GetAllEventsApprovalsResponse>>> GetAllEventsApprovals(GetAllEventsApprovalsRequest request)
+        //{
+        //    // Fetch the service response from repository
+        //    var eventsResponse = await _eventApprovalRepository.GetAllEventsApprovals(request);
+
+        //    // Check count on the Data property of the response
+        //    return new ServiceResponse<List<GetAllEventsApprovalsResponse>>(
+        //        true,
+        //        eventsResponse.Data != null && eventsResponse.Data.Count > 0 ? "Events fetched successfully." : "No events found.",
+        //        eventsResponse.Data,
+        //        200
+        //    );
+        //}
 
 
         public async Task<ServiceResponse<bool>> UpdateEventApprovalStatus(UpdateEventApprovalStatusRequest request)

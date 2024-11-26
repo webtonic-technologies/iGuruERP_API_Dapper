@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
+
 namespace EventGallery_API.Services.Implementations
 {
     public class GalleryService : IGalleryService
@@ -21,16 +22,35 @@ namespace EventGallery_API.Services.Implementations
 
         public async Task<ServiceResponse<int>> UploadGalleryImage(int eventID, GalleryImageRequest request)
         {
-            var galleryImage = new GalleryImage
+            // Create a new GalleryImage object to pass to the repository
+            var galleryImage = new GalleryImageRequest
             {
                 EventID = eventID,
                 InstituteID = request.InstituteID,
-                FileName = request.FileName
+                FileName = request.FileName,
+                AcademicYearCode = request.AcademicYearCode // Pass the AcademicYearCode to the repository
             };
 
+            // Upload the gallery image and get the gallery ID
             var galleryID = await _galleryRepository.UploadGalleryImage(eventID, galleryImage);
+
+            // Return a response indicating the result of the upload
             return new ServiceResponse<int>(true, "Image uploaded successfully.", galleryID, 200);
         }
+
+
+        //public async Task<ServiceResponse<int>> UploadGalleryImage(int eventID, GalleryImageRequest request)
+        //{
+        //    var galleryImage = new GalleryImage
+        //    {
+        //        EventID = eventID,
+        //        InstituteID = request.InstituteID,
+        //        FileName = request.FileName
+        //    };
+
+        //    var galleryID = await _galleryRepository.UploadGalleryImage(eventID, galleryImage);
+        //    return new ServiceResponse<int>(true, "Image uploaded successfully.", galleryID, 200);
+        //}
 
         public async Task<ServiceResponse<GalleryImageResponse>> DownloadGalleryImage(int galleryID)
         {
@@ -106,9 +126,15 @@ namespace EventGallery_API.Services.Implementations
 
 
 
-        public async Task<List<EventGallery_API.DTOs.Responses.EventDetails>> GetAllEvents(int instituteID)
+        //public async Task<List<EventGallery_API.DTOs.Responses.EventDetails>> GetAllEvents(int instituteID)
+        //{
+        //    return await _galleryRepository.GetAllEvents(instituteID);
+        //}
+
+        public async Task<List<EventDetailsList>> GetAllEvents(int instituteID, string academicYearCode)
         {
-            return await _galleryRepository.GetAllEvents(instituteID);
+            // Pass the parameters to the repository to fetch events
+            return await _galleryRepository.GetAllEvents(instituteID, academicYearCode);
         }
     }
 }

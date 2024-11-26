@@ -52,4 +52,10 @@
         public bool All { get; set; }
         public List<int>? EmployeeID { get; set; }  // EmployeeID list if All = false
     }
+
+    public class GetAllEventsExportRequest
+    {
+        public string AcademicYearCode { get; set; }
+        public int InstituteID { get; set; }  // Ensure there is only one definition 
+    }
 }

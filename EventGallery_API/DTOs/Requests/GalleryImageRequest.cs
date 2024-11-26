@@ -6,6 +6,7 @@
         public int EventID { get; set; }
         public int InstituteID { get; set; }
         public string FileName { get; set; } // Base64 encoded image
+        public string AcademicYearCode { get; set; }
     }
 
     public class GalleryImageRequest_Get

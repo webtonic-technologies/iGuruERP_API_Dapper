@@ -13,7 +13,10 @@ namespace EventGallery_API.Repository.Interfaces
 
         Task<ServiceResponse<GetAllEventsResponse>> GetEventById(int eventId); // Make sure this matches
         Task<ServiceResponse<bool>> DeleteEvent(int eventId);
-        Task<ServiceResponse<byte[]>> ExportAllEvents();
+
+        //Task<ServiceResponse<byte[]>> ExportAllEvents();
+        Task<ServiceResponse<byte[]>> ExportAllEvents(GetAllEventsExportRequest request);
+
 
     }
 }

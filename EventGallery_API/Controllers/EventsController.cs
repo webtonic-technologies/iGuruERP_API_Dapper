@@ -56,15 +56,27 @@ namespace EventGallery_API.Controllers
             return NotFound(response);
         }
 
+        //[HttpPost("ExportAllEvents")]
+        //public async Task<IActionResult> ExportAllEvents()
+        //{
+        //    var response = await _eventService.ExportAllEvents(); // Use the service to handle the export logic
+        //    if (response.Success)
+        //    {
+        //        return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "AllEvents.xlsx");
+        //    }
+        //    return BadRequest(response.Message);
+        //}
+
         [HttpPost("ExportAllEvents")]
-        public async Task<IActionResult> ExportAllEvents()
+        public async Task<IActionResult> ExportAllEvents([FromBody] GetAllEventsExportRequest request)
         {
-            var response = await _eventService.ExportAllEvents(); // Use the service to handle the export logic
+            var response = await _eventService.ExportAllEvents(request); // Pass the request to the service
             if (response.Success)
             {
                 return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "AllEvents.xlsx");
             }
             return BadRequest(response.Message);
         }
+
     }
 }
