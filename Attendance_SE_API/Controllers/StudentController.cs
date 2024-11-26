@@ -92,5 +92,33 @@ namespace Attendance_SE_API.Controllers
             var response = await _attendanceReportService.GetAttendanceReport(request);
             return Ok(response);
         }
+
+        [HttpPost("StudentAttendanceReport/GetAttendanceReportPeriodWise")]
+        public async Task<IActionResult> GetAttendanceReportPeriodWise([FromBody] StudentAttendanceReportPeriodWiseRequest request)
+        {
+            var response = await _attendanceReportService.GetAttendanceReportPeriodWise(request);
+            return Ok(response);
+        }
+
+        [HttpPost("StudentAttendanceReport/GetAttendanceReportExport")]
+        public async Task<IActionResult> GetAttendanceReportExport([FromBody] StudentAttendanceReportRequest request)
+        {
+            try
+            {
+                var fileBytes = await _attendanceReportService.GetAttendanceReportExport(request);
+                return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "AttendanceReport.xlsx");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Success = false, Message = ex.Message });
+            }
+        }
+
+        [HttpPost("StudentAttendanceReport/GetAttendanceReportPeriodWiseExport")]
+        public async Task<IActionResult> GetAttendanceReportPeriodWiseExport([FromBody] StudentAttendanceReportPeriodWiseRequest request)
+        {
+            var fileBytes = await _attendanceReportService.ExportAttendanceReportPeriodWiseToExcel(request);
+            return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "AttendanceReportPeriodWise.xlsx");
+        }
     }
 }

@@ -7,8 +7,8 @@
         public string StartDate { get; set; }
         public string EndDate { get; set; }
         public int? InstituteID { get; set; }
-        public int? AttendanceTypeID { get; set; }
+        //public int? AttendanceTypeID { get; set; }
         public int? TimeSlotTypeID { get; set; }
-        public int? SubjectID { get; set; }
+        //public int? SubjectID { get; set; }
     }
 }

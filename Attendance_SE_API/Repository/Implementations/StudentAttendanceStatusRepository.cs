@@ -24,8 +24,8 @@ namespace Attendance_SE_API.Repository.Implementations
                 if (request.StatusID == 0)
                 {
                     // Insert new status
-                    string query = @"INSERT INTO tblStudentAttendanceStatus (StatusName, ShortName, IsDefault, IsActive, InstituteID) 
-                                     VALUES (@StatusName, @ShortName, @IsDefault, @IsActive, @InstituteID)";
+                    string query = @"INSERT INTO tblStudentAttendanceStatus (StatusName, ShortName, IsActive, InstituteID) 
+                             VALUES (@StatusName, @ShortName, @IsActive, @InstituteID)";
                     await _connection.ExecuteAsync(query, request);
                     return new ServiceResponse<string>(true, "Attendance status added successfully.", null, 201);
                 }
@@ -33,8 +33,8 @@ namespace Attendance_SE_API.Repository.Implementations
                 {
                     // Update existing status
                     string query = @"UPDATE tblStudentAttendanceStatus SET StatusName = @StatusName, ShortName = @ShortName, 
-                                     IsDefault = @IsDefault, IsActive = @IsActive, InstituteID = @InstituteID 
-                                     WHERE StatusID = @StatusID";
+                             IsActive = @IsActive, InstituteID = @InstituteID 
+                             WHERE StatusID = @StatusID";
                     await _connection.ExecuteAsync(query, request);
                     return new ServiceResponse<string>(true, "Attendance status updated successfully.", null, 200);
                 }
@@ -44,6 +44,7 @@ namespace Attendance_SE_API.Repository.Implementations
                 return new ServiceResponse<string>(false, ex.Message, null, 500);
             }
         }
+
 
         public async Task<ServiceResponse<List<AttendanceStatus>>> GetAllAttendanceStatuses(GetAllAttendanceStatusRequest request)
         {

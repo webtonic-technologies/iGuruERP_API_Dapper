@@ -5,6 +5,7 @@ using Attendance_SE_API.ServiceResponse;
 using Dapper;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.SqlClient;
 using System.Threading.Tasks;
 
 namespace Attendance_SE_API.Repository.Implementations
@@ -18,61 +19,140 @@ namespace Attendance_SE_API.Repository.Implementations
             _connection = connection;
         }
 
-        public async Task<ServiceResponse<string>> AddUpdateShift(ShiftRequest request)
+        //public async Task<ServiceResponse<string>> AddUpdateShift(ShiftRequest request)
+        //{
+        //    if (request.Designations == null || !request.Designations.Any())
+        //    {
+        //        return new ServiceResponse<string>(false, "Designations list is required.", null, 400);
+        //    }
+
+        //    string query;
+
+        //    if (request.ShiftID > 0) // Update existing shift
+        //    {
+        //        // Remove previously mapped designations
+        //        string deleteQuery = @"DELETE FROM tblShiftMasterMapping WHERE ShiftID = @ShiftID";
+        //        await _connection.ExecuteAsync(deleteQuery, new { ShiftID = request.ShiftID });
+
+        //        query = @"UPDATE tblShiftMaster 
+        //          SET ClockIn = @ClockIn, ClockOut = @ClockOut, LateComing = @LateComing, InstituteID = @InstituteID 
+        //          WHERE ShiftID = @ShiftID";
+        //        await _connection.ExecuteAsync(query, new
+        //        {
+        //            ShiftID = request.ShiftID,
+        //            ClockIn = request.ClockIn, // No conversion needed; TimeSpan is accepted directly
+        //            ClockOut = request.ClockOut, // No conversion needed; TimeSpan is accepted directly
+        //            LateComing = request.LateComing, // No conversion needed; TimeSpan is accepted directly
+        //            InstituteID = request.InstituteID // Include InstituteID in the update
+        //        });
+        //    }
+        //    else // Add new shift
+        //    {
+        //        query = @"INSERT INTO tblShiftMaster (ClockIn, ClockOut, LateComing, InstituteID) 
+        //          VALUES (@ClockIn, @ClockOut, @LateComing, @InstituteID);
+        //          SELECT CAST(SCOPE_IDENTITY() as int)";
+        //        request.ShiftID = await _connection.QuerySingleAsync<int>(query, new
+        //        {
+        //            ClockIn = request.ClockIn, // No conversion needed; TimeSpan is accepted directly
+        //            ClockOut = request.ClockOut, // No conversion needed; TimeSpan is accepted directly
+        //            LateComing = request.LateComing, // No conversion needed; TimeSpan is accepted directly
+        //            InstituteID = request.InstituteID // Include InstituteID in the insert
+        //        });
+        //    }
+
+        //    // Logic for handling designations in tblShiftMasterMapping
+        //    foreach (var designation in request.Designations)
+        //    {
+        //        string mappingQuery = @"INSERT INTO tblShiftMasterMapping (ShiftID, DesignationID) 
+        //                        VALUES (@ShiftID, @DesignationID)";
+        //        await _connection.ExecuteAsync(mappingQuery, new
+        //        {
+        //            ShiftID = request.ShiftID,
+        //            DesignationID = designation.DesignationID
+        //        });
+        //    }
+
+        //    return new ServiceResponse<string>(true, "Shift processed successfully.", null, 200);
+        //}
+
+        public async Task<ServiceResponse<string>> AddUpdateShift(List<ShiftRequest> requests)
         {
-            if (request.Designations == null || !request.Designations.Any())
+            try
             {
-                return new ServiceResponse<string>(false, "Designations list is required.", null, 400);
-            }
-
-            string query;
-
-            if (request.ShiftID > 0) // Update existing shift
-            {
-                // Remove previously mapped designations
-                string deleteQuery = @"DELETE FROM tblShiftMasterMapping WHERE ShiftID = @ShiftID";
-                await _connection.ExecuteAsync(deleteQuery, new { ShiftID = request.ShiftID });
-
-                query = @"UPDATE tblShiftMaster 
-                  SET ClockIn = @ClockIn, ClockOut = @ClockOut, LateComing = @LateComing, InstituteID = @InstituteID 
-                  WHERE ShiftID = @ShiftID";
-                await _connection.ExecuteAsync(query, new
+                // Ensure the connection is open before starting the transaction
+                if (_connection.State != System.Data.ConnectionState.Open)
                 {
-                    ShiftID = request.ShiftID,
-                    ClockIn = request.ClockIn, // No conversion needed; TimeSpan is accepted directly
-                    ClockOut = request.ClockOut, // No conversion needed; TimeSpan is accepted directly
-                    LateComing = request.LateComing, // No conversion needed; TimeSpan is accepted directly
-                    InstituteID = request.InstituteID // Include InstituteID in the update
-                });
-            }
-            else // Add new shift
-            {
-                query = @"INSERT INTO tblShiftMaster (ClockIn, ClockOut, LateComing, InstituteID) 
-                  VALUES (@ClockIn, @ClockOut, @LateComing, @InstituteID);
-                  SELECT CAST(SCOPE_IDENTITY() as int)";
-                request.ShiftID = await _connection.QuerySingleAsync<int>(query, new
-                {
-                    ClockIn = request.ClockIn, // No conversion needed; TimeSpan is accepted directly
-                    ClockOut = request.ClockOut, // No conversion needed; TimeSpan is accepted directly
-                    LateComing = request.LateComing, // No conversion needed; TimeSpan is accepted directly
-                    InstituteID = request.InstituteID // Include InstituteID in the insert
-                });
-            }
+                    if (_connection is SqlConnection sqlConnection)
+                    {
+                        await sqlConnection.OpenAsync(); // For SQL Server
+                    }
+                    else
+                    {
+                        _connection.Open(); // For other DB connections
+                    }
+                }
 
-            // Logic for handling designations in tblShiftMasterMapping
-            foreach (var designation in request.Designations)
-            {
-                string mappingQuery = @"INSERT INTO tblShiftMasterMapping (ShiftID, DesignationID) 
-                                VALUES (@ShiftID, @DesignationID)";
-                await _connection.ExecuteAsync(mappingQuery, new
+                // Start a transaction for handling multiple shifts
+                using (var transaction = _connection.BeginTransaction())
                 {
-                    ShiftID = request.ShiftID,
-                    DesignationID = designation.DesignationID
-                });
-            }
+                    foreach (var request in requests)
+                    {
+                        string query;
 
-            return new ServiceResponse<string>(true, "Shift processed successfully.", null, 200);
+                        if (request.ShiftID > 0) // Update existing shift
+                        {
+                            query = @"UPDATE tblShiftMaster 
+                               SET ClockIn = @ClockIn, ClockOut = @ClockOut, LateComing = @LateComing, InstituteID = @InstituteID 
+                               WHERE ShiftID = @ShiftID";
+                            await _connection.ExecuteAsync(query, new
+                            {
+                                ShiftID = request.ShiftID,
+                                ClockIn = request.ClockIn,
+                                ClockOut = request.ClockOut,
+                                LateComing = request.LateComing,
+                                InstituteID = request.InstituteID
+                            }, transaction);
+                        }
+                        else // Insert new shift
+                        {
+                            query = @"INSERT INTO tblShiftMaster (ClockIn, ClockOut, LateComing, InstituteID) 
+                               VALUES (@ClockIn, @ClockOut, @LateComing, @InstituteID);
+                               SELECT CAST(SCOPE_IDENTITY() as int)";
+                            request.ShiftID = await _connection.QuerySingleAsync<int>(query, new
+                            {
+                                ClockIn = request.ClockIn,
+                                ClockOut = request.ClockOut,
+                                LateComing = request.LateComing,
+                                InstituteID = request.InstituteID
+                            }, transaction);
+                        }
+
+                        // Handle the designations for each shift
+                        foreach (var designation in request.Designations)
+                        {
+                            string mappingQuery = @"INSERT INTO tblShiftMasterMapping (ShiftID, DesignationID) 
+                                            VALUES (@ShiftID, @DesignationID)";
+                            await _connection.ExecuteAsync(mappingQuery, new
+                            {
+                                ShiftID = request.ShiftID,
+                                DesignationID = designation.DesignationID
+                            }, transaction);
+                        }
+                    }
+
+                    // Commit the transaction after all shifts are processed
+                    transaction.Commit();
+                }
+
+                return new ServiceResponse<string>(true, "Shifts processed successfully.", null, 200);
+            }
+            catch (Exception ex)
+            {
+                // Rollback the transaction in case of any error
+                return new ServiceResponse<string>(false, $"Error processing shifts: {ex.Message}", null, 500);
+            }
         }
+
 
         //public async Task<ServiceResponse<List<ShiftResponse>>> GetAllShifts(GetAllShiftsRequest request)
         //{
