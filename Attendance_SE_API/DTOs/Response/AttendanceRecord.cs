@@ -17,7 +17,16 @@
         public int EmployeeID { get; set; }
         public string EmployeeCode { get; set; } 
         public string EmployeeName { get; set; }
+        public string MobileNumber { get; set; }
         public DateTime AttendanceDate { get; set; }
         public string AttendanceStatus { get; set; }
+        public int StatusID { get; set; }
+        
+    }
+
+    public class AttendanceStatusMapping
+    {
+        public int StatusID { get; set; }
+        public string ShortName { get; set; }
     }
 }

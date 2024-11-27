@@ -54,6 +54,12 @@ builder.Services.AddScoped<IClassAttendanceAnalysisService, ClassAttendanceAnaly
 builder.Services.AddScoped<ISubjectAttendanceAnalysisRepository, SubjectAttendanceAnalysisRepository>();
 builder.Services.AddScoped<ISubjectAttendanceAnalysisService, SubjectAttendanceAnalysisService>();
 
+builder.Services.AddScoped<IGeoFencingEntryRepository, GeoFencingEntryRepository>();
+builder.Services.AddScoped<IGeoFencingEntryService, GeoFencingEntryService>();
+
+builder.Services.AddScoped<IAttendanceDashboardRepository, AttendanceDashboardRepository>();
+builder.Services.AddScoped<IAttendanceDashboardService, AttendanceDashboardService>();
+
 var app = builder.Build();
 
 

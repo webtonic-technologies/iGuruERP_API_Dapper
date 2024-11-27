@@ -36,5 +36,13 @@ namespace Attendance_SE_API.Controllers
             var response = await _employeeAttendanceService.GetAttendance_EMP(request);
             return StatusCode(response.StatusCode, response);
         }
+
+        [HttpPost("GetEmployeeDepartment")]
+        public async Task<IActionResult> GetEmployeeDepartment([FromBody] GetEmployeeDepartmentRequest request)
+        {
+            // Pass only the InstituteID to the service
+            var response = await _employeeAttendanceService.GetEmployeeDepartmentAsync(request.InstituteID);
+            return Ok(response);
+        }
     }
 }

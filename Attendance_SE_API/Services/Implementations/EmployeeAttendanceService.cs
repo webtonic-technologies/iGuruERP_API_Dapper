@@ -1,5 +1,6 @@
 ﻿using Attendance_SE_API.DTOs.Requests;
 using Attendance_SE_API.DTOs.Response;
+using Attendance_SE_API.DTOs.Responses;
 using Attendance_SE_API.Models;
 using Attendance_SE_API.Repository.Interfaces;
 using Attendance_SE_API.ServiceResponse;
@@ -27,6 +28,16 @@ namespace Attendance_SE_API.Services.Implementations
         {
             var response = await _repository.GetAttendance_EMP(request);
             return response; // Ensure this matches the expected type in the interface
+        }
+
+        public async Task<GetEmployeeDepartmentResponse> GetEmployeeDepartmentAsync(int instituteId)
+        {
+            var departments = await _repository.GetDepartmentsByInstituteAsync(instituteId);
+
+            return new GetEmployeeDepartmentResponse
+            {
+                Departments = departments
+            };
         }
     }
 }

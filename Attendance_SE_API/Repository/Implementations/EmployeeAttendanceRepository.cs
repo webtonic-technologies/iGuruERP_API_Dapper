@@ -1,11 +1,13 @@
 ﻿using Attendance_SE_API.DTOs.Requests;
 using Attendance_SE_API.DTOs.Response;
+using Attendance_SE_API.DTOs.Responses;
 using Attendance_SE_API.Models;
 using Attendance_SE_API.Repository.Interfaces;
 using Attendance_SE_API.ServiceResponse;
 using Dapper;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.SqlClient;
 using System.Globalization;
 using System.Threading.Tasks;
 
@@ -30,7 +32,7 @@ namespace Attendance_SE_API.Repository.Implementations
                     // Create the attendance object
                     var attendance = new EmployeeAttendance
                     {
-                        InstituteID = request.InstituteID, 
+                        InstituteID = request.InstituteID,
                         DepartmentID = request.DepartmentID,
                         AttendanceDate = DateTime.ParseExact(request.AttendanceDate, "dd-MM-yyyy", CultureInfo.InvariantCulture).ToString(), // Ensure correct date format
                         TimeSlotTypeID = request.TimeSlotTypeID,
@@ -205,5 +207,21 @@ namespace Attendance_SE_API.Repository.Implementations
 
         //    return new ServiceResponse<List<EmployeeAttendanceResponse>>(true, "Attendance fetched successfully.", attendanceRecords.AsList(), 200);
         //}
+
+        public async Task<List<Department>> GetDepartmentsByInstituteAsync(int instituteId)
+        {
+            // Use the injected _connection object directly instead of _connectionString
+                var query = @"
+            SELECT Department_id AS DepartmentId, DepartmentName
+            FROM tbl_Department
+            WHERE Institute_id = @InstituteID AND IsDeleted = 0";  // Remove IsDeleted from SELECT
+
+            // Execute the query using _connection
+            var departments = await _connection.QueryAsync<Department>(query, new { InstituteID = instituteId });
+
+            return departments.ToList();
+        }
+
+
     }
 }
