@@ -2,6 +2,7 @@
 using Student_API.DTOs;
 using Student_API.DTOs.RequestDTO;
 using Student_API.DTOs.ServiceResponse;
+using Student_API.Helper;
 using Student_API.Repository.Interfaces;
 using System.Data;
 using System.Data.Common;
@@ -128,6 +129,10 @@ namespace Student_API.Repository.Implementations
                 int actualPageNumber = pageNumber ?? 1;
                 int offset = (actualPageNumber - 1) * actualPageSize;
 
+                startDate = DateTimeHelper.ConvertToDateTime(startDate, "dd-MM-yyyy").ToString("yyyy-MM-dd");
+                endDate = DateTimeHelper.ConvertToDateTime(endDate, "dd-MM-yyyy").ToString("yyyy-MM-dd");
+
+
                 // SQL query with filters and pagination
                 string sql = @"
             IF OBJECT_ID('tempdb..#PermissionSlipTempTable') IS NOT NULL DROP TABLE #PermissionSlipTempTable;
@@ -159,8 +164,9 @@ namespace Student_API.Repository.Implementations
               AND (s.class_id = @ClassId OR  @ClassId=0)
               AND (s.section_id = @SectionId OR  @SectionId =0)
               AND ps.Status = @Status
-              AND (@StartDate IS NULL OR ps.RequestedDateTime >= CONVERT(datetime, @StartDate, 105))
-              AND (@EndDate IS NULL OR ps.RequestedDateTime <= CONVERT(datetime, @EndDate, 105));
+              AND (@StartDate IS NULL OR CAST(ps.RequestedDateTime AS DATE) >= CAST(@StartDate AS DATE))
+AND (@EndDate IS NULL OR CAST(ps.RequestedDateTime AS DATE) <= CAST(@EndDate AS DATE));
+
 
             SELECT * 
             FROM #PermissionSlipTempTable

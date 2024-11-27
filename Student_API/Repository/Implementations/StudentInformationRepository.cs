@@ -101,10 +101,10 @@ namespace Student_API.Repository.Implementations
 
                     SELECT [Student_Parent_Info_id], [Student_id], tbl_StudentParentsInfo.Parent_Type_id, [First_Name], [Middle_Name], [Last_Name], [Mobile_Number],
                     [Bank_Account_no], [Bank_IFSC_Code], [Family_Ration_Card_Type], [Family_Ration_Card_no],  FORMAT([Date_of_Birth], 'dd-MM-yyyy') AS Date_of_Birth, [Aadhar_no], 
-                    [PAN_card_no], [Residential_Address], tbl_StudentParentsInfo.Occupation_id, [Designation], [Name_of_the_Employer], [Office_no], [Email_id], [Annual_Income], 
-                    [File_Name], tbl_Occupation.Occupation_Type, tbl_ParentType.parent_type
+                    [PAN_card_no], [Residential_Address], tbl_StudentParentsInfo.Occupation, [Designation], [Name_of_the_Employer], [Office_no], [Email_id], [Annual_Income], 
+                    [File_Name],  tbl_ParentType.parent_type
                     FROM [dbo].[tbl_StudentParentsInfo]
-                    INNER JOIN tbl_Occupation ON tbl_Occupation.Occupation_id = tbl_StudentParentsInfo.Occupation_id
+                   
                     INNER JOIN tbl_ParentType ON tbl_ParentType.Parent_Type_id = tbl_StudentParentsInfo.Parent_Type_id
                     WHERE student_id = @studentId;
 
@@ -284,7 +284,6 @@ namespace Student_API.Repository.Implementations
                                 Identification_Mark_1 = @Identification_Mark_1,
                                 Identification_Mark_2 = @Identification_Mark_2,
                                 Admission_Date = @Admission_Date,
-                                Student_Group_id = @Student_Group_id,
                                 Register_Date = @Register_Date,
                                 Register_Number = @Register_Number,
                                 samagra_ID = @samagra_ID,
@@ -317,8 +316,8 @@ namespace Student_API.Repository.Implementations
                             {
                                 // Insert Student Parent Info
                                 var addSql = @"
-                    INSERT INTO [dbo].[tbl_StudentParentsInfo] ([Student_id],[Parent_Type_id],[First_Name],[Middle_Name],[Last_Name],[Mobile_Number],[Bank_Account_no],[Bank_IFSC_Code],[Family_Ration_Card_Type],[Family_Ration_Card_no],[Date_of_Birth],[Aadhar_no],[PAN_card_no],[Residential_Address],[Occupation_id],[Designation],[Name_of_the_Employer],[Office_no],[Email_id],[Annual_Income],[File_Name])
-                    VALUES (@Student_id,@Parent_Type_id,@First_Name,@Middle_Name,@Last_Name,@Mobile_Number,@Bank_Account_no,@Bank_IFSC_Code,@Family_Ration_Card_Type,@Family_Ration_Card_no,@Date_of_Birth,@Aadhar_no,@PAN_card_no,@Residential_Address,@Occupation_id,@Designation,@Name_of_the_Employer,@Office_no,@Email_id,@Annual_Income,@File_Name); 
+                    INSERT INTO [dbo].[tbl_StudentParentsInfo] ([Student_id],[Parent_Type_id],[First_Name],[Middle_Name],[Last_Name],[Mobile_Number],[Bank_Account_no],[Bank_IFSC_Code],[Family_Ration_Card_Type],[Family_Ration_Card_no],[Date_of_Birth],[Aadhar_no],[PAN_card_no],[Residential_Address],[Occupation],[Designation],[Name_of_the_Employer],[Office_no],[Email_id],[Annual_Income],[File_Name])
+                    VALUES (@Student_id,@Parent_Type_id,@First_Name,@Middle_Name,@Last_Name,@Mobile_Number,@Bank_Account_no,@Bank_IFSC_Code,@Family_Ration_Card_Type,@Family_Ration_Card_no,@Date_of_Birth,@Aadhar_no,@PAN_card_no,@Residential_Address,@Occupation,@Designation,@Name_of_the_Employer,@Office_no,@Email_id,@Annual_Income,@File_Name); 
                     SELECT CAST(SCOPE_IDENTITY() as int);";
                                 int insertedId = await _connection.ExecuteScalarAsync<int>(addSql, parentInfo, transaction);
 
@@ -353,7 +352,7 @@ namespace Student_API.Repository.Implementations
                         [Aadhar_no] = @Aadhar_no,
                         [PAN_card_no] = @PAN_card_no,
                         [Residential_Address] = @Residential_Address,
-                        [Occupation_id] = @Occupation_id,
+                        [Occupation] = @Occupation,
                         [Designation] = @Designation,
                         [Name_of_the_Employer] = @Name_of_the_Employer,
                         [Office_no] = @Office_no,
@@ -534,13 +533,13 @@ namespace Student_API.Repository.Implementations
                                  [height], [weight], [Government_ID],
                                  [Chest], [Physical_Deformity], 
                                  [History_Majorillness], [History_Accident], [Vision], [Hearing], [Speech], 
-                                 [Behavioral_Problem], [Remarks_Weakness], [Student_Name], [Student_Age]
+                                 [Behavioral_Problem], [Remarks_Weakness]
                              ) VALUES (
                                  @Student_id, @Allergies, @Medications, @Doctor_Name, @Doctor_Phone_no, 
                                  @height, @weight, @Government_ID,
                                  @Chest, @Physical_Deformity, 
                                  @History_Majorillness, @History_Accident, @Vision, @Hearing, @Speech, 
-                                 @Behavioral_Problem, @Remarks_Weakness, @Student_Name, @Student_Age
+                                 @Behavioral_Problem, @Remarks_Weakness
                              );
                              SELECT CAST(SCOPE_IDENTITY() as int);";
 
@@ -756,7 +755,6 @@ namespace Student_API.Repository.Implementations
                             Identification_Mark_1 = @Identification_Mark_1,
                             Identification_Mark_2 = @Identification_Mark_2,
                             Admission_Date = @Admission_Date,
-                            Student_Group_id = @Student_Group_id,
                             Register_Date = @Register_Date,
                             Register_Number = @Register_Number,
                             samagra_ID = @samagra_ID,
@@ -1495,19 +1493,16 @@ SELECT
     [Aadhar_no], 
     [PAN_card_no], 
     [Residential_Address], 
-    tbl_StudentParentsInfo.Occupation_id, 
+    tbl_StudentParentsInfo.Occupation, 
     [Designation], 
     [Name_of_the_Employer], 
     [Office_no], 
     [Email_id], 
     [Annual_Income], 
     [File_Name], 
-    tbl_Occupation.Occupation_Type, 
     tbl_ParentType.parent_type
 FROM 
     [dbo].[tbl_StudentParentsInfo]
-INNER JOIN 
-    tbl_Occupation ON tbl_Occupation.Occupation_id = tbl_StudentParentsInfo.Occupation_id
 INNER JOIN 
     tbl_ParentType ON tbl_ParentType.Parent_Type_id = tbl_StudentParentsInfo.Parent_Type_id
 WHERE 
@@ -1734,13 +1729,13 @@ SELECT
     -- Parent details dynamically included
     Father_First_Name, Father_Middle_Name, Father_Last_Name, Father_Bank_Account_no, Father_Bank_IFSC_Code, Father_Family_Ration_Card_Type, 
     Father_Family_Ration_Card_no, Father_Mobile_Number, Father_Date_of_Birth, Father_Aadhar_no, Father_PAN_card_no, Father_Residential_Address, 
-    Father_Occupation_Type, Father_Designation, Father_Name_of_the_Employer, Father_Office_no, Father_Email_id, Father_Annual_Income, Father_File_Name, 
+    Father_Occupation, Father_Designation, Father_Name_of_the_Employer, Father_Office_no, Father_Email_id, Father_Annual_Income, Father_File_Name, 
     Mother_First_Name, Mother_Middle_Name, Mother_Last_Name, Mother_Bank_Account_no, Mother_Bank_IFSC_Code, Mother_Family_Ration_Card_Type, 
     Mother_Family_Ration_Card_no, Mother_Mobile_Number, Mother_Date_of_Birth, Mother_Aadhar_no, Mother_PAN_card_no, Mother_Residential_Address, 
-    Mother_Occupation_Type, Mother_Designation, Mother_Name_of_the_Employer, Mother_Office_no, Mother_Email_id, Mother_Annual_Income, Mother_File_Name, 
+    Mother_Occupation, Mother_Designation, Mother_Name_of_the_Employer, Mother_Office_no, Mother_Email_id, Mother_Annual_Income, Mother_File_Name, 
     Guardian_First_Name, Guardian_Middle_Name, Guardian_Last_Name, Guardian_Bank_Account_no, Guardian_Bank_IFSC_Code, Guardian_Family_Ration_Card_Type, 
     Guardian_Family_Ration_Card_no, Guardian_Mobile_Number, Guardian_Date_of_Birth, Guardian_Aadhar_no, Guardian_PAN_card_no, Guardian_Residential_Address, 
-    Guardian_Occupation_Type, Guardian_Designation, Guardian_Name_of_the_Employer, Guardian_Office_no, Guardian_Email_id, Guardian_Annual_Income, Guardian_File_Name,
+    Guardian_Occupation, Guardian_Designation, Guardian_Name_of_the_Employer, Guardian_Office_no, Guardian_Email_id, Guardian_Annual_Income, Guardian_File_Name,
 	 OfficeInfo.Father_Office_Building_no,
     OfficeInfo.Father_Street,
     OfficeInfo.Father_Area,
@@ -1814,7 +1809,7 @@ LEFT JOIN
         MAX(CASE WHEN Parent_Type_id = 1 THEN Aadhar_no END) AS Father_Aadhar_no,
         MAX(CASE WHEN Parent_Type_id = 1 THEN PAN_card_no END) AS Father_PAN_card_no,
         MAX(CASE WHEN Parent_Type_id = 1 THEN Residential_Address END) AS Father_Residential_Address,
-        MAX(CASE WHEN Parent_Type_id = 1 THEN tbl_Occupation.Occupation_Type END) AS Father_Occupation_Type,
+        MAX(CASE WHEN Parent_Type_id = 1 THEN Occupation END) AS Father_Occupation,
         MAX(CASE WHEN Parent_Type_id = 1 THEN Designation END) AS Father_Designation,
         MAX(CASE WHEN Parent_Type_id = 1 THEN Name_of_the_Employer END) AS Father_Name_of_the_Employer,
         MAX(CASE WHEN Parent_Type_id = 1 THEN Office_no END) AS Father_Office_no,
@@ -1835,7 +1830,7 @@ LEFT JOIN
         MAX(CASE WHEN Parent_Type_id = 2 THEN Aadhar_no END) AS Mother_Aadhar_no,
         MAX(CASE WHEN Parent_Type_id = 2 THEN PAN_card_no END) AS Mother_PAN_card_no,
         MAX(CASE WHEN Parent_Type_id = 2 THEN Residential_Address END) AS Mother_Residential_Address,
-        MAX(CASE WHEN Parent_Type_id = 2 THEN tbl_Occupation.Occupation_Type END) AS Mother_Occupation_Type,
+        MAX(CASE WHEN Parent_Type_id = 2 THEN Occupation END) AS Mother_Occupation,
         MAX(CASE WHEN Parent_Type_id = 2 THEN Designation END) AS Mother_Designation,
         MAX(CASE WHEN Parent_Type_id = 2 THEN Name_of_the_Employer END) AS Mother_Name_of_the_Employer,
         MAX(CASE WHEN Parent_Type_id = 2 THEN Office_no END) AS Mother_Office_no,
@@ -1856,7 +1851,7 @@ LEFT JOIN
         MAX(CASE WHEN Parent_Type_id = 3 THEN Aadhar_no END) AS Guardian_Aadhar_no,
         MAX(CASE WHEN Parent_Type_id = 3 THEN PAN_card_no END) AS Guardian_PAN_card_no,
         MAX(CASE WHEN Parent_Type_id = 3 THEN Residential_Address END) AS Guardian_Residential_Address,
-        MAX(CASE WHEN Parent_Type_id = 3 THEN tbl_Occupation.Occupation_Type END) AS Guardian_Occupation_Type,
+        MAX(CASE WHEN Parent_Type_id = 3 THEN Occupation END) AS Guardian_Occupation,
         MAX(CASE WHEN Parent_Type_id = 3 THEN Designation END) AS Guardian_Designation,
         MAX(CASE WHEN Parent_Type_id = 3 THEN Name_of_the_Employer END) AS Guardian_Name_of_the_Employer,
         MAX(CASE WHEN Parent_Type_id = 3 THEN Office_no END) AS Guardian_Office_no,
@@ -1866,7 +1861,6 @@ LEFT JOIN
 
     FROM 
         tbl_StudentParentsInfo
-    LEFT JOIN tbl_Occupation ON tbl_StudentParentsInfo.Occupation_id = tbl_Occupation.Occupation_id
     GROUP BY 
         student_id
 ) ParentInfo

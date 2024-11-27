@@ -57,11 +57,11 @@ namespace Student_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<StudentDocumentConfigDTO>>> GetAllStudentDocuments(int Institute_id ,string sortColumn, string sortDirection, int? pageSize = null, int? pageNumber = null)
+        public async Task<ServiceResponse<List<StudentDocumentConfigDTO>>> GetAllStudentDocuments(int Institute_id ,string sortColumn, string sortDirection, int? pageSize = null, int? pageNumber = null, string searchQuery = null)
         {
             try
             {
-                var data = await _studentDocumentRepository.GetAllStudentDocuments(Institute_id,sortColumn, sortDirection,pageSize, pageNumber);
+                var data = await _studentDocumentRepository.GetAllStudentDocuments(Institute_id,sortColumn, sortDirection,pageSize, pageNumber,searchQuery);
                 return new ServiceResponse<List<StudentDocumentConfigDTO>>(true, "Student documents retrieved successfully", data.Data, 200, data.TotalCount);
 
                 //if (pageSize.HasValue && pageNumber.HasValue)

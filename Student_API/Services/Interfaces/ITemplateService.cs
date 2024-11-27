@@ -8,6 +8,6 @@ namespace Student_API.Services.Interfaces
         Task<ServiceResponse<int>> AddUpdateTemplate(TemplateDTO templateDto);
         Task<ServiceResponse<TemplateDTO>> GetTemplateById(int templateId);
         Task<ServiceResponse<bool>> DeleteTemplate(int templateId);
-        Task<ServiceResponse<List<TemplateDTO>>> GetAllTemplates(int? pageSize = null, int? pageNumber = null);
+        Task<ServiceResponse<List<TemplateResponseDTO>>> GetAllTemplates(int? pageSize = null, int? pageNumber = null);
     }
 }

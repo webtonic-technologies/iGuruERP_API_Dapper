@@ -14,7 +14,7 @@ namespace Student_API.Repository.Implementations
         {
             _connection = connection;
         }
-        public async Task<ServiceResponse<List<StudentQRDTO>>> GetAllStudentQR(int sectionId, int classId, string sortField , string sortDirection, int? pageNumber = null, int? pageSize = null)
+        public async Task<ServiceResponse<List<StudentQRDTO>>> GetAllStudentQR(int sectionId, int classId, string sortField, string sortDirection, string searchQuery = null, int? pageNumber = null, int? pageSize = null)
         {
             try
             {
@@ -43,49 +43,64 @@ namespace Student_API.Repository.Implementations
 
                 // Construct the SQL query
                 string sql = $@"
-            -- Drop temp table if it exists
-            IF OBJECT_ID('tempdb..#StudentTempTable') IS NOT NULL
-                DROP TABLE #StudentTempTable;
+        -- Drop temp table if it exists
+        IF OBJECT_ID('tempdb..#StudentTempTable') IS NOT NULL
+            DROP TABLE #StudentTempTable;
 
-            -- Create temp table and insert data
-            SELECT 
-                tbl_StudentMaster.student_id,  
-                CONCAT(tbl_StudentMaster.first_name, ' ', tbl_StudentMaster.last_name) AS Student_Name, 
-               class_name AS  class_course, 
-                Section_name AS Section, 
-                Admission_Number, 
-                Roll_Number, 
-                QR_code 
-            INTO 
-                #StudentTempTable
-            FROM 
-                [dbo].[tbl_StudentMaster]
-            INNER JOIN 
-                tbl_Class ON tbl_StudentMaster.class_id = tbl_Class.class_id
-            INNER JOIN 
-                tbl_Section ON tbl_StudentMaster.section_id = tbl_Section.section_id
-            WHERE 
-                (@classId  = 0 OR tbl_StudentMaster.class_id = @classId )
-                AND (@sectionId = 0 OR tbl_StudentMaster.section_id = @sectionId);
+        -- Create temp table and insert data
+        SELECT 
+            tbl_StudentMaster.student_id,  
+            CONCAT(tbl_StudentMaster.first_name, ' ', tbl_StudentMaster.last_name) AS Student_Name, 
+            class_name AS class_course, 
+            tbl_Class.class_id,
+            tbl_Section.section_id,
+            Section_name AS Section, 
+            Admission_Number, 
+            Roll_Number, 
+            QR_code 
+        INTO 
+            #StudentTempTable
+        FROM 
+            [dbo].[tbl_StudentMaster]
+        INNER JOIN 
+            tbl_Class ON tbl_StudentMaster.class_id = tbl_Class.class_id
+        INNER JOIN 
+            tbl_Section ON tbl_StudentMaster.section_id = tbl_Section.section_id
+        WHERE 
+            (@classId = 0 OR tbl_StudentMaster.class_id = @classId)
+            AND (@sectionId = 0 OR tbl_StudentMaster.section_id = @sectionId)
+            {(!string.IsNullOrWhiteSpace(searchQuery) ? "AND (" +
+                        "CONCAT(tbl_StudentMaster.first_name, ' ', tbl_StudentMaster.last_name) LIKE '%' + @searchQuery + '%' OR " +
+                        "class_name LIKE '%' + @searchQuery + '%' OR " +
+                        "Section_name LIKE '%' + @searchQuery + '%' OR " +
+                        "Admission_Number LIKE '%' + @searchQuery + '%' OR " +
+                        "Roll_Number LIKE '%' + @searchQuery + '%')" : "")};
 
-            -- Select sorted and paginated data
-            SELECT * 
-            FROM #StudentTempTable
-            ORDER BY {sortField} {sortDirection}, student_id
-            OFFSET @Offset ROWS
-            FETCH NEXT @PageSize ROWS ONLY;
+        -- Select sorted and paginated data
+        SELECT * 
+        FROM #StudentTempTable
+        ORDER BY {sortField} {sortDirection}, student_id
+        OFFSET @Offset ROWS
+        FETCH NEXT @PageSize ROWS ONLY;
 
-            -- Count total records
-            SELECT COUNT(1) 
-            FROM #StudentTempTable;
+        -- Count total records
+        SELECT COUNT(1) 
+        FROM #StudentTempTable;
 
-            -- Drop temp table
-            IF OBJECT_ID('tempdb..#StudentTempTable') IS NOT NULL
-                DROP TABLE #StudentTempTable;
+        -- Drop temp table
+        IF OBJECT_ID('tempdb..#StudentTempTable') IS NOT NULL
+            DROP TABLE #StudentTempTable;
         ";
 
                 // Execute the query with Dapper
-                using (var multi = await _connection.QueryMultipleAsync(sql, new { classId, sectionId, Offset = offset, PageSize = actualPageSize }))
+                using (var multi = await _connection.QueryMultipleAsync(sql, new
+                {
+                    classId,
+                    sectionId,
+                    searchQuery,
+                    Offset = offset,
+                    PageSize = actualPageSize
+                }))
                 {
                     // Read student list and total record count
                     var studentList = multi.Read<StudentQRDTO>().ToList();

@@ -30,7 +30,7 @@ namespace Student_API.Controllers
             return Ok(response);
         }
 
-        [HttpGet("getProfileUpdateRequests")]
+        [HttpPost("getProfileUpdateRequests")]
         public async Task<IActionResult> GetProfileUpdateRequests([FromBody] GetStudentProfileRequestModel requestModel)
         {
             var response = await _studentProfileUpdateServices.GetProfileUpdateRequests(requestModel);
