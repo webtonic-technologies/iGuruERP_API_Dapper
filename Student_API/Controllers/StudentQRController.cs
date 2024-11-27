@@ -24,7 +24,7 @@ namespace Student_API.Controllers
             {
                 obj.sortField = obj.sortField ?? "Student_Name";
                 obj.sortDirection = obj.sortDirection ?? "ASC";
-                var data = await _studentQRService.GetAllStudentQR(obj.section_id, obj.class_id, obj.sortField, obj.sortDirection, obj.pageNumber, obj.pageSize);
+                var data = await _studentQRService.GetAllStudentQR(obj.section_id, obj.class_id, obj.sortField, obj.sortDirection,obj.searchQuery, obj.pageNumber, obj.pageSize);
                 if (data.Success)
                 {
                     return Ok(data);

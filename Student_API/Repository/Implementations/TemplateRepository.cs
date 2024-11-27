@@ -27,14 +27,14 @@ namespace Student_API.Repository.Implementations
                     UPDATE [dbo].[tbl_TemplateType]
                     SET Template_Name = @Template_Name,
                         UserId = @UserId,
-                        CreatedDate = @CreatedDate
+                        CreatedDate = GETDATE()
                     WHERE Template_Type_Id = @Template_Type_Id";
                 }
                 else
                 {
                     query = @"
-                    INSERT INTO [dbo].[tbl_TemplateType] (Template_Name, UserId, CreatedDate)
-                    VALUES (@Template_Name, @UserId, @CreatedDate);
+                    INSERT INTO [dbo].[tbl_TemplateType] (Template_Name, UserId)
+                    VALUES (@Template_Name, @UserId);
                     SELECT SCOPE_IDENTITY();";
                 }
 
@@ -51,7 +51,7 @@ namespace Student_API.Repository.Implementations
         {
             try
             {
-                string query = "SELECT * FROM [dbo].[tbl_TemplateType] WHERE Template_Type_Id = @Template_Type_Id";
+                string query = "SELECT * FROM [dbo].[tbl_TemplateType] WHERE Template_Type_Id = @Template_Type_Id AND isDelete = 0";
                 var template = await _connection.QueryFirstOrDefaultAsync<TemplateDTO>(query, new { Template_Type_Id = templateId });
 
                 if (template != null)
@@ -83,17 +83,17 @@ namespace Student_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<TemplateDTO>>> GetAllTemplates(int? pageSize = null, int? pageNumber = null)
+        public async Task<ServiceResponse<List<TemplateResponseDTO>>> GetAllTemplates(int? pageSize = null, int? pageNumber = null)
         {
             try
             {
-                string queryAll = "SELECT * FROM [dbo].[tbl_TemplateType] WHERE isDelete = 0";
+                string queryAll = "SELECT Template_Type_Id,Template_Name,UserId,FORMAT([CreatedDate], 'dd-MM-yyyy hh:mm tt') AS CreatedDate FROM [dbo].[tbl_TemplateType] WHERE isDelete = 0";
                 string queryCount = "SELECT COUNT(*) FROM [dbo].[tbl_TemplateType] WHERE isDelete = 0";
 
-                List<TemplateDTO> templates;
+                List<TemplateResponseDTO> templates;
                 int totalRecords = 0;
 
-                if (pageSize.HasValue && pageNumber.HasValue)
+                if (pageSize.HasValue && pageNumber.HasValue)   
                 {
                     int offset = (pageNumber.Value - 1) * pageSize.Value;
                     string queryPaginated = $@"
@@ -106,21 +106,21 @@ namespace Student_API.Repository.Implementations
 
                     using (var multi = await _connection.QueryMultipleAsync(queryPaginated, new { Offset = offset, PageSize = pageSize }))
                     {
-                        templates = multi.Read<TemplateDTO>().ToList();
+                        templates = multi.Read<TemplateResponseDTO>().ToList();
                         totalRecords = multi.ReadSingle<int>();
                     }
 
-                    return new ServiceResponse<List<TemplateDTO>>(true, "Templates retrieved successfully", templates, 200, totalRecords);
+                    return new ServiceResponse<List<TemplateResponseDTO>>(true, "Templates retrieved successfully", templates, 200, totalRecords);
                 }
                 else
                 {
-                    templates = (await _connection.QueryAsync<TemplateDTO>(queryAll)).ToList();
-                    return new ServiceResponse<List<TemplateDTO>>(true, "All templates retrieved successfully", templates, 200);
+                    templates = (await _connection.QueryAsync<TemplateResponseDTO>(queryAll)).ToList();
+                    return new ServiceResponse<List<TemplateResponseDTO>>(true, "All templates retrieved successfully", templates, 200);
                 }
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<List<TemplateDTO>>(false, ex.Message, null, 500);
+                return new ServiceResponse<List<TemplateResponseDTO>>(false, ex.Message, null, 500);
             }
         }
     }

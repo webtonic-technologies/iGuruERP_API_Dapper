@@ -53,7 +53,7 @@ namespace Student_API.Services.Implementations
                     var worksheet = package.Workbook.Worksheets.Add("StudentDocuments");
 
                     // Add fixed headers
-                    worksheet.Cells[1, 1].Value = "Student ID";
+                    worksheet.Cells[1, 1].Value = "Sr no";
                     worksheet.Cells[1, 2].Value = "Student Name";
                     worksheet.Cells[1, 3].Value = "Admission Number";
                     worksheet.Cells[1, 4].Value = "Class Name";
@@ -70,7 +70,7 @@ namespace Student_API.Services.Implementations
                     var rowIndex = 2;
                     foreach (var student in studentDocuments)
                     {
-                        worksheet.Cells[rowIndex, 1].Value = student.Student_id;
+                        worksheet.Cells[rowIndex, 1].Value = rowIndex - 1; ;
                         worksheet.Cells[rowIndex, 2].Value = student.Student_Name;
                         worksheet.Cells[rowIndex, 3].Value = student.Admission_Number;
                         worksheet.Cells[rowIndex, 4].Value = student.Class_Name;
@@ -104,18 +104,18 @@ namespace Student_API.Services.Implementations
                 var docColumns = studentDocuments.SelectMany(s => s.DocumentStatus.Keys).Distinct().ToList();
                 var headers = new List<string>
         {
-            "Student ID", "Student Name", "Admission Number", "Class Name", "Section Name"
+            "Sr No", "Student Name", "Admission Number", "Class Name", "Section Name"
         };
                 headers.AddRange(docColumns); // Add document columns
 
                 var csvLines = new List<string> { string.Join(",", headers) };
-
+                var rowIndex = 1;
                 // Add data rows for CSV
                 foreach (var student in studentDocuments)
                 {
                     var row = new List<string>
             {
-                student.Student_id.ToString(),
+               rowIndex++.ToString(),
                 student.Student_Name,
                 student.Admission_Number,
                 student.Class_Name,

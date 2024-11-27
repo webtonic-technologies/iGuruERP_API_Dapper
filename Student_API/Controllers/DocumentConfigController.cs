@@ -65,7 +65,7 @@ namespace Student_API.Controllers
             {
                 obj.sortField = obj.sortField?? "Document_Name";
                 obj.sortDirection = obj.sortDirection ?? "ASC";
-                var response = await _documentConfigService.GetAllStudentDocuments(obj.Institute_id,obj.sortField, obj.sortDirection, obj.pageSize, obj.pageNumber);
+                var response = await _documentConfigService.GetAllStudentDocuments(obj.Institute_id,obj.sortField, obj.sortDirection, obj.pageSize, obj.pageNumber,obj.searchQuery);
                 return StatusCode(response.StatusCode, response);
             }
             catch (Exception e)

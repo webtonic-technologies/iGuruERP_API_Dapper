@@ -17,7 +17,7 @@ namespace Student_API.Services.Implementations
         private readonly IImageService _imageService;
         private readonly ICommonService _commonService;
 
-        public PermissionSlipService(IPermissionSlipRepository repository, IImageService imageService , ICommonService commonService)
+        public PermissionSlipService(IPermissionSlipRepository repository, IImageService imageService, ICommonService commonService)
         {
             _repository = repository;
             _imageService = imageService;
@@ -60,9 +60,9 @@ namespace Student_API.Services.Implementations
             return await _repository.AddPermissionSlip(permissionSlipDto);
         }
 
-        public async Task<ServiceResponse<SinglePermissionSlipDTO>> GetPermissionSlipById(int permissionSlipId , int Institute_id)
+        public async Task<ServiceResponse<SinglePermissionSlipDTO>> GetPermissionSlipById(int permissionSlipId, int Institute_id)
         {
-            var data = await _repository.GetPermissionSlipById(permissionSlipId , Institute_id);
+            var data = await _repository.GetPermissionSlipById(permissionSlipId, Institute_id);
             if (data.Data != null)
             {
                 if (!string.IsNullOrEmpty(data.Data.Qr_Code) && File.Exists(data.Data.Qr_Code))
@@ -78,7 +78,7 @@ namespace Student_API.Services.Implementations
             return data;
         }
 
-        public async Task<ServiceResponse<string>> ExportPermissionSlipsToExcel(int instituteId, int classId, int sectionId , int exportFormat)
+        public async Task<ServiceResponse<string>> ExportPermissionSlipsToExcel(int instituteId, int classId, int sectionId, int exportFormat)
         {
             try
             {
@@ -100,7 +100,7 @@ namespace Student_API.Services.Implementations
     };
 
                 // Call the generic export function
-                return await _commonService.ExportDataToFile(permissionSlips, headers, exportFormat, $"PermissionSlips_{ DateTime.Now:yyyyMMddHHmmss}");
+                return await _commonService.ExportDataToFile(permissionSlips, headers, exportFormat, $"PermissionSlips_{DateTime.Now:yyyyMMddHHmmss}");
 
 
                 //var permissionSlips = permissionSlipsResponse.Data;
@@ -163,7 +163,7 @@ namespace Student_API.Services.Implementations
 
                 //    // Return the file path as a response
                 //    return new ServiceResponse<string>(true, "Excel file generated successfully", filePath, 200);
-            //}
+                //}
             }
             catch (Exception ex)
             {
@@ -171,7 +171,7 @@ namespace Student_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<string>> ExportPermissionSlipsToExcel(int instituteId, int classId, int sectionId, string startDate, string endDate, bool isApproved,int exportFormat)
+        public async Task<ServiceResponse<string>> ExportPermissionSlipsToExcel(int instituteId, int classId, int sectionId, string startDate, string endDate, bool isApproved, int exportFormat)
         {
             try
             {
@@ -185,15 +185,28 @@ namespace Student_API.Services.Implementations
                 //}
 
                 var permissionSlips = permissionSlipsResponse.Data;
-
+                var latestPermissionSlips = permissionSlips
+    .Select(x => new PermissionSlipExport
+    {
+        StudentName = x.StudentName,
+        Admission_Number = x.Admission_Number,
+        ClassName = x.ClassName,
+        SectionName = x.SectionName,
+        GenderName = x.GenderName,
+        ParentName = x.ParentName,
+        RequestedDateTime = x.RequestedDateTime,
+        Reason = x.Reason,
+        ModifiedDate = x.ModifiedDate
+    })
+    .ToList();
                 var headers = new List<string>
     {
-        "Permission Slip ID", "Student ID", "Student Name", "Admission Number", "Class Name",
-        "Section Name", "Gender", "Parent Name", "Requested Date", "Reason", "Status", "Modified Date"
+        "Student Name", "Admission Number", "Class Name",
+        "Section Name", "Gender", "Parent Name", "Requested Date", "Reason", "Modified Date"
     };
 
                 // Call the generic export function
-                return await _commonService.ExportDataToFile(permissionSlips, headers, exportFormat, isApproved ? "Approved_PermissionSlips" : "Rejected_PermissionSlips");
+                return await _commonService.ExportDataToFile(latestPermissionSlips, headers, exportFormat, isApproved ? "Approved_PermissionSlips" : "Rejected_PermissionSlips");
 
 
                 //ExcelPackage.LicenseContext = LicenseContext.NonCommercial;

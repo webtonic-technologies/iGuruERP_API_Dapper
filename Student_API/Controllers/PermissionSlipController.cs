@@ -71,7 +71,7 @@ namespace Student_API.Controllers
             return StatusCode(response.StatusCode, response);
         }
 
-        [HttpGet("GetPermissionSlipById")]
+        [HttpPost("GetPermissionSlipById")]
         public async Task<IActionResult> GetPermissionSlipById(GetSinglePermissionSlip obj)
         {
             var response = await _permissionSlipService.GetPermissionSlipById(obj.permissionSlipId , obj.Institute_id);

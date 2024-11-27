@@ -4,5 +4,6 @@
     {
         public int section_id {  get; set; }    
         public int class_id {  get; set; }    
+        public string searchQuery  {  get; set; }    
     }
 }
