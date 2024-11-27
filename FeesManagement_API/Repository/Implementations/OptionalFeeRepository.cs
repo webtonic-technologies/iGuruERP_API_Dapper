@@ -109,7 +109,7 @@ namespace FeesManagement_API.Repository.Implementations
         {
             var query = @"SELECT OptionalFeeID, HeadName, ShortName, FeeAmount, InstituteID, IsActive 
                           FROM tblOptionalFee 
-                          WHERE OptionalFeeID = @OptionalFeeID";
+                          WHERE OptionalFeeID = @OptionalFeeID AND IsActive = 1";
 
             return await _connection.QueryFirstOrDefaultAsync<OptionalFeeResponse>(query, new { OptionalFeeID = optionalFeeID });
         }

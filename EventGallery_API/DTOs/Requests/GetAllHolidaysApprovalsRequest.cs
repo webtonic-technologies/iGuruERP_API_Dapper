@@ -4,5 +4,6 @@
     {
         public int InstituteID { get; set; }
         public string Search { get; set; }
+        public string AcademicYearCode { get; set; }
     }
 }

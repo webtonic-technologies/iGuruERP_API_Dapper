@@ -17,17 +17,30 @@ namespace Attendance_SE_API.Controllers
             _employeeShiftService = employeeShiftService;
         }
 
-        [HttpPost("AddUpdateShift")]
-        public async Task<IActionResult> AddUpdateShift([FromBody] ShiftRequest request)
-        {
-            //if (request.Designations == null || !request.Designations.Any())
-            //{
-            //    return BadRequest("Designations list is required.");
-            //}
+        //[HttpPost("AddUpdateShift")]
+        //public async Task<IActionResult> AddUpdateShift([FromBody] ShiftRequest request)
+        //{
+        //    //if (request.Designations == null || !request.Designations.Any())
+        //    //{
+        //    //    return BadRequest("Designations list is required.");
+        //    //}
 
-            var response = await _employeeShiftService.AddUpdateShift(request);
+        //    var response = await _employeeShiftService.AddUpdateShift(request);
+        //    return StatusCode(response.StatusCode, response);
+        //}
+
+        [HttpPost("AddUpdateShift")]
+        public async Task<IActionResult> AddUpdateShift([FromBody] List<ShiftRequest> requests)
+        {
+            if (requests == null || !requests.Any())
+            {
+                return BadRequest("Shift list is required.");
+            }
+
+            var response = await _employeeShiftService.AddUpdateShift(requests);  // Pass the list of shifts to the service
             return StatusCode(response.StatusCode, response);
         }
+
 
 
 

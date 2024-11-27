@@ -1,5 +1,10 @@
 ﻿namespace FeesManagement_API.DTOs.Requests
 {
+    public class AddUpdateFeeGroupsRequest
+    {
+        public List<AddUpdateFeeGroupRequest> FeeGroups { get; set; } = new List<AddUpdateFeeGroupRequest>();
+    }
+
     public class AddUpdateFeeGroupRequest
     {
         public int FeeGroupID { get; set; }
@@ -8,6 +13,7 @@
         public int FeeTenurityID { get; set; }
         public decimal Fee { get; set; }
         public int InstituteID { get; set; }
+        public string AcademicYearCode { get; set; }
         public List<FeeGroupClassSectionRequest> ClassSections { get; set; }
         public List<FeeGroupCollectionRequest> FeeCollections { get; set; }
     }

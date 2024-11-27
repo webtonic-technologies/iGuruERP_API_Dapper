@@ -52,11 +52,15 @@ namespace EventGallery_API.Services.Implementations
             return await _eventRepository.DeleteEvent(eventId);
         }
 
-        public async Task<ServiceResponse<byte[]>> ExportAllEvents()
-        {
-            return await _eventRepository.ExportAllEvents();
-        }
+        //public async Task<ServiceResponse<byte[]>> ExportAllEvents()
+        //{
+        //    return await _eventRepository.ExportAllEvents();
+        //}
 
+        public async Task<ServiceResponse<byte[]>> ExportAllEvents(GetAllEventsExportRequest request)
+        {
+            return await _eventRepository.ExportAllEvents(request); // Forward the request to the repository
+        }
 
 
     }

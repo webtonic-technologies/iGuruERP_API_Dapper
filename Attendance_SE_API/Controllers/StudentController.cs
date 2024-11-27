@@ -44,6 +44,14 @@ namespace Attendance_SE_API.Controllers
             return StatusCode(response.StatusCode, response);
         }
 
+        [HttpPost("GetAllAttendanceStatusDDL")]
+        public async Task<IActionResult> GetAllAttendanceStatusDDL([FromBody] GetAllAttendanceStatusDDLRequest request)
+        {
+            var response = await _attendanceStatusService.GetAllAttendanceStatusesDDL(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+
         [HttpGet("GetAttendanceStatusByID/{StatusID}")]
         public async Task<IActionResult> GetAttendanceStatusByID(int StatusID)
         {
@@ -83,6 +91,34 @@ namespace Attendance_SE_API.Controllers
         {
             var response = await _attendanceReportService.GetAttendanceReport(request);
             return Ok(response);
+        }
+
+        [HttpPost("StudentAttendanceReport/GetAttendanceReportPeriodWise")]
+        public async Task<IActionResult> GetAttendanceReportPeriodWise([FromBody] StudentAttendanceReportPeriodWiseRequest request)
+        {
+            var response = await _attendanceReportService.GetAttendanceReportPeriodWise(request);
+            return Ok(response);
+        }
+
+        [HttpPost("StudentAttendanceReport/GetAttendanceReportExport")]
+        public async Task<IActionResult> GetAttendanceReportExport([FromBody] StudentAttendanceReportRequest request)
+        {
+            try
+            {
+                var fileBytes = await _attendanceReportService.GetAttendanceReportExport(request);
+                return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "AttendanceReport.xlsx");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Success = false, Message = ex.Message });
+            }
+        }
+
+        [HttpPost("StudentAttendanceReport/GetAttendanceReportPeriodWiseExport")]
+        public async Task<IActionResult> GetAttendanceReportPeriodWiseExport([FromBody] StudentAttendanceReportPeriodWiseRequest request)
+        {
+            var fileBytes = await _attendanceReportService.ExportAttendanceReportPeriodWiseToExcel(request);
+            return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "AttendanceReportPeriodWise.xlsx");
         }
     }
 }

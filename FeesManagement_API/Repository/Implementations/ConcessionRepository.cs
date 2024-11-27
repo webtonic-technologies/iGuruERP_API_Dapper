@@ -5,6 +5,8 @@ using FeesManagement_API.Repository.Interfaces;
 using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
+using FeesManagement_API.DTOs.ServiceResponse;
+
 
 namespace FeesManagement_API.Repository.Implementations
 {
@@ -92,89 +94,72 @@ namespace FeesManagement_API.Repository.Implementations
         }
 
 
-        //public async Task<int> AddUpdateConcession(AddUpdateConcessionRequest request)
-        //{
-        //    if (_connection.State == ConnectionState.Closed)
-        //    {
-        //        _connection.Open();
-        //    }
-
-        //    using (var transaction = _connection.BeginTransaction())
-        //    {
-        //        try
-        //        {
-        //            var concessionGroupId = request.ConcessionGroupID;
-
-        //            if (concessionGroupId == 0)
-        //            {
-        //                var query = @"INSERT INTO tblConcessionGroup (ConcessionGroupType, IsAmount, IsPercentage, InstituteID) 
-        //                      VALUES (@ConcessionGroupType, @IsAmount, @IsPercentage, @InstituteID);
-        //                      SELECT CAST(SCOPE_IDENTITY() as int);";
-
-        //                concessionGroupId = await _connection.ExecuteScalarAsync<int>(query, request, transaction);
-        //            }
-        //            else
-        //            {
-        //                var query = @"UPDATE tblConcessionGroup 
-        //                      SET ConcessionGroupType = @ConcessionGroupType, 
-        //                          IsAmount = @IsAmount, 
-        //                          IsPercentage = @IsPercentage, 
-        //                          InstituteID = @InstituteID
-        //                      WHERE ConcessionGroupID = @ConcessionGroupID";
-
-        //                await _connection.ExecuteAsync(query, request, transaction);
-        //            }
-
-        //            // Handle tblConcessionRules
-        //            var deleteRulesQuery = @"DELETE FROM tblConcessionRules WHERE ConcessionGroupID = @ConcessionGroupID";
-        //            await _connection.ExecuteAsync(deleteRulesQuery, new { ConcessionGroupID = concessionGroupId }, transaction);
-
-        //            var insertRuleQuery = @"INSERT INTO tblConcessionRules (ConcessionGroupID, FeeHeadID, Amount, InstituteID)
-        //                            VALUES (@ConcessionGroupID, @FeeHeadID, @Amount, @InstituteID)";
-
-        //            if (request.ConcessionRules != null)
-        //            {
-        //                foreach (var rule in request.ConcessionRules)
-        //                {
-        //                    await _connection.ExecuteAsync(insertRuleQuery,
-        //                        new { ConcessionGroupID = concessionGroupId, rule.FeeHeadID, rule.Amount, request.InstituteID },
-        //                        transaction);
-        //                }
-        //            }
-
-        //            transaction.Commit();
-        //            return concessionGroupId;
-        //        }
-        //        catch
-        //        {
-        //            transaction.Rollback();
-        //            throw;
-        //        }
-        //        finally
-        //        {
-        //            _connection.Close();
-        //        }
-        //    }
-        //}
-
         //public async Task<IEnumerable<ConcessionResponse>> GetAllConcessions(GetAllConcessionRequest request)
         //{
-        //    var query = @"SELECT cg.ConcessionGroupID, cg.ConcessionGroupType, cg.IsAmount, cg.IsPercentage, cg.InstituteID, 
-        //                  cr.ConcessionRulesID, cr.FeeHeadID, cr.Amount
-        //                  FROM tblConcessionGroup cg
-        //                  LEFT JOIN tblConcessionRules cr ON cg.ConcessionGroupID = cr.ConcessionGroupID
-        //                  WHERE cg.InstituteID = @InstituteID
-        //                  ORDER BY cg.ConcessionGroupID
-        //                  OFFSET @PageSize * (@PageNumber - 1) ROWS
-        //                  FETCH NEXT @PageSize ROWS ONLY";
+        //    var query = @"
+        //SELECT 
+        //    cg.ConcessionGroupID, 
+        //    cg.ConcessionGroupType, 
+        //    cg.IsAmount, 
+        //    cg.IsPercentage, 
+        //    cg.InstituteID,
+        //    cr.ConcessionRulesID,
+        //    cr.FeeHeadID,
+        //    cr.Amount,
+        //    cr.FeeTenurityID,
+        //    cr.STMTenurityID,
+        //    cr.FeeCollectionID,
+        //    fh.FeeHead,
+        //    CASE 
+        //        WHEN cr.FeeTenurityID = 1 THEN 'Single'
+        //        WHEN cr.FeeTenurityID = 2 THEN tt.TermName
+        //        WHEN cr.FeeTenurityID = 3 THEN STRING_AGG(tm.Month, ', ') WITHIN GROUP (ORDER BY tm.Month)
+        //        ELSE ''
+        //    END AS FeeTenure
+        //FROM tblConcessionGroup cg
+        //LEFT JOIN tblConcessionRules cr ON cg.ConcessionGroupID = cr.ConcessionGroupID
+        //LEFT JOIN tblFeeHead fh ON cr.FeeHeadID = fh.FeeHeadID
+        //LEFT JOIN tblTenurityTerm tt ON cr.FeeCollectionID = tt.FeeCollectionID AND cr.FeeTenurityID = 2
+        //LEFT JOIN tblTenurityMonthly tm ON cr.FeeCollectionID = tm.FeeCollectionID AND cr.FeeTenurityID = 3
+        //WHERE cg.InstituteID = @InstituteID And cg.IsActive = 1
+        //GROUP BY 
+        //    cg.ConcessionGroupID, 
+        //    cg.ConcessionGroupType, 
+        //    cg.IsAmount, 
+        //    cg.IsPercentage, 
+        //    cg.InstituteID,
+        //    cr.ConcessionRulesID,
+        //    cr.FeeHeadID,
+        //    cr.Amount,
+        //    cr.FeeTenurityID,
+        //    cr.STMTenurityID,
+        //    cr.FeeCollectionID,
+        //    fh.FeeHead,
+        //    tt.TermName
+        //ORDER BY cg.ConcessionGroupID
+        //OFFSET @PageSize * (@PageNumber - 1) ROWS
+        //FETCH NEXT @PageSize ROWS ONLY";
 
-        //    var concessionGroups = await _connection.QueryAsync<ConcessionResponse, ConcessionRuleResponse, ConcessionResponse>(
+        //    // Declare and initialize concessionGroups before using it
+        //    var concessionGroups = new List<ConcessionResponse>();
+
+        //    var result = await _connection.QueryAsync<ConcessionResponse, ConcessionRuleResponse, ConcessionResponse>(
         //        query,
         //        (concession, rule) =>
         //        {
-        //            concession.ConcessionRules = concession.ConcessionRules ?? new List<ConcessionRuleResponse>();
-        //            concession.ConcessionRules.Add(rule);
-        //            return concession;
+        //            // Find existing concession group in the list
+        //            var existingConcession = concessionGroups.FirstOrDefault(cg => cg.ConcessionGroupID == concession.ConcessionGroupID);
+        //            if (existingConcession != null)
+        //            {
+        //                existingConcession.ConcessionRules.Add(rule);
+        //                return existingConcession;
+        //            }
+        //            else
+        //            {
+        //                concession.ConcessionRules = new List<ConcessionRuleResponse> { rule };
+        //                concessionGroups.Add(concession);
+        //                return concession;
+        //            }
         //        },
         //        new { request.InstituteID, request.PageNumber, request.PageSize },
         //        splitOn: "ConcessionRulesID"
@@ -183,7 +168,8 @@ namespace FeesManagement_API.Repository.Implementations
         //    return concessionGroups;
         //}
 
-        public async Task<IEnumerable<ConcessionResponse>> GetAllConcessions(GetAllConcessionRequest request)
+
+        public async Task<ServiceResponse<IEnumerable<ConcessionResponse>>> GetAllConcessions(GetAllConcessionRequest request)
         {
             var query = @"
         SELECT 
@@ -202,15 +188,19 @@ namespace FeesManagement_API.Repository.Implementations
             CASE 
                 WHEN cr.FeeTenurityID = 1 THEN 'Single'
                 WHEN cr.FeeTenurityID = 2 THEN tt.TermName
-                WHEN cr.FeeTenurityID = 3 THEN STRING_AGG(tm.Month, ', ') WITHIN GROUP (ORDER BY tm.Month)
+                WHEN cr.FeeTenurityID = 3 THEN STRING_AGG(tm.Month, ', ') WITHIN GROUP(ORDER BY tm.Month)
                 ELSE ''
-            END AS FeeTenure
+            END AS FeeTenure,
+            CASE 
+                WHEN cg.IsActive = 1 THEN 'true'
+                ELSE 'false'
+            END AS IsActive
         FROM tblConcessionGroup cg
         LEFT JOIN tblConcessionRules cr ON cg.ConcessionGroupID = cr.ConcessionGroupID
         LEFT JOIN tblFeeHead fh ON cr.FeeHeadID = fh.FeeHeadID
         LEFT JOIN tblTenurityTerm tt ON cr.FeeCollectionID = tt.FeeCollectionID AND cr.FeeTenurityID = 2
         LEFT JOIN tblTenurityMonthly tm ON cr.FeeCollectionID = tm.FeeCollectionID AND cr.FeeTenurityID = 3
-        WHERE cg.InstituteID = @InstituteID And cg.IsActive = 1
+        WHERE cg.InstituteID = @InstituteID 
         GROUP BY 
             cg.ConcessionGroupID, 
             cg.ConcessionGroupType, 
@@ -224,19 +214,18 @@ namespace FeesManagement_API.Repository.Implementations
             cr.STMTenurityID,
             cr.FeeCollectionID,
             fh.FeeHead,
-            tt.TermName
+            tt.TermName,
+            cg.IsActive
         ORDER BY cg.ConcessionGroupID
         OFFSET @PageSize * (@PageNumber - 1) ROWS
-        FETCH NEXT @PageSize ROWS ONLY";
+        FETCH NEXT @PageSize ROWS ONLY;";
 
-            // Declare and initialize concessionGroups before using it
             var concessionGroups = new List<ConcessionResponse>();
 
             var result = await _connection.QueryAsync<ConcessionResponse, ConcessionRuleResponse, ConcessionResponse>(
                 query,
                 (concession, rule) =>
                 {
-                    // Find existing concession group in the list
                     var existingConcession = concessionGroups.FirstOrDefault(cg => cg.ConcessionGroupID == concession.ConcessionGroupID);
                     if (existingConcession != null)
                     {
@@ -254,7 +243,18 @@ namespace FeesManagement_API.Repository.Implementations
                 splitOn: "ConcessionRulesID"
             );
 
-            return concessionGroups;
+            var totalCountQuery = @"
+        SELECT COUNT(*) 
+        FROM tblConcessionGroup cg
+        LEFT JOIN tblConcessionRules cr ON cg.ConcessionGroupID = cr.ConcessionGroupID
+        LEFT JOIN tblFeeHead fh ON cr.FeeHeadID = fh.FeeHeadID
+        LEFT JOIN tblTenurityTerm tt ON cr.FeeCollectionID = tt.FeeCollectionID AND cr.FeeTenurityID = 2
+        LEFT JOIN tblTenurityMonthly tm ON cr.FeeCollectionID = tm.FeeCollectionID AND cr.FeeTenurityID = 3
+        WHERE cg.InstituteID = @InstituteID AND cg.IsActive = 1;";
+
+            var totalCount = await _connection.ExecuteScalarAsync<int>(totalCountQuery, new { request.InstituteID });
+
+            return new ServiceResponse<IEnumerable<ConcessionResponse>>(true, "Concession groups retrieved successfully", concessionGroups, 200, totalCount);
         }
 
 

@@ -27,8 +27,8 @@ namespace Student_API.Repository.Implementations
         SELECT stu.Admission_Number AS AdmissionNumber,
                stu.student_id AS StudentId,
                stu.First_Name + ' ' + ISNULL(stu.Middle_Name, '') + ' ' + stu.Last_Name AS Name,
-               cls.ClassName AS Class,
-               sec.SectionName AS Section,
+               cls.class_name AS Class,
+               sec.section_name AS Section,
                stu.LoginId,
                stu.Password,
                CASE WHEN stu.gender_id = 1 THEN 'Male' 
@@ -101,8 +101,8 @@ namespace Student_API.Repository.Implementations
         SELECT DISTINCT stu.Admission_Number AS AdmissionNumber,
                stu.student_id AS StudentId,
                stu.First_Name + ' ' + ISNULL(stu.Middle_Name, '') + ' ' + stu.Last_Name AS Name,
-               cls.ClassName AS Class,
-               sec.SectionName AS Section,
+               cls.class_name AS Class,
+               sec.section_name AS Section,
                stu.MobileNumber
         FROM tbl_StudentMaster stu
         LEFT JOIN tbl_Class cls ON stu.class_id = cls.class_id
@@ -167,8 +167,8 @@ namespace Student_API.Repository.Implementations
         SELECT stu.Admission_Number AS AdmissionNumber,
                stu.student_id AS StudentId,
                stu.First_Name + ' ' + ISNULL(stu.Middle_Name, '') + ' ' + stu.Last_Name AS Name,
-               cls.ClassName AS Class,
-               sec.SectionName AS Section,
+               cls.class_name AS Class,
+               sec.section_name AS Section,
                stu.MobileNumber AS Mobile,
                logs.LastActionTaken,
                logs.AppVersion
@@ -244,8 +244,8 @@ namespace Student_API.Repository.Implementations
         SELECT stu.Admission_Number AS AdmissionNumber,
                stu.student_id AS StudentId,
                stu.First_Name + ' ' + ISNULL(stu.Middle_Name, '') + ' ' + stu.Last_Name AS Name,
-               cls.ClassName AS Class,
-               sec.SectionName AS Section,
+               cls.class_name AS Class,
+               sec.section_name AS Section,
                stu.Mobile AS Mobile,
                logs.LoginTime AS LastActionTaken,  -- Latest login action
                logs.appVersion AS AppVersion
@@ -316,35 +316,37 @@ namespace Student_API.Repository.Implementations
 
                 // SQL query to fetch student login credentials along with latest activity
                 string sqlQuery = @"
-        WITH LatestStudentLogs AS (
-            SELECT logs.UserId,
-                   logs.LoginTime,
-                   logs.appVersion,
-                   ROW_NUMBER() OVER (PARTITION BY logs.UserId ORDER BY logs.LoginTime DESC) AS RowNum
-            FROM tblUserLogs logs
-            WHERE logs.UserTypeId = 2  -- Assuming UserTypeId = 2 is for Students
-        )
-        SELECT stu.Admission_Number AS AdmissionNumber,
-               stu.student_id AS StudentId,
-               stu.First_Name + ' ' + ISNULL(stu.Middle_Name, '') + ' ' + stu.Last_Name AS Name,
-               cls.ClassName AS Class,
-               sec.SectionName AS Section,
-               login.LoginId AS LoginId,
-               login.Password AS Password,
-               gen.Gender_Type AS Gender,
-               logs.LoginTime AS LastActionTaken,  -- Latest login action
-               logs.appVersion AS AppVersion
-        FROM tbl_StudentMaster stu
-        LEFT JOIN LatestStudentLogs logs ON stu.student_id = logs.UserId AND logs.RowNum = 1
-        LEFT JOIN tbl_Class cls ON stu.class_id = cls.class_id
-        LEFT JOIN tbl_Section sec ON stu.section_id = sec.section_id
-        LEFT JOIN tbl_Gender gen ON stu.gender_id = gen.Gender_id
-        WHERE stu.Institute_id = @InstituteId
-        AND (@ClassId = 0 OR stu.class_id = @ClassId)
-        AND (@SectionId = 0 OR stu.section_id = @SectionId)
-        AND (stu.First_Name + ' ' + ISNULL(stu.Middle_Name, '') + ' ' + stu.Last_Name LIKE '%' + @SearchText + '%' OR @SearchText = '')
-        ORDER BY stu.student_id
-        OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";  // Pagination
+      WITH LatestStudentLogs AS (
+    SELECT logs.UserId,
+           logs.LoginTime,
+           logs.appVersion,
+           ROW_NUMBER() OVER (PARTITION BY logs.UserId ORDER BY logs.LoginTime DESC) AS RowNum
+    FROM tblUserLogs logs
+    WHERE logs.UserTypeId = 2  -- Assuming UserTypeId = 2 is for Students
+)
+SELECT stu.Admission_Number AS AdmissionNumber,
+       stu.student_id AS StudentId,
+       stu.First_Name + ' ' + ISNULL(stu.Middle_Name, '') + ' ' + stu.Last_Name AS Name,
+       cls.class_name AS Class,
+       sec.section_name AS Section,
+       login.LoginId AS LoginId,  -- Added login join
+       login.Password AS Password, -- Added login join
+       gen.Gender_Type AS Gender,
+       logs.LoginTime AS LastActionTaken,  -- Latest login action
+       logs.appVersion AS AppVersion
+FROM tbl_StudentMaster stu
+LEFT JOIN LatestStudentLogs logs ON stu.student_id = logs.UserId AND logs.RowNum = 1
+LEFT JOIN tbl_Class cls ON stu.class_id = cls.class_id
+LEFT JOIN tbl_Section sec ON stu.section_id = sec.section_id
+LEFT JOIN tbl_Gender gen ON stu.gender_id = gen.Gender_id
+LEFT JOIN tblLoginInformationMaster login ON stu.student_id = login.UserId AND login.UserType = 2 -- Join for login information
+WHERE stu.Institute_id = @InstituteId
+AND (@ClassId = 0 OR stu.class_id = @ClassId)
+AND (@SectionId = 0 OR stu.section_id = @SectionId)
+AND (stu.First_Name + ' ' + ISNULL(stu.Middle_Name, '') + ' ' + stu.Last_Name LIKE '%' + @SearchText + '%' OR @SearchText = '')
+ORDER BY stu.student_id
+OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;
+";  // Pagination
 
                 // SQL query to count total student records without pagination
                 string countQuery = @"
@@ -409,8 +411,8 @@ namespace Student_API.Repository.Implementations
     SELECT stu.Admission_Number AS AdmissionNumber,
            stu.student_id AS StudentId,
            stu.First_Name + ' ' + ISNULL(stu.Middle_Name, '') + ' ' + stu.Last_Name AS Name,
-           cls.ClassName AS Class,
-           sec.SectionName AS Section,
+           cls.class_name AS Class,
+           sec.section_name AS Section,
            stu.MobileNumber AS MobileNumber
     FROM tbl_StudentMaster stu
     LEFT JOIN tbl_Class cls ON stu.class_id = cls.ClassId

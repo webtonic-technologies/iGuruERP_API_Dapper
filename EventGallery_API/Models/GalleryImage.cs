@@ -7,5 +7,7 @@
         public int InstituteID { get; set; }
         public string FileName { get; set; }
         public bool IsActive { get; set; }
+        public string AcademicYearCode { get; set; }
+
     }
 }

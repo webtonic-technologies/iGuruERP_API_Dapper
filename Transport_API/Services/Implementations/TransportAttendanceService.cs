@@ -16,11 +16,26 @@ namespace Transport_API.Services.Implementations
         {
             _transportAttendanceRepository = transportAttendanceRepository;
         }
-         
-        public async Task<ServiceResponse<string>> AddUpdateTransportAttendance(TransportAttendanceRequest request)
+
+        public async Task<ServiceResponse<string>> AddUpdateTransportAttendance(IEnumerable<TransportAttendanceRequest> requests)
         {
-            return await _transportAttendanceRepository.AddUpdateTransportAttendance(request);
+            foreach (var request in requests)
+            {
+                var response = await _transportAttendanceRepository.AddUpdateTransportAttendance(request); // Call the repository for each record
+                if (!response.Success)  // Check if the repository method was successful
+                {
+                    return new ServiceResponse<string>(false, "Operation Failed", "Error adding/updating attendance", 400);
+                }
+            }
+
+            return new ServiceResponse<string>(true, "Operation Successful", "Attendance records added/updated successfully", 200);
         }
+
+
+        //public async Task<ServiceResponse<string>> AddUpdateTransportAttendance(TransportAttendanceRequest request)
+        //{
+        //    return await _transportAttendanceRepository.AddUpdateTransportAttendance(request);
+        //}
 
         public async Task<ServiceResponse<IEnumerable<TransportAttendanceResponse>>> GetAllTransportAttendance(GetTransportAttendanceRequest request)
         {

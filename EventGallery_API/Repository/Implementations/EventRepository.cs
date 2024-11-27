@@ -304,26 +304,33 @@ namespace EventGallery_API.Repository.Implementations
             return new ServiceResponse<bool>(true, "Event deleted successfully.", true, 200);
         }
 
-        public async Task<ServiceResponse<byte[]>> ExportAllEvents()
+        public async Task<ServiceResponse<byte[]>> ExportAllEvents(GetAllEventsExportRequest request)
         {
             // SQL query to fetch the event data
             var query = @"
-                SELECT 
-                    e.EventName,
-                    CONCAT(CONVERT(VARCHAR, e.FromDate, 103), ' to ', CONVERT(VARCHAR, e.ToDate, 103)) AS Date,
-                    e.Description,
-                    e.Location,
-                    CASE 
-                        WHEN e.ScheduleTime IS NOT NULL 
-                        THEN CONCAT(CONVERT(VARCHAR, e.ScheduleDate, 105), ' at ', RIGHT(CONVERT(VARCHAR(20), e.ScheduleTime, 100), 7)) 
-                        ELSE CONCAT(CONVERT(VARCHAR, e.ScheduleDate, 105), ' at ', 'N/A')
-                    END AS EventNotification,
-                    CONCAT(emp.First_Name, ' ', emp.Last_Name) AS CreatedBy
-                FROM tblEvent e
-                LEFT JOIN tbl_EmployeeProfileMaster emp ON emp.Employee_id = e.CreatedBy";
+        SELECT 
+            e.EventName,
+            CONCAT(CONVERT(VARCHAR, e.FromDate, 103), ' to ', CONVERT(VARCHAR, e.ToDate, 103)) AS Date,
+            e.Description,
+            e.Location,
+            CASE 
+                WHEN e.ScheduleTime IS NOT NULL 
+                THEN CONCAT(CONVERT(VARCHAR, e.ScheduleDate, 105), ' at ', RIGHT(CONVERT(VARCHAR(20), e.ScheduleTime, 100), 7)) 
+                ELSE CONCAT(CONVERT(VARCHAR, e.ScheduleDate, 105), ' at ', 'N/A')
+            END AS EventNotification,
+            CONCAT(emp.First_Name, ' ', emp.Last_Name) AS CreatedBy
+        FROM tblEvent e
+        LEFT JOIN tbl_EmployeeProfileMaster emp ON emp.Employee_id = e.CreatedBy
+        WHERE e.AcademicYearCode = @AcademicYearCode
+        AND e.InstituteID = @InstituteID
+        AND e.IsActive = 1";
 
             // Fetch the data
-            var events = await _connection.QueryAsync<EventExportResponse>(query);
+            var events = await _connection.QueryAsync<EventExportResponse>(query, new
+            {
+                AcademicYearCode = request.AcademicYearCode,
+                InstituteID = request.InstituteID
+            });
 
             // Generate Excel file
             using var stream = new MemoryStream();
@@ -363,6 +370,66 @@ namespace EventGallery_API.Repository.Implementations
             stream.Position = 0;
             return new ServiceResponse<byte[]>(true, "Exported all events successfully.", stream.ToArray(), 200);
         }
+
+        //public async Task<ServiceResponse<byte[]>> ExportAllEvents()
+        //{
+        //    // SQL query to fetch the event data
+        //    var query = @"
+        //        SELECT 
+        //            e.EventName,
+        //            CONCAT(CONVERT(VARCHAR, e.FromDate, 103), ' to ', CONVERT(VARCHAR, e.ToDate, 103)) AS Date,
+        //            e.Description,
+        //            e.Location,
+        //            CASE 
+        //                WHEN e.ScheduleTime IS NOT NULL 
+        //                THEN CONCAT(CONVERT(VARCHAR, e.ScheduleDate, 105), ' at ', RIGHT(CONVERT(VARCHAR(20), e.ScheduleTime, 100), 7)) 
+        //                ELSE CONCAT(CONVERT(VARCHAR, e.ScheduleDate, 105), ' at ', 'N/A')
+        //            END AS EventNotification,
+        //            CONCAT(emp.First_Name, ' ', emp.Last_Name) AS CreatedBy
+        //        FROM tblEvent e
+        //        LEFT JOIN tbl_EmployeeProfileMaster emp ON emp.Employee_id = e.CreatedBy";
+
+        //    // Fetch the data
+        //    var events = await _connection.QueryAsync<EventExportResponse>(query);
+
+        //    // Generate Excel file
+        //    using var stream = new MemoryStream();
+        //    using (var package = new ExcelPackage(stream))
+        //    {
+        //        var worksheet = package.Workbook.Worksheets.Add("Events");
+
+        //        // Add headers
+        //        worksheet.Cells[1, 1].Value = "Sr. No";
+        //        worksheet.Cells[1, 2].Value = "Event Name";
+        //        worksheet.Cells[1, 3].Value = "Date";
+        //        worksheet.Cells[1, 4].Value = "Description";
+        //        worksheet.Cells[1, 5].Value = "Location";
+        //        worksheet.Cells[1, 6].Value = "Event Notification";
+        //        worksheet.Cells[1, 7].Value = "CreatedBy";
+
+        //        // Add rows
+        //        int row = 2;
+        //        int srNo = 1;
+        //        foreach (var ev in events)
+        //        {
+        //            worksheet.Cells[row, 1].Value = srNo++;
+        //            worksheet.Cells[row, 2].Value = ev.EventName;
+        //            worksheet.Cells[row, 3].Value = ev.Date;
+        //            worksheet.Cells[row, 4].Value = ev.Description;
+        //            worksheet.Cells[row, 5].Value = ev.Location;
+        //            worksheet.Cells[row, 6].Value = ev.EventNotification;
+        //            worksheet.Cells[row, 7].Value = ev.CreatedBy;
+        //            row++;
+        //        }
+
+        //        // Auto-fit columns for all cells
+        //        worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+        //        package.Save();
+        //    }
+
+        //    stream.Position = 0;
+        //    return new ServiceResponse<byte[]>(true, "Exported all events successfully.", stream.ToArray(), 200);
+        //}
 
     }
 }

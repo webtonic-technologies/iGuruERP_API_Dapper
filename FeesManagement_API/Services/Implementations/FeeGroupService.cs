@@ -17,9 +17,9 @@ namespace FeesManagement_API.Services.Implementations
             _feeGroupRepository = feeGroupRepository;
         }
 
-        public async Task<ServiceResponse<int>> AddUpdateFeeGroup(AddUpdateFeeGroupRequest request)
+        public async Task<ServiceResponse<int>> AddUpdateFeeGroup(AddUpdateFeeGroupsRequest request)
         {
-            var result = await _feeGroupRepository.AddUpdateFeeGroup(request);
+            var result = await _feeGroupRepository.AddUpdateFeeGroups(request);
             if (result > 0)
             {
                 return new ServiceResponse<int>(true, "FeeGroup processed successfully", result, 200);
@@ -43,11 +43,11 @@ namespace FeesManagement_API.Services.Implementations
             return new ServiceResponse<FeeGroupResponse>(false, "FeeGroup not found", null, 404);
         }
 
-        public async Task<ServiceResponse<bool>> UpdateFeeGroupStatus(int feeGroupID)
+        public async Task<ServiceResponse<bool>> UpdateFeeGroupStatus(int feeGroupID, UpdateFeeGroupStatusRequest request)
         {
             try
             {
-                int rowsAffected = await _feeGroupRepository.UpdateFeeGroupStatus(feeGroupID);
+                int rowsAffected = await _feeGroupRepository.UpdateFeeGroupStatus(feeGroupID, request.Reason);
 
                 if (rowsAffected > 0)
                 {
@@ -61,5 +61,6 @@ namespace FeesManagement_API.Services.Implementations
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
+
     }
 }

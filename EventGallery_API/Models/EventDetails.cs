@@ -8,4 +8,11 @@
         public DateTime ScheduleDate { get; set; }
         public TimeSpan ScheduleTime { get; set; }
     }
+
+
+    public class EventDetailsList
+    {
+        public int EventID { get; set; }
+        public string EventName { get; set; } 
+    }
 }

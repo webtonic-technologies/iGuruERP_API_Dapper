@@ -10,7 +10,6 @@ namespace Attendance_SE_API.Models
         public string StatusName { get; set; } = string.Empty;
 
         public string ShortName { get; set; } = string.Empty;
-        public bool IsDefault { get; set; } = false;
         public bool IsActive { get; set; } = true;
         public int InstituteID { get; set; }
     }

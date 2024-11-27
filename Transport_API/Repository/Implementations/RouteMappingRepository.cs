@@ -6,6 +6,7 @@ using System.Data;
 using System.Numerics;
 using Transport_API.DTOs.Requests;
 using Transport_API.DTOs.Response;
+using Transport_API.DTOs.Responses;
 using Transport_API.DTOs.ServiceResponse;
 using Transport_API.Models;
 using Transport_API.Repository.Interfaces;
@@ -417,6 +418,75 @@ namespace Transport_API.Repository.Implementations
             {
                 return new ServiceResponse<List<EmployeeStopMappingResponse>>(false, ex.Message, new List<EmployeeStopMappingResponse>(), StatusCodes.Status500InternalServerError);
             }
+        }
+
+        public async Task<RouteVehicleDriverInfoResponse> GetRouteVehicleDriverInfo(int routePlanID)
+        {
+            string sql = @"
+                SELECT 
+                    rp.VehicleID, 
+                    vm.VehicleNumber,
+                    vm.AssignDriverID as EmployeeID,
+                    ep.First_Name + ' ' + ep.Last_Name as EmployeeName
+                FROM tblRoutePlan rp
+                INNER JOIN tblVehicleMaster vm ON rp.VehicleID = vm.VehicleID
+                LEFT JOIN tbl_EmployeeProfileMaster ep ON vm.AssignDriverID = ep.Employee_id
+                WHERE rp.RoutePlanID = @RoutePlanID";
+
+            var result = await _dbConnection.QuerySingleOrDefaultAsync<RouteVehicleDriverInfoResponse>(sql, new { RoutePlanID = routePlanID });
+
+            return result;
+        }
+
+        public async Task<IEnumerable<GetStudentsForRouteMappingResponse>> GetStudentsForRouteMapping(int classID, int sectionID, int instituteID, string search)
+        {
+            string sql = @"
+        SELECT 
+            sm.student_id AS StudentID,
+            sm.First_Name + ' ' + sm.Last_Name AS StudentName,
+            sm.Roll_Number AS RollNumber,
+            sm.Admission_Number AS AdmissionNumber,
+            c.class_name AS ClassName,   -- Correct alias
+            s.section_name AS SectionName -- Correct alias
+        FROM tbl_StudentMaster sm
+        INNER JOIN tbl_Class c ON sm.class_id = c.class_id
+        INNER JOIN tbl_Section s ON sm.section_id = s.section_id
+        WHERE sm.class_id = @ClassID
+            AND sm.section_id = @SectionID
+            AND sm.Institute_id = @InstituteID
+            AND (sm.First_Name LIKE @Search OR sm.Last_Name LIKE @Search OR sm.Roll_Number LIKE @Search OR sm.Admission_Number LIKE @Search)
+        ORDER BY sm.First_Name";
+
+            var result = await _dbConnection.QueryAsync<GetStudentsForRouteMappingResponse>(sql,
+                new { ClassID = classID, SectionID = sectionID, InstituteID = instituteID, Search = "%" + search + "%" });
+
+           
+
+            return result;
+        }
+
+        public async Task<IEnumerable<GetEmployeesForRouteMappingResponse>> GetEmployeesForRouteMapping(int departmentID, int designationID, int instituteID, string search)
+        {
+            string sql = @"
+                SELECT 
+                    e.Employee_id AS EmployeeID,
+                    e.First_Name + ' ' + e.Last_Name AS EmployeeName,
+                    e.Employee_code_id AS EmployeeCode,
+                    d.DepartmentName AS DepartmentName,
+                    des.DesignationName AS DesignationName
+                FROM tbl_EmployeeProfileMaster e
+                INNER JOIN tbl_Department d ON e.Department_id = d.Department_id
+                INNER JOIN tbl_Designation des ON e.Designation_id = des.Designation_id
+                WHERE e.Department_id = @DepartmentID
+                    AND e.Designation_id = @DesignationID
+                    AND e.Institute_id = @InstituteID
+                    AND (e.First_Name LIKE @Search OR e.Last_Name LIKE @Search OR e.Employee_code_id LIKE @Search)
+                ORDER BY e.First_Name";
+
+            var result = await _dbConnection.QueryAsync<GetEmployeesForRouteMappingResponse>(sql,
+                new { DepartmentID = departmentID, DesignationID = designationID, InstituteID = instituteID, Search = "%" + search + "%" });
+
+            return result;
         }
     }
 }

@@ -11,5 +11,12 @@ namespace FeesManagement_API.Repository.Interfaces
         Task<IEnumerable<NumberSchemeResponse>> GetAllNumberSchemes(GetAllNumberSchemesRequest request);
         Task<NumberSchemeResponse> GetNumberSchemeById(int numberSchemeID);
         Task<int> UpdateNumberSchemeStatus(int numberSchemeID);
+        Task<IEnumerable<NumberSchemeTypeResponse>> GetNumberSchemeType();
+        Task<int> CountActiveNumberSchemes(int instituteID); // Add this line
+
+
+
+
+
     }
 }

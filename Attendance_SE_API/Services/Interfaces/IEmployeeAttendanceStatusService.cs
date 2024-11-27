@@ -11,6 +11,8 @@ namespace Attendance_SE_API.Services.Interfaces
     {
         Task<ServiceResponse<string>> AddUpdateAttendanceStatus(List<AttendanceStatus> attendanceStatuses);
         Task<ServiceResponse<List<AttendanceStatus>>> GetAllAttendanceStatuses(GetAllAttendanceStatusRequest request);
+        Task<ServiceResponse<List<AttendanceStatus>>> GetAllAttendanceStatusesDDL(GetAllAttendanceStatusDDLRequest request);
+
         Task<ServiceResponse<AttendanceStatus>> GetAttendanceStatusById(int statusId);
         Task<ServiceResponse<bool>> DeleteStatus(int statusId);
     }

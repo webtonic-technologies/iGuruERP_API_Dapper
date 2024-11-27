@@ -47,5 +47,12 @@ namespace FeesManagement_API.Services.Implementations
             }
             return new ServiceResponse<int>(false, "Failed to update Late Fee status", 0, 400);
         }
+
+        public async Task<ServiceResponse<IEnumerable<FeeTenureResponse>>> GetFeeTenureDDL(GetFeeTenureDDLRequest request)
+        {
+            var feeTenureResponses = await _lateFeeRepository.GetFeeTenureDDL(request);
+            return new ServiceResponse<IEnumerable<FeeTenureResponse>>(true, "Fee Tenures retrieved successfully", feeTenureResponses, 200);
+        }
+
     }
 }

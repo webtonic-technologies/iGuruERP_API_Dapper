@@ -18,10 +18,9 @@ namespace Attendance_SE_API.Services.Implementations
             _repository = repository;
         }
 
-        public async Task<ServiceResponse<string>> AddUpdateShift(DTOs.Requests.ShiftRequest request)
+        public async Task<ServiceResponse<string>> AddUpdateShift(List<ShiftRequest> requests)
         {
-            // If ShiftRequest contains Designation data, handle it accordingly
-            return await _repository.AddUpdateShift(request);
+            return await _repository.AddUpdateShift(requests);  // Pass the list of shifts to the repository
         }
 
         public async Task<ServiceResponse<List<ShiftResponse>>> GetAllShifts(GetAllShiftsRequest request)

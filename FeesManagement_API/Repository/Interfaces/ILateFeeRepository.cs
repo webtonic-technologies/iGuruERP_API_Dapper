@@ -8,4 +8,6 @@ public interface ILateFeeRepository
     Task<IEnumerable<LateFeeResponse>> GetAllLateFee(GetAllLateFeeRequest request);
     Task<LateFeeResponse> GetLateFeeById(int lateFeeID);
     Task<int> UpdateLateFeeStatus(int lateFeeID);
+    Task<IEnumerable<FeeTenureResponse>> GetFeeTenureDDL(GetFeeTenureDDLRequest request);
+
 }

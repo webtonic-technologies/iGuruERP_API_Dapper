@@ -16,6 +16,13 @@ namespace EventGallery_API.Controllers
             _holidayApprovalService = holidayApprovalService;
         }
 
+        //[HttpPost("GetAllHolidaysApprovals")]
+        //public async Task<IActionResult> GetAllHolidaysApprovals([FromBody] GetAllHolidaysApprovalsRequest request)
+        //{
+        //    var result = await _holidayApprovalService.GetAllHolidaysApprovals(request);
+        //    return Ok(result);
+        //}
+
         [HttpPost("GetAllHolidaysApprovals")]
         public async Task<IActionResult> GetAllHolidaysApprovals([FromBody] GetAllHolidaysApprovalsRequest request)
         {

@@ -17,7 +17,7 @@ namespace Attendance_SE_API.Services.Implementations
             _repository = repository;
         }
 
-        public async Task<ServiceResponse<string>> AddGeoFancing(GeoFencingRequest request)
+        public async Task<ServiceResponse<string>> AddGeoFancing(List<GeoFencingRequest> request)
         {
             return await _repository.AddGeoFancing(request);
         }

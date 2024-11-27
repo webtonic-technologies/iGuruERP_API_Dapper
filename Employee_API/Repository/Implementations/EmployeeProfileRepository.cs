@@ -9,6 +9,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Dynamic;
 using System.Globalization;
+using System.Reflection;
 using System.Text;
 
 namespace Employee_API.Repository.Implementations
@@ -98,6 +99,47 @@ namespace Employee_API.Repository.Implementations
             }
             catch (Exception ex)
             {
+                return new ServiceResponse<IEnumerable<EmployeeExportHistoryDto>>(false, ex.Message, null, 500);
+            }
+        }
+        public async Task<ServiceResponse<IEnumerable<EmployeeExportHistoryDto>>> GetImportHistoryByInstituteId(int instituteId)
+        {
+            try
+            {
+                // Query to fetch data from the tbl_EmployeeImportHistory table
+                string query = @"SELECT HistoryId, EmployeeCount, DownloadDate, IPAddress, Username, InstituteId 
+                         FROM tbl_EmployeeImportHistory 
+                         WHERE InstituteId = @InstituteId";
+
+                // Fetch the history records from the database
+                var historyRecords = await _connection.QueryAsync<EmployeeExportHistoryDto>(query, new { InstituteId = instituteId });
+
+                // Check if there are any records
+                if (!historyRecords.Any())
+                {
+                    return new ServiceResponse<IEnumerable<EmployeeExportHistoryDto>>(false, "No records found", null, 204);
+                }
+
+                // Format the DownloadDate before returning
+                var formattedRecords = historyRecords.Select(record => new EmployeeExportHistoryDto
+                {
+                    HistoryId = record.HistoryId,
+                    EmployeeCount = record.EmployeeCount,
+                    // Format the date here
+                    DownloadDate = !string.IsNullOrEmpty(record.DownloadDate)
+                        ? DateTime.Parse(record.DownloadDate).ToString("dd-MM-yyyy at hh:mm tt")
+                        : null, // Set to null if DownloadDate is not available
+                    IPAddress = record.IPAddress,
+                    Username = record.Username,
+                    InstituteId = record.InstituteId
+                });
+
+                // Return success with formatted records
+                return new ServiceResponse<IEnumerable<EmployeeExportHistoryDto>>(true, "Records found", formattedRecords, 200);
+            }
+            catch (Exception ex)
+            {
+                // Handle any exceptions and return an error response
                 return new ServiceResponse<IEnumerable<EmployeeExportHistoryDto>>(false, ex.Message, null, 500);
             }
         }
@@ -332,7 +374,7 @@ namespace Employee_API.Repository.Implementations
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
-        public async Task<ServiceResponse<string>> BulkUpdateEmployee(List<EmployeeProfile> request)
+        public async Task<ServiceResponse<string>> BulkUpdateEmployee(List<EmployeeProfile> request, string IpAddress)
         {
             try
             {
@@ -405,7 +447,6 @@ namespace Employee_API.Repository.Implementations
                         employee.Status,
                         EmpPhoto = ImageUpload(employee.EmpPhoto) // Handle image upload if necessary
                     });
-                    var ipAddress = GetClientIPAddress();
                     string historyQuery = @"insert into tbl_EmployeeBulkUpdateHistory ( EmployeeCount ,DownloadDate ,IPAddress,Username, InstituteId)
                                            VALUES 
                         ( @EmployeeCount ,@DownloadDate ,@IPAddress,@Username, @InstituteId)";
@@ -413,7 +454,7 @@ namespace Employee_API.Repository.Implementations
                     {
                         EmployeeCount = rowsAffected,
                         DownloadDate = DateTime.Now,
-                        IPAddress = ipAddress,
+                        IPAddress = IpAddress,
                         Username = "", // Assuming you have this in the request
                         InstituteId = InstituteId
                     });
@@ -2225,78 +2266,111 @@ WHERE
         {
             try
             {
-                // Define your query with filters for DesignationId and DepartmentId
-                string query = @"SELECT 
-                            Employee_id AS EmployeeId,
-                            CONCAT(First_Name, ' ', Middle_Name, ' ', Last_Name) AS EmployeeName,
-                            d.DepartmentName AS Department,
-                            des.DesignationName AS Designation,
-                            g.Gender_Type AS Gender,
-                            mobile_number AS Mobile,
-                            Date_of_Birth AS DateOfBirth,
-                            EmailID AS Email
-                        FROM tbl_EmployeeProfileMaster e
-                        LEFT JOIN tbl_Department d ON e.Department_id = d.Department_id
-                        LEFT JOIN tbl_Designation des ON e.Designation_id = des.Designation_id
-                        LEFT JOIN tbl_Gender g ON e.Gender_id = g.Gender_id
-                        WHERE e.Institute_id = @InstituteId
-                        AND (@DesignationId IS NULL OR e.Designation_id = @DesignationId)
-                        AND (@DepartmentId IS NULL OR e.Department_id = @DepartmentId)
-                        AND e.Status = 1";
+                // Step 1: Fetch active columns
+                string activeColumnsQuery = @"SELECT ECMId, ColumnDisplayName, ColumnDatabaseName, CategoryId, Status 
+                                      FROM tbl_EmployeeColumnMaster 
+                                      WHERE Status = 1";
+                var activeColumns = await _connection.QueryAsync<dynamic>(activeColumnsQuery);
 
-                // Execute the query with filters
-                var employeeProfiles = (await _connection.QueryAsync<dynamic>(
-                    query,
-                    new
+                if (activeColumns == null || !activeColumns.Any())
+                {
+                    return new ServiceResponse<byte[]>(false, "No active columns found", null, 204);
+                }
+
+                // Step 2: Build the dynamic SQL query based on active columns
+                var sqlBuilder = new StringBuilder(@"SELECT e.Employee_id AS EmployeeId");
+
+                foreach (var column in activeColumns)
+                {
+                    switch (column.CategoryId)
                     {
-                        request.InstituteId,
-                        DesignationId = request.DesignationId == 0 ? (int?)null : request.DesignationId,
-                        DepartmentId = request.DepartmetnId == 0 ? (int?)null : request.DepartmetnId
-                    })).ToList();
+                        case 1: // tbl_EmployeeProfileMaster
+                            sqlBuilder.Append($", e.{column.ColumnDatabaseName} AS [{column.ColumnDisplayName}]");
+                            break;
+                        case 2: // tbl_EmployeePresentAddress
+                            sqlBuilder.Append($", pa.{column.ColumnDatabaseName} AS [{column.ColumnDisplayName}]");
+                            break;
+                        case 3: // tbl_EmployeeFamilyMaster
+                            sqlBuilder.Append($", ef.{column.ColumnDatabaseName} AS [{column.ColumnDisplayName}]");
+                            break;
+                        case 4: // tbl_QualificationInfoMaster
+                            sqlBuilder.Append($", qi.{column.ColumnDatabaseName} AS [{column.ColumnDisplayName}]");
+                            break;
+                        case 5: // tbl_WorkExperienceMaster
+                            sqlBuilder.Append($", we.{column.ColumnDatabaseName} AS [{column.ColumnDisplayName}]");
+                            break;
+                        case 6: // tbl_BankDetailsMaster
+                            sqlBuilder.Append($", bd.{column.ColumnDatabaseName} AS [{column.ColumnDisplayName}]");
+                            break;
+                        default:
+                            throw new Exception($"Unknown CategoryId {column.CategoryId}");
+                    }
+                }
 
-                var ipAddress = GetClientIPAddress();
-                string historyQuery = @"insert into tbl_EmployeeExportHistory ( EmployeeCount ,DownloadDate ,IPAddress,Username, InstituteId)
-                                           VALUES 
-                        ( @EmployeeCount ,@DownloadDate ,@IPAddress,@Username, @InstituteId)";
+                // Step 3: Build FROM and JOIN clauses
+                sqlBuilder.Append(@" 
+            FROM [dbo].[tbl_EmployeeProfileMaster] e
+            LEFT JOIN [dbo].[tbl_EmployeePresentAddress] pa ON e.Employee_id = pa.Employee_id
+            LEFT JOIN [dbo].[tbl_EmployeeFamilyMaster] ef ON e.Employee_id = ef.Employee_id
+            LEFT JOIN [dbo].[tbl_QualificationInfoMaster] qi ON e.Employee_id = qi.Employee_id
+            LEFT JOIN [dbo].[tbl_WorkExperienceMaster] we ON e.Employee_id = we.Employee_id
+            LEFT JOIN [dbo].[tbl_BankDetailsMaster] bd ON e.Employee_id = bd.Employee_id
+            LEFT JOIN [dbo].[tbl_Department] d ON e.Department_id = d.Department_id 
+            LEFT JOIN [dbo].[tbl_Designation] des ON e.Designation_id = des.Designation_id
+            LEFT JOIN [dbo].[tbl_Gender] g ON e.Gender_id = g.Gender_id
+            WHERE e.Institute_id = @InstituteId");
+
+                // Step 4: Add filters for DesignationId and DepartmentId
+                if (request.DesignationId > 0)
+                {
+                    sqlBuilder.Append(" AND e.Designation_id = @DesignationId");
+                }
+
+                if (request.DepartmetnId > 0)
+                {
+                    sqlBuilder.Append(" AND e.Department_id = @DepartmentId");
+                }
+
+                // Step 5: Execute the query and fetch employee profiles
+                var employeeProfiles = (await _connection.QueryAsync<dynamic>(sqlBuilder.ToString(), new
+                {
+                    request.InstituteId,
+                    DesignationId = request.DesignationId == 0 ? (int?)null : request.DesignationId,
+                    DepartmentId = request.DepartmetnId == 0 ? (int?)null : request.DepartmetnId
+                })).ToList();
+
+                // Log export history
+                string historyQuery = @"INSERT INTO tbl_EmployeeExportHistory (EmployeeCount, DownloadDate, IPAddress, Username, InstituteId)
+                                VALUES (@EmployeeCount, @DownloadDate, @IPAddress, @Username, @InstituteId)";
                 await _connection.ExecuteAsync(historyQuery, new
                 {
                     EmployeeCount = employeeProfiles.Count,
                     DownloadDate = DateTime.Now,
-                    IPAddress = ipAddress,
+                    IPAddress = request.IpAddress,
                     Username = "", // Assuming you have this in the request
                     InstituteId = request.InstituteId
                 });
+
+                // Handle case where no records are found
                 if (!employeeProfiles.Any())
                 {
                     return await GenerateFileWithoutData(format);
                 }
 
+                // Step 6: Generate the Excel or CSV file based on the requested format
                 if (format.ToLower() == "csv")
                 {
-                    return GenerateCSVFile(employeeProfiles);
+                    return GenerateCSVFile(employeeProfiles, activeColumns.AsList());
                 }
                 else
                 {
-                    return GenerateExcelFile(employeeProfiles);
+                    return GenerateExcelFile(employeeProfiles, activeColumns.AsList());
                 }
             }
             catch (Exception ex)
             {
                 return new ServiceResponse<byte[]>(false, ex.Message, null, StatusCodes.Status500InternalServerError);
             }
-        }
-        private string GetClientIPAddress()
-        {
-            // Getting the forwarded IP address from headers (if behind a proxy or load balancer)
-            var ipAddress = _httpContextAccessor.HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
-
-            // If no forwarded IP address is found, use the remote IP address
-            if (string.IsNullOrEmpty(ipAddress))
-            {
-                ipAddress = _httpContextAccessor.HttpContext.Connection.RemoteIpAddress?.MapToIPv4().ToString();
-            }
-
-            return ipAddress ?? "Unknown"; // Return "Unknown" if the IP address could not be retrieved
         }
         private async Task<ServiceResponse<byte[]>> GenerateFileWithoutData(string format)
         {
@@ -2331,51 +2405,66 @@ WHERE
                 }
             }
         }
-        private ServiceResponse<byte[]> GenerateCSVFile(List<dynamic> employeeProfiles)
+        private ServiceResponse<byte[]> GenerateCSVFile(List<dynamic> employeeProfiles, List<dynamic> activeColumns)
         {
             var csvBuilder = new StringBuilder();
-            csvBuilder.AppendLine("Employee ID,Employee Name,Department,Designation,Gender,Mobile,Date of Birth,Email");
 
+            // Step 1: Build the header dynamically based on active columns
+            foreach (var column in activeColumns)
+            {
+                csvBuilder.Append($"{column.ColumnDisplayName},");
+            }
+            csvBuilder.Length--; // Remove the last comma
+            csvBuilder.AppendLine();
+
+            // Step 2: Build each row dynamically based on active columns
             foreach (var profile in employeeProfiles)
             {
-                csvBuilder.AppendLine($"{profile.EmployeeId},{profile.EmployeeName},{profile.Department},{profile.Designation},{profile.Gender},{profile.Mobile},{profile.DateOfBirth},{profile.Email}");
+                foreach (var column in activeColumns)
+                {
+                
+                    string columnName = column.ColumnDisplayName;
+                    var columnValue = ((IDictionary<string, object>)profile)[columnName];
+                 
+                
+                    csvBuilder.Append($"{columnValue},");
+                }
+                csvBuilder.Length--; // Remove the last comma
+                csvBuilder.AppendLine();
             }
 
+            // Step 3: Convert the CSV string to byte array and return
             var csvBytes = Encoding.UTF8.GetBytes(csvBuilder.ToString());
             return new ServiceResponse<byte[]>(true, "CSV file generated successfully.", csvBytes, StatusCodes.Status200OK);
         }
-        private ServiceResponse<byte[]> GenerateExcelFile(List<dynamic> employeeProfiles)
+
+        private ServiceResponse<byte[]> GenerateExcelFile(List<dynamic> employeeProfiles, List<dynamic> activeColumns)
         {
             using (var package = new ExcelPackage())
             {
                 var worksheet = package.Workbook.Worksheets.Add("Employee Data");
 
-                // Add headers
-                worksheet.Cells[1, 1].Value = "Employee ID";
-                worksheet.Cells[1, 2].Value = "Employee Name";
-                worksheet.Cells[1, 3].Value = "Department";
-                worksheet.Cells[1, 4].Value = "Designation";
-                worksheet.Cells[1, 5].Value = "Gender";
-                worksheet.Cells[1, 6].Value = "Mobile";
-                worksheet.Cells[1, 7].Value = "Date of Birth";
-                worksheet.Cells[1, 8].Value = "Email";
+                // Step 1: Add headers dynamically based on active columns
+                for (int i = 0; i < activeColumns.Count; i++)
+                {
+                    worksheet.Cells[1, i + 1].Value = activeColumns[i].ColumnDisplayName;
+                }
 
-                // Add data rows
+                // Step 2: Add data rows dynamically based on active columns
                 for (int i = 0; i < employeeProfiles.Count; i++)
                 {
                     var profile = employeeProfiles[i];
-                    worksheet.Cells[i + 2, 1].Value = profile.EmployeeId;
-                    worksheet.Cells[i + 2, 2].Value = profile.EmployeeName;
-                    worksheet.Cells[i + 2, 3].Value = profile.Department;
-                    worksheet.Cells[i + 2, 4].Value = profile.Designation;
-                    worksheet.Cells[i + 2, 5].Value = profile.Gender;
-                    worksheet.Cells[i + 2, 6].Value = profile.Mobile;
-                    worksheet.Cells[i + 2, 7].Value = profile.DateOfBirth;
-                    worksheet.Cells[i + 2, 8].Value = profile.Email;
+                    for (int j = 0; j < activeColumns.Count; j++)
+                    {
+                        var column = activeColumns[j];
+                        string columnName = column.ColumnDisplayName;
+                        var columnValue = ((IDictionary<string, object>)profile)[columnName];
+                        worksheet.Cells[i + 2, j + 1].Value = columnValue;
+                    }
                 }
 
-                // Format the header cells
-                using (var range = worksheet.Cells[1, 1, 1, 8])
+                // Step 3: Format the header cells
+                using (var range = worksheet.Cells[1, 1, 1, activeColumns.Count])
                 {
                     range.Style.Font.Bold = true;
                     range.Style.Fill.PatternType = ExcelFillStyle.Solid;
@@ -2383,12 +2472,14 @@ WHERE
                     range.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
                 }
 
+                // Step 4: Save the Excel file and return as byte array
                 var stream = new MemoryStream();
                 package.SaveAs(stream);
                 var fileData = stream.ToArray();
                 return new ServiceResponse<byte[]>(true, "Excel file generated successfully.", fileData, StatusCodes.Status200OK);
             }
         }
+
         private async Task<bool> CreateUserLoginInfo(int userId, int userType, int instituteId)
         {
             try
@@ -2397,7 +2488,7 @@ WHERE
                 await connection.OpenAsync(); // Ensure async method for opening
 
                 // Define common password
-                string commonPassword = "iGuru@1234";
+                string commonPassword = "123456";
 
                 // SQL queries for fetching user details based on UserType
                 string employeeSql = @"
@@ -2761,14 +2852,14 @@ WHERE
                     // Specify the required column order
                     var columnOrder = new[]
                     {
-               "Employee_id", "First_Name", "Middle_Name", "Last_Name", "Gender_id", "Department_id", "Designation_id",
-                "mobile_number", "Date_of_Birth", "Date_of_Joining", "Religion_id", "Nationality_id",
-                "Employee_code_id", "Blood_Group_id", "aadhar_no", "pan_no", "EPF_no", "ESIC_no", "uan_no",
-                "Address", "CountryName", "StateName", "CityName", "DistrictName", "Pin_code",
-                "Father_Name", "Fathers_Occupation", "Mother_Name", "Mothers_Occupation",
-                "Spouse_Name", "Spouses_Occupation", "Guardian_Name", "Guardians_Occupation",
-                "Primary_Emergency_Contact_no", "Secondary_Emergency_Contact_no",
-                "bank_name", "account_name", "account_number", "IFSC_code", "Bank_address"
+                "First Name", "Middle Name", "Last Name", "Gender", "Department", "Designation",
+                "Mobile No", "Date of Birth", "Date of Joining", "Religion", "Nationality","Email Id", "Marital Status",
+                "Employee Id", "Blood Group", "Aadhar Number", "PAN", "EPF Number", "ESIC Number", "UAN number",
+                "Address", "Country", "State", "City", "District", "Pin Code",
+                "Father's Name", "Father's Occupation", "Mother's Name", "Mothers's Occupation",
+                "Spouse's Name", "Spouses's Occupation", "Guardian's Name", "Guardian's Occupation",
+                "Primary Emergency Contact no", "Secondary Emergency Contact no",
+                "Bank Name", "Account Name", "Account Number", "IFSC code", "Bank Address"
             };
                     if (!employeeData.Any())
                     {
@@ -2780,9 +2871,9 @@ WHERE
                             mainSheet.Cells[1, i + 1].Value = columnName;
 
                             // Set the background color for mandatory columns
-                            if (new[] {"Employee_id", "First_Name", "Last_Name", "Gender_id", "Department_id", "Designation_id",
-             "mobile_number", "Date_of_Birth", "Date_of_Joining", "Religion_id",
-             "Nationality_id", "Employee_code_id", "aadhar_no" }.Contains(columnName))
+                            if (new[] { "First Name", "Last Name", "Gender", "Department", "Designation",
+             "Mobile No", "Date of Birth", "Date of Joining", "Religion",
+             "Nationality", "Employee Id", "Aadhar Number" }.Contains(columnName))
                             {
                                 mainSheet.Cells[1, i + 1].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
                                 mainSheet.Cells[1, i + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.Red);
@@ -2879,9 +2970,9 @@ WHERE
                 sheet.Cells[1, i + 1].Value = columnName;
 
                 // Set the background color for mandatory columns
-                if (new[] {"Employee_id", "First_Name", "Last_Name", "Gender_id", "Department_id", "Designation_id",
-             "mobile_number", "Date_of_Birth", "Date_of_Joining", "Religion_id",
-             "Nationality_id", "Employee_code_id", "aadhar_no" }.Contains(columnName))
+                if (new[] {"First Name", "Last Name", "Gender", "Department", "Designation",
+             "mobile_number", "Date of Birth", "Date of Joining", "Religion",
+             "Nationality", "Employee Id", "Aadhar Number" }.Contains(columnName))
                 {
                     sheet.Cells[1, i + 1].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
                     sheet.Cells[1, i + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.Red);
@@ -2949,6 +3040,7 @@ WHERE
         }
         private async Task<IEnumerable<dynamic>> GetEmployeeDataAsync(int instituteId)
         {
+            instituteId = 0;
             string query = @"
 WITH BankDetails AS (
     SELECT 
@@ -3069,14 +3161,22 @@ WHERE
         }
         private void AddStaticInstructions(ExcelWorksheet sheet)
         {
-            sheet.Cells[1, 1].Value = "Instructions for filling the Employee Data sheet:";
-            sheet.Cells[2, 1].Value = "1. All fields marked in red are mandatory.";
-            sheet.Cells[3, 1].Value = "2. Please ensure that all mandatory fields are filled before uploading the sheet.";
-            sheet.Cells[4, 1].Value = "3. Use the appropriate codes from the master sheets for fields like Gender, Department, etc.";
+            sheet.Cells[1, 1].Value = "Note: The import will give a provision to the users to upload all individual data at once. Basically it is usefull at the time of the implementation of any new school. At the time of migrating the the data.";
+            sheet.Cells[6, 1].Value = "Instructions:";
+            sheet.Cells[6, 2].Value = "Mandatory fields to be shown in red color.";
+            sheet.Cells[6, 3].Value = "If any mandatory field is left without being filled, The file will not get imported and the import should get aborted.";
+            sheet.Cells[8, 1].Value = "DATE";
+            sheet.Cells[8, 2].Value = "DD-MM-YYYY   Everywhere this format should be used";
+            sheet.Cells[9, 1].Value = "Mobile Number";
+            sheet.Cells[9, 2].Value = "Should be 10 digits and strictly numbers and don't use country codes";
+            sheet.Cells[10, 1].Value = "Nationality ";
+            sheet.Cells[10, 2].Value = "Dropdown value should be copy pasted as per student";
+            sheet.Cells[11, 1].Value = "Religion  ";
+            sheet.Cells[11, 2].Value = "Dropdown value should be copy pasted as per student";
 
             // Additional static instructions can be added here
         }
-        public async Task<ServiceResponse<int>> UploadEmployeedata(IFormFile file, int instituteId)
+        public async Task<ServiceResponse<int>> UploadEmployeedata(IFormFile file, int instituteId, string IpAddress)
         {
             try
             {
@@ -3092,12 +3192,13 @@ WHERE
                 var religionMappings = await GetReligionMappings();
                 var nationalityMappings = await GetNationalityMappings();
                 var bloodGroupMappings = await GetBloodGroupMappings();
-
+                var maritalStatusMappings = await GetMaritalStatusMappings();
                 bool success = true;
-
+                int count = 0;
                 // Read the Excel file
                 using (var stream = new MemoryStream())
                 {
+                  
                     await file.CopyToAsync(stream);
                     using (var package = new ExcelPackage(stream))
                     {
@@ -3105,72 +3206,75 @@ WHERE
                         // Read data starting from the second row (to skip headers)
                         for (int row = 2; row <= worksheet.Dimension.End.Row; row++)
                         {
-                            DateTime? dateOfBirth = ParseDate(worksheet.Cells[row, 9].Value?.ToString());
-                            DateTime? dateOfJoining = ParseDate(worksheet.Cells[row, 10].Value?.ToString());
+                            DateTime? dateOfBirth = ParseDate(worksheet.Cells[row, 8].Value?.ToString());
+                            DateTime? dateOfJoining = ParseDate(worksheet.Cells[row, 9].Value?.ToString());
                             var employeeProfile = new EmployeeProfile
                             {
-                                Employee_id = Convert.ToInt32(worksheet.Cells[row, 1].Value),
-                                First_Name = worksheet.Cells[row, 2].Value?.ToString(),
-                                Middle_Name = worksheet.Cells[row, 3].Value?.ToString(),
-                                Last_Name = worksheet.Cells[row, 4].Value?.ToString(),
+                                First_Name = worksheet.Cells[row, 1].Value?.ToString(),
+                                Middle_Name = worksheet.Cells[row, 2].Value?.ToString(),
+                                Last_Name = worksheet.Cells[row, 3].Value?.ToString(),
 
                                 // Fetch the ID by looking up the name in the dictionary
-                                Gender_id = genderMappings.TryGetValue(worksheet.Cells[row, 5].Value?.ToString(), out var genderId) ? genderId : 0,
-                                Department_id = departmentMappings.TryGetValue(worksheet.Cells[row, 6].Value?.ToString(), out var deptId) ? deptId : 0,
-                                Designation_id = designationMappings.TryGetValue(worksheet.Cells[row, 7].Value?.ToString(), out var desigId) ? desigId : 0,
+                                Gender_id = genderMappings.TryGetValue(worksheet.Cells[row, 4].Value?.ToString(), out var genderId) ? genderId : 0,
+                                Department_id = departmentMappings.TryGetValue(worksheet.Cells[row, 5].Value?.ToString(), out var deptId) ? deptId : 0,
+                                Designation_id = designationMappings.TryGetValue(worksheet.Cells[row, 6].Value?.ToString(), out var desigId) ? desigId : 0,
 
-                                mobile_number = worksheet.Cells[row, 8].Value?.ToString(),
+                                mobile_number = worksheet.Cells[row, 7].Value?.ToString(),
                                 Date_of_Birth = dateOfBirth,
                                 Date_of_Joining = dateOfJoining,
 
-                                Religion_id = religionMappings.TryGetValue(worksheet.Cells[row, 11].Value?.ToString(), out var religionId) ? religionId : 0,
-                                Nationality_id = nationalityMappings.TryGetValue(worksheet.Cells[row, 12].Value?.ToString(), out var nationalityId) ? nationalityId : 0,
+                                Religion_id = religionMappings.TryGetValue(worksheet.Cells[row, 10].Value?.ToString(), out var religionId) ? religionId : 0,
+                                Nationality_id = nationalityMappings.TryGetValue(worksheet.Cells[row, 11].Value?.ToString(), out var nationalityId) ? nationalityId : 0,
 
-                                Employee_code_id = worksheet.Cells[row, 13].Value?.ToString(),
-                                Blood_Group_id = bloodGroupMappings.TryGetValue(worksheet.Cells[row, 14].Value?.ToString(), out var bloodGroupId) ? bloodGroupId : 0,
+                                EmailID = worksheet.Cells[row, 12].Value?.ToString(),
+                                marrital_status_id = maritalStatusMappings.TryGetValue(worksheet.Cells[row, 13].Value?.ToString(), out var statusId) ? statusId : 0,
 
-                                aadhar_no = worksheet.Cells[row, 15].Value?.ToString(),
-                                pan_no = worksheet.Cells[row, 16].Value?.ToString(),
-                                EPF_no = worksheet.Cells[row, 17].Value?.ToString(),
-                                ESIC_no = worksheet.Cells[row, 18].Value?.ToString(),
-                                uan_no = worksheet.Cells[row, 19].Value?.ToString(),
+
+                                Employee_code_id = worksheet.Cells[row, 14].Value?.ToString(),
+                                Blood_Group_id = bloodGroupMappings.TryGetValue(worksheet.Cells[row, 15].Value?.ToString(), out var bloodGroupId) ? bloodGroupId : 0,
+
+                                aadhar_no = worksheet.Cells[row, 16].Value?.ToString(),
+                                pan_no = worksheet.Cells[row, 17].Value?.ToString(),
+                                EPF_no = worksheet.Cells[row, 18].Value?.ToString(),
+                                ESIC_no = worksheet.Cells[row, 19].Value?.ToString(),
+                                uan_no = worksheet.Cells[row, 20].Value?.ToString(),
 
                                 EmployeeAddressDetails = new List<EmployeeAddressDetails>
                         {
                             new EmployeeAddressDetails
                             {
-                                Address = worksheet.Cells[row, 20].Value?.ToString(),
-                                CountryName = worksheet.Cells[row, 21].Value?.ToString(),
-                                StateName = worksheet.Cells[row, 22].Value?.ToString(),
-                                CityName = worksheet.Cells[row, 23].Value?.ToString(),
-                                DistrictName = worksheet.Cells[row, 24].Value?.ToString(),
-                                Pin_code = worksheet.Cells[row, 25].Value?.ToString(),
+                                Address = worksheet.Cells[row, 21].Value?.ToString(),
+                                CountryName = worksheet.Cells[row, 22].Value?.ToString(),
+                                StateName = worksheet.Cells[row, 23].Value?.ToString(),
+                                CityName = worksheet.Cells[row, 24].Value?.ToString(),
+                                DistrictName = worksheet.Cells[row, 25].Value?.ToString(),
+                                Pin_code = worksheet.Cells[row, 26].Value?.ToString(),
                             }
                         },
 
                                 Family = new EmployeeFamily
                                 {
-                                    Father_Name = worksheet.Cells[row, 26].Value?.ToString(),
-                                    Fathers_Occupation = worksheet.Cells[row, 27].Value?.ToString(),
-                                    Mother_Name = worksheet.Cells[row, 28].Value?.ToString(),
-                                    Mothers_Occupation = worksheet.Cells[row, 29].Value?.ToString(),
-                                    Spouse_Name = worksheet.Cells[row, 30].Value?.ToString(),
-                                    Spouses_Occupation = worksheet.Cells[row, 31].Value?.ToString(),
-                                    Guardian_Name = worksheet.Cells[row, 32].Value?.ToString(),
-                                    Guardians_Occupation = worksheet.Cells[row, 33].Value?.ToString(),
-                                    Primary_Emergency_Contact_no = worksheet.Cells[row, 34].Value?.ToString(),
-                                    Secondary_Emergency_Contact_no = worksheet.Cells[row, 35].Value?.ToString(),
+                                    Father_Name = worksheet.Cells[row, 27].Value?.ToString(),
+                                    Fathers_Occupation = worksheet.Cells[row, 28].Value?.ToString(),
+                                    Mother_Name = worksheet.Cells[row, 29].Value?.ToString(),
+                                    Mothers_Occupation = worksheet.Cells[row, 30].Value?.ToString(),
+                                    Spouse_Name = worksheet.Cells[row, 31].Value?.ToString(),
+                                    Spouses_Occupation = worksheet.Cells[row, 32].Value?.ToString(),
+                                    Guardian_Name = worksheet.Cells[row, 33].Value?.ToString(),
+                                    Guardians_Occupation = worksheet.Cells[row, 34].Value?.ToString(),
+                                    Primary_Emergency_Contact_no = worksheet.Cells[row, 35].Value?.ToString(),
+                                    Secondary_Emergency_Contact_no = worksheet.Cells[row, 36].Value?.ToString(),
                                 },
 
                                 EmployeeBankDetails = new List<EmployeeBankDetails>
                         {
                             new EmployeeBankDetails
                             {
-                                bank_name = worksheet.Cells[row, 36].Value?.ToString(),
-                                account_name = worksheet.Cells[row, 37].Value?.ToString(),
-                                account_number = worksheet.Cells[row, 38].Value?.ToString(),
-                                IFSC_code = worksheet.Cells[row, 39].Value?.ToString(),
-                                Bank_address = worksheet.Cells[row, 40].Value?.ToString(),
+                                bank_name = worksheet.Cells[row, 37].Value?.ToString(),
+                                account_name = worksheet.Cells[row, 38].Value?.ToString(),
+                                account_number = worksheet.Cells[row, 39].Value?.ToString(),
+                                IFSC_code = worksheet.Cells[row, 40].Value?.ToString(),
+                                Bank_address = worksheet.Cells[row, 41].Value?.ToString(),
                             }
                         },
 
@@ -3182,6 +3286,7 @@ WHERE
                             var response = await AddUpdateEmployeeProfile(employeeProfile);
                             if (response.Success)
                             {
+                                count++;
                                 success = true;
                             }
                             else
@@ -3195,6 +3300,17 @@ WHERE
 
                 if (success)
                 {
+                    string historyQuery = @"insert into tbl_EmployeeImportHistory ( EmployeeCount ,DownloadDate ,IPAddress,Username, InstituteId)
+                                           VALUES 
+                        ( @EmployeeCount ,@DownloadDate ,@IPAddress,@Username, @InstituteId)";
+                    await _connection.ExecuteAsync(historyQuery, new
+                    {
+                        EmployeeCount = count,
+                        DownloadDate = DateTime.Now,
+                        IPAddress = IpAddress,
+                        Username = "", // Assuming you have this in the request
+                        InstituteId = instituteId
+                    });
                     return new ServiceResponse<int>(true, "Operation successful", 0, 200);
                 }
                 else
@@ -3217,6 +3333,14 @@ WHERE
             }
             return null; // Return null if parsing fails
         }
+        private async Task<Dictionary<string, int>> GetMaritalStatusMappings()
+        {
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                var maritalStatus = await connection.QueryAsync<MaritalStatuses>("SELECT statusId, StatusName FROM tbl_MaritalStatus");
+                return maritalStatus.ToDictionary(g => g.StatusName, g => g.statusId);
+            }
+        }
         private async Task<Dictionary<string, int>> GetGenderMappings()
         {
             using (var connection = new SqlConnection(_connectionString))
@@ -3225,12 +3349,11 @@ WHERE
                 return genders.ToDictionary(g => g.Gender_Type, g => g.Gender_id);
             }
         }
-
         private async Task<Dictionary<string, int>> GetDepartmentMappings()
         {
             using (var connection = new SqlConnection(_connectionString))
             {
-                var departments = await connection.QueryAsync<Department>("SELECT DepartmentName, Department_id FROM tbl_Department");
+                var departments = await connection.QueryAsync<Department>("SELECT DepartmentName, Department_id FROM tbl_Department where IsDeleted = 0");
                 return departments.ToDictionary(d => d.DepartmentName, d => d.Department_id);
             }
         }
@@ -3239,7 +3362,7 @@ WHERE
         {
             using (var connection = new SqlConnection(_connectionString))
             {
-                var designations = await connection.QueryAsync<Designation>("SELECT DesignationName, Designation_id FROM tbl_Designation");
+                var designations = await connection.QueryAsync<Designation>("SELECT DesignationName, Designation_id FROM tbl_Designation where IsDeleted = 0");
                 return designations.ToDictionary(d => d.DesignationName, d => d.Designation_id);
             }
         }
@@ -3276,6 +3399,11 @@ WHERE
         public int Gender_id {  get; set; }
         public string Gender_Type {  get; set; }
     }
+    public class MaritalStatuses
+    {
+        public int statusId { get; set; }
+        public string StatusName { get; set; }
+    }
     public class Religion
     {
         public int Religion_id {  get; set; }
@@ -3293,5 +3421,4 @@ WHERE
         public string ColumnDatabaseName { get; set; } // Actual column name in the database
         public string TableName { get; set; }          // The table the column belongs to
     }
-
 }

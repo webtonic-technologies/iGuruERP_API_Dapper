@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Transport_API.DTOs.Requests;
 using Transport_API.Services.Interfaces;
+using Transport_API.DTOs.ServiceResponse;
 
 namespace Transport_API.Controllers
 {
@@ -15,19 +16,34 @@ namespace Transport_API.Controllers
             _transportAttendanceService = transportAttendanceService;
         }
 
+
         [HttpPost("UpdateTransportAttendance")]
-        public async Task<IActionResult> UpdateTransportAttendance(TransportAttendanceRequest request)
+        public async Task<IActionResult> UpdateTransportAttendance([FromBody] IEnumerable<TransportAttendanceRequest> requests)
         {
             try
             {
-                var response = await _transportAttendanceService.AddUpdateTransportAttendance(request);
+                var response = await _transportAttendanceService.AddUpdateTransportAttendance(requests); // Pass the collection of requests
                 return StatusCode(response.StatusCode, response);
             }
             catch (Exception e)
             {
                 return BadRequest(e.Message);
             }
-        }
+        } 
+
+        //[HttpPost("UpdateTransportAttendance")]
+        //public async Task<IActionResult> UpdateTransportAttendance(TransportAttendanceRequest request)
+        //{
+        //    try
+        //    {
+        //        var response = await _transportAttendanceService.AddUpdateTransportAttendance(request);
+        //        return StatusCode(response.StatusCode, response);
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        return BadRequest(e.Message);
+        //    }
+        //}
 
         [HttpPost("GetTransportAttendance")]
         public async Task<IActionResult> GetTransportAttendance(GetTransportAttendanceRequest request)

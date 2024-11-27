@@ -28,6 +28,7 @@ namespace FeesManagement_API.Controllers
             return BadRequest(response);
         }
 
+
         [HttpPost("GetAllOffers")]
         public async Task<IActionResult> GetAllOffers([FromBody] GetAllOffersRequest request)
         {
@@ -38,6 +39,17 @@ namespace FeesManagement_API.Controllers
             }
             return BadRequest(response);
         }
+
+        //[HttpPost("GetAllOffers")]
+        //public async Task<IActionResult> GetAllOffers([FromBody] GetAllOffersRequest request)
+        //{
+        //    var response = await _offerService.GetAllOffers(request);
+        //    if (response.Success)
+        //    {
+        //        return Ok(response);
+        //    }
+        //    return BadRequest(response);
+        //}
 
         //[HttpGet("GetOfferById/{offerID}")]
         //public async Task<IActionResult> GetOfferById(int offerID)
@@ -59,6 +71,19 @@ namespace FeesManagement_API.Controllers
                 return Ok(response);
             }
             return BadRequest(response);
+        }
+
+
+        [HttpPost("GetOfferStudentType")]
+        public async Task<IActionResult> GetOfferStudentType()
+        {
+            var result = await _offerService.GetOfferStudentTypes();
+            return Ok(new
+            {
+                success = true,
+                message = "Student types retrieved successfully",
+                data = result
+            });
         }
     }
 }

@@ -8,6 +8,7 @@
         public string FeeHead { get; set; } = string.Empty;
         public int FeeTenurityID { get; set; }
         public string FeeTenurityType { get; set; } = string.Empty;
+        public bool IsActive { get; set; }
         public List<ClassSectionResponse> ClassSections { get; set; } = new List<ClassSectionResponse>();
     }
 

@@ -9,6 +9,11 @@ namespace FeesManagement_API.Services.Interfaces
     {
         ServiceResponse<string> AddUpdateConcession(AddUpdateConcessionMappingRequest request);
         ServiceResponse<List<GetAllConcessionMappingResponse>> GetAllConcessionMapping(GetAllConcessionMappingRequest request);
+        Task<ServiceResponse<byte[]>> GetConcessionListExcel(GetAllConcessionMappingRequest request);
+        Task<ServiceResponse<byte[]>> GetConcessionListCsv(GetAllConcessionMappingRequest request);
+
         ServiceResponse<string> UpdateStatus(int studentConcessionID);
+        Task<ServiceResponse<IEnumerable<ConcessionListResponse>>> GetConcessionList(ConcessionListRequest request);
+
     }
 }

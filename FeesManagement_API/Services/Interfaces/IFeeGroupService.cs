@@ -8,9 +8,9 @@ namespace FeesManagement_API.Services.Interfaces
 {
     public interface IFeeGroupService
     {
-        Task<ServiceResponse<int>> AddUpdateFeeGroup(AddUpdateFeeGroupRequest request);
+        Task<ServiceResponse<int>> AddUpdateFeeGroup(AddUpdateFeeGroupsRequest request);
         Task<ServiceResponse<IEnumerable<FeeGroupResponse>>> GetAllFeeGroups(GetAllFeeGroupRequest request);
         Task<ServiceResponse<FeeGroupResponse>> GetFeeGroupById(int feeGroupID);
-        Task<ServiceResponse<bool>> UpdateFeeGroupStatus(int feeGroupID);
+        Task<ServiceResponse<bool>> UpdateFeeGroupStatus(int feeGroupID, UpdateFeeGroupStatusRequest request);
     }
 }

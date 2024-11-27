@@ -495,8 +495,8 @@ namespace Employee_API.Controllers
                 return this.BadRequest(e.Message);
             }
         }
-        [HttpGet("DownloadEmployeeData")]
-        public async Task<IActionResult> DownloadEmployeeData([FromQuery] ExcelDownloadRequest request, [FromQuery] string format)
+        [HttpPost("DownloadEmployeeData")]
+        public async Task<IActionResult> DownloadEmployeeData([FromBody] ExcelDownloadRequest request, [FromQuery] string format)
         {
             var response = await _employeeProfileServices.ExcelDownload(request, format);
 
@@ -546,7 +546,7 @@ namespace Employee_API.Controllers
             }
         }
         [HttpPut("bulk-update")]
-        public async Task<IActionResult> BulkUpdateEmployeeProfiles([FromBody] List<EmployeeProfile> employeeProfiles)
+        public async Task<IActionResult> BulkUpdateEmployeeProfiles([FromBody] List<EmployeeProfile> employeeProfiles, string IpAddress)
         {
             // Validate input
             if (employeeProfiles == null || !employeeProfiles.Any())
@@ -555,7 +555,7 @@ namespace Employee_API.Controllers
             }
 
             // Call the service method to perform the bulk update
-            var response = await _employeeProfileServices.BulkUpdateEmployee(employeeProfiles);
+            var response = await _employeeProfileServices.BulkUpdateEmployee(employeeProfiles, IpAddress);
 
             // Handle the response
             if (response.Success)
@@ -615,6 +615,18 @@ namespace Employee_API.Controllers
 
             return Ok(result);
         }
+        [HttpGet("ImportHistiry/{InstituteId}")]
+        public async Task<IActionResult> GetImportHistoryByInstituteId(int InstituteId)
+        {
+            var result = await _employeeProfileServices.GetImportHistoryByInstituteId(InstituteId);
+
+            if (result == null)
+            {
+                return NotFound("No employee columns found.");
+            }
+
+            return Ok(result);
+        }
         [HttpGet("EmployeeExport/{InstituteId}")]
         public async Task<IActionResult> GetExportHistoryByInstituteId(int InstituteId)
         {
@@ -642,14 +654,14 @@ namespace Employee_API.Controllers
             }
         }
         [HttpPost("upload")]
-        public async Task<IActionResult> UploadEmployeedata(IFormFile file, int instituteId)
+        public async Task<IActionResult> UploadEmployeedata(IFormFile file, int instituteId, string IpAddress)
         {
             if (file == null || file.Length == 0)
             {
                 return BadRequest("No file uploaded");
             }
 
-            var response = await _employeeProfileServices.UploadEmployeedata(file, instituteId);
+            var response = await _employeeProfileServices.UploadEmployeedata(file, instituteId, IpAddress);
             if (response.Success)
             {
                 return Ok(response.Message);

@@ -23,24 +23,55 @@ namespace EventGallery_API.Controllers
         [HttpPost("UploadGalleryImage")]
         public async Task<IActionResult> UploadGalleryImage([FromBody] GalleryImageRequest request)
         {
+            // Convert the base64 string into bytes
             byte[] imageBytes = Convert.FromBase64String(request.FileName);
 
+            // Define the folder path to save the image
             string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets", "Gallery");
             if (!Directory.Exists(folderPath))
             {
                 Directory.CreateDirectory(folderPath);
             }
 
+            // Create a file name using a combination of galleryID and current time
             string fileName = $"gallery_{request.GalleryID}_{DateTime.Now.Ticks}.jpg";
             string filePath = Path.Combine(folderPath, fileName);
+
+            // Write the image file to disk
             await System.IO.File.WriteAllBytesAsync(filePath, imageBytes);
 
+            // Update the file name in the request object
             request.FileName = fileName;
 
-            // Use the eventID from the request body
+            // Call the service to upload the gallery image, passing in the eventID and the request
             var result = await _galleryService.UploadGalleryImage(request.EventID, request);
+
+            // Return the result as a response
             return Ok(result);
         }
+
+
+        //[HttpPost("UploadGalleryImage")]
+        //public async Task<IActionResult> UploadGalleryImage([FromBody] GalleryImageRequest request)
+        //{
+        //    byte[] imageBytes = Convert.FromBase64String(request.FileName);
+
+        //    string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets", "Gallery");
+        //    if (!Directory.Exists(folderPath))
+        //    {
+        //        Directory.CreateDirectory(folderPath);
+        //    }
+
+        //    string fileName = $"gallery_{request.GalleryID}_{DateTime.Now.Ticks}.jpg";
+        //    string filePath = Path.Combine(folderPath, fileName);
+        //    await System.IO.File.WriteAllBytesAsync(filePath, imageBytes);
+
+        //    request.FileName = fileName;
+
+        //    // Use the eventID from the request body
+        //    var result = await _galleryService.UploadGalleryImage(request.EventID, request);
+        //    return Ok(result);
+        //}
 
 
         [HttpGet("DownloadGalleryImage/{GalleryID}")]
@@ -102,11 +133,33 @@ namespace EventGallery_API.Controllers
             return Ok(result);
         }
 
-        [HttpPost("GetAllEvents/{InstituteID}")]
-        public async Task<IActionResult> GetAllEvents(int InstituteID)
+        //[HttpPost("GetAllEvents/{InstituteID}")]
+        //public async Task<IActionResult> GetAllEvents(int InstituteID)
+        //{
+        //    // Fetch events based on InstituteID
+        //    var events = await _galleryService.GetAllEvents(InstituteID);
+
+        //    // Map to response body format
+        //    var response = events.ConvertAll(e => new
+        //    {
+        //        e.EventID,
+        //        e.EventName
+        //    });
+
+        //    return Ok(new
+        //    {
+        //        success = true,
+        //        message = "Events fetched successfully.",
+        //        data = response,
+        //        statusCode = 200
+        //    });
+        //}
+
+        [HttpPost("GetAllEvents")]
+        public async Task<IActionResult> GetAllEvents([FromBody] GetAllEventsRequestList request)
         {
-            // Fetch events based on InstituteID
-            var events = await _galleryService.GetAllEvents(InstituteID);
+            // Fetch events based on InstituteID and AcademicYearCode
+            var events = await _galleryService.GetAllEvents(request.InstituteID, request.AcademicYearCode);
 
             // Map to response body format
             var response = events.ConvertAll(e => new

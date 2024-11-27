@@ -2,6 +2,7 @@ using Attendance_SE_API.Repository.Implementations;
 using Attendance_SE_API.Repository.Interfaces;
 using Attendance_SE_API.Services.Implementations;
 using Attendance_SE_API.Services.Interfaces;
+using OfficeOpenXml;
 using System.Data;
 using System.Data.SqlClient;
 
@@ -15,6 +16,9 @@ builder.Services.AddSwaggerGen();
 // Set up Dapper's IDbConnection
 builder.Services.AddScoped<IDbConnection>(sp =>
     new SqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Set the license context for EPPlus to NonCommercial
+ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
 // Register repositories and services
 builder.Services.AddScoped<IStudentAttendanceStatusRepository, StudentAttendanceStatusRepository>();
@@ -41,6 +45,14 @@ builder.Services.AddScoped<IEmployeeShiftService, EmployeeShiftService>();
 builder.Services.AddScoped<IGeoFencingRepository, GeoFencingRepository>();
 builder.Services.AddScoped<IGeoFencingService, GeoFencingService>();
 
+builder.Services.AddScoped<IMarkAttendanceService, MarkAttendanceService>();
+builder.Services.AddScoped<IMarkAttendanceRepository, MarkAttendanceRepository>();
+
+builder.Services.AddScoped<IClassAttendanceAnalysisRepository, ClassAttendanceAnalysisRepository>();
+builder.Services.AddScoped<IClassAttendanceAnalysisService, ClassAttendanceAnalysisService>();
+
+builder.Services.AddScoped<ISubjectAttendanceAnalysisRepository, SubjectAttendanceAnalysisRepository>();
+builder.Services.AddScoped<ISubjectAttendanceAnalysisService, SubjectAttendanceAnalysisService>();
 
 var app = builder.Build();
 

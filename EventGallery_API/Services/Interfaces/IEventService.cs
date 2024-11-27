@@ -12,6 +12,8 @@ namespace EventGallery_API.Services.Interfaces
         Task<ServiceResponse<List<GetAllEventsResponse>>> GetAllEvents(GetAllEventsRequest request);
         Task<ServiceResponse<GetAllEventsResponse>> GetEventById(int eventId);
         Task<ServiceResponse<bool>> DeleteEvent(int eventId);
-        Task<ServiceResponse<byte[]>> ExportAllEvents();
+        //Task<ServiceResponse<byte[]>> ExportAllEvents();
+        Task<ServiceResponse<byte[]>> ExportAllEvents(GetAllEventsExportRequest request);
+
     }
 }

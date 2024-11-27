@@ -25,9 +25,12 @@ namespace FeesManagement_API.Services.Implementations
 
         public async Task<ServiceResponse<IEnumerable<NumberSchemeResponse>>> GetAllNumberSchemes(GetAllNumberSchemesRequest request)
         {
-            var result = await _numberSchemeRepository.GetAllNumberSchemes(request);
-            return new ServiceResponse<IEnumerable<NumberSchemeResponse>>(true, "Number Schemes retrieved successfully", result, 200);
+            var numberSchemes = await _numberSchemeRepository.GetAllNumberSchemes(request);
+            var totalCount = await _numberSchemeRepository.CountActiveNumberSchemes(request.InstituteID); // Get the total count
+
+            return new ServiceResponse<IEnumerable<NumberSchemeResponse>>(true, "Number Schemes retrieved successfully", numberSchemes, 200, totalCount);
         }
+
 
         public async Task<ServiceResponse<NumberSchemeResponse>> GetNumberSchemeById(int numberSchemeID)
         {
@@ -40,5 +43,11 @@ namespace FeesManagement_API.Services.Implementations
             var result = await _numberSchemeRepository.UpdateNumberSchemeStatus(numberSchemeID);
             return new ServiceResponse<int>(true, "Number Scheme status updated successfully", result, 200);
         }
+        public async Task<ServiceResponse<IEnumerable<NumberSchemeTypeResponse>>> GetNumberSchemeType()
+        {
+            var result = await _numberSchemeRepository.GetNumberSchemeType();
+            return new ServiceResponse<IEnumerable<NumberSchemeTypeResponse>>(true, "Number Scheme Types retrieved successfully", result, 200);
+        }
+
     }
 }

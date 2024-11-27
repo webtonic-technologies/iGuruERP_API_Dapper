@@ -9,5 +9,7 @@
         public string AdmissionNumber { get; set; }
         public int ConcessionGroupID { get; set; }
         public string ConcessionGroupType { get; set; }
+        public bool IsActive { get; set; }
+
     }
 }

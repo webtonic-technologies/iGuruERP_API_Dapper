@@ -8,7 +8,9 @@ namespace EventGallery_API.Repository.Interfaces
 {
     public interface IEventApprovalRepository
     {
+        //Task<ServiceResponse<List<GetAllEventsApprovalsResponse>>> GetAllEventsApprovals(GetAllEventsApprovalsRequest request);
         Task<ServiceResponse<List<GetAllEventsApprovalsResponse>>> GetAllEventsApprovals(GetAllEventsApprovalsRequest request);
+
         Task<bool> UpdateEventApprovalStatus(UpdateEventApprovalStatusRequest request);
     }
 }

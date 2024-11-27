@@ -98,8 +98,7 @@ namespace FeesManagement_API.Repository.Implementations
                 }
             }
         }
-
-
+         
         public async Task<IEnumerable<LateFeeResponse>> GetAllLateFee(GetAllLateFeeRequest request)
         {
             var query = @"
@@ -228,5 +227,33 @@ namespace FeesManagement_API.Repository.Implementations
 
             return await _connection.ExecuteAsync(query, new { LateFeeRuleID = lateFeeRuleID });
         }
+
+        public async Task<IEnumerable<FeeTenureResponse>> GetFeeTenureDDL(GetFeeTenureDDLRequest request)
+        {
+            var query = @"
+        SELECT 
+            fg.FeeTenurityID,
+            fgc.FeeCollectionID AS TenuritySTMID,
+            CASE 
+                WHEN ts.TenuritySingleID IS NOT NULL THEN ts.TenuritySingleID 
+                WHEN tt.TenurityTermID IS NOT NULL THEN tt.TenurityTermID 
+                WHEN tm.TenurityMonthID IS NOT NULL THEN tm.TenurityMonthID 
+            END AS FeeCollectionSTMID,
+            CASE 
+                WHEN ts.TenuritySingleID IS NOT NULL THEN 'Single' 
+                WHEN tt.TenurityTermID IS NOT NULL THEN tt.TermName 
+                WHEN tm.TenurityMonthID IS NOT NULL THEN tm.Month 
+            END AS TenurityType
+        FROM tblFeeGroup fg
+        JOIN tblFeeGroupCollection fgc ON fg.FeeGroupID = fgc.FeeGroupID
+        LEFT JOIN tblTenuritySingle ts ON fgc.FeeCollectionID = ts.FeeCollectionID
+        LEFT JOIN tblTenurityTerm tt ON fgc.FeeCollectionID = tt.FeeCollectionID
+        LEFT JOIN tblTenurityMonthly tm ON fgc.FeeCollectionID = tm.FeeCollectionID
+        WHERE fg.FeeHeadID = @FeeHeadID AND fg.InstituteID = @InstituteID";
+
+            var result = await _connection.QueryAsync<FeeTenureResponse>(query, request);
+            return result;
+        }
+
     }
 }

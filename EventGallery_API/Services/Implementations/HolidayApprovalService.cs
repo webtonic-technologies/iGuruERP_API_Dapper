@@ -28,6 +28,17 @@ namespace EventGallery_API.Services.Implementations
             );
         }
 
+        //public async Task<ServiceResponse<List<GetAllHolidaysApprovalsResponse>>> GetAllHolidaysApprovals(GetAllHolidaysApprovalsRequest request)
+        //{
+        //    var holidays = await _holidayApprovalRepository.GetAllHolidaysApprovals(request);
+        //    return new ServiceResponse<List<GetAllHolidaysApprovalsResponse>>(
+        //        true,
+        //        holidays.Count > 0 ? "Holidays fetched successfully." : "No holidays found.",
+        //        holidays,
+        //        200
+        //    );
+        //}
+
         public async Task<bool> UpdateHolidayApprovalStatus(int holidayID, int statusID, int employeeID)
         {
             return await _holidayApprovalRepository.UpdateHolidayApprovalStatus(holidayID, statusID, employeeID);

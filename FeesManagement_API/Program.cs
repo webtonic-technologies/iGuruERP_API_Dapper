@@ -6,6 +6,8 @@ using System.Data.SqlClient;
 using System.Data;
 using Configuration.Repository.Implementations;
 using Configuration.Repository.Interfaces;
+using OfficeOpenXml;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,6 +20,9 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<IDbConnection>(sp =>
     new SqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Set the license context for EPPlus to NonCommercial
+ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
 // Dependency Injection for Repositories and Services
 builder.Services.AddScoped<IFeeHeadRepository, FeeHeadRepository>();
@@ -49,6 +54,42 @@ builder.Services.AddScoped<IStudentFeeRepository, StudentFeeRepository>();
 
 builder.Services.AddScoped<IConcessionMappingService, ConcessionMappingService>();
 builder.Services.AddScoped<IConcessionMappingRepository, ConcessionMappingRepository>();
+
+builder.Services.AddScoped<INonAcademicFeeService, NonAcademicFeeService>();
+builder.Services.AddScoped<INonAcademicFeeRepository, NonAcademicFeeRepository>();
+
+builder.Services.AddScoped<IRefundRepository, RefundRepository>();
+builder.Services.AddScoped<IRefundService, RefundService>();
+
+builder.Services.AddScoped<IWalletRepository, WalletRepository>();
+builder.Services.AddScoped<IWalletService, WalletService>();
+
+builder.Services.AddScoped<IFeeCollectionService, FeeCollectionService>();
+builder.Services.AddScoped<IFeeCollectionRepository, FeeCollectionRepository>();
+
+builder.Services.AddScoped<IStudentInformationService, StudentInformationService>();
+builder.Services.AddScoped<IStudentInformationRepository, StudentInformationRepository>();
+
+builder.Services.AddScoped<IFeeWaiverService, FeeWaiverService>();
+builder.Services.AddScoped<IFeeWaiverRepository, FeeWaiverRepository>();
+
+builder.Services.AddScoped<IFeeDiscountRepository, FeeDiscountRepository>();
+builder.Services.AddScoped<IFeeDiscountService, FeeDiscountService>();
+
+builder.Services.AddScoped<IChequeClearanceRepository, ChequeClearanceRepository>();
+builder.Services.AddScoped<IChequeClearanceService, ChequeClearanceService>();
+
+builder.Services.AddScoped<IChequeBounceRepository, ChequeBounceRepository>();
+builder.Services.AddScoped<IChequeBounceService, ChequeBounceService>();
+
+builder.Services.AddScoped<IChequeTrackingRepository, ChequeTrackingRepository>();
+builder.Services.AddScoped<IChequeTrackingService, ChequeTrackingService>();
+
+builder.Services.AddScoped<IFeesReportsRepository, FeesReportsRepository>();
+builder.Services.AddScoped<IFeesReportsService, FeesReportsService>();
+
+builder.Services.AddScoped<IFeesDashboardRepository, FeesDashboardRepository>();
+builder.Services.AddScoped<IFeesDashboardService, FeesDashboardService>();
 
 
 var app = builder.Build();

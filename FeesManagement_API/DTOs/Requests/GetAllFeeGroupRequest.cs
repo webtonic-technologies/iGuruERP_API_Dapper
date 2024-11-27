@@ -6,5 +6,7 @@
         public int PageSize { get; set; } = 10;
         public int FeeHeadID { get; set; }
         public int InstituteID { get; set; }
+        public string AcademicYearCode { get; set; }
+
     }
 }

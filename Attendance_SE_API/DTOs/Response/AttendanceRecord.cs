@@ -6,6 +6,8 @@
         public string AdmissionNumber { get; set; }
         public string RollNumber { get; set; }
         public string StudentName { get; set; }
+        public string MobileNumber { get; set; }
+
         public DateTime AttendanceDate { get; set; }
         public string AttendanceStatus { get; set; }
     }
