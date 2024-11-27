@@ -31,7 +31,7 @@ namespace Student_API.Services.Implementations
             return await _templateRepository.DeleteTemplate(templateId);
         }
 
-        public async Task<ServiceResponse<List<TemplateDTO>>> GetAllTemplates(int? pageSize = null, int? pageNumber = null)
+        public async Task<ServiceResponse<List<TemplateResponseDTO>>> GetAllTemplates(int? pageSize = null, int? pageNumber = null)
         {
             return await _templateRepository.GetAllTemplates(pageSize, pageNumber);
         }

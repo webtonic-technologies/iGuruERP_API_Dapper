@@ -119,7 +119,7 @@ namespace Student_API.Repository.Implementations
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
-        public async Task<ServiceResponse<List<StudentDocumentConfigDTO>>> GetAllStudentDocuments(int Institute_id, string sortColumn, string sortDirection, int? pageSize = null, int? pageNumber = null)
+        public async Task<ServiceResponse<List<StudentDocumentConfigDTO>>> GetAllStudentDocuments(int Institute_id, string sortColumn, string sortDirection, int? pageSize = null, int? pageNumber = null, string searchQuery = null)
         {
             try
             {
@@ -151,6 +151,17 @@ namespace Student_API.Repository.Implementations
                 string queryCount = @"
             SELECT COUNT(*)
             FROM [dbo].[tbl_StudentDocumentMaster] where Institute_id = @Institute_id AND ISNULL(isDelete,0) =0";
+
+                // Add search condition
+                if (!string.IsNullOrWhiteSpace(searchQuery))
+                {
+                    string searchCondition = @"
+            AND (Student_Document_Name LIKE '%' + @SearchQuery + '%'
+                 OR CONVERT(VARCHAR, en_date, 103) LIKE '%' + @SearchQuery + '%')";
+                    queryAll += searchCondition;
+                    queryCount += searchCondition;
+                }
+
 
                 List<StudentDocumentConfigDTO> studentDocuments;
                 int totalRecords = 0;

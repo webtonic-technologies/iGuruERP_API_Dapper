@@ -556,7 +556,7 @@ namespace Student_API.Repository.Implementations
         FROM tbl_ClassPromotionLog 
         WHERE institute_id = @institute_id;
 
-        SELECT LogId, UserId, IPAddress,  FORMAT(PromotionDateTime, 'dd-MM-yyyy hh:mm tt') AS PromotionDateTime 
+        SELECT LogId, UserId, IPAddress,  FORMAT(PromotionDateTime, 'dd-MM-yyyy hh:mm tt') AS PromotionDateTime ,institute_id
         FROM tbl_ClassPromotionLog 
         WHERE institute_id = @institute_id
         ORDER BY {obj.sortField} {obj.sortDirection}

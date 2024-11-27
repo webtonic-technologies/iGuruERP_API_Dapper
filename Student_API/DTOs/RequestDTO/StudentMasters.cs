@@ -115,7 +115,7 @@ namespace Student_API.DTOs.RequestDTO
         public string PAN_card_no { get; set; }
         [MaxLength(30)]
         public string Residential_Address { get; set; }
-        public int Occupation_id { get; set; }
+        public string Occupation { get; set; }
         [MaxLength(30)]
         public string Designation { get; set; }
         [MaxLength(30)]
@@ -234,9 +234,6 @@ namespace Student_API.DTOs.RequestDTO
         public string Behavioral_Problem { get; set; }
         [MaxLength(50)]
         public string Remarks_Weakness { get; set; }
-        [MaxLength(50)]
-        public string Student_Name { get; set; }
-        [Range(0, 99)]
-        public int Student_Age { get; set; }
+       
     }
 }
