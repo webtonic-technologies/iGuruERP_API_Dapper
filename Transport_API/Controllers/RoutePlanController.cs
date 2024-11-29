@@ -104,5 +104,19 @@ namespace Transport_API.Controllers
             }
         }
 
+        [HttpPost("GetRoutePlanVehicles")]
+        public async Task<IActionResult> GetRoutePlanVehicles([FromBody] GetRoutePlanVehiclesRequest request)
+        {
+            try
+            {
+                var response = await _routePlanService.GetRoutePlanVehicles(request.InstituteID);
+                return StatusCode(response.StatusCode, response);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
     }
 }

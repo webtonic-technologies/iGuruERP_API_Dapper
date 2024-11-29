@@ -1,5 +1,6 @@
 ﻿using Transport_API.DTOs.Requests;
 using Transport_API.DTOs.Response;
+using Transport_API.DTOs.Responses;
 using Transport_API.DTOs.ServiceResponse;
 using Transport_API.Repository.Interfaces;
 using Transport_API.Services.Interfaces;
@@ -42,6 +43,12 @@ namespace Transport_API.Services.Implementations
         {
             return await _routePlanRepository.GetRouteDetailsExportExcel(request);
         }
+         
+        public async Task<ServiceResponse<IEnumerable<GetRoutePlanVehiclesResponse>>> GetRoutePlanVehicles(int instituteID)
+        {
+            return await _routePlanRepository.GetRoutePlanVehicles(instituteID);
+        }
+
 
     }
 }

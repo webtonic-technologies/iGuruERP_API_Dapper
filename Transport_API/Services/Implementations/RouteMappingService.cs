@@ -110,5 +110,12 @@ namespace Transport_API.Services.Implementations
 
             return new ServiceResponse<IEnumerable<GetEmployeesForRouteMappingResponse>>(true, "Employees found", employees, 200);
         }
+
+
+        public async Task<ServiceResponse<IEnumerable<GetRouteListResponse>>> GetRouteList(int instituteID)
+        {
+            return await _routeMappingRepository.GetRouteList(instituteID);
+        }
+
     }
 }

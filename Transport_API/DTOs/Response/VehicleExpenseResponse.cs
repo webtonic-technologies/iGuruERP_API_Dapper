@@ -27,7 +27,7 @@
         public int VehicleID { get; set; }
         public string VehicleNumber { get; set; }
         public string ExpenseType { get; set; }
-        public DateTime ExpenseDate { get; set; }
+        public string ExpenseDate { get; set; }
         public string Remarks { get; set; }
         public decimal Amount { get; set; }
         public List<string> Documents { get; set; }  // Holds paths of the documents

@@ -8,6 +8,8 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Collections.Generic;
 using System.Text;
 using OfficeOpenXml;
+using System.Globalization;
+using Transport_API.DTOs.Responses;
 
 
 namespace Transport_API.Repository.Implementations
@@ -27,20 +29,27 @@ namespace Transport_API.Repository.Implementations
         public async Task<ServiceResponse<string>> AddUpdateVehicle(VehicleRequest vehicle)
         {
             string sql;
+            DateTime parsedRenewalDate;
+
+            // Parse the RenewalDate string into DateTime
+            if (!DateTime.TryParseExact(vehicle.RenewalDate, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out parsedRenewalDate))
+            {
+                return new ServiceResponse<string>(false, "Invalid Date Format", "Renewal Date should be in DD-MM-YYYY format", StatusCodes.Status400BadRequest);
+            }
+
+            // Now, use parsedRenewalDate to insert or update
             if (vehicle.VehicleID == 0)
             {
                 sql = @"INSERT INTO tblVehicleMaster (VehicleNumber, VehicleModel, RegistrationYear, VehicleTypeID, FuelTypeID, SeatingCapacity, ChassieNo, InsurancePolicyNo, RenewalDate, AssignDriverID, GPSIMEINo, TrackingID, InstituteID) 
-                        VALUES (@VehicleNumber, @VehicleModel, @RegistrationYear, @VehicleTypeID, @FuelTypeID, @SeatingCapacity, @ChassieNo, @InsurancePolicyNo, @RenewalDate, @AssignDriverID, @GPSIMEINo, @TrackingID, @InstituteID)
-                        SELECT CAST(SCOPE_IDENTITY() AS INT);";
+                VALUES (@VehicleNumber, @VehicleModel, @RegistrationYear, @VehicleTypeID, @FuelTypeID, @SeatingCapacity, @ChassieNo, @InsurancePolicyNo, @RenewalDate, @AssignDriverID, @GPSIMEINo, @TrackingID, @InstituteID)
+                SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
-                int result = await _dbConnection.QueryFirstOrDefaultAsync<int>(sql, new {vehicle.VehicleNumber, vehicle.VehicleModel, vehicle.RegistrationYear, vehicle.VehicleTypeID, vehicle.FuelTypeID, vehicle.SeatingCapacity, vehicle.ChassieNo, vehicle.InsurancePolicyNo, vehicle.RenewalDate, vehicle.AssignDriverID, vehicle.GPSIMEINo, vehicle.TrackingID, vehicle.InstituteID });
+                int result = await _dbConnection.QueryFirstOrDefaultAsync<int>(sql, new { vehicle.VehicleNumber, vehicle.VehicleModel, vehicle.RegistrationYear, vehicle.VehicleTypeID, vehicle.FuelTypeID, vehicle.SeatingCapacity, vehicle.ChassieNo, vehicle.InsurancePolicyNo, RenewalDate = parsedRenewalDate, vehicle.AssignDriverID, vehicle.GPSIMEINo, vehicle.TrackingID, vehicle.InstituteID });
 
-                if (result >0)
+                if (result > 0)
                 {
-                   int response = VehicleDocumentMapping(vehicle.VehicleDocuments, result);
-
+                    int response = VehicleDocumentMapping(vehicle.VehicleDocuments, result);
                     return new ServiceResponse<string>(true, "Operation Successful", "Vehicle added/updated successfully", StatusCodes.Status200OK);
-
                 }
                 else
                 {
@@ -50,44 +59,40 @@ namespace Transport_API.Repository.Implementations
             else
             {
                 sql = @"UPDATE tblVehicleMaster SET 
-                        VehicleNumber = @VehicleNumber,
-                        VehicleModel = @VehicleModel,
-                        RegistrationYear = @RegistrationYear,
-                        VehicleTypeID = @VehicleTypeID,
-                        FuelTypeID = @FuelTypeID,
-                        SeatingCapacity = @SeatingCapacity,
-                        ChassieNo = @ChassieNo, 
-                        InsurancePolicyNo = @InsurancePolicyNo, 
-                        RenewalDate = @RenewalDate, 
-                        AssignDriverID = @AssignDriverID, 
-                        GPSIMEINo = @GPSIMEINo, 
-                        TrackingID = @TrackingID,
-                        InstituteID = @InstituteID
-                        WHERE VehicleID = @VehicleID";
+                VehicleNumber = @VehicleNumber,
+                VehicleModel = @VehicleModel,
+                RegistrationYear = @RegistrationYear,
+                VehicleTypeID = @VehicleTypeID,
+                FuelTypeID = @FuelTypeID,
+                SeatingCapacity = @SeatingCapacity,
+                ChassieNo = @ChassieNo, 
+                InsurancePolicyNo = @InsurancePolicyNo, 
+                RenewalDate = @RenewalDate, 
+                AssignDriverID = @AssignDriverID, 
+                GPSIMEINo = @GPSIMEINo, 
+                TrackingID = @TrackingID,
+                InstituteID = @InstituteID
+                WHERE VehicleID = @VehicleID";
 
-
-                int result = await _dbConnection.ExecuteAsync(sql, new { vehicle.VehicleID, vehicle.VehicleNumber, vehicle.VehicleModel, vehicle.RegistrationYear, vehicle.VehicleTypeID, vehicle.FuelTypeID, vehicle.SeatingCapacity, vehicle.ChassieNo, vehicle.InsurancePolicyNo, vehicle.RenewalDate, vehicle.AssignDriverID, vehicle.GPSIMEINo, vehicle.TrackingID, vehicle.InstituteID });
+                int result = await _dbConnection.ExecuteAsync(sql, new { vehicle.VehicleID, vehicle.VehicleNumber, vehicle.VehicleModel, vehicle.RegistrationYear, vehicle.VehicleTypeID, vehicle.FuelTypeID, vehicle.SeatingCapacity, vehicle.ChassieNo, vehicle.InsurancePolicyNo, RenewalDate = parsedRenewalDate, vehicle.AssignDriverID, vehicle.GPSIMEINo, vehicle.TrackingID, vehicle.InstituteID });
 
                 if (result > 0)
                 {
                     int response = VehicleDocumentMapping(vehicle.VehicleDocuments, vehicle.VehicleID);
-
                     return new ServiceResponse<string>(true, "Operation Successful", "Vehicle added/updated successfully", StatusCodes.Status200OK);
-
                 }
                 else
                 {
                     return new ServiceResponse<string>(false, "Operation Failed", "Error adding/updating vehicle", StatusCodes.Status400BadRequest);
                 }
             }
- 
         }
 
 
         public async Task<ServiceResponse<IEnumerable<Vehicle>>> GetAllVehicles(GetAllVehiclesRequest request)
         {
             // Step 1: Fetch the total count of records
-            string countSql = @"SELECT COUNT(*) FROM tblVehicleMaster WHERE InstituteID = @InstituteID";
+            string countSql = @"SELECT COUNT(*) FROM tblVehicleMaster WHERE InstituteID = @InstituteID AND IsActive = 1";
             int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql, new { request.InstituteID });
 
             // Step 2: Fetch the list of active columns from tblVehicleColumnSetting
@@ -128,8 +133,9 @@ namespace Transport_API.Repository.Implementations
             LEFT OUTER JOIN 
                 tbl_EmployeeProfileMaster EP ON EP.Employee_id = VM.AssignDriverID 
             WHERE 
-                VM.InstituteID = @InstituteID 
-                AND (VM.VehicleNumber LIKE @SearchText OR VM.VehicleModel LIKE @SearchText OR @SearchText IS NULL)
+                VM.InstituteID = @InstituteID
+                AND VM.IsActive = 1  -- Add condition to filter only active vehicles
+                AND (VM.VehicleNumber LIKE @SearchText OR VM.VehicleModel LIKE @SearchText OR @SearchText IS NULL) 
             ORDER BY 
                 VM.VehicleID 
             OFFSET @Offset ROWS 
@@ -160,7 +166,8 @@ namespace Transport_API.Repository.Implementations
             }
             else
             {
-                return new ServiceResponse<IEnumerable<Vehicle>>(false, "No Records Found", null, StatusCodes.Status204NoContent);
+                // Return a 404 Not Found with a custom message
+                return new ServiceResponse<IEnumerable<Vehicle>>(false, "No active vehicles found for the given search criteria.", null, StatusCodes.Status404NotFound);
             }
         }
 
@@ -188,10 +195,26 @@ namespace Transport_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<bool>> UpdateVehicleStatus(int VehicleID)
+        public async Task<ServiceResponse<bool>> UpdateVehicleStatus(int VehicleID, string reason)
         {
-            string sql = @"UPDATE tblVehicleMaster SET IsActive = ~IsActive WHERE VehicleID = @VehicleID";
-            var result = await _dbConnection.ExecuteAsync(sql, new { VehicleID = VehicleID });
+            // Step 1: Get the current status of the vehicle to check if it's active or inactive
+            string checkStatusSql = @"SELECT IsActive FROM tblVehicleMaster WHERE VehicleID = @VehicleID";
+            var currentStatus = await _dbConnection.ExecuteScalarAsync<int>(checkStatusSql, new { VehicleID });
+
+            string updateSql;
+
+            // Step 2: If the vehicle is being set to inactive (IsActive = 0), add the Reason
+            if (currentStatus == 1) // If the current status is active
+            {
+                updateSql = @"UPDATE tblVehicleMaster SET IsActive = 0, Reason = @Reason WHERE VehicleID = @VehicleID";
+            }
+            else // If the current status is inactive, clear the Reason
+            {
+                updateSql = @"UPDATE tblVehicleMaster SET IsActive = 1, Reason = NULL WHERE VehicleID = @VehicleID";
+            }
+
+            // Step 3: Execute the update
+            var result = await _dbConnection.ExecuteAsync(updateSql, new { VehicleID, Reason = reason });
 
             if (result > 0)
             {
@@ -202,6 +225,7 @@ namespace Transport_API.Repository.Implementations
                 return new ServiceResponse<bool>(false, "Status Update Failed", false, StatusCodes.Status400BadRequest);
             }
         }
+
 
         private List<VehicleDocumentRequest> GetListOfVehiclesDocument(int VehicleID)
         {
@@ -509,6 +533,35 @@ namespace Transport_API.Repository.Implementations
             var csvContent = Encoding.UTF8.GetBytes(csvBuilder.ToString());
             return new ServiceResponse<byte[]>(true, "CSV file generated successfully", csvContent, StatusCodes.Status200OK);
         }
+
+        public async Task<ServiceResponse<IEnumerable<GetVehicleTypeResponse>>> GetVehicleTypes()
+        {
+            string sql = @"SELECT Vehicle_type_id as VehicleTypeId, Vehicle_type_name as VehicleTypeName FROM tbl_Vehicle_Type";
+
+            var vehicleTypes = await _dbConnection.QueryAsync<GetVehicleTypeResponse>(sql);
+
+            if (vehicleTypes == null || !vehicleTypes.Any())
+            {
+                return new ServiceResponse<IEnumerable<GetVehicleTypeResponse>>(false, "No vehicle types found", new List<GetVehicleTypeResponse>(), StatusCodes.Status204NoContent);
+            }
+
+            return new ServiceResponse<IEnumerable<GetVehicleTypeResponse>>(true, "Vehicle types fetched successfully", vehicleTypes, StatusCodes.Status200OK);
+        }
+
+        public async Task<ServiceResponse<IEnumerable<GetFuelTypeResponse>>> GetFuelTypes()
+        {
+            string sql = @"SELECT Fuel_type_id as FuelTypeId, Fuel_type_name as FuelTypeName FROM tbl_Fuel_Type";
+
+            var fuelTypes = await _dbConnection.QueryAsync<GetFuelTypeResponse>(sql);
+
+            if (fuelTypes == null || !fuelTypes.Any())
+            {
+                return new ServiceResponse<IEnumerable<GetFuelTypeResponse>>(false, "No fuel types found", new List<GetFuelTypeResponse>(), StatusCodes.Status204NoContent);
+            }
+
+            return new ServiceResponse<IEnumerable<GetFuelTypeResponse>>(true, "Fuel types fetched successfully", fuelTypes, StatusCodes.Status200OK);
+        }
+
 
     }
 }

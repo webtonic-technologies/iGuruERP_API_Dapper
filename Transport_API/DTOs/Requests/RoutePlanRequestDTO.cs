@@ -40,7 +40,7 @@
         public int StopID { get; set; }
         public string TermName { get; set; } = string.Empty;
         public decimal FeesAmount { get; set; }
-        public DateTime DueDate { get; set; }
+        public string DueDate { get; set; }
     }
 
     public class MonthlyPaymentDTO

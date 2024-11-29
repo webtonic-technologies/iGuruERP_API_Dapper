@@ -30,6 +30,14 @@ namespace Transport_API.Repository.Implementations
         public async Task<ServiceResponse<string>> AddUpdateVehicleExpense(VehicleExpenseRequest vehicleExpense)
         {
             string sql;
+
+            // Convert ExpenseDate to DateTime
+            DateTime expenseDate;
+            if (!DateTime.TryParseExact(vehicleExpense.ExpenseDate, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out expenseDate))
+            {
+                return new ServiceResponse<string>(false, "Invalid date format. Please use dd-MM-yyyy.", null, StatusCodes.Status400BadRequest);
+            }
+
             if (vehicleExpense.VehicleExpenseID == 0)
             {
                 // Insert operation
@@ -41,7 +49,7 @@ namespace Transport_API.Repository.Implementations
                 {
                     vehicleExpense.VehicleID,
                     vehicleExpense.VehicleExpenseTypeID,
-                    vehicleExpense.ExpenseDate,
+                    ExpenseDate = expenseDate, // use the converted DateTime here
                     vehicleExpense.Cost,
                     vehicleExpense.Remarks,
                     vehicleExpense.InstituteID,
@@ -83,7 +91,7 @@ namespace Transport_API.Repository.Implementations
                 {
                     vehicleExpense.VehicleID,
                     vehicleExpense.VehicleExpenseTypeID,
-                    vehicleExpense.ExpenseDate,
+                    ExpenseDate = expenseDate, // use the converted DateTime here
                     vehicleExpense.Cost,
                     vehicleExpense.Remarks,
                     vehicleExpense.InstituteID,
@@ -162,30 +170,31 @@ namespace Transport_API.Repository.Implementations
                 return new ServiceResponse<IEnumerable<GetAllExpenseResponse>>(false, "Invalid date format. Please use DD-MM-YYYY.", null, StatusCodes.Status400BadRequest);
             }
 
-            // SQL to retrieve expense records with filters and pagination
+            // SQL to retrieve expense records with filters and pagination, including the IsActive condition
             string sql = @"
-    SELECT 
-        ve.VehicleExpenseID, -- Include VehicleExpenseID to fetch documents correctly
-        ve.VehicleID, 
-        vm.VehicleNumber, 
-        vet.VehicleExpenseType, 
-        ve.ExpenseDate, 
-        ve.Remarks, 
-        ve.Cost AS Amount
-    FROM 
-        tblVehicleExpense ve
-    JOIN 
-        tblVehicleMaster vm ON ve.VehicleID = vm.VehicleID
-    JOIN 
-        tblVehicleExpenseType vet ON ve.VehicleExpenseTypeID = vet.VehicleExpenseTypeID
-    WHERE 
-        ve.InstituteID = @InstituteID
-        AND ve.ExpenseDate BETWEEN @StartDate AND @EndDate
-        AND (@VehicleID IS NULL OR ve.VehicleID = @VehicleID)
-        AND (@ExpenseTypeID IS NULL OR ve.VehicleExpenseTypeID = @ExpenseTypeID)
-    ORDER BY 
-        ve.ExpenseDate
-    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;
+        SELECT 
+            ve.VehicleExpenseID, -- Include VehicleExpenseID to fetch documents correctly
+            ve.VehicleID, 
+            vm.VehicleNumber, 
+            vet.VehicleExpenseType AS ExpenseType, 
+            ve.ExpenseDate, 
+            ve.Remarks, 
+            ve.Cost AS Amount
+        FROM 
+            tblVehicleExpense ve
+        JOIN 
+            tblVehicleMaster vm ON ve.VehicleID = vm.VehicleID
+        JOIN 
+            tblVehicleExpenseType vet ON ve.VehicleExpenseTypeID = vet.VehicleExpenseTypeID
+        WHERE 
+            ve.InstituteID = @InstituteID
+            AND ve.ExpenseDate BETWEEN @StartDate AND @EndDate
+            AND ve.IsActive = 1 -- Ensure only active records are returned
+            AND (@VehicleID IS NULL OR ve.VehicleID = @VehicleID)
+            AND (@ExpenseTypeID IS NULL OR ve.VehicleExpenseTypeID = @ExpenseTypeID)
+        ORDER BY 
+            ve.ExpenseDate
+        OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;
     ";
 
             var expenses = await _dbConnection.QueryAsync<GetAllExpenseResponse>(sql, new
@@ -199,23 +208,31 @@ namespace Transport_API.Repository.Implementations
                 PageSize = request.PageSize
             });
 
+            // Process each expense to retrieve associated documents and format the date
             foreach (var expense in expenses)
             {
                 // Fetch associated documents for each expense using the VehicleExpenseID
                 string documentSql = @"SELECT VehicleExpenseDocument FROM tblVehicleExpenseDocument WHERE VehicleExpenseID = @VehicleExpenseID";
                 var documents = await _dbConnection.QueryAsync<string>(documentSql, new { VehicleExpenseID = expense.VehicleExpenseID });
                 expense.Documents = documents.ToList();
+
+                // Convert ExpenseDate to string format 'DD-MM-YYYY'
+                expense.ExpenseDate = DateTime.Parse(expense.ExpenseDate).ToString("dd-MM-yyyy");
             }
 
+            // Check if any expenses were retrieved and return the appropriate response
             if (expenses.Any())
             {
                 return new ServiceResponse<IEnumerable<GetAllExpenseResponse>>(true, "Records Found", expenses, StatusCodes.Status200OK, expenses.Count());
             }
             else
             {
-                return new ServiceResponse<IEnumerable<GetAllExpenseResponse>>(false, "No Records Found", null, StatusCodes.Status204NoContent);
+                // Custom message when no records are found
+                return new ServiceResponse<IEnumerable<GetAllExpenseResponse>>(false, "No vehicle expenses found for the given filters.", null, StatusCodes.Status404NotFound);
             }
         }
+
+
 
         public async Task<ServiceResponse<VehicleExpense>> GetVehicleExpenseById(int VehicleID)
         {
@@ -224,7 +241,7 @@ namespace Transport_API.Repository.Implementations
                         VM.VehicleID, VM.VehicleModel, FT.Fuel_type_name, SUM(VE.Cost) AS TotalCost
                         from tblVehicleMaster VM
                         Left Outer Join tblVehicleExpense VE ON VE.VehicleID = VM.VehicleID
-                        Left Outer Join tbl_Fuel_Type FT ON FT.Fuel_type_id = VE.ExpenseTypeID
+                        Left Outer Join tbl_Fuel_Type FT ON FT.Fuel_type_id = VE.VehicleExpenseTypeID
                         where VM.VehicleID = @VehicleExpenseID
                         GROUP BY VM.VehicleModel, FT.Fuel_type_name, VM.VehicleID";
 
@@ -244,18 +261,23 @@ namespace Transport_API.Repository.Implementations
 
         public async Task<ServiceResponse<bool>> DeleteVehicleExpense(int VehicleExpenseID)
         {
-            string sql = @"Delete tblVehicleExpense WHERE VehicleExpenseID = @VehicleExpenseID";
+            // SQL to update IsActive field to 0 (soft delete)
+            string sql = @"UPDATE tblVehicleExpense 
+                   SET IsActive = 0 
+                   WHERE VehicleExpenseID = @VehicleExpenseID";
+
             var result = await _dbConnection.ExecuteAsync(sql, new { VehicleExpenseID = VehicleExpenseID });
 
             if (result > 0)
             {
-                return new ServiceResponse<bool>(true, "Record Deleted Successfully", true, StatusCodes.Status200OK);
+                return new ServiceResponse<bool>(true, "Record Soft Deleted Successfully", true, StatusCodes.Status200OK);
             }
             else
             {
-                return new ServiceResponse<bool>(false, "Delete Failed", false, StatusCodes.Status400BadRequest);
+                return new ServiceResponse<bool>(false, "Soft Delete Failed", false, StatusCodes.Status400BadRequest);
             }
         }
+
 
         private int VehicleDocumentMapping(List<VehicleExpenseDocumentRequest> requests, int VehicleExpenseID)
         {

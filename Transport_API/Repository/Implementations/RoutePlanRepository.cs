@@ -2,8 +2,10 @@
 using OfficeOpenXml;
 using System.Data;
 using System.Data.Common;
+using System.Globalization;
 using Transport_API.DTOs.Requests;
 using Transport_API.DTOs.Response;
+using Transport_API.DTOs.Responses;
 using Transport_API.DTOs.ServiceResponse;
 using Transport_API.Repository.Interfaces;
 
@@ -16,21 +18,37 @@ namespace Transport_API.Repository.Implementations
         {
             _dbConnection = dbConnection;
         }
+
         public async Task<ServiceResponse<string>> AddUpdateRoutePlan(RoutePlanRequestDTO routePlan)
         {
             string sql;
+
+            // Convert DueDate to DateTime for each TermPaymentDTO item
+            foreach (var termPayment in routePlan.RouteStops.SelectMany(rs => rs.TermPayment))
+            {
+                if (DateTime.TryParseExact(termPayment.DueDate, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dueDate))
+                {
+                    termPayment.DueDate = dueDate.ToString("yyyy-MM-dd"); // Save it in the standard SQL format
+                }
+                else
+                {
+                    return new ServiceResponse<string>(false, "Invalid Date Format", "Due date must be in DD-MM-YYYY format", StatusCodes.Status400BadRequest);
+                }
+            }
+
+            // If RoutePlanID is 0, Insert a new route plan, else Update the existing route plan
             if (routePlan.RoutePlanID == 0)
             {
                 sql = @"INSERT INTO tblRoutePlan (RouteName, VehicleID, InstituteID, IsActive) 
-        VALUES (@RouteName, @VehicleID, @InstituteID, @IsActive);
-        SELECT CAST(SCOPE_IDENTITY() as int);";
+                VALUES (@RouteName, @VehicleID, @InstituteID, @IsActive);
+                SELECT CAST(SCOPE_IDENTITY() as int);";
 
                 routePlan.RoutePlanID = await _dbConnection.QuerySingleAsync<int>(sql, routePlan);
             }
             else
             {
                 sql = @"UPDATE tblRoutePlan SET RouteName = @RouteName, VehicleID = @VehicleID, InstituteID = @InstituteID, IsActive = @IsActive 
-        WHERE RoutePlanID = @RoutePlanID";
+                WHERE RoutePlanID = @RoutePlanID";
                 await _dbConnection.ExecuteAsync(sql, routePlan);
             }
 
@@ -53,13 +71,62 @@ namespace Transport_API.Repository.Implementations
             }
         }
 
+        //public async Task<ServiceResponse<string>> AddUpdateRoutePlan(RoutePlanRequestDTO routePlan)
+        //{
+        //    string sql;
+        //    if (routePlan.RoutePlanID == 0)
+        //    {
+        //        sql = @"INSERT INTO tblRoutePlan (RouteName, VehicleID, InstituteID, IsActive) 
+        //VALUES (@RouteName, @VehicleID, @InstituteID, @IsActive);
+        //SELECT CAST(SCOPE_IDENTITY() as int);";
+
+        //        routePlan.RoutePlanID = await _dbConnection.QuerySingleAsync<int>(sql, routePlan);
+        //    }
+        //    else
+        //    {
+        //        sql = @"UPDATE tblRoutePlan SET RouteName = @RouteName, VehicleID = @VehicleID, InstituteID = @InstituteID, IsActive = @IsActive 
+        //WHERE RoutePlanID = @RoutePlanID";
+        //        await _dbConnection.ExecuteAsync(sql, routePlan);
+        //    }
+
+        //    if (routePlan.RoutePlanID > 0)
+        //    {
+        //        bool stopsHandled = await HandleRouteStops(routePlan.RoutePlanID, routePlan.RouteStops);
+
+        //        if (stopsHandled)
+        //        {
+        //            return new ServiceResponse<string>(true, "Operation Successful", "Route plan added/updated successfully", StatusCodes.Status200OK);
+        //        }
+        //        else
+        //        {
+        //            return new ServiceResponse<string>(false, "Operation Failed", "Error handling route stops", StatusCodes.Status400BadRequest);
+        //        }
+        //    }
+        //    else
+        //    {
+        //        return new ServiceResponse<string>(false, "Operation Failed", "Error adding/updating route plan", StatusCodes.Status400BadRequest);
+        //    }
+        //}
+
+
         public async Task<ServiceResponse<IEnumerable<RoutePlanResponseDTO>>> GetAllRoutePlans(GetAllRoutePlanRequest request)
         {
             try
             {
-                // Count total records for pagination
-                string countSql = @"SELECT COUNT(*) FROM tblRoutePlan WHERE IsActive = 1 AND InstituteID = @InstituteID";
-                int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql, new { InstituteID = request.InstituteId });
+                // Count total records for pagination, searching by VehicleNumber and RouteName
+                string countSql = @"
+                SELECT COUNT(*) 
+                FROM tblRoutePlan rp
+                JOIN tblVehicleMaster v ON rp.VehicleID = v.VehicleID
+                WHERE rp.IsActive = 1 
+                AND rp.InstituteID = @InstituteID
+                AND (v.VehicleNumber LIKE @SearchTerm OR rp.RouteName LIKE @SearchTerm)";
+
+                int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql, new
+                {
+                    InstituteID = request.InstituteId,
+                    SearchTerm = $"%{request.SearchTerm}%"
+                });
 
                 // Validate if there are any records
                 if (totalCount == 0)
@@ -69,31 +136,33 @@ namespace Transport_API.Repository.Implementations
 
                 // Main SQL to retrieve paginated route plans, including the count of routeStops
                 string sql = @"
-SELECT 
-    rp.RoutePlanID, 
-    rp.RouteName, 
-    rp.VehicleID, 
-    v.VehicleNumber, 
-    (SELECT COUNT(*) FROM tblRouteStopMaster rs WHERE rs.RoutePlanID = rp.RoutePlanID) AS NoOfStops,
-    (SELECT MIN(PickUpTime) FROM tblRouteStopMaster WHERE RoutePlanID = rp.RoutePlanID) AS PickUpTime,
-    (SELECT MAX(DropTime) FROM tblRouteStopMaster WHERE RoutePlanID = rp.RoutePlanID) AS DropTime,
-    ISNULL(CONCAT(e.First_Name, ' ', e.Last_Name), '') AS DriverName
-FROM 
-    tblRoutePlan rp
-    JOIN tblVehicleMaster v ON rp.VehicleID = v.VehicleID
-    LEFT JOIN tbl_EmployeeProfileMaster e ON v.AssignDriverID = e.Employee_id
-WHERE 
-    rp.IsActive = 1 
-    AND rp.InstituteID = @InstituteID
-ORDER BY 
-    rp.RoutePlanID 
-OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+                SELECT 
+                    rp.RoutePlanID, 
+                    rp.RouteName, 
+                    rp.VehicleID, 
+                    v.VehicleNumber, 
+                    (SELECT COUNT(*) FROM tblRouteStopMaster rs WHERE rs.RoutePlanID = rp.RoutePlanID) AS NoOfStops,
+                    (SELECT MIN(PickUpTime) FROM tblRouteStopMaster WHERE RoutePlanID = rp.RoutePlanID) AS PickUpTime,
+                    (SELECT MAX(DropTime) FROM tblRouteStopMaster WHERE RoutePlanID = rp.RoutePlanID) AS DropTime,
+                    ISNULL(CONCAT(e.First_Name, ' ', e.Last_Name), '') AS DriverName
+                FROM 
+                    tblRoutePlan rp
+                    JOIN tblVehicleMaster v ON rp.VehicleID = v.VehicleID
+                    LEFT JOIN tbl_EmployeeProfileMaster e ON v.AssignDriverID = e.Employee_id
+                WHERE 
+                    rp.IsActive = 1 
+                    AND rp.InstituteID = @InstituteID
+                    AND (v.VehicleNumber LIKE @SearchTerm OR rp.RouteName LIKE @SearchTerm)
+                ORDER BY 
+                    rp.RoutePlanID 
+                OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 
                 var routePlans = (await _dbConnection.QueryAsync<RoutePlanResponseDTO>(sql, new
                 {
                     Offset = (request.PageNumber - 1) * request.PageSize,
                     PageSize = request.PageSize,
-                    InstituteID = request.InstituteId
+                    InstituteID = request.InstituteId,
+                    SearchTerm = $"%{request.SearchTerm}%"
                 })).ToList();
 
                 // Check if the result set is empty
@@ -113,28 +182,88 @@ OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
         }
 
 
+        //public async Task<ServiceResponse<IEnumerable<RoutePlanResponseDTO>>> GetAllRoutePlans(GetAllRoutePlanRequest request)
+        //{
+        //    try
+        //    {
+        //        // Count total records for pagination
+        //        string countSql = @"SELECT COUNT(*) FROM tblRoutePlan WHERE IsActive = 1 AND InstituteID = @InstituteID";
+        //        int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql, new { InstituteID = request.InstituteId });
+
+        //        // Validate if there are any records
+        //        if (totalCount == 0)
+        //        {
+        //            return new ServiceResponse<IEnumerable<RoutePlanResponseDTO>>(false, $"No route plans found for InstituteID: {request.InstituteId}", new List<RoutePlanResponseDTO>(), StatusCodes.Status204NoContent);
+        //        }
+
+        //        // Main SQL to retrieve paginated route plans, including the count of routeStops
+        //        string sql = @"
+        //        SELECT 
+        //            rp.RoutePlanID, 
+        //            rp.RouteName, 
+        //            rp.VehicleID, 
+        //            v.VehicleNumber, 
+        //            (SELECT COUNT(*) FROM tblRouteStopMaster rs WHERE rs.RoutePlanID = rp.RoutePlanID) AS NoOfStops,
+        //            (SELECT MIN(PickUpTime) FROM tblRouteStopMaster WHERE RoutePlanID = rp.RoutePlanID) AS PickUpTime,
+        //            (SELECT MAX(DropTime) FROM tblRouteStopMaster WHERE RoutePlanID = rp.RoutePlanID) AS DropTime,
+        //            ISNULL(CONCAT(e.First_Name, ' ', e.Last_Name), '') AS DriverName
+        //        FROM 
+        //            tblRoutePlan rp
+        //            JOIN tblVehicleMaster v ON rp.VehicleID = v.VehicleID
+        //            LEFT JOIN tbl_EmployeeProfileMaster e ON v.AssignDriverID = e.Employee_id
+        //        WHERE 
+        //            rp.IsActive = 1 
+        //            AND rp.InstituteID = @InstituteID
+        //        ORDER BY 
+        //            rp.RoutePlanID 
+        //        OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+
+        //        var routePlans = (await _dbConnection.QueryAsync<RoutePlanResponseDTO>(sql, new
+        //        {
+        //            Offset = (request.PageNumber - 1) * request.PageSize,
+        //            PageSize = request.PageSize,
+        //            InstituteID = request.InstituteId
+        //        })).ToList();
+
+        //        // Check if the result set is empty
+        //        if (routePlans == null || !routePlans.Any())
+        //        {
+        //            return new ServiceResponse<IEnumerable<RoutePlanResponseDTO>>(false, $"No route plans found for InstituteID: {request.InstituteId}", new List<RoutePlanResponseDTO>(), StatusCodes.Status204NoContent);
+        //        }
+
+        //        // Return the retrieved route plans with routeStops count
+        //        return new ServiceResponse<IEnumerable<RoutePlanResponseDTO>>(true, "Records Found", routePlans, StatusCodes.Status200OK, totalCount);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        // Log the exception if needed and return the error response
+        //        return new ServiceResponse<IEnumerable<RoutePlanResponseDTO>>(false, ex.Message, new List<RoutePlanResponseDTO>(), StatusCodes.Status500InternalServerError);
+        //    }
+        //}
+
+
         public async Task<ServiceResponse<RoutePlanResponseDTO>> GetRoutePlanById(int routePlanID)
         {
             try
             {
                 // SQL to retrieve the route plan by ID
                 string sql = @"
-    SELECT 
-        rp.RoutePlanID, 
-        rp.RouteName, 
-        rp.VehicleID, 
-        v.VehicleNumber, 
-        (SELECT COUNT(*) FROM tblRouteStopMaster rs WHERE rs.RoutePlanID = rp.RoutePlanID) AS NoOfStops,
-        (SELECT MIN(PickUpTime) FROM tblRouteStopMaster WHERE RoutePlanID = rp.RoutePlanID) AS PickUpTime,
-        (SELECT MAX(DropTime) FROM tblRouteStopMaster WHERE RoutePlanID = rp.RoutePlanID) AS DropTime,
-        ISNULL(CONCAT(e.First_Name, ' ', e.Last_Name), '') AS DriverName
-    FROM 
-        tblRoutePlan rp
-        JOIN tblVehicleMaster v ON rp.VehicleID = v.VehicleID
-        LEFT JOIN tbl_EmployeeProfileMaster e ON v.AssignDriverID = e.Employee_id
-    WHERE 
-        rp.RoutePlanID = @RoutePlanID 
-        AND rp.IsActive = 1";
+                SELECT 
+                    rp.RoutePlanID, 
+                    rp.RouteName, 
+                    rp.VehicleID, 
+                    v.VehicleNumber, 
+                    (SELECT COUNT(*) FROM tblRouteStopMaster rs WHERE rs.RoutePlanID = rp.RoutePlanID) AS NoOfStops,
+                    (SELECT MIN(PickUpTime) FROM tblRouteStopMaster WHERE RoutePlanID = rp.RoutePlanID) AS PickUpTime,
+                    (SELECT MAX(DropTime) FROM tblRouteStopMaster WHERE RoutePlanID = rp.RoutePlanID) AS DropTime,
+                    ISNULL(CONCAT(e.First_Name, ' ', e.Last_Name), '') AS DriverName
+                FROM 
+                    tblRoutePlan rp
+                    JOIN tblVehicleMaster v ON rp.VehicleID = v.VehicleID
+                    LEFT JOIN tbl_EmployeeProfileMaster e ON v.AssignDriverID = e.Employee_id
+                WHERE 
+                    rp.RoutePlanID = @RoutePlanID 
+                    AND rp.IsActive = 1";
 
                 // Execute the query to get the route plan
                 var routePlan = await _dbConnection.QueryFirstOrDefaultAsync<RoutePlanResponseDTO>(sql, new { RoutePlanID = routePlanID });
@@ -162,17 +291,17 @@ OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
         private async Task<List<RouteStopResponse>> GetRouteStopsByRoutePlanID(int routePlanID)
         {
             string sql = @"
-        SELECT 
-            StopID, 
-            RoutePlanID, 
-            StopName, 
-            PickUpTime, 
-            DropTime, 
-            FeeAmount
-        FROM 
-            tblRouteStopMaster
-        WHERE 
-            RoutePlanID = @RoutePlanID";
+            SELECT 
+                StopID, 
+                RoutePlanID, 
+                StopName, 
+                PickUpTime, 
+                DropTime, 
+                FeeAmount
+            FROM 
+                tblRouteStopMaster
+            WHERE 
+                RoutePlanID = @RoutePlanID";
 
             return (await _dbConnection.QueryAsync<RouteStopResponse>(sql, new { RoutePlanID = routePlanID })).ToList();
         }
@@ -528,6 +657,25 @@ OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
                 return new ServiceResponse<byte[]>(false, ex.Message, null, StatusCodes.Status500InternalServerError);
             }
         }
+
+        public async Task<ServiceResponse<IEnumerable<GetRoutePlanVehiclesResponse>>> GetRoutePlanVehicles(int instituteID)
+        {
+            string sql = @"
+            SELECT VehicleID, VehicleNumber 
+            FROM tblVehicleMaster 
+            WHERE InstituteID = @InstituteID AND IsActive = 1";
+
+            var vehicles = await _dbConnection.QueryAsync<GetRoutePlanVehiclesResponse>(sql, new { InstituteID = instituteID });
+
+            if (vehicles == null || !vehicles.Any())
+            {
+                return new ServiceResponse<IEnumerable<GetRoutePlanVehiclesResponse>>(false, "No vehicles found for the given InstituteID", new List<GetRoutePlanVehiclesResponse>(), StatusCodes.Status204NoContent);
+            }
+
+            return new ServiceResponse<IEnumerable<GetRoutePlanVehiclesResponse>>(true, "Vehicles fetched successfully", vehicles, StatusCodes.Status200OK);
+        }
+
+
 
     }
 }

@@ -26,7 +26,7 @@
         public int SeatingCapacity { get; set; }
         public string ChassieNo { get; set; }
         public string InsurancePolicyNo { get; set; }
-        public DateTime RenewalDate { get; set; }
+        public string RenewalDate { get; set; }
         public int AssignDriverID { get; set; }
         public string GPSIMEINo { get; set; }
         public string TrackingID { get; set; }

@@ -174,5 +174,19 @@ namespace Transport_API.Controllers
             var response = await _routeMappingService.GetEmployeesForRouteMapping(request);
             return StatusCode(response.StatusCode, response);
         }
+
+        [HttpPost("GetRouteList")]
+        public async Task<IActionResult> GetRouteList([FromBody] GetRouteListRequest request)
+        {
+            try
+            {
+                var response = await _routeMappingService.GetRouteList(request.InstituteID);
+                return StatusCode(response.StatusCode, response);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
     }
 }

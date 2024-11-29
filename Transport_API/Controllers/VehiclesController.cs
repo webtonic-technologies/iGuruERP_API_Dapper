@@ -57,19 +57,30 @@ namespace Transport_API.Controllers
             }
         }
 
-        [HttpPut("Status/{VehicleId}")]
-        public async Task<IActionResult> UpdateVehicleStatus(int VehicleId)
+        [HttpPut("Status/{vehicleId}")]
+        public async Task<IActionResult> UpdateVehicleStatus(int vehicleId, [FromBody] UpdateVehicleStatusRequest request)
         {
             try
             {
-                var response = await _vehiclesService.UpdateVehicleStatus(VehicleId);
-                return StatusCode(response.StatusCode, response);
+                // Pass the vehicleId and Reason (if any) to the service
+                var response = await _vehiclesService.UpdateVehicleStatus(vehicleId, request.Reason);
+
+                if (response.Success)
+                {
+                    return StatusCode(response.StatusCode, response);
+                }
+                else
+                {
+                    return BadRequest(response.Message);
+                }
             }
             catch (Exception e)
             {
                 return BadRequest(e.Message);
             }
         }
+
+
 
         [HttpPost("ExportExcel")]
         public async Task<IActionResult> ExportExcel(GetAllExportVehiclesRequest request)
@@ -85,6 +96,32 @@ namespace Transport_API.Controllers
             return File(response.Data, "text/csv", "Vehicles.csv");
         }
 
+        [HttpGet("GetVehicleType")]
+        public async Task<IActionResult> GetVehicleType()
+        {
+            try
+            {
+                var response = await _vehiclesService.GetVehicleTypes();
+                return StatusCode(response.StatusCode, response);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
 
+        [HttpPost("GetFuelType")]
+        public async Task<IActionResult> GetFuelType()
+        {
+            try
+            {
+                var response = await _vehiclesService.GetFuelTypes();
+                return StatusCode(response.StatusCode, response);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
     }
 }

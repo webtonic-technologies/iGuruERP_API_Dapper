@@ -21,6 +21,7 @@ namespace Transport_API.Repository.Interfaces
         Task<RouteVehicleDriverInfoResponse> GetRouteVehicleDriverInfo(int routePlanID); // Add this method
         Task<IEnumerable<GetStudentsForRouteMappingResponse>> GetStudentsForRouteMapping(int classID, int sectionID, int instituteID, string search);
         Task<IEnumerable<GetEmployeesForRouteMappingResponse>> GetEmployeesForRouteMapping(int departmentID, int designationID, int instituteID, string search);
+        Task<ServiceResponse<IEnumerable<GetRouteListResponse>>> GetRouteList(int instituteID);
 
 
     }

@@ -1,4 +1,5 @@
 ﻿using Transport_API.DTOs.Requests;
+using Transport_API.DTOs.Responses;
 using Transport_API.DTOs.ServiceResponse;
 using Transport_API.Repository.Interfaces;
 using Transport_API.Services.Interfaces;
@@ -28,11 +29,12 @@ namespace Transport_API.Services.Implementations
         {
             return await _vehiclesRepository.GetVehicleById(vehicleId);
         }
-
-        public async Task<ServiceResponse<bool>> UpdateVehicleStatus(int vehicleId)
+         
+        public async Task<ServiceResponse<bool>> UpdateVehicleStatus(int vehicleId, string reason)
         {
-            return await _vehiclesRepository.UpdateVehicleStatus(vehicleId);
+            return await _vehiclesRepository.UpdateVehicleStatus(vehicleId, reason);
         }
+
         public async Task<ServiceResponse<byte[]>> ExportExcel(GetAllExportVehiclesRequest request)
         {
             return await _vehiclesRepository.ExportExcel(request);
@@ -41,6 +43,16 @@ namespace Transport_API.Services.Implementations
         public async Task<ServiceResponse<byte[]>> ExportCSV(GetAllExportVehiclesRequest request)
         {
             return await _vehiclesRepository.ExportCSV(request);
+        }
+
+        public async Task<ServiceResponse<IEnumerable<GetVehicleTypeResponse>>> GetVehicleTypes()
+        {
+            return await _vehiclesRepository.GetVehicleTypes();
+        }
+
+        public async Task<ServiceResponse<IEnumerable<GetFuelTypeResponse>>> GetFuelTypes()
+        {
+            return await _vehiclesRepository.GetFuelTypes();
         }
 
     }

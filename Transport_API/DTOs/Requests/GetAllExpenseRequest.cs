@@ -31,7 +31,7 @@
         {
             public int VehicleExpenseDocumentID { get; set; }
             public string Attachment { get; set; } // This is the base64 encoded document
-            public int VehicleExpenseID { get; set; }
+            public int VehicleExpenseID { get; set; } 
         }
     }
 
