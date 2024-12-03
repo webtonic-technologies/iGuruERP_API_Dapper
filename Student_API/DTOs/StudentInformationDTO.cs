@@ -17,7 +17,7 @@ namespace Student_API.DTOs
         public string Admission_Number { get; set; }
         public string Roll_Number { get; set; }
         public string Date_of_Joining { get; set; }
-        public int Academic_year_id { get; set; }
+        public string AcademicYearCode { get; set; }
         public string YearName { get; set; }
         public int? Nationality_id { get; set; }
         public string Nationality_Type { get; set; }
@@ -72,7 +72,7 @@ namespace Student_API.DTOs
         public string Admission_Number { get; set; }
         public string Roll_Number { get; set; }
         public string Date_of_Joining { get; set; }
-        public int Academic_year_id { get; set; }
+        public string AcademicYearCode { get; set; }
         public string YearName { get; set; }
         public int? Nationality_id { get; set; }
         public string Nationality_Type { get; set; }

@@ -3,6 +3,7 @@ using OfficeOpenXml;
 using QRCoder;
 using Student_API.DTOs;
 using Student_API.DTOs.RequestDTO;
+using Student_API.DTOs.Responses;
 using Student_API.DTOs.ServiceResponse;
 using Student_API.Repository.Interfaces;
 using Student_API.Services.Interfaces;
@@ -221,6 +222,29 @@ namespace Student_API.Services.Implementations
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
+
+        public async Task<ServiceResponse<IEnumerable<StudentActivityHistoryResponse>>> GetStudentActivityHistory(int studentId, int instituteId)
+        {
+            try
+            {
+                // Fetch the activity history from the repository (returns IEnumerable<StudentActivityHistoryResponse>)
+                var result = await _studentInformationRepository.GetStudentActivityHistory(studentId, instituteId);
+
+                if (result != null)
+                {
+                    return new ServiceResponse<IEnumerable<StudentActivityHistoryResponse>>(true, "Activity history fetched successfully", result, 200);
+                }
+
+                return new ServiceResponse<IEnumerable<StudentActivityHistoryResponse>>(false, "No activity found for this student", null, 404);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<IEnumerable<StudentActivityHistoryResponse>>(false, ex.Message, null, 500);
+            }
+        }
+
+
+
         public async Task<ServiceResponse<int>> AddUpdateStudentOtherInfo(StudentOtherInfos request)
         {
             try
@@ -387,11 +411,11 @@ namespace Student_API.Services.Implementations
             try
             {
                 GetStudentRequestModel model = new GetStudentRequestModel();
-                model.Academic_year_id = obj.Academic_year_id;
+                model.AcademicYearCode = obj.AcademicYearCode;
                 model.section_id = obj.section_id;
                 model.class_id = obj.class_id;
                 model.Institute_id = obj.Institute_id;
-                model.isActive = obj.isActive;
+                //model.isActive = obj.isActive;
                 model.pageSize = int.MaxValue;
                 model.pageNumber = 1;
                 model.sortField = null;
@@ -502,11 +526,11 @@ namespace Student_API.Services.Implementations
             {
                 GetStudentRequestModel model = new GetStudentRequestModel
                 {
-                    Academic_year_id = obj.Academic_year_id,
+                    AcademicYearCode = obj.AcademicYearCode,
                     section_id = obj.section_id,
                     class_id = obj.class_id,
                     Institute_id = obj.Institute_id,
-                    isActive = obj.isActive,
+                    //isActive = obj.isActive,
                     pageSize = int.MaxValue,
                     pageNumber = 1,
                     sortField = null,
@@ -606,11 +630,11 @@ namespace Student_API.Services.Implementations
             {
                 GetStudentRequestModel model = new GetStudentRequestModel
                 {
-                    Academic_year_id = obj.Academic_year_id,
+                    AcademicYearCode = obj.AcademicYearCode,
                     section_id = obj.section_id,
                     class_id = obj.class_id,
                     Institute_id = obj.Institute_id,
-                    isActive = obj.isActive,
+                    //isActive = obj.isActive,
                     pageSize = int.MaxValue,
                     pageNumber = 1,
                     sortField = null,

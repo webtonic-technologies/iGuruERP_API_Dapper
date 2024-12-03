@@ -60,7 +60,7 @@ namespace Student_API.Repository.Implementations
             tbl_StudentMaster.File_Name,
             tbl_StudentMaster.class_id,
             tbl_StudentMaster.Section_Id,
-            tbl_StudentMaster.Academic_year_id
+            tbl_StudentMaster.AcademicYearCode
         INTO 
             #TempStudentDetails
         FROM 
@@ -85,7 +85,7 @@ namespace Student_API.Repository.Implementations
             Class_Section,
             class_id,
             Section_Id,
-            Academic_year_id,
+            AcademicYearCode,
             File_Name
         FROM 
             #TempStudentDetails
@@ -140,7 +140,7 @@ namespace Student_API.Repository.Implementations
             {
                 string query = @"
                 UPDATE tbl_StudentMaster
-                SET class_id = @NextClassId , section_id= @sectionId , Academic_year_id = @CurrentAcademicYear
+                SET class_id = @NextClassId , section_id= @sectionId , AcademicYearCode = @CurrentAcademicYear
                 WHERE student_id IN @StudentIds";
 
                 await _connection.ExecuteAsync(query, new { NextClassId = nextClassId, StudentIds = studentIds, sectionId = sectionId, CurrentAcademicYear = CurrentAcademicYear });

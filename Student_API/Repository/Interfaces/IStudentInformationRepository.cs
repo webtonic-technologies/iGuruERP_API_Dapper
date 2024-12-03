@@ -1,6 +1,7 @@
 ﻿
 using Student_API.DTOs;
 using Student_API.DTOs.RequestDTO;
+using Student_API.DTOs.Responses;
 using Student_API.DTOs.ServiceResponse;
 
 namespace Student_API.Repository.Interfaces
@@ -16,6 +17,8 @@ namespace Student_API.Repository.Interfaces
         Task<ServiceResponse<int>> AddOrUpdateStudentHealthInfo(StudentHealthInfos healthInfo);
         Task<ServiceResponse<List<StudentDetailsDTO>>> GetAllStudentDetails(GetStudentRequestModel obj);
         Task<ServiceResponse<int>> ChangeStudentStatus(StudentStatusDTO statusDTO);
+        Task<IEnumerable<StudentActivityHistoryResponse>> GetStudentActivityHistory(int studentId, int instituteId);
+
         Task<ServiceResponse<int>> AddUpdateStudentDocuments(StudentDocumentListDTO request, int Student_id);
         Task<ServiceResponse<string>> GetStudentInfoImageById(int studentId);
         Task<ServiceResponse<string>> GetStudentparentImageById(int Student_Parent_Info_id);

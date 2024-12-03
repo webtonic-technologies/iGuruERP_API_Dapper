@@ -20,7 +20,8 @@
     public class DocumentStatusInfo
     {
         
-        public int Student_Document_id { get; set; }            
+        public int Student_Document_id { get; set; }
+        public string Student_Document_Name { get; set; }
         public bool IsSubmitted { get; set; }         
     }
 }

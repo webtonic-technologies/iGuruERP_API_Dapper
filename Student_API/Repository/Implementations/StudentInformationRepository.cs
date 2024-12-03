@@ -11,6 +11,7 @@ using Student_API.Helper;
 using Microsoft.AspNetCore.Http;
 using System.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
+using Student_API.DTOs.Responses;
 
 namespace Student_API.Repository.Implementations
 {
@@ -72,62 +73,125 @@ namespace Student_API.Repository.Implementations
         {
             try
             {
+
                 string sql = @"
-                    SELECT  tbl_StudentMaster.student_id, tbl_StudentMaster.First_Name, tbl_StudentMaster.Middle_Name, tbl_StudentMaster.Last_Name, tbl_StudentMaster.gender_id, Gender_Type, tbl_Class.[class_id], class_name AS class_course, tbl_section.[section_id], section_name AS Section, [Admission_Number], [Roll_Number],
-                    FORMAT([Date_of_Joining], 'dd-MM-yyyy') AS Date_of_Joining, Academic_year_id, tbl_AcademicYear.YearName, tbl_StudentMaster.Nationality_id, Nationality_Type, tbl_Religion.Religion_id, Religion_Type, FORMAT(tbl_StudentMaster.Date_of_Birth, 'dd-MM-yyyy') AS Date_of_Birth, tbl_StudentMaster.Mother_Tongue_id, Mother_Tongue_Name, tbl_StudentMaster.Caste_id, caste_type,
-                    tbl_StudentMaster.Blood_Group_id, Blood_Group_Type, [Aadhar_Number], [PEN], [QR_code], [IsPhysicallyChallenged],
-                    [IsSports], [IsAided], [IsNCC], [IsNSS], [IsScout], tbl_StudentMaster.File_Name, [isActive], tbl_StudentMaster.StudentType_id, Student_Type_Name
-                    , tbl_Gender.Gender_Type, Religion_Type, Gender_Type, tbl_StudentMaster.Institute_id, Institute_name, tbl_InstituteHouse.Institute_House_id AS Student_House_id, tbl_InstituteHouse.HouseName AS Student_House_Name
-                    FROM tbl_StudentMaster 
-                    LEFT JOIN tbl_Class ON tbl_StudentMaster.class_id = tbl_Class.class_id
-                    LEFT JOIN tbl_Section ON tbl_StudentMaster.section_id = tbl_Section.section_id
-                    LEFT JOIN tbl_Gender ON tbl_StudentMaster.gender_id = tbl_Gender.Gender_id
-                    LEFT JOIN tbl_Religion ON tbl_StudentMaster.Religion_id = tbl_Religion.Religion_id
-                    LEFT JOIN tbl_Nationality ON tbl_Nationality.Nationality_id = tbl_StudentMaster.Nationality_id 
-                    LEFT JOIN tbl_MotherTongue ON tbl_StudentMaster.Mother_Tongue_id = tbl_MotherTongue.Mother_Tongue_id
-                    LEFT JOIN tbl_BloodGroup ON tbl_BloodGroup.Blood_Group_id = tbl_StudentMaster.Blood_Group_id
-                    LEFT JOIN tbl_CasteMaster ON tbl_CasteMaster.caste_id = tbl_StudentMaster.Caste_id
-                    LEFT JOIN tbl_InstituteDetails ON tbl_InstituteDetails.Institute_id = tbl_StudentMaster.Institute_id
-                    LEFT JOIN tbl_AcademicYear ON tbl_AcademicYear.Id = tbl_StudentMaster.Academic_year_id
-                    LEFT JOIN tbl_InstituteHouse ON tbl_InstituteHouse.Institute_house_id = tbl_StudentMaster.Institute_house_id
-                    LEFT JOIN tbl_StudentType ON tbl_StudentType.Student_Type_id = tbl_StudentMaster.StudentType_id
-                    WHERE tbl_StudentMaster.student_id = @studentId;
+                SELECT  tbl_StudentMaster.student_id, tbl_StudentMaster.First_Name, tbl_StudentMaster.Middle_Name, tbl_StudentMaster.Last_Name, tbl_StudentMaster.gender_id, Gender_Type, tbl_Class.[class_id], class_name AS class_course, tbl_section.[section_id], section_name AS Section, [Admission_Number], [Roll_Number],
+                FORMAT([Date_of_Joining], 'dd-MM-yyyy') AS Date_of_Joining, AcademicYearCode, 
+                --tbl_AcademicInfo.YearName, 
+                'AY' + RIGHT(YEAR(tbl_AcademicInfo.AcademicYearStartMonth), 2) + RIGHT(YEAR(tbl_AcademicInfo.AcademicYearEndMonth), 2) AS YearName,
+                tbl_StudentMaster.Nationality_id, Nationality_Type, tbl_Religion.Religion_id, Religion_Type, FORMAT(tbl_StudentMaster.Date_of_Birth, 'dd-MM-yyyy') AS Date_of_Birth, tbl_StudentMaster.Mother_Tongue_id, Mother_Tongue_Name, tbl_StudentMaster.Caste_id, caste_type,
+                tbl_StudentMaster.Blood_Group_id, Blood_Group_Type, [Aadhar_Number], [PEN], [QR_code], [IsPhysicallyChallenged],
+                [IsSports], [IsAided], [IsNCC], [IsNSS], [IsScout], tbl_StudentMaster.File_Name, [isActive], tbl_StudentMaster.StudentType_id, Student_Type_Name
+                , tbl_Gender.Gender_Type, Religion_Type, Gender_Type, tbl_StudentMaster.Institute_id, Institute_name, tbl_InstituteHouse.Institute_House_id AS Student_House_id, tbl_InstituteHouse.HouseName AS Student_House_Name
+                FROM tbl_StudentMaster 
+                LEFT JOIN tbl_Class ON tbl_StudentMaster.class_id = tbl_Class.class_id
+                LEFT JOIN tbl_Section ON tbl_StudentMaster.section_id = tbl_Section.section_id
+                LEFT JOIN tbl_Gender ON tbl_StudentMaster.gender_id = tbl_Gender.Gender_id
+                LEFT JOIN tbl_Religion ON tbl_StudentMaster.Religion_id = tbl_Religion.Religion_id
+                LEFT JOIN tbl_Nationality ON tbl_Nationality.Nationality_id = tbl_StudentMaster.Nationality_id 
+                LEFT JOIN tbl_MotherTongue ON tbl_StudentMaster.Mother_Tongue_id = tbl_MotherTongue.Mother_Tongue_id
+                LEFT JOIN tbl_BloodGroup ON tbl_BloodGroup.Blood_Group_id = tbl_StudentMaster.Blood_Group_id
+                LEFT JOIN tbl_CasteMaster ON tbl_CasteMaster.caste_id = tbl_StudentMaster.Caste_id
+                LEFT JOIN tbl_InstituteDetails ON tbl_InstituteDetails.Institute_id = tbl_StudentMaster.Institute_id
+                LEFT JOIN tbl_AcademicInfo ON tbl_AcademicInfo.AcaInfoYearCode = tbl_StudentMaster.AcademicYearCode
+                LEFT JOIN tbl_InstituteHouse ON tbl_InstituteHouse.Institute_house_id = tbl_StudentMaster.Institute_house_id
+                LEFT JOIN tbl_StudentType ON tbl_StudentType.Student_Type_id = tbl_StudentMaster.StudentType_id
+                WHERE tbl_StudentMaster.student_id = @studentId;
 
-                    SELECT [Student_Other_Info_id], [student_id], [email_id], [Identification_Mark_1],
-                    [Identification_Mark_2], FORMAT([Admission_Date], 'dd-MM-yyyy') AS Admission_Date, FORMAT([Register_Date], 'dd-MM-yyyy') AS Register_Date, [Register_Number], [samagra_ID], [Place_of_Birth], [comments], 
-                    [language_known] 
-                    FROM [dbo].[tbl_StudentOtherInfo] 
-                    WHERE student_id = @studentId;
+                SELECT [Student_Other_Info_id], [student_id], [email_id], [Identification_Mark_1],
+                [Identification_Mark_2], FORMAT([Admission_Date], 'dd-MM-yyyy') AS Admission_Date, FORMAT([Register_Date], 'dd-MM-yyyy') AS Register_Date, [Register_Number], [samagra_ID], [Place_of_Birth], [comments], 
+                [language_known] 
+                FROM [dbo].[tbl_StudentOtherInfo] 
+                WHERE student_id = @studentId;
 
-                    SELECT [Student_Parent_Info_id], [Student_id], tbl_StudentParentsInfo.Parent_Type_id, [First_Name], [Middle_Name], [Last_Name], [Mobile_Number],
-                    [Bank_Account_no], [Bank_IFSC_Code], [Family_Ration_Card_Type], [Family_Ration_Card_no],  FORMAT([Date_of_Birth], 'dd-MM-yyyy') AS Date_of_Birth, [Aadhar_no], 
-                    [PAN_card_no], [Residential_Address], tbl_StudentParentsInfo.Occupation, [Designation], [Name_of_the_Employer], [Office_no], [Email_id], [Annual_Income], 
-                    [File_Name],  tbl_ParentType.parent_type
-                    FROM [dbo].[tbl_StudentParentsInfo]
+                SELECT [Student_Parent_Info_id], [Student_id], tbl_StudentParentsInfo.Parent_Type_id, [First_Name], [Middle_Name], [Last_Name], [Mobile_Number],
+                [Bank_Account_no], [Bank_IFSC_Code], [Family_Ration_Card_Type], [Family_Ration_Card_no],  FORMAT([Date_of_Birth], 'dd-MM-yyyy') AS Date_of_Birth, [Aadhar_no], 
+                [PAN_card_no], [Residential_Address], tbl_StudentParentsInfo.Occupation, [Designation], [Name_of_the_Employer], [Office_no], [Email_id], [Annual_Income], 
+                [File_Name],  tbl_ParentType.parent_type
+                FROM [dbo].[tbl_StudentParentsInfo]
                    
-                    INNER JOIN tbl_ParentType ON tbl_ParentType.Parent_Type_id = tbl_StudentParentsInfo.Parent_Type_id
-                    WHERE student_id = @studentId;
+                INNER JOIN tbl_ParentType ON tbl_ParentType.Parent_Type_id = tbl_StudentParentsInfo.Parent_Type_id
+                WHERE student_id = @studentId;
 
-                    SELECT ss.[Student_Siblings_id], ss.Name, ss.Last_Name, ss.Middle_Name, ss.[Student_id], ss.[Admission_Number], FORMAT(ss.[Date_of_Birth], 'dd-MM-yyyy') AS Date_of_Birth, ss.[Class], ss.[section],
-                    ss.[Institute_Name], ss.[Aadhar_no]
-                    FROM [tbl_StudentSiblings] ss
-                    WHERE ss.[Student_id] = @studentId;
+                SELECT ss.[Student_Siblings_id], ss.Name, ss.Last_Name, ss.Middle_Name, ss.[Student_id], ss.[Admission_Number], FORMAT(ss.[Date_of_Birth], 'dd-MM-yyyy') AS Date_of_Birth, ss.[Class], ss.[section],
+                ss.[Institute_Name], ss.[Aadhar_no]
+                FROM [tbl_StudentSiblings] ss
+                WHERE ss.[Student_id] = @studentId;
 
-                    SELECT [Student_Prev_School_id], [student_id], [Previous_School_Name], [Previous_Board], [Previous_Medium], [Previous_School_Address], [previous_School_Course], [Previous_Class], [TC_number], FORMAT([TC_date], 'dd-MM-yyyy') AS TC_date , [isTC_Submitted]
-                    FROM [dbo].[tbl_StudentPreviousSchool] 
-                    WHERE student_id = @studentId;
+                SELECT [Student_Prev_School_id], [student_id], [Previous_School_Name], [Previous_Board], [Previous_Medium], [Previous_School_Address], [previous_School_Course], [Previous_Class], [TC_number], FORMAT([TC_date], 'dd-MM-yyyy') AS TC_date , [isTC_Submitted]
+                FROM [dbo].[tbl_StudentPreviousSchool] 
+                WHERE student_id = @studentId;
 
-                    SELECT * FROM [dbo].[tbl_StudentHealthInfo] WHERE student_id = @studentId;
+                SELECT * FROM [dbo].[tbl_StudentHealthInfo] WHERE student_id = @studentId;
 
-                    --SELECT Student_Parent_Office_Info_id, Student_id, Parents_Type_id, Office_Building_no, Street, Area, Pincode, tbl_StudentParentsOfficeInfo.City_id, city_name, tbl_StudentParentsOfficeInfo.State_id, state_name 
-                    --FROM tbl_StudentParentsOfficeInfo
-                    --INNER JOIN tbl_State ON tbl_State.state_id = tbl_StudentParentsOfficeInfo.state_id
-                    --INNER JOIN tbl_City ON tbl_City.city_id = tbl_StudentParentsOfficeInfo.city_id
-                    SELECT Student_Parent_Office_Info_id, Student_id, Parents_Type_id, Office_Building_no, Street, Area, Pincode, tbl_StudentParentsOfficeInfo.City, tbl_StudentParentsOfficeInfo.State
-                    FROM tbl_StudentParentsOfficeInfo
-                    WHERE tbl_StudentParentsOfficeInfo.student_id = @studentId;
+                --SELECT Student_Parent_Office_Info_id, Student_id, Parents_Type_id, Office_Building_no, Street, Area, Pincode, tbl_StudentParentsOfficeInfo.City_id, city_name, tbl_StudentParentsOfficeInfo.State_id, state_name 
+                --FROM tbl_StudentParentsOfficeInfo
+                --INNER JOIN tbl_State ON tbl_State.state_id = tbl_StudentParentsOfficeInfo.state_id
+                --INNER JOIN tbl_City ON tbl_City.city_id = tbl_StudentParentsOfficeInfo.city_id
+                SELECT Student_Parent_Office_Info_id, Student_id, Parents_Type_id, Office_Building_no, Street, Area, Pincode, tbl_StudentParentsOfficeInfo.City, tbl_StudentParentsOfficeInfo.State
+                FROM tbl_StudentParentsOfficeInfo
+                WHERE tbl_StudentParentsOfficeInfo.student_id = @studentId;
 
-                    SELECT * FROM [dbo].[tbl_StudentDocuments] WHERE student_id = @studentId AND isDelete = 0;";
+                SELECT * FROM [dbo].[tbl_StudentDocuments] WHERE student_id = @studentId AND isDelete = 0
+                ;";
+
+                //string sql = @"
+                //    SELECT  tbl_StudentMaster.student_id, tbl_StudentMaster.First_Name, tbl_StudentMaster.Middle_Name, tbl_StudentMaster.Last_Name, tbl_StudentMaster.gender_id, Gender_Type, tbl_Class.[class_id], class_name AS class_course, tbl_section.[section_id], section_name AS Section, [Admission_Number], [Roll_Number],
+                //    FORMAT([Date_of_Joining], 'dd-MM-yyyy') AS Date_of_Joining, AcademicYearCode, tbl_AcademicYear.YearName, tbl_StudentMaster.Nationality_id, Nationality_Type, tbl_Religion.Religion_id, Religion_Type, FORMAT(tbl_StudentMaster.Date_of_Birth, 'dd-MM-yyyy') AS Date_of_Birth, tbl_StudentMaster.Mother_Tongue_id, Mother_Tongue_Name, tbl_StudentMaster.Caste_id, caste_type,
+                //    tbl_StudentMaster.Blood_Group_id, Blood_Group_Type, [Aadhar_Number], [PEN], [QR_code], [IsPhysicallyChallenged],
+                //    [IsSports], [IsAided], [IsNCC], [IsNSS], [IsScout], tbl_StudentMaster.File_Name, [isActive], tbl_StudentMaster.StudentType_id, Student_Type_Name
+                //    , tbl_Gender.Gender_Type, Religion_Type, Gender_Type, tbl_StudentMaster.Institute_id, Institute_name, tbl_InstituteHouse.Institute_House_id AS Student_House_id, tbl_InstituteHouse.HouseName AS Student_House_Name
+                //    FROM tbl_StudentMaster 
+                //    LEFT JOIN tbl_Class ON tbl_StudentMaster.class_id = tbl_Class.class_id
+                //    LEFT JOIN tbl_Section ON tbl_StudentMaster.section_id = tbl_Section.section_id
+                //    LEFT JOIN tbl_Gender ON tbl_StudentMaster.gender_id = tbl_Gender.Gender_id
+                //    LEFT JOIN tbl_Religion ON tbl_StudentMaster.Religion_id = tbl_Religion.Religion_id
+                //    LEFT JOIN tbl_Nationality ON tbl_Nationality.Nationality_id = tbl_StudentMaster.Nationality_id 
+                //    LEFT JOIN tbl_MotherTongue ON tbl_StudentMaster.Mother_Tongue_id = tbl_MotherTongue.Mother_Tongue_id
+                //    LEFT JOIN tbl_BloodGroup ON tbl_BloodGroup.Blood_Group_id = tbl_StudentMaster.Blood_Group_id
+                //    LEFT JOIN tbl_CasteMaster ON tbl_CasteMaster.caste_id = tbl_StudentMaster.Caste_id
+                //    LEFT JOIN tbl_InstituteDetails ON tbl_InstituteDetails.Institute_id = tbl_StudentMaster.Institute_id
+                //    LEFT JOIN tbl_AcademicYear ON tbl_AcademicYear.Id = tbl_StudentMaster.AcademicYearCode
+                //    LEFT JOIN tbl_InstituteHouse ON tbl_InstituteHouse.Institute_house_id = tbl_StudentMaster.Institute_house_id
+                //    LEFT JOIN tbl_StudentType ON tbl_StudentType.Student_Type_id = tbl_StudentMaster.StudentType_id
+                //    WHERE tbl_StudentMaster.student_id = @studentId;
+
+                //    SELECT [Student_Other_Info_id], [student_id], [email_id], [Identification_Mark_1],
+                //    [Identification_Mark_2], FORMAT([Admission_Date], 'dd-MM-yyyy') AS Admission_Date, FORMAT([Register_Date], 'dd-MM-yyyy') AS Register_Date, [Register_Number], [samagra_ID], [Place_of_Birth], [comments], 
+                //    [language_known] 
+                //    FROM [dbo].[tbl_StudentOtherInfo] 
+                //    WHERE student_id = @studentId;
+
+                //    SELECT [Student_Parent_Info_id], [Student_id], tbl_StudentParentsInfo.Parent_Type_id, [First_Name], [Middle_Name], [Last_Name], [Mobile_Number],
+                //    [Bank_Account_no], [Bank_IFSC_Code], [Family_Ration_Card_Type], [Family_Ration_Card_no],  FORMAT([Date_of_Birth], 'dd-MM-yyyy') AS Date_of_Birth, [Aadhar_no], 
+                //    [PAN_card_no], [Residential_Address], tbl_StudentParentsInfo.Occupation, [Designation], [Name_of_the_Employer], [Office_no], [Email_id], [Annual_Income], 
+                //    [File_Name],  tbl_ParentType.parent_type
+                //    FROM [dbo].[tbl_StudentParentsInfo]
+
+                //    INNER JOIN tbl_ParentType ON tbl_ParentType.Parent_Type_id = tbl_StudentParentsInfo.Parent_Type_id
+                //    WHERE student_id = @studentId;
+
+                //    SELECT ss.[Student_Siblings_id], ss.Name, ss.Last_Name, ss.Middle_Name, ss.[Student_id], ss.[Admission_Number], FORMAT(ss.[Date_of_Birth], 'dd-MM-yyyy') AS Date_of_Birth, ss.[Class], ss.[section],
+                //    ss.[Institute_Name], ss.[Aadhar_no]
+                //    FROM [tbl_StudentSiblings] ss
+                //    WHERE ss.[Student_id] = @studentId;
+
+                //    SELECT [Student_Prev_School_id], [student_id], [Previous_School_Name], [Previous_Board], [Previous_Medium], [Previous_School_Address], [previous_School_Course], [Previous_Class], [TC_number], FORMAT([TC_date], 'dd-MM-yyyy') AS TC_date , [isTC_Submitted]
+                //    FROM [dbo].[tbl_StudentPreviousSchool] 
+                //    WHERE student_id = @studentId;
+
+                //    SELECT * FROM [dbo].[tbl_StudentHealthInfo] WHERE student_id = @studentId;
+
+                //    --SELECT Student_Parent_Office_Info_id, Student_id, Parents_Type_id, Office_Building_no, Street, Area, Pincode, tbl_StudentParentsOfficeInfo.City_id, city_name, tbl_StudentParentsOfficeInfo.State_id, state_name 
+                //    --FROM tbl_StudentParentsOfficeInfo
+                //    --INNER JOIN tbl_State ON tbl_State.state_id = tbl_StudentParentsOfficeInfo.state_id
+                //    --INNER JOIN tbl_City ON tbl_City.city_id = tbl_StudentParentsOfficeInfo.city_id
+                //    SELECT Student_Parent_Office_Info_id, Student_id, Parents_Type_id, Office_Building_no, Street, Area, Pincode, tbl_StudentParentsOfficeInfo.City, tbl_StudentParentsOfficeInfo.State
+                //    FROM tbl_StudentParentsOfficeInfo
+                //    WHERE tbl_StudentParentsOfficeInfo.student_id = @studentId;
+
+                //    SELECT * FROM [dbo].[tbl_StudentDocuments] WHERE student_id = @studentId AND isDelete = 0;";
+
 
                 using (var result = await _connection.QueryMultipleAsync(sql, new { studentId }))
                 {
@@ -187,14 +251,14 @@ namespace Student_API.Repository.Implementations
                         INSERT INTO [dbo].[tbl_StudentMaster] (
                             First_Name, Middle_Name, Last_Name, gender_id, class_id,
                             section_id, Admission_Number, Roll_Number, Date_of_Joining,
-                            Academic_year_id, Nationality_id, Religion_id, Date_of_Birth,
+                            AcademicYearCode, Nationality_id, Religion_id, Date_of_Birth,
                             Mother_Tongue_id, Caste_id, Blood_Group_id, Aadhar_Number,
                             PEN, QR_code, IsPhysicallyChallenged, IsSports, IsAided,
                             IsNCC, IsNSS, IsScout, File_Name, Institute_id,Institute_house_id,StudentType_id)
                         VALUES (
                             @First_Name, @Middle_Name, @Last_Name, @gender_id, @class_id,
                             @section_id, @Admission_Number, @Roll_Number, @Date_of_Joining,
-                            @Academic_year_id, @Nationality_id, @Religion_id, @Date_of_Birth,
+                            @AcademicYearCode, @Nationality_id, @Religion_id, @Date_of_Birth,
                             @Mother_Tongue_id, @Caste_id, @Blood_Group_id,@Aadhar_Number,
                             @PEN, @QR_code, @IsPhysicallyChallenged, @IsSports, @IsAided,
                             @IsNCC, @IsNSS, @IsScout, @File_Name, @Institute_id,@Student_House_id,@StudentType_id);
@@ -225,7 +289,7 @@ namespace Student_API.Repository.Implementations
                             Admission_Number = @Admission_Number,
                             Roll_Number = @Roll_Number,
                             Date_of_Joining = @Date_of_Joining,
-                            Academic_year_id = @Academic_year_id,
+                            AcademicYearCode = @AcademicYearCode,
                             Nationality_id = @Nationality_id,
                             Religion_id = @Religion_id,
                             Date_of_Birth = @Date_of_Birth,
@@ -1188,7 +1252,7 @@ namespace Student_API.Repository.Implementations
                 AND tbl_StudentParentsInfo.Parent_Type_id = 1 
             WHERE 
                 tbl_StudentMaster.Institute_id = @InstituteId AND (tbl_StudentMaster.Class_id = @class_id OR @class_id = 0)
-                AND (tbl_StudentMaster.Section_id = @section_id OR @section_id = 0) AND (tbl_StudentMaster.Academic_year_id = @Academic_year_id OR @Academic_year_id = 0)
+                AND (tbl_StudentMaster.Section_id = @section_id OR @section_id = 0) AND (tbl_StudentMaster.AcademicYearCode = @AcademicYearCode OR @AcademicYearCode = 0)
                 AND (tbl_StudentMaster.StudentType_id = @StudentType_id OR @StudentType_id = 0)
                 AND tbl_StudentMaster.isActive = @isActive;
 
@@ -1211,7 +1275,7 @@ namespace Student_API.Repository.Implementations
             FROM 
                 #TempStudentDetails;";
 
-                using (var multi = await _connection.QueryMultipleAsync(sql, new { InstituteId = obj.Institute_id, Offset = offset, PageSize = actualPageSize, class_id = obj.class_id, section_id = obj.section_id, Academic_year_id = obj.Academic_year_id, isActive = obj.isActive, StudentType_id = obj.StudentType_id }))
+                using (var multi = await _connection.QueryMultipleAsync(sql, new { InstituteId = obj.Institute_id, Offset = offset, PageSize = actualPageSize, class_id = obj.class_id, section_id = obj.section_id, AcademicYearCode = obj.AcademicYearCode, StudentType_id = obj.StudentType_id }))
                 {
                     var studentList = multi.Read<StudentDetailsDTO>().ToList();
                     int? totalRecords = (obj.pageSize.HasValue && obj.pageNumber.HasValue) == true ? multi.ReadSingle<int>() : null;
@@ -1233,21 +1297,73 @@ namespace Student_API.Repository.Implementations
             }
         }
 
+        //public async Task<ServiceResponse<int>> ChangeStudentStatus(StudentStatusDTO statusDTO)
+        //{
+        //    try
+        //    {
+        //        string sql = @"
+        //            update tbl_StudentMaster
+        //            SET IsActive = @IsActive
+        //            where student_id = @StudentId;";
+
+        //        var updatedId = await _connection.ExecuteScalarAsync<int>(sql, statusDTO);
+        //        return new ServiceResponse<int>(true, "Operation successful", updatedId, 200);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return new ServiceResponse<int>(false, "Some error occured", 0, 500);
+        //    }
+        //}
+
         public async Task<ServiceResponse<int>> ChangeStudentStatus(StudentStatusDTO statusDTO)
         {
             try
             {
-                string sql = @"
-                    update tbl_StudentMaster
-                    SET IsActive = @IsActive
-                    where student_id = @StudentId;";
+                // Insert activity record into tblStudentACActivity for status change
+                string insertActivitySql = @"
+            INSERT INTO tblStudentACActivity 
+            (StudentID, ActivityStatusID, ActivityDate, UserID, Reason, InstituteID)
+            VALUES
+            (@StudentID, @ActivityStatusID, @ActivityDate, @UserID, @InactiveReason, @InstituteID);";
 
-                var updatedId = await _connection.ExecuteScalarAsync<int>(sql, statusDTO);
-                return new ServiceResponse<int>(true, "Operation successful", updatedId, 200);
+                // Insert the activity record into the activity history table
+                var activityId = await _connection.ExecuteScalarAsync<int>(insertActivitySql, statusDTO);
+
+                // Return success response with the activityId (or any other identifier you want to return)
+                return new ServiceResponse<int>(true, "Status change activity logged successfully", activityId, 200);
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<int>(false, "Some error occured", 0, 500);
+                // Handle any errors and return an error response
+                return new ServiceResponse<int>(false, "Some error occurred: " + ex.Message, 0, 500);
+            }
+        }
+
+        public async Task<IEnumerable<StudentActivityHistoryResponse>> GetStudentActivityHistory(int studentId, int instituteId)
+        {
+            try
+            {
+                string sql = @"
+                SELECT
+                    sa.ActivityStatusID AS StatusID,
+                    asd.ActivityStatus AS Status,
+                    FORMAT(sa.ActivityDate, 'yyyy-MM-dd HH:mm:ss') AS DateTime,
+                    sa.UserID AS EmployeeID,
+                    ep.First_Name + ' ' + ep.Last_Name AS UserName,
+                    sa.Reason
+                FROM tblStudentACActivity sa
+                JOIN tblActivityStatus asd ON sa.ActivityStatusID = asd.ActivityStatusID
+                JOIN tbl_EmployeeProfileMaster ep ON sa.UserID = ep.Employee_id
+                WHERE sa.StudentID = @studentId AND sa.InstituteID = @instituteId
+                ORDER BY sa.ActivityDate DESC";
+
+                var result = await _connection.QueryAsync<StudentActivityHistoryResponse>(sql, new { studentId, instituteId });
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error while fetching student activity history: " + ex.Message);
             }
         }
 
@@ -1337,7 +1453,7 @@ namespace Student_API.Repository.Implementations
                 return new ServiceResponse<int>(false, "Some error occured", 0, 500);
             }
         }
-
+         
         public async Task<ServiceResponse<List<StudentInformationDTO>>> GetAllStudentDetailsData(GetStudentRequestModel obj)
         {
             try
@@ -1361,218 +1477,235 @@ namespace Student_API.Repository.Implementations
                     obj.sortDirection = "ASC";
                 }
 
+                // Define the WHERE condition for IsActive based on StudentStatus parameter
+                string studentStatusCondition = obj.StudentStatus switch
+                {
+                    1 => "tbl_StudentMaster.isActive = 1", // Active students
+                    2 => "tbl_StudentMaster.isActive = 0", // Inactive students
+                    _ => "(tbl_StudentMaster.isActive = 0 OR tbl_StudentMaster.isActive = 1)" // All students
+                };
+
+
                 // SQL query with joins to retrieve the required data
                 string sql = $@"
-        -- Base query for fetching student details with filters, sorting, and pagination
-IF OBJECT_ID('tempdb..#TempStudentDetails') IS NOT NULL DROP TABLE #TempStudentDetails;
+                -- Base query for fetching student details with filters, sorting, and pagination
+                IF OBJECT_ID('tempdb..#TempStudentDetails') IS NOT NULL DROP TABLE #TempStudentDetails;
 
-SELECT 
-    tbl_StudentMaster.student_id, 
-    tbl_StudentMaster.First_Name, 
-    tbl_StudentMaster.Middle_Name, 
-    tbl_StudentMaster.Last_Name, 
-    tbl_StudentMaster.gender_id, 
-    Gender_Type, 
-    tbl_Class.class_id, 
-    class_name AS class_course, 
-    tbl_Section.section_id, 
-    section_name AS Section, 
-    [Admission_Number], 
-    [Roll_Number],
-    FORMAT([Date_of_Joining], 'dd-MM-yyyy') AS Date_of_Joining, 
-    Academic_year_id, 
-    tbl_AcademicYear.YearName, 
-    tbl_StudentMaster.Nationality_id, 
-    Nationality_Type, 
-    tbl_Religion.Religion_id, 
-    Religion_Type, 
-    FORMAT(tbl_StudentMaster.Date_of_Birth, 'dd-MM-yyyy') AS Date_of_Birth, 
-    tbl_StudentMaster.Mother_Tongue_id, 
-    Mother_Tongue_Name, 
-    tbl_StudentMaster.Caste_id, 
-    caste_type,
-    tbl_StudentMaster.Blood_Group_id, 
-    Blood_Group_Type, 
-    [Aadhar_Number], 
-    [PEN], 
-    [QR_code], 
-    [IsPhysicallyChallenged],
-    [IsSports], 
-    [IsAided], 
-    [IsNCC], 
-    [IsNSS], 
-    [IsScout], 
-    tbl_StudentMaster.File_Name, 
-    [isActive], 
-    tbl_StudentMaster.StudentType_id, 
-    Student_Type_Name,
-    tbl_InstituteHouse.Institute_House_id AS Student_House_id, 
-    tbl_InstituteHouse.HouseName AS Student_House_Name
-INTO 
-    #TempStudentDetails
-FROM 
-    tbl_StudentMaster
-LEFT JOIN 
-    tbl_Class ON tbl_StudentMaster.class_id = tbl_Class.class_id
-LEFT JOIN 
-    tbl_Section ON tbl_StudentMaster.section_id = tbl_Section.section_id
-LEFT JOIN 
-    tbl_Gender ON tbl_StudentMaster.gender_id = tbl_Gender.Gender_id
-LEFT JOIN 
-    tbl_Religion ON tbl_StudentMaster.Religion_id = tbl_Religion.Religion_id
-LEFT JOIN 
-    tbl_Nationality ON tbl_Nationality.Nationality_id = tbl_StudentMaster.Nationality_id 
-LEFT JOIN 
-    tbl_MotherTongue ON tbl_StudentMaster.Mother_Tongue_id = tbl_MotherTongue.Mother_Tongue_id
-LEFT JOIN 
-    tbl_BloodGroup ON tbl_BloodGroup.Blood_Group_id = tbl_StudentMaster.Blood_Group_id
-LEFT JOIN 
-    tbl_CasteMaster ON tbl_CasteMaster.caste_id = tbl_StudentMaster.Caste_id
-LEFT JOIN 
-    tbl_InstituteDetails ON tbl_InstituteDetails.Institute_id = tbl_StudentMaster.Institute_id
-LEFT JOIN 
-    tbl_AcademicYear ON tbl_AcademicYear.Id = tbl_StudentMaster.Academic_year_id
-LEFT JOIN 
-    tbl_InstituteHouse ON tbl_InstituteHouse.Institute_house_id = tbl_StudentMaster.Institute_house_id
-LEFT JOIN 
-    tbl_StudentType ON tbl_StudentType.Student_Type_id = tbl_StudentMaster.StudentType_id
-WHERE 
-    tbl_StudentMaster.Institute_id = @InstituteId
-    AND (tbl_StudentMaster.Class_id = @class_id OR @class_id = 0)
-    AND (tbl_StudentMaster.Section_id = @section_id OR @section_id = 0) 
-    AND (tbl_StudentMaster.Academic_year_id = @Academic_year_id OR @Academic_year_id = 0)
-    AND (tbl_StudentMaster.StudentType_id = @StudentType_id OR @StudentType_id = 0)
-    AND tbl_StudentMaster.isActive = @isActive;
+                SELECT 
+                    tbl_StudentMaster.student_id, 
+                    tbl_StudentMaster.First_Name, 
+                    tbl_StudentMaster.Middle_Name, 
+                    tbl_StudentMaster.Last_Name, 
+                    tbl_StudentMaster.gender_id, 
+                    Gender_Type, 
+                    tbl_Class.class_id, 
+                    class_name AS class_course, 
+                    tbl_Section.section_id, 
+                    section_name AS Section, 
+                    [Admission_Number], 
+                    [Roll_Number],
+                    FORMAT([Date_of_Joining], 'dd-MM-yyyy') AS Date_of_Joining, 
+                    AcademicYearCode, 
+                    --tbl_AcademicYear.YearName, 
+                    'AY' + RIGHT(YEAR(tbl_AcademicInfo.AcademicYearStartMonth), 2) + RIGHT(YEAR(tbl_AcademicInfo.AcademicYearEndMonth), 2) AS YearName,
+                    tbl_StudentMaster.Nationality_id, 
+                    Nationality_Type, 
+                    tbl_Religion.Religion_id, 
+                    Religion_Type, 
+                    FORMAT(tbl_StudentMaster.Date_of_Birth, 'dd-MM-yyyy') AS Date_of_Birth, 
+                    tbl_StudentMaster.Mother_Tongue_id, 
+                    Mother_Tongue_Name, 
+                    tbl_StudentMaster.Caste_id, 
+                    caste_type,
+                    tbl_StudentMaster.Blood_Group_id, 
+                    Blood_Group_Type, 
+                    [Aadhar_Number], 
+                    [PEN], 
+                    [QR_code], 
+                    [IsPhysicallyChallenged],
+                    [IsSports], 
+                    [IsAided], 
+                    [IsNCC], 
+                    [IsNSS], 
+                    [IsScout], 
+                    tbl_StudentMaster.File_Name, 
+                    [isActive], 
+                    tbl_StudentMaster.StudentType_id, 
+                    Student_Type_Name,
+                    tbl_InstituteHouse.Institute_House_id AS Student_House_id, 
+                    tbl_InstituteHouse.HouseName AS Student_House_Name
+                INTO 
+                    #TempStudentDetails
+                FROM 
+                    tbl_StudentMaster
+                LEFT JOIN 
+                    tbl_Class ON tbl_StudentMaster.class_id = tbl_Class.class_id
+                LEFT JOIN 
+                    tbl_Section ON tbl_StudentMaster.section_id = tbl_Section.section_id
+                LEFT JOIN 
+                    tbl_Gender ON tbl_StudentMaster.gender_id = tbl_Gender.Gender_id
+                LEFT JOIN 
+                    tbl_Religion ON tbl_StudentMaster.Religion_id = tbl_Religion.Religion_id
+                LEFT JOIN 
+                    tbl_Nationality ON tbl_Nationality.Nationality_id = tbl_StudentMaster.Nationality_id 
+                LEFT JOIN 
+                    tbl_MotherTongue ON tbl_StudentMaster.Mother_Tongue_id = tbl_MotherTongue.Mother_Tongue_id
+                LEFT JOIN 
+                    tbl_BloodGroup ON tbl_BloodGroup.Blood_Group_id = tbl_StudentMaster.Blood_Group_id
+                LEFT JOIN 
+                    tbl_CasteMaster ON tbl_CasteMaster.caste_id = tbl_StudentMaster.Caste_id
+                LEFT JOIN 
+                    tbl_InstituteDetails ON tbl_InstituteDetails.Institute_id = tbl_StudentMaster.Institute_id
+                LEFT JOIN 
+                    --tbl_AcademicYear ON tbl_AcademicYear.Id = tbl_StudentMaster.AcademicYearCode
+                    tbl_AcademicInfo ON tbl_AcademicInfo.AcaInfoYearCode = tbl_StudentMaster.AcademicYearCode AND tbl_AcademicInfo.Institute_id = tbl_StudentMaster.Institute_id
+                LEFT JOIN 
+                    tbl_InstituteHouse ON tbl_InstituteHouse.Institute_house_id = tbl_StudentMaster.Institute_house_id
+                LEFT JOIN 
+                    tbl_StudentType ON tbl_StudentType.Student_Type_id = tbl_StudentMaster.StudentType_id
+                WHERE 
+                    tbl_StudentMaster.Institute_id = @InstituteId
+                    AND (tbl_StudentMaster.Class_id = @class_id OR @class_id = 0)
+                    AND (tbl_StudentMaster.Section_id = @section_id OR @section_id = 0) 
+                    AND (tbl_StudentMaster.AcademicYearCode = @AcademicYearCode OR @AcademicYearCode = '')
+                    AND (tbl_StudentMaster.StudentType_id = @StudentType_id OR @StudentType_id = 0)
 
--- Query the temporary table with sorting and pagination
-SELECT 
-    *
-FROM 
-    #TempStudentDetails
-ORDER BY 
-    {obj.sortField} {obj.sortDirection}, 
-    student_id
-OFFSET 
-    @Offset ROWS
-FETCH NEXT 
-    @PageSize ROWS ONLY;
+                    AND (
+                            tbl_StudentMaster.First_Name LIKE '%' + @Keyword + '%' OR
+                            tbl_StudentMaster.Last_Name LIKE '%' + @Keyword + '%' OR
+                            tbl_StudentMaster.Admission_Number LIKE '%' + @Keyword + '%' OR
+                            tbl_StudentMaster.Roll_Number LIKE '%' + @Keyword + '%'
+                        );
 
-
-SELECT 
-    [Student_Other_Info_id], 
-    [student_id], 
-    [email_id], 
-    [Identification_Mark_1],
-    [Identification_Mark_2], 
-    FORMAT([Admission_Date], 'dd-MM-yyyy') AS Admission_Date, 
-    FORMAT([Register_Date], 'dd-MM-yyyy') AS Register_Date, 
-    [Register_Number], 
-    [samagra_ID], 
-    [Place_of_Birth], 
-    [comments], 
-    [language_known] 
-FROM 
-    [dbo].[tbl_StudentOtherInfo] 
-WHERE 
-    student_id IN (SELECT student_id FROM #TempStudentDetails);
+                -- Query the temporary table with sorting and pagination
+                SELECT 
+                    *
+                FROM 
+                    #TempStudentDetails
+                ORDER BY 
+                    {obj.sortField} {obj.sortDirection}, 
+                    student_id
+                OFFSET 
+                    @Offset ROWS
+                FETCH NEXT 
+                    @PageSize ROWS ONLY;
 
 
-SELECT 
-    [Student_Parent_Info_id], 
-    [Student_id], 
-    tbl_StudentParentsInfo.Parent_Type_id, 
-    [First_Name], 
-    [Middle_Name], 
-    [Last_Name], 
-    [Bank_Account_no], 
-    [Bank_IFSC_Code], 
-    [Family_Ration_Card_Type], 
-    [Family_Ration_Card_no], 
-    [Mobile_Number], 
-    FORMAT([Date_of_Birth], 'dd-MM-yyyy') AS Date_of_Birth, 
-    [Aadhar_no], 
-    [PAN_card_no], 
-    [Residential_Address], 
-    tbl_StudentParentsInfo.Occupation, 
-    [Designation], 
-    [Name_of_the_Employer], 
-    [Office_no], 
-    [Email_id], 
-    [Annual_Income], 
-    [File_Name], 
-    tbl_ParentType.parent_type
-FROM 
-    [dbo].[tbl_StudentParentsInfo]
-INNER JOIN 
-    tbl_ParentType ON tbl_ParentType.Parent_Type_id = tbl_StudentParentsInfo.Parent_Type_id
-WHERE 
-    student_id IN (SELECT student_id FROM #TempStudentDetails);
+                SELECT 
+                    [Student_Other_Info_id], 
+                    [student_id], 
+                    [email_id], 
+                    [Identification_Mark_1],
+                    [Identification_Mark_2], 
+                    FORMAT([Admission_Date], 'dd-MM-yyyy') AS Admission_Date, 
+                    FORMAT([Register_Date], 'dd-MM-yyyy') AS Register_Date, 
+                    [Register_Number], 
+                    [samagra_ID], 
+                    [Place_of_Birth], 
+                    [comments], 
+                    [language_known] 
+                FROM 
+                    [dbo].[tbl_StudentOtherInfo] 
+                WHERE 
+                    student_id IN (SELECT student_id FROM #TempStudentDetails);
 
 
-SELECT 
-    ss.[Student_Siblings_id], 
-    ss.Name, 
-    ss.Last_Name, 
-    ss.Middle_Name, 
-    ss.[Student_id], 
-    ss.[Admission_Number], 
-    FORMAT(ss.[Date_of_Birth], 'dd-MM-yyyy') AS Date_of_Birth, 
-    ss.[Class], 
-    ss.[section],
-    ss.[Institute_Name], 
-    ss.[Aadhar_no]
-FROM 
-    [tbl_StudentSiblings] ss
-WHERE 
-    ss.[Student_id] IN (SELECT student_id FROM #TempStudentDetails);
+                SELECT 
+                    [Student_Parent_Info_id], 
+                    [Student_id], 
+                    tbl_StudentParentsInfo.Parent_Type_id, 
+                    [First_Name], 
+                    [Middle_Name], 
+                    [Last_Name], 
+                    [Bank_Account_no], 
+                    [Bank_IFSC_Code], 
+                    [Family_Ration_Card_Type], 
+                    [Family_Ration_Card_no], 
+                    [Mobile_Number], 
+                    FORMAT([Date_of_Birth], 'dd-MM-yyyy') AS Date_of_Birth, 
+                    [Aadhar_no], 
+                    [PAN_card_no], 
+                    [Residential_Address], 
+                    tbl_StudentParentsInfo.Occupation, 
+                    [Designation], 
+                    [Name_of_the_Employer], 
+                    [Office_no], 
+                    [Email_id], 
+                    [Annual_Income], 
+                    [File_Name], 
+                    tbl_ParentType.parent_type
+                FROM 
+                    [dbo].[tbl_StudentParentsInfo]
+                INNER JOIN 
+                    tbl_ParentType ON tbl_ParentType.Parent_Type_id = tbl_StudentParentsInfo.Parent_Type_id
+                WHERE 
+                    student_id IN (SELECT student_id FROM #TempStudentDetails);
 
 
-SELECT 
-    [Student_Prev_School_id], 
-    [student_id], 
-    [Previous_School_Name], 
-    [Previous_Board], 
-    [Previous_Medium], 
-    [Previous_School_Address], 
-    [previous_School_Course], 
-    [Previous_Class], 
-    [TC_number], 
-    FORMAT([TC_date], 'dd-MM-yyyy') AS TC_date, 
-    [isTC_Submitted]
-FROM 
-    [dbo].[tbl_StudentPreviousSchool] 
-WHERE 
-    student_id IN (SELECT student_id FROM #TempStudentDetails);
+                SELECT 
+                    ss.[Student_Siblings_id], 
+                    ss.Name, 
+                    ss.Last_Name, 
+                    ss.Middle_Name, 
+                    ss.[Student_id], 
+                    ss.[Admission_Number], 
+                    FORMAT(ss.[Date_of_Birth], 'dd-MM-yyyy') AS Date_of_Birth, 
+                    ss.[Class], 
+                    ss.[section],
+                    ss.[Institute_Name], 
+                    ss.[Aadhar_no]
+                FROM 
+                    [tbl_StudentSiblings] ss
+                WHERE 
+                    ss.[Student_id] IN (SELECT student_id FROM #TempStudentDetails);
 
 
-SELECT 
-    * 
-FROM 
-    [dbo].[tbl_StudentHealthInfo] 
-WHERE 
-    student_id IN (SELECT student_id FROM #TempStudentDetails);
+                SELECT 
+                    [Student_Prev_School_id], 
+                    [student_id], 
+                    [Previous_School_Name], 
+                    [Previous_Board], 
+                    [Previous_Medium], 
+                    [Previous_School_Address], 
+                    [previous_School_Course], 
+                    [Previous_Class], 
+                    [TC_number], 
+                    FORMAT([TC_date], 'dd-MM-yyyy') AS TC_date, 
+                    [isTC_Submitted]
+                FROM 
+                    [dbo].[tbl_StudentPreviousSchool] 
+                WHERE 
+                    student_id IN (SELECT student_id FROM #TempStudentDetails);
+
+
+                SELECT 
+                    * 
+                FROM 
+                    [dbo].[tbl_StudentHealthInfo] 
+                WHERE 
+                    student_id IN (SELECT student_id FROM #TempStudentDetails);
 
 
 
-  SELECT Student_Parent_Office_Info_id, Student_id, Parents_Type_id, Office_Building_no, Street, Area, Pincode, tbl_StudentParentsOfficeInfo.City, tbl_StudentParentsOfficeInfo.State
-                    FROM tbl_StudentParentsOfficeInfo
-                    WHERE tbl_StudentParentsOfficeInfo.student_id IN (SELECT student_id FROM #TempStudentDetails);
+                SELECT Student_Parent_Office_Info_id, Student_id, Parents_Type_id, Office_Building_no, Street, Area, Pincode, tbl_StudentParentsOfficeInfo.City, tbl_StudentParentsOfficeInfo.State
+                FROM tbl_StudentParentsOfficeInfo
+                WHERE tbl_StudentParentsOfficeInfo.student_id IN (SELECT student_id FROM #TempStudentDetails);
 
 
 
 
-  SELECT * FROM [dbo].[tbl_StudentDocuments] WHERE student_id IN (SELECT student_id FROM #TempStudentDetails) AND isDelete = 0;
+                SELECT * FROM [dbo].[tbl_StudentDocuments] WHERE student_id IN (SELECT student_id FROM #TempStudentDetails) AND isDelete = 0;
 
 
--- Get the total count of records
-SELECT 
-    COUNT(1) 
-FROM 
-    #TempStudentDetails;
+                -- Get the total count of records
+                SELECT 
+                    COUNT(1) 
+                FROM 
+                    #TempStudentDetails;
 
-";
+                ";
 
-                using (var result = await _connection.QueryMultipleAsync(sql, new { InstituteId = obj.Institute_id, Offset = offset, PageSize = actualPageSize, class_id = obj.class_id, section_id = obj.section_id, Academic_year_id = obj.Academic_year_id, isActive = obj.isActive, StudentType_id = obj.StudentType_id }))
+                using (var result = await _connection.QueryMultipleAsync(sql, new { InstituteId = obj.Institute_id, Offset = offset, PageSize = actualPageSize, class_id = obj.class_id, section_id = obj.section_id, AcademicYearCode = obj.AcademicYearCode, StudentType_id = obj.StudentType_id, Keyword = obj.Keyword }))
                 {
                     var studentDetailsList = (await result.ReadAsync<StudentInformationDTO>()).ToList();
                     var studentOtherInfoList = (await result.ReadAsync<StudentOtherInfoDTO>()).ToList();
@@ -1584,7 +1717,35 @@ FROM
                     var studentDocumentsList = (await result.ReadAsync<StudentDocumentListDTO>()).ToList();
                     int? totalRecords = (obj.pageSize.HasValue && obj.pageNumber.HasValue) == true ? result.ReadSingle<int>() : null;
 
-                    var studentDetailsDict = studentDetailsList.ToDictionary(sd => sd.student_id);
+                    //var studentDetailsDict = studentDetailsList.ToDictionary(sd => sd.student_id);
+
+                    //foreach (var student in studentDetailsList)
+                    //{
+                    //    if (studentOtherInfoList.Any(o => o.student_id == student.student_id))
+                    //    {
+                    //        student.studentOtherInfoDTO = studentOtherInfoList.First(o => o.student_id == student.student_id);
+                    //    }
+                    //    student.studentParentInfos = studentParentInfoList.Where(p => p.Student_id == student.student_id).ToList();
+                    //    student.studentSiblings = studentSiblingsList.Where(s => s.Student_id == student.student_id).ToList();
+                    //    student.studentPreviousSchool = studentPreviousSchoolList.FirstOrDefault(p => p.student_id == student.student_id);
+                    //    student.studentHealthInfo = studentHealthInfoList.FirstOrDefault(h => h.Student_id == student.student_id);
+                    //    student.studentDocumentListDTOs = studentDocumentsList.Where(d => d.Student_id == student.student_id).ToList();
+
+                    //    foreach (var parentInfo in student.studentParentInfos)
+                    //    {
+                    //        parentInfo.studentParentOfficeInfo = studentParentOfficeInfoList
+                    //            .Where(officeInfo => officeInfo.Parents_Type_id == parentInfo.Parent_Type_id && officeInfo.Student_id == student.student_id)
+                    //            .FirstOrDefault();
+                    //    }
+                    //}
+                    //return new ServiceResponse<List<StudentInformationDTO>>(true, "Operation successful", studentDetailsList, 200, totalRecords);
+
+
+
+                    // Inside the query processing
+                    var studentDetailsDict = studentDetailsList
+                        .GroupBy(sd => sd.student_id)
+                        .ToDictionary(g => g.Key, g => g.FirstOrDefault());  // Take the first student if multiple exist with the same student_id
 
                     foreach (var student in studentDetailsList)
                     {
@@ -1605,7 +1766,9 @@ FROM
                                 .FirstOrDefault();
                         }
                     }
+
                     return new ServiceResponse<List<StudentInformationDTO>>(true, "Operation successful", studentDetailsList, 200, totalRecords);
+
                 }
             }
             catch (Exception ex)
@@ -1613,7 +1776,7 @@ FROM
                 return new ServiceResponse<List<StudentInformationDTO>>(false, "Some error occured", null, 500);
 
             }
-        }
+        } 
 
         public async Task<ServiceResponse<List<dynamic>>> GetAllStudentDetailsData1(GetStudentRequestModel obj)
         {
@@ -1641,365 +1804,594 @@ FROM
                 // SQL query with joins to retrieve the required data
                 string sql = $@"
         -- Base query for fetching student details with filters, sorting, and pagination
-IF OBJECT_ID('tempdb..#TempStudentDetails') IS NOT NULL DROP TABLE #TempStudentDetails;
+        IF OBJECT_ID('tempdb..#TempStudentDetails') IS NOT NULL DROP TABLE #TempStudentDetails;
 
-SELECT 
-    tbl_StudentMaster.student_id, 
-    tbl_StudentMaster.First_Name, 
-    tbl_StudentMaster.Middle_Name, 
-    tbl_StudentMaster.Last_Name, 
-    tbl_StudentMaster.gender_id, 
-    Gender_Type, 
-    tbl_Class.class_id, 
-    class_name , 
-    tbl_Section.section_id, 
-    section_name, 
-    [Admission_Number], 
-    [Roll_Number],
-    FORMAT([Date_of_Joining], 'dd-MM-yyyy') AS Date_of_Joining, 
-    Academic_year_id, 
-    tbl_AcademicYear.YearName, 
-    tbl_StudentMaster.Nationality_id, 
-    Nationality_Type, 
-    tbl_Religion.Religion_id, 
-    Religion_Type, 
-    FORMAT(tbl_StudentMaster.Date_of_Birth, 'dd-MM-yyyy') AS Date_of_Birth, 
-    tbl_StudentMaster.Mother_Tongue_id, 
-    Mother_Tongue_Name, 
-    tbl_StudentMaster.Caste_id, 
-    caste_type,
-    tbl_StudentMaster.Blood_Group_id, 
-    Blood_Group_Type, 
-    [Aadhar_Number], 
-    [PEN], 
-    [QR_code], 
-    [IsPhysicallyChallenged],
-    [IsSports], 
-    [IsAided], 
-    [IsNCC], 
-    [IsNSS], 
-    [IsScout], 
-    tbl_StudentMaster.File_Name, 
-    [isActive], 
-    tbl_StudentMaster.StudentType_id, 
-    Student_Type_Name,
-    tbl_InstituteHouse.Institute_House_id AS Student_House_id, 
-    tbl_InstituteHouse.HouseName AS Student_House_Name,
-	[Student_Other_Info_id],
-	[email_id], 
-    [Identification_Mark_1],
-    [Identification_Mark_2], 
-    FORMAT([Admission_Date], 'dd-MM-yyyy') AS Admission_Date, 
-    FORMAT([Register_Date], 'dd-MM-yyyy') AS Register_Date, 
-    [Register_Number], 
-    [samagra_ID], 
-    [Place_of_Birth], 
-    [comments], 
-    [language_known],
-    [Student_Prev_School_id], 
-    [Previous_School_Name], 
-    [Previous_Board], 
-    [Previous_Medium], 
-    [Previous_School_Address], 
-    [previous_School_Course], 
-    [Previous_Class], 
-    [TC_number], 
-    FORMAT([TC_date], 'dd-MM-yyyy') AS TC_date, 
-    [isTC_Submitted],
-    [Student_Health_Info_id]
-	 ,[Allergies]
-      ,[Medications]
-      ,[Doctor_Name]
-      ,[Doctor_Phone_no]
-      ,[height]
-      ,[weight]
-      ,[Government_ID]
-      ,[Chest]
-      ,[Physical_Deformity]
-      ,[History_Majorillness]
-      ,[History_Accident]
-      ,[Vision]
-      ,[Hearing]
-      ,[Speech]
-      ,[Behavioral_Problem]
-      ,[Remarks_Weakness]
-      ,[Student_Name]
-      ,[Student_Age]
-      ,[Admission_Status]
-    -- Parent details dynamically included
-    Father_First_Name, Father_Middle_Name, Father_Last_Name, Father_Bank_Account_no, Father_Bank_IFSC_Code, Father_Family_Ration_Card_Type, 
-    Father_Family_Ration_Card_no, Father_Mobile_Number, Father_Date_of_Birth, Father_Aadhar_no, Father_PAN_card_no, Father_Residential_Address, 
-    Father_Occupation, Father_Designation, Father_Name_of_the_Employer, Father_Office_no, Father_Email_id, Father_Annual_Income, Father_File_Name, 
-    Mother_First_Name, Mother_Middle_Name, Mother_Last_Name, Mother_Bank_Account_no, Mother_Bank_IFSC_Code, Mother_Family_Ration_Card_Type, 
-    Mother_Family_Ration_Card_no, Mother_Mobile_Number, Mother_Date_of_Birth, Mother_Aadhar_no, Mother_PAN_card_no, Mother_Residential_Address, 
-    Mother_Occupation, Mother_Designation, Mother_Name_of_the_Employer, Mother_Office_no, Mother_Email_id, Mother_Annual_Income, Mother_File_Name, 
-    Guardian_First_Name, Guardian_Middle_Name, Guardian_Last_Name, Guardian_Bank_Account_no, Guardian_Bank_IFSC_Code, Guardian_Family_Ration_Card_Type, 
-    Guardian_Family_Ration_Card_no, Guardian_Mobile_Number, Guardian_Date_of_Birth, Guardian_Aadhar_no, Guardian_PAN_card_no, Guardian_Residential_Address, 
-    Guardian_Occupation, Guardian_Designation, Guardian_Name_of_the_Employer, Guardian_Office_no, Guardian_Email_id, Guardian_Annual_Income, Guardian_File_Name,
-	 OfficeInfo.Father_Office_Building_no,
-    OfficeInfo.Father_Street,
-    OfficeInfo.Father_Area,
-    OfficeInfo.Father_Pincode,
-    OfficeInfo.Father_City,
-    OfficeInfo.Father_State,
-
-    -- Mother's Office Info
-    OfficeInfo.Mother_Office_Building_no,
-    OfficeInfo.Mother_Street,
-    OfficeInfo.Mother_Area,
-    OfficeInfo.Mother_Pincode,
-    OfficeInfo.Mother_City,
-    OfficeInfo.Mother_State,
-
-    -- Guardian's Office Info
-    OfficeInfo.Guardian_Office_Building_no,
-    OfficeInfo.Guardian_Street,
-    OfficeInfo.Guardian_Area,
-    OfficeInfo.Guardian_Pincode,
-    OfficeInfo.Guardian_City,
-    OfficeInfo.Guardian_State
-    ,SiblingDetails.SiblingInfo
-INTO 
-    #TempStudentDetails
-FROM 
-    tbl_StudentMaster
-LEFT JOIN tbl_StudentOtherInfo ON tbl_StudentOtherInfo.student_id = tbl_StudentMaster.student_id
-LEFT JOIN 
-    tbl_Class ON tbl_StudentMaster.class_id = tbl_Class.class_id
-LEFT JOIN 
-    tbl_Section ON tbl_StudentMaster.section_id = tbl_Section.section_id
-LEFT JOIN 
-    tbl_Gender ON tbl_StudentMaster.gender_id = tbl_Gender.Gender_id
-LEFT JOIN 
-    tbl_Religion ON tbl_StudentMaster.Religion_id = tbl_Religion.Religion_id
-LEFT JOIN 
-    tbl_Nationality ON tbl_Nationality.Nationality_id = tbl_StudentMaster.Nationality_id 
-LEFT JOIN 
-    tbl_MotherTongue ON tbl_StudentMaster.Mother_Tongue_id = tbl_MotherTongue.Mother_Tongue_id
-LEFT JOIN 
-    tbl_BloodGroup ON tbl_BloodGroup.Blood_Group_id = tbl_StudentMaster.Blood_Group_id
-LEFT JOIN 
-    tbl_CasteMaster ON tbl_CasteMaster.caste_id = tbl_StudentMaster.Caste_id
-LEFT JOIN 
-    tbl_InstituteDetails ON tbl_InstituteDetails.Institute_id = tbl_StudentMaster.Institute_id
-LEFT JOIN 
-    tbl_AcademicYear ON tbl_AcademicYear.Id = tbl_StudentMaster.Academic_year_id
-LEFT JOIN 
-    tbl_InstituteHouse ON tbl_InstituteHouse.Institute_house_id = tbl_StudentMaster.Institute_house_id
-LEFT JOIN 
-    tbl_StudentType ON tbl_StudentType.Student_Type_id = tbl_StudentMaster.StudentType_id
-LEFT JOIN 
-	tbl_StudentPreviousSchool ON tbl_StudentPreviousSchool.student_id = tbl_StudentMaster.student_id
-LEFT JOIN 
-	tbl_StudentHealthInfo ON tbl_StudentHealthInfo.Student_id = tbl_StudentMaster.student_id
-LEFT JOIN
-(
-    -- Pivot Parent Info based on Parent_Type_id
-    SELECT 
-        student_id, 
-        MAX(CASE WHEN Parent_Type_id = 1 THEN First_Name END) AS Father_First_Name,
-        MAX(CASE WHEN Parent_Type_id = 1 THEN Middle_Name END) AS Father_Middle_Name,
-        MAX(CASE WHEN Parent_Type_id = 1 THEN Last_Name END) AS Father_Last_Name,
-        MAX(CASE WHEN Parent_Type_id = 1 THEN Bank_Account_no END) AS Father_Bank_Account_no,
-        MAX(CASE WHEN Parent_Type_id = 1 THEN Bank_IFSC_Code END) AS Father_Bank_IFSC_Code,
-        MAX(CASE WHEN Parent_Type_id = 1 THEN Family_Ration_Card_Type END) AS Father_Family_Ration_Card_Type,
-        MAX(CASE WHEN Parent_Type_id = 1 THEN Family_Ration_Card_no END) AS Father_Family_Ration_Card_no,
-        MAX(CASE WHEN Parent_Type_id = 1 THEN Mobile_Number END) AS Father_Mobile_Number,
-        MAX(CASE WHEN Parent_Type_id = 1 THEN FORMAT(Date_of_Birth, 'dd-MM-yyyy') END) AS Father_Date_of_Birth,
-        MAX(CASE WHEN Parent_Type_id = 1 THEN Aadhar_no END) AS Father_Aadhar_no,
-        MAX(CASE WHEN Parent_Type_id = 1 THEN PAN_card_no END) AS Father_PAN_card_no,
-        MAX(CASE WHEN Parent_Type_id = 1 THEN Residential_Address END) AS Father_Residential_Address,
-        MAX(CASE WHEN Parent_Type_id = 1 THEN Occupation END) AS Father_Occupation,
-        MAX(CASE WHEN Parent_Type_id = 1 THEN Designation END) AS Father_Designation,
-        MAX(CASE WHEN Parent_Type_id = 1 THEN Name_of_the_Employer END) AS Father_Name_of_the_Employer,
-        MAX(CASE WHEN Parent_Type_id = 1 THEN Office_no END) AS Father_Office_no,
-        MAX(CASE WHEN Parent_Type_id = 1 THEN Email_id END) AS Father_Email_id,
-        MAX(CASE WHEN Parent_Type_id = 1 THEN Annual_Income END) AS Father_Annual_Income,
-        MAX(CASE WHEN Parent_Type_id = 1 THEN File_Name END) AS Father_File_Name,
-        
-        -- Same for Mother
-        MAX(CASE WHEN Parent_Type_id = 2 THEN First_Name END) AS Mother_First_Name,
-        MAX(CASE WHEN Parent_Type_id = 2 THEN Middle_Name END) AS Mother_Middle_Name,
-        MAX(CASE WHEN Parent_Type_id = 2 THEN Last_Name END) AS Mother_Last_Name,
-        MAX(CASE WHEN Parent_Type_id = 2 THEN Bank_Account_no END) AS Mother_Bank_Account_no,
-        MAX(CASE WHEN Parent_Type_id = 2 THEN Bank_IFSC_Code END) AS Mother_Bank_IFSC_Code,
-        MAX(CASE WHEN Parent_Type_id = 2 THEN Family_Ration_Card_Type END) AS Mother_Family_Ration_Card_Type,
-        MAX(CASE WHEN Parent_Type_id = 2 THEN Family_Ration_Card_no END) AS Mother_Family_Ration_Card_no,
-        MAX(CASE WHEN Parent_Type_id = 2 THEN Mobile_Number END) AS Mother_Mobile_Number,
-        MAX(CASE WHEN Parent_Type_id = 2 THEN FORMAT(Date_of_Birth, 'dd-MM-yyyy') END) AS Mother_Date_of_Birth,
-        MAX(CASE WHEN Parent_Type_id = 2 THEN Aadhar_no END) AS Mother_Aadhar_no,
-        MAX(CASE WHEN Parent_Type_id = 2 THEN PAN_card_no END) AS Mother_PAN_card_no,
-        MAX(CASE WHEN Parent_Type_id = 2 THEN Residential_Address END) AS Mother_Residential_Address,
-        MAX(CASE WHEN Parent_Type_id = 2 THEN Occupation END) AS Mother_Occupation,
-        MAX(CASE WHEN Parent_Type_id = 2 THEN Designation END) AS Mother_Designation,
-        MAX(CASE WHEN Parent_Type_id = 2 THEN Name_of_the_Employer END) AS Mother_Name_of_the_Employer,
-        MAX(CASE WHEN Parent_Type_id = 2 THEN Office_no END) AS Mother_Office_no,
-        MAX(CASE WHEN Parent_Type_id = 2 THEN Email_id END) AS Mother_Email_id,
-        MAX(CASE WHEN Parent_Type_id = 2 THEN Annual_Income END) AS Mother_Annual_Income,
-        MAX(CASE WHEN Parent_Type_id = 2 THEN File_Name END) AS Mother_File_Name,
-
-        -- Same for Guardian
-        MAX(CASE WHEN Parent_Type_id = 3 THEN First_Name END) AS Guardian_First_Name,
-        MAX(CASE WHEN Parent_Type_id = 3 THEN Middle_Name END) AS Guardian_Middle_Name,
-        MAX(CASE WHEN Parent_Type_id = 3 THEN Last_Name END) AS Guardian_Last_Name,
-        MAX(CASE WHEN Parent_Type_id = 3 THEN Bank_Account_no END) AS Guardian_Bank_Account_no,
-        MAX(CASE WHEN Parent_Type_id = 3 THEN Bank_IFSC_Code END) AS Guardian_Bank_IFSC_Code,
-        MAX(CASE WHEN Parent_Type_id = 3 THEN Family_Ration_Card_Type END) AS Guardian_Family_Ration_Card_Type,
-        MAX(CASE WHEN Parent_Type_id = 3 THEN Family_Ration_Card_no END) AS Guardian_Family_Ration_Card_no,
-        MAX(CASE WHEN Parent_Type_id = 3 THEN Mobile_Number END) AS Guardian_Mobile_Number,
-        MAX(CASE WHEN Parent_Type_id = 3 THEN FORMAT(Date_of_Birth, 'dd-MM-yyyy') END) AS Guardian_Date_of_Birth,
-        MAX(CASE WHEN Parent_Type_id = 3 THEN Aadhar_no END) AS Guardian_Aadhar_no,
-        MAX(CASE WHEN Parent_Type_id = 3 THEN PAN_card_no END) AS Guardian_PAN_card_no,
-        MAX(CASE WHEN Parent_Type_id = 3 THEN Residential_Address END) AS Guardian_Residential_Address,
-        MAX(CASE WHEN Parent_Type_id = 3 THEN Occupation END) AS Guardian_Occupation,
-        MAX(CASE WHEN Parent_Type_id = 3 THEN Designation END) AS Guardian_Designation,
-        MAX(CASE WHEN Parent_Type_id = 3 THEN Name_of_the_Employer END) AS Guardian_Name_of_the_Employer,
-        MAX(CASE WHEN Parent_Type_id = 3 THEN Office_no END) AS Guardian_Office_no,
-        MAX(CASE WHEN Parent_Type_id = 3 THEN Email_id END) AS Guardian_Email_id,
-        MAX(CASE WHEN Parent_Type_id = 3 THEN Annual_Income END) AS Guardian_Annual_Income,
-        MAX(CASE WHEN Parent_Type_id = 3 THEN File_Name END) AS Guardian_File_Name
-
-    FROM 
-        tbl_StudentParentsInfo
-    GROUP BY 
-        student_id
-) ParentInfo
-ON ParentInfo.student_id = tbl_StudentMaster.student_id
-LEFT JOIN
-(
-    SELECT 
-        student_id,
-        -- Father's Office Info
-        MAX(CASE WHEN Parents_Type_id = 1 THEN Office_Building_no END) AS Father_Office_Building_no,
-        MAX(CASE WHEN Parents_Type_id = 1 THEN Street END) AS Father_Street,
-        MAX(CASE WHEN Parents_Type_id = 1 THEN Area END) AS Father_Area,
-        MAX(CASE WHEN Parents_Type_id = 1 THEN Pincode END) AS Father_Pincode,
-        MAX(CASE WHEN Parents_Type_id = 1 THEN City END) AS Father_City,
-        MAX(CASE WHEN Parents_Type_id = 1 THEN State END) AS Father_State,
-
-        -- Mother's Office Info
-        MAX(CASE WHEN Parents_Type_id = 2 THEN Office_Building_no END) AS Mother_Office_Building_no,
-        MAX(CASE WHEN Parents_Type_id = 2 THEN Street END) AS Mother_Street,
-        MAX(CASE WHEN Parents_Type_id = 2 THEN Area END) AS Mother_Area,
-        MAX(CASE WHEN Parents_Type_id = 2 THEN Pincode END) AS Mother_Pincode,
-        MAX(CASE WHEN Parents_Type_id = 2 THEN City END) AS Mother_City,
-        MAX(CASE WHEN Parents_Type_id = 2 THEN State END) AS Mother_State,
-
-        -- Guardian's Office Info
-        MAX(CASE WHEN Parents_Type_id = 3 THEN Office_Building_no END) AS Guardian_Office_Building_no,
-        MAX(CASE WHEN Parents_Type_id = 3 THEN Street END) AS Guardian_Street,
-        MAX(CASE WHEN Parents_Type_id = 3 THEN Area END) AS Guardian_Area,
-        MAX(CASE WHEN Parents_Type_id = 3 THEN Pincode END) AS Guardian_Pincode,
-        MAX(CASE WHEN Parents_Type_id = 3 THEN City END) AS Guardian_City,
-        MAX(CASE WHEN Parents_Type_id = 3 THEN State END) AS Guardian_State
-    FROM tbl_StudentParentsOfficeInfo
-    GROUP BY student_id
-) OfficeInfo ON OfficeInfo.student_id = tbl_StudentMaster.student_id
-LEFT JOIN (
-    SELECT 
-        ss.Student_id,
+        SELECT 
+            tbl_StudentMaster.student_id, 
+            tbl_StudentMaster.First_Name, 
+            tbl_StudentMaster.Middle_Name, 
+            tbl_StudentMaster.Last_Name, 
+            tbl_StudentMaster.gender_id, 
+            Gender_Type, 
+            tbl_Class.class_id, 
+            class_name , 
+            tbl_Section.section_id, 
+            section_name, 
+            [Admission_Number], 
+            [Roll_Number],
+            FORMAT([Date_of_Joining], 'dd-MM-yyyy') AS Date_of_Joining, 
+            AcademicYearCode, 
+            'AY' + RIGHT(YEAR(tbl_AcademicInfo.AcademicYearStartMonth), 2) + RIGHT(YEAR(tbl_AcademicInfo.AcademicYearEndMonth), 2) AS YearName,
+            tbl_StudentMaster.Nationality_id, 
+            Nationality_Type, 
+            tbl_Religion.Religion_id, 
+            Religion_Type, 
+            FORMAT(tbl_StudentMaster.Date_of_Birth, 'dd-MM-yyyy') AS Date_of_Birth, 
+            tbl_StudentMaster.Mother_Tongue_id, 
+            Mother_Tongue_Name, 
+            tbl_StudentMaster.Caste_id, 
+            caste_type,
+            tbl_StudentMaster.Blood_Group_id, 
+            Blood_Group_Type, 
+            [Aadhar_Number], 
+            [PEN], 
+            [QR_code], 
+            [IsPhysicallyChallenged],
+            [IsSports], 
+            [IsAided], 
+            [IsNCC], 
+            [IsNSS], 
+            [IsScout], 
+            tbl_StudentMaster.File_Name, 
+            [isActive], 
+            tbl_StudentMaster.StudentType_id, 
+            Student_Type_Name,
+            tbl_InstituteHouse.Institute_House_id AS Student_House_id, 
+            tbl_InstituteHouse.HouseName AS Student_House_Name,
+            [Student_Other_Info_id],
+            [email_id], 
+            [Identification_Mark_1],
+            [Identification_Mark_2], 
+            FORMAT([Admission_Date], 'dd-MM-yyyy') AS Admission_Date, 
+            FORMAT([Register_Date], 'dd-MM-yyyy') AS Register_Date, 
+            [Register_Number], 
+            [samagra_ID], 
+            [Place_of_Birth], 
+            [comments], 
+            [language_known],
+            [Student_Prev_School_id], 
+            [Previous_School_Name], 
+            [Previous_Board], 
+            [Previous_Medium], 
+            [Previous_School_Address], 
+            [previous_School_Course], 
+            [Previous_Class], 
+            [TC_number], 
+            FORMAT([TC_date], 'dd-MM-yyyy') AS TC_date, 
+            [isTC_Submitted],
+            [Student_Health_Info_id]
+            ,[Allergies]
+            ,[Medications]
+            ,[Doctor_Name]
+            ,[Doctor_Phone_no]
+            ,[height]
+            ,[weight]
+            ,[Government_ID]
+            ,[Chest]
+            ,[Physical_Deformity]
+            ,[History_Majorillness]
+            ,[History_Accident]
+            ,[Vision]
+            ,[Hearing]
+            ,[Speech]
+            ,[Behavioral_Problem]
+            ,[Remarks_Weakness]
+            ,[Student_Name]
+            ,[Student_Age]
+            ,[Admission_Status]
+        INTO 
+            #TempStudentDetails
+        FROM 
+            tbl_StudentMaster
+        LEFT JOIN tbl_StudentOtherInfo ON tbl_StudentOtherInfo.student_id = tbl_StudentMaster.student_id
+        LEFT JOIN 
+            tbl_Class ON tbl_StudentMaster.class_id = tbl_Class.class_id
+        LEFT JOIN 
+            tbl_Section ON tbl_StudentMaster.section_id = tbl_Section.section_id
+        LEFT JOIN 
+            tbl_Gender ON tbl_StudentMaster.gender_id = tbl_Gender.Gender_id
+        LEFT JOIN 
+            tbl_Religion ON tbl_StudentMaster.Religion_id = tbl_Religion.Religion_id
+        LEFT JOIN 
+            tbl_Nationality ON tbl_Nationality.Nationality_id = tbl_StudentMaster.Nationality_id 
+        LEFT JOIN 
+            tbl_MotherTongue ON tbl_StudentMaster.Mother_Tongue_id = tbl_MotherTongue.Mother_Tongue_id
+        LEFT JOIN 
+            tbl_BloodGroup ON tbl_BloodGroup.Blood_Group_id = tbl_StudentMaster.Blood_Group_id
+        LEFT JOIN 
+            tbl_CasteMaster ON tbl_CasteMaster.caste_id = tbl_StudentMaster.Caste_id
+        LEFT JOIN 
+            tbl_InstituteDetails ON tbl_InstituteDetails.Institute_id = tbl_StudentMaster.Institute_id
+        LEFT JOIN 
+            tbl_AcademicInfo ON tbl_AcademicInfo.AcaInfoYearCode = tbl_StudentMaster.AcademicYearCode
+        LEFT JOIN 
+            tbl_InstituteHouse ON tbl_InstituteHouse.Institute_house_id = tbl_StudentMaster.Institute_house_id
+        LEFT JOIN 
+            tbl_StudentType ON tbl_StudentType.Student_Type_id = tbl_StudentMaster.StudentType_id
+        LEFT JOIN 
+            tbl_StudentPreviousSchool ON tbl_StudentPreviousSchool.student_id = tbl_StudentMaster.student_id
+        LEFT JOIN 
+            tbl_StudentHealthInfo ON tbl_StudentHealthInfo.Student_id = tbl_StudentMaster.student_id
+        LEFT JOIN
         (
-             SELECT 
-                ss2.Student_Siblings_id ,
-                ss2.Name,
-                ss2.Middle_Name ,
-                ss2.Last_Name ,
-                ss2.Class,
-                ss2.Section AS section,
-                FORMAT(ss2.Date_of_Birth, 'dd-MM-yyyy') AS Date_of_Birth,
-                ss2.Aadhar_no
-            FROM tbl_StudentSiblings ss2
-            WHERE ss2.Student_id = ss.Student_id
-            FOR JSON PATH
-        ) AS SiblingInfo
-    FROM tbl_StudentSiblings ss
-    GROUP BY ss.Student_id
-) AS SiblingDetails ON SiblingDetails.Student_id = tbl_StudentMaster.student_id
-where tbl_StudentMaster.Institute_id = @InstituteId
-    AND (tbl_StudentMaster.Class_id = @class_id OR @class_id = 0)
-    AND (tbl_StudentMaster.Section_id = @section_id OR @section_id = 0) 
-    AND (tbl_StudentMaster.Academic_year_id = @Academic_year_id OR @Academic_year_id = 0)
-    AND (tbl_StudentMaster.StudentType_id = @StudentType_id OR @StudentType_id = 0)
-    AND tbl_StudentMaster.isActive = @isActive;
+            -- Pivot Parent Info based on Parent_Type_id
+            SELECT 
+                student_id, 
+                MAX(CASE WHEN Parent_Type_id = 1 THEN First_Name END) AS Father_First_Name,
+                MAX(CASE WHEN Parent_Type_id = 1 THEN Middle_Name END) AS Father_Middle_Name,
+                MAX(CASE WHEN Parent_Type_id = 1 THEN Last_Name END) AS Father_Last_Name,
+                MAX(CASE WHEN Parent_Type_id = 1 THEN Bank_Account_no END) AS Father_Bank_Account_no,
+                MAX(CASE WHEN Parent_Type_id = 1 THEN Bank_IFSC_Code END) AS Father_Bank_IFSC_Code,
+                MAX(CASE WHEN Parent_Type_id = 1 THEN Family_Ration_Card_Type END) AS Father_Family_Ration_Card_Type,
+                MAX(CASE WHEN Parent_Type_id = 1 THEN Family_Ration_Card_no END) AS Father_Family_Ration_Card_no,
+                MAX(CASE WHEN Parent_Type_id = 1 THEN Mobile_Number END) AS Father_Mobile_Number,
+                MAX(CASE WHEN Parent_Type_id = 1 THEN FORMAT(Date_of_Birth, 'dd-MM-yyyy') END) AS Father_Date_of_Birth,
+                MAX(CASE WHEN Parent_Type_id = 1 THEN Aadhar_no END) AS Father_Aadhar_no,
+                MAX(CASE WHEN Parent_Type_id = 1 THEN PAN_card_no END) AS Father_PAN_card_no,
+                MAX(CASE WHEN Parent_Type_id = 1 THEN Residential_Address END) AS Father_Residential_Address,
+                MAX(CASE WHEN Parent_Type_id = 1 THEN Occupation END) AS Father_Occupation,
+                MAX(CASE WHEN Parent_Type_id = 1 THEN Designation END) AS Father_Designation,
+                MAX(CASE WHEN Parent_Type_id = 1 THEN Name_of_the_Employer END) AS Father_Name_of_the_Employer,
+                MAX(CASE WHEN Parent_Type_id = 1 THEN Office_no END) AS Father_Office_no,
+                MAX(CASE WHEN Parent_Type_id = 1 THEN Email_id END) AS Father_Email_id,
+                MAX(CASE WHEN Parent_Type_id = 1 THEN Annual_Income END) AS Father_Annual_Income,
+                MAX(CASE WHEN Parent_Type_id = 1 THEN File_Name END) AS Father_File_Name
+        ) ParentInfo ON ParentInfo.student_id = tbl_StudentMaster.student_id
+        WHERE 
+            tbl_StudentMaster.Institute_id = @InstituteId
+            AND (tbl_StudentMaster.Class_id = @class_id OR @class_id = 0)
+            AND (tbl_StudentMaster.Section_id = @section_id OR @section_id = 0) 
+            AND (tbl_StudentMaster.AcademicYearCode = @AcademicYearCode OR @AcademicYearCode = '')
+            AND (tbl_StudentMaster.StudentType_id = @StudentType_id OR @StudentType_id = 0)
+            AND tbl_StudentMaster.isActive = @isActive;
 
+        -- Query the temporary table with sorting and pagination
+        SELECT 
+            *
+        FROM 
+            #TempStudentDetails
+        ORDER BY 
+            {obj.sortField} {obj.sortDirection}, 
+            student_id
+        OFFSET 
+            @Offset ROWS
+        FETCH NEXT 
+            @PageSize ROWS ONLY;
 
+        -- Get the total count of records
+        SELECT 
+            COUNT(1) 
+        FROM 
+            tbl_StudentMaster
+        WHERE 
+            tbl_StudentMaster.Institute_id = @InstituteId
+            AND (tbl_StudentMaster.Class_id = @class_id OR @class_id = 0)
+            AND (tbl_StudentMaster.Section_id = @section_id OR @section_id = 0) 
+            AND (tbl_StudentMaster.AcademicYearCode = @AcademicYearCode OR @AcademicYearCode = '')
+            AND (tbl_StudentMaster.StudentType_id = @StudentType_id OR @StudentType_id = 0)
+            AND tbl_StudentMaster.isActive = @isActive;
+        ";
 
---select * from #TempStudentDetails
-
-
-
- DECLARE @ColumnNames NVARCHAR(MAX);
-DECLARE @SQL NVARCHAR(MAX);
-DECLARE @StudentSiblingColumns NVARCHAR(MAX);
-
-
--- Get the comma-separated column names into the variable
-SELECT @ColumnNames = STRING_AGG(ss.DbColumnName, ', ')
-FROM tblStudentSetting ss
-WHERE ss.Institute_id = 1 AND ss.IsActive = 1 AND categoryId = 1;
-SET @SQL = N'SELECT ' + @ColumnNames + ' FROM #TempStudentDetails ';
-
-SELECT @StudentSiblingColumns = STRING_AGG(
-    CASE 
-        WHEN ss.DbColumnName = 'Name' THEN 'SiblingData.[Name] AS Sibling_FirstName'
-        WHEN ss.DbColumnName = 'Middle_Name' THEN 'SiblingData.[Middle_Name] AS Sibling_MiddleName'
-        WHEN ss.DbColumnName = 'Last_Name' THEN 'SiblingData.[Last_Name] AS Sibling_LastName'
-        WHEN ss.DbColumnName = 'Class' THEN 'SiblingData.[Class] AS Sibling_Class'
-        WHEN ss.DbColumnName = 'Section' THEN 'SiblingData.[Section] AS Sibling_Section'
-        WHEN ss.DbColumnName = 'DateOfBirth' THEN 'SiblingData.[DateOfBirth] AS Sibling_DateOfBirth'
-        WHEN ss.DbColumnName = 'AadharNo' THEN 'SiblingData.[AadharNo] AS Sibling_AadharNo'
-        -- Add more cases for other sibling-related columns here
-    END, ', '
-)
-FROM tblStudentSetting ss
-WHERE ss.Institute_id = 1 AND ss.IsActive = 1 AND categoryId = 7;
-
-SET @SQL = N'SELECT ' + @ColumnNames + '
-FROM #TempStudentDetails ORDER BY 
-    {obj.sortField} {obj.sortDirection}, 
-    student_id
-OFFSET 
-    @Offset ROWS
-FETCH NEXT 
-    @PageSize ROWS ONLY;';
-
-	EXEC sp_executesql @SQL, 
-    N'@Offset INT, @PageSize INT', 
-    @Offset = @Offset, 
-    @PageSize = @PageSize;
-
--- Get the total count of records
-SELECT 
-    COUNT(1) 
-FROM 
-   tbl_StudentMaster
- where tbl_StudentMaster.Institute_id = @InstituteId
-    AND (tbl_StudentMaster.Class_id = @class_id OR @class_id = 0)
-    AND (tbl_StudentMaster.Section_id = @section_id OR @section_id = 0) 
-    AND (tbl_StudentMaster.Academic_year_id = @Academic_year_id OR @Academic_year_id = 0)
-    AND (tbl_StudentMaster.StudentType_id = @StudentType_id OR @StudentType_id = 0)
-    AND tbl_StudentMaster.isActive = @isActive;
-
-";
-
-                using (var result = await _connection.QueryMultipleAsync(sql, new { InstituteId = obj.Institute_id, Offset = offset, PageSize = actualPageSize, class_id = obj.class_id, section_id = obj.section_id, Academic_year_id = obj.Academic_year_id, isActive = obj.isActive, StudentType_id = obj.StudentType_id }))
+                using (var result = await _connection.QueryMultipleAsync(sql, new { InstituteId = obj.Institute_id, Offset = offset, PageSize = actualPageSize, class_id = obj.class_id, section_id = obj.section_id, AcademicYearCode = obj.AcademicYearCode, StudentType_id = obj.StudentType_id }))
                 {
+                    // Read the student details list
                     var studentDetailsList = (await result.ReadAsync<dynamic>()).ToList();
 
-                    int? totalRecords = (obj.pageSize.HasValue && obj.pageNumber.HasValue) == true ? result.ReadSingle<int>() : null;
+                    // Read the total record count
+                    int totalRecords = await result.ReadSingleAsync<int>();
 
+                    // Process the student details if needed
                     var studentDetailsDict = studentDetailsList.ToDictionary(sd => sd.student_id);
 
-
+                    // Return the successful response
                     return new ServiceResponse<List<dynamic>>(true, "Operation successful", studentDetailsList, 200, totalRecords);
                 }
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<List<dynamic>>(false, "Some error occured", null, 500);
-
+                // Handle errors and return failure response
+                return new ServiceResponse<List<dynamic>>(false, "Some error occurred: " + ex.Message, null, 500);
             }
         }
+
+
+        //public async Task<ServiceResponse<List<dynamic>>> GetAllStudentDetailsData1(GetStudentRequestModel obj)
+        //{
+        //    try
+        //    {
+        //        const int MaxPageSize = int.MaxValue;
+        //        int actualPageSize = obj.pageSize ?? MaxPageSize;
+        //        int actualPageNumber = obj.pageNumber ?? 1;
+        //        int offset = (actualPageNumber - 1) * actualPageSize;
+        //        var allowedSortFields = new List<string> { "First_Name", "Admission_Number", "Date_of_Joining", "Roll_Number" };
+        //        var allowedSortDirections = new List<string> { "ASC", "DESC" };
+
+        //        // Validate sort field and direction
+        //        if (!allowedSortFields.Contains(obj.sortField))
+        //        {
+        //            obj.sortField = "First_Name";
+        //        }
+
+        //        obj.sortDirection = obj.sortDirection?.ToUpper() ?? "ASC";
+        //        if (!allowedSortDirections.Contains(obj.sortDirection))
+        //        {
+        //            obj.sortDirection = "ASC";
+        //        }
+
+        //        // SQL query with joins to retrieve the required data
+        //        string sql = $@"
+        //        -- Base query for fetching student details with filters, sorting, and pagination
+        //IF OBJECT_ID('tempdb..#TempStudentDetails') IS NOT NULL DROP TABLE #TempStudentDetails;
+
+        //SELECT 
+        //    tbl_StudentMaster.student_id, 
+        //    tbl_StudentMaster.First_Name, 
+        //    tbl_StudentMaster.Middle_Name, 
+        //    tbl_StudentMaster.Last_Name, 
+        //    tbl_StudentMaster.gender_id, 
+        //    Gender_Type, 
+        //    tbl_Class.class_id, 
+        //    class_name , 
+        //    tbl_Section.section_id, 
+        //    section_name, 
+        //    [Admission_Number], 
+        //    [Roll_Number],
+        //    FORMAT([Date_of_Joining], 'dd-MM-yyyy') AS Date_of_Joining, 
+        //    AcademicYearCode, 
+        //    --tbl_AcademicYear.YearName, 
+        //    'AY' + RIGHT(YEAR(tbl_AcademicInfo.AcademicYearStartMonth), 2) + RIGHT(YEAR(tbl_AcademicInfo.AcademicYearEndMonth), 2) AS YearName,
+        //    tbl_StudentMaster.Nationality_id, 
+        //    Nationality_Type, 
+        //    tbl_Religion.Religion_id, 
+        //    Religion_Type, 
+        //    FORMAT(tbl_StudentMaster.Date_of_Birth, 'dd-MM-yyyy') AS Date_of_Birth, 
+        //    tbl_StudentMaster.Mother_Tongue_id, 
+        //    Mother_Tongue_Name, 
+        //    tbl_StudentMaster.Caste_id, 
+        //    caste_type,
+        //    tbl_StudentMaster.Blood_Group_id, 
+        //    Blood_Group_Type, 
+        //    [Aadhar_Number], 
+        //    [PEN], 
+        //    [QR_code], 
+        //    [IsPhysicallyChallenged],
+        //    [IsSports], 
+        //    [IsAided], 
+        //    [IsNCC], 
+        //    [IsNSS], 
+        //    [IsScout], 
+        //    tbl_StudentMaster.File_Name, 
+        //    [isActive], 
+        //    tbl_StudentMaster.StudentType_id, 
+        //    Student_Type_Name,
+        //    tbl_InstituteHouse.Institute_House_id AS Student_House_id, 
+        //    tbl_InstituteHouse.HouseName AS Student_House_Name,
+        //	[Student_Other_Info_id],
+        //	[email_id], 
+        //    [Identification_Mark_1],
+        //    [Identification_Mark_2], 
+        //    FORMAT([Admission_Date], 'dd-MM-yyyy') AS Admission_Date, 
+        //    FORMAT([Register_Date], 'dd-MM-yyyy') AS Register_Date, 
+        //    [Register_Number], 
+        //    [samagra_ID], 
+        //    [Place_of_Birth], 
+        //    [comments], 
+        //    [language_known],
+        //    [Student_Prev_School_id], 
+        //    [Previous_School_Name], 
+        //    [Previous_Board], 
+        //    [Previous_Medium], 
+        //    [Previous_School_Address], 
+        //    [previous_School_Course], 
+        //    [Previous_Class], 
+        //    [TC_number], 
+        //    FORMAT([TC_date], 'dd-MM-yyyy') AS TC_date, 
+        //    [isTC_Submitted],
+        //    [Student_Health_Info_id]
+        //	 ,[Allergies]
+        //      ,[Medications]
+        //      ,[Doctor_Name]
+        //      ,[Doctor_Phone_no]
+        //      ,[height]
+        //      ,[weight]
+        //      ,[Government_ID]
+        //      ,[Chest]
+        //      ,[Physical_Deformity]
+        //      ,[History_Majorillness]
+        //      ,[History_Accident]
+        //      ,[Vision]
+        //      ,[Hearing]
+        //      ,[Speech]
+        //      ,[Behavioral_Problem]
+        //      ,[Remarks_Weakness]
+        //      ,[Student_Name]
+        //      ,[Student_Age]
+        //      ,[Admission_Status]
+        //    -- Parent details dynamically included
+        //    Father_First_Name, Father_Middle_Name, Father_Last_Name, Father_Bank_Account_no, Father_Bank_IFSC_Code, Father_Family_Ration_Card_Type, 
+        //    Father_Family_Ration_Card_no, Father_Mobile_Number, Father_Date_of_Birth, Father_Aadhar_no, Father_PAN_card_no, Father_Residential_Address, 
+        //    Father_Occupation, Father_Designation, Father_Name_of_the_Employer, Father_Office_no, Father_Email_id, Father_Annual_Income, Father_File_Name, 
+        //    Mother_First_Name, Mother_Middle_Name, Mother_Last_Name, Mother_Bank_Account_no, Mother_Bank_IFSC_Code, Mother_Family_Ration_Card_Type, 
+        //    Mother_Family_Ration_Card_no, Mother_Mobile_Number, Mother_Date_of_Birth, Mother_Aadhar_no, Mother_PAN_card_no, Mother_Residential_Address, 
+        //    Mother_Occupation, Mother_Designation, Mother_Name_of_the_Employer, Mother_Office_no, Mother_Email_id, Mother_Annual_Income, Mother_File_Name, 
+        //    Guardian_First_Name, Guardian_Middle_Name, Guardian_Last_Name, Guardian_Bank_Account_no, Guardian_Bank_IFSC_Code, Guardian_Family_Ration_Card_Type, 
+        //    Guardian_Family_Ration_Card_no, Guardian_Mobile_Number, Guardian_Date_of_Birth, Guardian_Aadhar_no, Guardian_PAN_card_no, Guardian_Residential_Address, 
+        //    Guardian_Occupation, Guardian_Designation, Guardian_Name_of_the_Employer, Guardian_Office_no, Guardian_Email_id, Guardian_Annual_Income, Guardian_File_Name,
+        //	 OfficeInfo.Father_Office_Building_no,
+        //    OfficeInfo.Father_Street,
+        //    OfficeInfo.Father_Area,
+        //    OfficeInfo.Father_Pincode,
+        //    OfficeInfo.Father_City,
+        //    OfficeInfo.Father_State,
+
+        //    -- Mother's Office Info
+        //    OfficeInfo.Mother_Office_Building_no,
+        //    OfficeInfo.Mother_Street,
+        //    OfficeInfo.Mother_Area,
+        //    OfficeInfo.Mother_Pincode,
+        //    OfficeInfo.Mother_City,
+        //    OfficeInfo.Mother_State,
+
+        //    -- Guardian's Office Info
+        //    OfficeInfo.Guardian_Office_Building_no,
+        //    OfficeInfo.Guardian_Street,
+        //    OfficeInfo.Guardian_Area,
+        //    OfficeInfo.Guardian_Pincode,
+        //    OfficeInfo.Guardian_City,
+        //    OfficeInfo.Guardian_State
+        //    ,SiblingDetails.SiblingInfo
+        //INTO 
+        //    #TempStudentDetails
+        //FROM 
+        //    tbl_StudentMaster
+        //LEFT JOIN tbl_StudentOtherInfo ON tbl_StudentOtherInfo.student_id = tbl_StudentMaster.student_id
+        //LEFT JOIN 
+        //    tbl_Class ON tbl_StudentMaster.class_id = tbl_Class.class_id
+        //LEFT JOIN 
+        //    tbl_Section ON tbl_StudentMaster.section_id = tbl_Section.section_id
+        //LEFT JOIN 
+        //    tbl_Gender ON tbl_StudentMaster.gender_id = tbl_Gender.Gender_id
+        //LEFT JOIN 
+        //    tbl_Religion ON tbl_StudentMaster.Religion_id = tbl_Religion.Religion_id
+        //LEFT JOIN 
+        //    tbl_Nationality ON tbl_Nationality.Nationality_id = tbl_StudentMaster.Nationality_id 
+        //LEFT JOIN 
+        //    tbl_MotherTongue ON tbl_StudentMaster.Mother_Tongue_id = tbl_MotherTongue.Mother_Tongue_id
+        //LEFT JOIN 
+        //    tbl_BloodGroup ON tbl_BloodGroup.Blood_Group_id = tbl_StudentMaster.Blood_Group_id
+        //LEFT JOIN 
+        //    tbl_CasteMaster ON tbl_CasteMaster.caste_id = tbl_StudentMaster.Caste_id
+        //LEFT JOIN 
+        //    tbl_InstituteDetails ON tbl_InstituteDetails.Institute_id = tbl_StudentMaster.Institute_id
+        //LEFT JOIN 
+        //    --tbl_AcademicYear ON tbl_AcademicYear.Id = tbl_StudentMaster.AcademicYearCode
+        //    tbl_AcademicInfo ON tbl_AcademicInfo.AcaInfoYearCode = tbl_StudentMaster.AcademicYearCode
+        //LEFT JOIN 
+        //    tbl_InstituteHouse ON tbl_InstituteHouse.Institute_house_id = tbl_StudentMaster.Institute_house_id
+        //LEFT JOIN 
+        //    tbl_StudentType ON tbl_StudentType.Student_Type_id = tbl_StudentMaster.StudentType_id
+        //LEFT JOIN 
+        //	tbl_StudentPreviousSchool ON tbl_StudentPreviousSchool.student_id = tbl_StudentMaster.student_id
+        //LEFT JOIN 
+        //	tbl_StudentHealthInfo ON tbl_StudentHealthInfo.Student_id = tbl_StudentMaster.student_id
+        //LEFT JOIN
+        //(
+        //    -- Pivot Parent Info based on Parent_Type_id
+        //    SELECT 
+        //        student_id, 
+        //        MAX(CASE WHEN Parent_Type_id = 1 THEN First_Name END) AS Father_First_Name,
+        //        MAX(CASE WHEN Parent_Type_id = 1 THEN Middle_Name END) AS Father_Middle_Name,
+        //        MAX(CASE WHEN Parent_Type_id = 1 THEN Last_Name END) AS Father_Last_Name,
+        //        MAX(CASE WHEN Parent_Type_id = 1 THEN Bank_Account_no END) AS Father_Bank_Account_no,
+        //        MAX(CASE WHEN Parent_Type_id = 1 THEN Bank_IFSC_Code END) AS Father_Bank_IFSC_Code,
+        //        MAX(CASE WHEN Parent_Type_id = 1 THEN Family_Ration_Card_Type END) AS Father_Family_Ration_Card_Type,
+        //        MAX(CASE WHEN Parent_Type_id = 1 THEN Family_Ration_Card_no END) AS Father_Family_Ration_Card_no,
+        //        MAX(CASE WHEN Parent_Type_id = 1 THEN Mobile_Number END) AS Father_Mobile_Number,
+        //        MAX(CASE WHEN Parent_Type_id = 1 THEN FORMAT(Date_of_Birth, 'dd-MM-yyyy') END) AS Father_Date_of_Birth,
+        //        MAX(CASE WHEN Parent_Type_id = 1 THEN Aadhar_no END) AS Father_Aadhar_no,
+        //        MAX(CASE WHEN Parent_Type_id = 1 THEN PAN_card_no END) AS Father_PAN_card_no,
+        //        MAX(CASE WHEN Parent_Type_id = 1 THEN Residential_Address END) AS Father_Residential_Address,
+        //        MAX(CASE WHEN Parent_Type_id = 1 THEN Occupation END) AS Father_Occupation,
+        //        MAX(CASE WHEN Parent_Type_id = 1 THEN Designation END) AS Father_Designation,
+        //        MAX(CASE WHEN Parent_Type_id = 1 THEN Name_of_the_Employer END) AS Father_Name_of_the_Employer,
+        //        MAX(CASE WHEN Parent_Type_id = 1 THEN Office_no END) AS Father_Office_no,
+        //        MAX(CASE WHEN Parent_Type_id = 1 THEN Email_id END) AS Father_Email_id,
+        //        MAX(CASE WHEN Parent_Type_id = 1 THEN Annual_Income END) AS Father_Annual_Income,
+        //        MAX(CASE WHEN Parent_Type_id = 1 THEN File_Name END) AS Father_File_Name,
+
+        //        -- Same for Mother
+        //        MAX(CASE WHEN Parent_Type_id = 2 THEN First_Name END) AS Mother_First_Name,
+        //        MAX(CASE WHEN Parent_Type_id = 2 THEN Middle_Name END) AS Mother_Middle_Name,
+        //        MAX(CASE WHEN Parent_Type_id = 2 THEN Last_Name END) AS Mother_Last_Name,
+        //        MAX(CASE WHEN Parent_Type_id = 2 THEN Bank_Account_no END) AS Mother_Bank_Account_no,
+        //        MAX(CASE WHEN Parent_Type_id = 2 THEN Bank_IFSC_Code END) AS Mother_Bank_IFSC_Code,
+        //        MAX(CASE WHEN Parent_Type_id = 2 THEN Family_Ration_Card_Type END) AS Mother_Family_Ration_Card_Type,
+        //        MAX(CASE WHEN Parent_Type_id = 2 THEN Family_Ration_Card_no END) AS Mother_Family_Ration_Card_no,
+        //        MAX(CASE WHEN Parent_Type_id = 2 THEN Mobile_Number END) AS Mother_Mobile_Number,
+        //        MAX(CASE WHEN Parent_Type_id = 2 THEN FORMAT(Date_of_Birth, 'dd-MM-yyyy') END) AS Mother_Date_of_Birth,
+        //        MAX(CASE WHEN Parent_Type_id = 2 THEN Aadhar_no END) AS Mother_Aadhar_no,
+        //        MAX(CASE WHEN Parent_Type_id = 2 THEN PAN_card_no END) AS Mother_PAN_card_no,
+        //        MAX(CASE WHEN Parent_Type_id = 2 THEN Residential_Address END) AS Mother_Residential_Address,
+        //        MAX(CASE WHEN Parent_Type_id = 2 THEN Occupation END) AS Mother_Occupation,
+        //        MAX(CASE WHEN Parent_Type_id = 2 THEN Designation END) AS Mother_Designation,
+        //        MAX(CASE WHEN Parent_Type_id = 2 THEN Name_of_the_Employer END) AS Mother_Name_of_the_Employer,
+        //        MAX(CASE WHEN Parent_Type_id = 2 THEN Office_no END) AS Mother_Office_no,
+        //        MAX(CASE WHEN Parent_Type_id = 2 THEN Email_id END) AS Mother_Email_id,
+        //        MAX(CASE WHEN Parent_Type_id = 2 THEN Annual_Income END) AS Mother_Annual_Income,
+        //        MAX(CASE WHEN Parent_Type_id = 2 THEN File_Name END) AS Mother_File_Name,
+
+        //        -- Same for Guardian
+        //        MAX(CASE WHEN Parent_Type_id = 3 THEN First_Name END) AS Guardian_First_Name,
+        //        MAX(CASE WHEN Parent_Type_id = 3 THEN Middle_Name END) AS Guardian_Middle_Name,
+        //        MAX(CASE WHEN Parent_Type_id = 3 THEN Last_Name END) AS Guardian_Last_Name,
+        //        MAX(CASE WHEN Parent_Type_id = 3 THEN Bank_Account_no END) AS Guardian_Bank_Account_no,
+        //        MAX(CASE WHEN Parent_Type_id = 3 THEN Bank_IFSC_Code END) AS Guardian_Bank_IFSC_Code,
+        //        MAX(CASE WHEN Parent_Type_id = 3 THEN Family_Ration_Card_Type END) AS Guardian_Family_Ration_Card_Type,
+        //        MAX(CASE WHEN Parent_Type_id = 3 THEN Family_Ration_Card_no END) AS Guardian_Family_Ration_Card_no,
+        //        MAX(CASE WHEN Parent_Type_id = 3 THEN Mobile_Number END) AS Guardian_Mobile_Number,
+        //        MAX(CASE WHEN Parent_Type_id = 3 THEN FORMAT(Date_of_Birth, 'dd-MM-yyyy') END) AS Guardian_Date_of_Birth,
+        //        MAX(CASE WHEN Parent_Type_id = 3 THEN Aadhar_no END) AS Guardian_Aadhar_no,
+        //        MAX(CASE WHEN Parent_Type_id = 3 THEN PAN_card_no END) AS Guardian_PAN_card_no,
+        //        MAX(CASE WHEN Parent_Type_id = 3 THEN Residential_Address END) AS Guardian_Residential_Address,
+        //        MAX(CASE WHEN Parent_Type_id = 3 THEN Occupation END) AS Guardian_Occupation,
+        //        MAX(CASE WHEN Parent_Type_id = 3 THEN Designation END) AS Guardian_Designation,
+        //        MAX(CASE WHEN Parent_Type_id = 3 THEN Name_of_the_Employer END) AS Guardian_Name_of_the_Employer,
+        //        MAX(CASE WHEN Parent_Type_id = 3 THEN Office_no END) AS Guardian_Office_no,
+        //        MAX(CASE WHEN Parent_Type_id = 3 THEN Email_id END) AS Guardian_Email_id,
+        //        MAX(CASE WHEN Parent_Type_id = 3 THEN Annual_Income END) AS Guardian_Annual_Income,
+        //        MAX(CASE WHEN Parent_Type_id = 3 THEN File_Name END) AS Guardian_File_Name
+
+        //    FROM 
+        //        tbl_StudentParentsInfo
+        //    GROUP BY 
+        //        student_id
+        //) ParentInfo
+        //ON ParentInfo.student_id = tbl_StudentMaster.student_id
+        //LEFT JOIN
+        //(
+        //    SELECT 
+        //        student_id,
+        //        -- Father's Office Info
+        //        MAX(CASE WHEN Parents_Type_id = 1 THEN Office_Building_no END) AS Father_Office_Building_no,
+        //        MAX(CASE WHEN Parents_Type_id = 1 THEN Street END) AS Father_Street,
+        //        MAX(CASE WHEN Parents_Type_id = 1 THEN Area END) AS Father_Area,
+        //        MAX(CASE WHEN Parents_Type_id = 1 THEN Pincode END) AS Father_Pincode,
+        //        MAX(CASE WHEN Parents_Type_id = 1 THEN City END) AS Father_City,
+        //        MAX(CASE WHEN Parents_Type_id = 1 THEN State END) AS Father_State,
+
+        //        -- Mother's Office Info
+        //        MAX(CASE WHEN Parents_Type_id = 2 THEN Office_Building_no END) AS Mother_Office_Building_no,
+        //        MAX(CASE WHEN Parents_Type_id = 2 THEN Street END) AS Mother_Street,
+        //        MAX(CASE WHEN Parents_Type_id = 2 THEN Area END) AS Mother_Area,
+        //        MAX(CASE WHEN Parents_Type_id = 2 THEN Pincode END) AS Mother_Pincode,
+        //        MAX(CASE WHEN Parents_Type_id = 2 THEN City END) AS Mother_City,
+        //        MAX(CASE WHEN Parents_Type_id = 2 THEN State END) AS Mother_State,
+
+        //        -- Guardian's Office Info
+        //        MAX(CASE WHEN Parents_Type_id = 3 THEN Office_Building_no END) AS Guardian_Office_Building_no,
+        //        MAX(CASE WHEN Parents_Type_id = 3 THEN Street END) AS Guardian_Street,
+        //        MAX(CASE WHEN Parents_Type_id = 3 THEN Area END) AS Guardian_Area,
+        //        MAX(CASE WHEN Parents_Type_id = 3 THEN Pincode END) AS Guardian_Pincode,
+        //        MAX(CASE WHEN Parents_Type_id = 3 THEN City END) AS Guardian_City,
+        //        MAX(CASE WHEN Parents_Type_id = 3 THEN State END) AS Guardian_State
+        //    FROM tbl_StudentParentsOfficeInfo
+        //    GROUP BY student_id
+        //) OfficeInfo ON OfficeInfo.student_id = tbl_StudentMaster.student_id
+        //LEFT JOIN (
+        //    SELECT 
+        //        ss.Student_id,
+        //        (
+        //             SELECT 
+        //                ss2.Student_Siblings_id ,
+        //                ss2.Name,
+        //                ss2.Middle_Name ,
+        //                ss2.Last_Name ,
+        //                ss2.Class,
+        //                ss2.Section AS section,
+        //                FORMAT(ss2.Date_of_Birth, 'dd-MM-yyyy') AS Date_of_Birth,
+        //                ss2.Aadhar_no
+        //            FROM tbl_StudentSiblings ss2
+        //            WHERE ss2.Student_id = ss.Student_id
+        //            FOR JSON PATH
+        //        ) AS SiblingInfo
+        //    FROM tbl_StudentSiblings ss
+        //    GROUP BY ss.Student_id
+        //) AS SiblingDetails ON SiblingDetails.Student_id = tbl_StudentMaster.student_id
+        //where tbl_StudentMaster.Institute_id = @InstituteId
+        //    AND (tbl_StudentMaster.Class_id = @class_id OR @class_id = 0)
+        //    AND (tbl_StudentMaster.Section_id = @section_id OR @section_id = 0) 
+        //    AND (tbl_StudentMaster.AcademicYearCode = @AcademicYearCode OR @AcademicYearCode = '')
+        //    AND (tbl_StudentMaster.StudentType_id = @StudentType_id OR @StudentType_id = 0)
+        //    AND tbl_StudentMaster.isActive = @isActive;
+
+
+
+        //--select * from #TempStudentDetails
+
+
+
+        // DECLARE @ColumnNames NVARCHAR(MAX);
+        //DECLARE @SQL NVARCHAR(MAX);
+        //DECLARE @StudentSiblingColumns NVARCHAR(MAX);
+
+
+        //-- Get the comma-separated column names into the variable
+        //SELECT @ColumnNames = STRING_AGG(ss.DbColumnName, ', ')
+        //FROM tblStudentSetting ss
+        //WHERE ss.Institute_id = 1 AND ss.IsActive = 1 AND categoryId = 1;
+        //SET @SQL = N'SELECT ' + @ColumnNames + ' FROM #TempStudentDetails ';
+
+        //SELECT @StudentSiblingColumns = STRING_AGG(
+        //    CASE 
+        //        WHEN ss.DbColumnName = 'Name' THEN 'SiblingData.[Name] AS Sibling_FirstName'
+        //        WHEN ss.DbColumnName = 'Middle_Name' THEN 'SiblingData.[Middle_Name] AS Sibling_MiddleName'
+        //        WHEN ss.DbColumnName = 'Last_Name' THEN 'SiblingData.[Last_Name] AS Sibling_LastName'
+        //        WHEN ss.DbColumnName = 'Class' THEN 'SiblingData.[Class] AS Sibling_Class'
+        //        WHEN ss.DbColumnName = 'Section' THEN 'SiblingData.[Section] AS Sibling_Section'
+        //        WHEN ss.DbColumnName = 'DateOfBirth' THEN 'SiblingData.[DateOfBirth] AS Sibling_DateOfBirth'
+        //        WHEN ss.DbColumnName = 'AadharNo' THEN 'SiblingData.[AadharNo] AS Sibling_AadharNo'
+        //        -- Add more cases for other sibling-related columns here
+        //    END, ', '
+        //)
+        //FROM tblStudentSetting ss
+        //WHERE ss.Institute_id = 1 AND ss.IsActive = 1 AND categoryId = 7;
+
+        //SET @SQL = N'SELECT ' + @ColumnNames + '
+        //FROM #TempStudentDetails ORDER BY 
+        //    {obj.sortField} {obj.sortDirection}, 
+        //    student_id
+        //OFFSET 
+        //    @Offset ROWS
+        //FETCH NEXT 
+        //    @PageSize ROWS ONLY;';
+
+        //	EXEC sp_executesql @SQL, 
+        //    N'@Offset INT, @PageSize INT', 
+        //    @Offset = @Offset, 
+        //    @PageSize = @PageSize;
+
+        //-- Get the total count of records
+        //SELECT 
+        //    COUNT(1) 
+        //FROM 
+        //   tbl_StudentMaster
+        // where tbl_StudentMaster.Institute_id = @InstituteId
+        //    AND (tbl_StudentMaster.Class_id = @class_id OR @class_id = 0)
+        //    AND (tbl_StudentMaster.Section_id = @section_id OR @section_id = 0) 
+        //    AND (tbl_StudentMaster.AcademicYearCode = @AcademicYearCode OR @AcademicYearCode = '')
+        //    AND (tbl_StudentMaster.StudentType_id = @StudentType_id OR @StudentType_id = 0)
+        //    AND tbl_StudentMaster.isActive = @isActive;
+
+        //";
+
+        //        using (var result = await _connection.QueryMultipleAsync(sql, new { InstituteId = obj.Institute_id, Offset = offset, PageSize = actualPageSize, class_id = obj.class_id, section_id = obj.section_id, AcademicYearCode = obj.AcademicYearCode, isActive = obj.isActive, StudentType_id = obj.StudentType_id }))
+        //        {
+        //            var studentDetailsList = (await result.ReadAsync<dynamic>()).ToList();
+
+        //            int? totalRecords = (obj.pageSize.HasValue && obj.pageNumber.HasValue) == true ? result.ReadSingle<int>() : null;
+
+        //            var studentDetailsDict = studentDetailsList.ToDictionary(sd => sd.student_id);
+
+
+        //            return new ServiceResponse<List<dynamic>>(true, "Operation successful", studentDetailsList, 200, totalRecords);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return new ServiceResponse<List<dynamic>>(false, "Some error occured", null, 500);
+
+        //    }
+        //}
         private async Task<bool> CreateUserLoginInfo(int userId, int userType, int instituteId)
         {
             try

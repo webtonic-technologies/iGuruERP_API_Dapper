@@ -119,13 +119,20 @@ namespace Student_API.Repository.Implementations
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
-        public async Task<ServiceResponse<List<StudentDocumentConfigDTO>>> GetAllStudentDocuments(int Institute_id, string sortColumn, string sortDirection, int? pageSize = null, int? pageNumber = null, string searchQuery = null)
+
+        public async Task<ServiceResponse<List<StudentDocumentConfigDTO>>> GetAllStudentDocuments(
+   int Institute_id,
+   string sortColumn,
+   string sortDirection,
+   int? pageSize = null,
+   int? pageNumber = null,
+   string searchQuery = null)
         {
             try
             {
                 // List of valid sortable columns
                 var validSortColumns = new Dictionary<string, string>
-        { 
+        {
             { "Student_Document_Name", "Student_Document_Name" },
             { "en_date", "en_date" }
         };
@@ -145,23 +152,24 @@ namespace Student_API.Repository.Implementations
 
                 // SQL queries
                 string queryAll = @"
-            SELECT Student_Document_id, Student_Document_Name,  FORMAT([en_date], 'dd-MM-yyyy hh:mm tt') AS en_date ,Institute_id
-            FROM [dbo].[tbl_StudentDocumentMaster] where Institute_id = @Institute_id AND  ISNULL(isDelete,0) = 0 ";
+    SELECT Student_Document_id, Student_Document_Name, FORMAT([en_date], 'dd-MM-yyyy hh:mm tt') AS en_date, Institute_id
+    FROM [dbo].[tbl_StudentDocumentMaster] 
+    WHERE Institute_id = @Institute_id AND ISNULL(isDelete, 0) = 0 ";
 
                 string queryCount = @"
-            SELECT COUNT(*)
-            FROM [dbo].[tbl_StudentDocumentMaster] where Institute_id = @Institute_id AND ISNULL(isDelete,0) =0";
+    SELECT COUNT(*)
+    FROM [dbo].[tbl_StudentDocumentMaster] 
+    WHERE Institute_id = @Institute_id AND ISNULL(isDelete, 0) = 0";
 
                 // Add search condition
                 if (!string.IsNullOrWhiteSpace(searchQuery))
                 {
                     string searchCondition = @"
-            AND (Student_Document_Name LIKE '%' + @SearchQuery + '%'
-                 OR CONVERT(VARCHAR, en_date, 103) LIKE '%' + @SearchQuery + '%')";
+    AND (Student_Document_Name LIKE '%' + @SearchQuery + '%' 
+         OR CONVERT(VARCHAR, en_date, 103) LIKE '%' + @SearchQuery + '%')";
                     queryAll += searchCondition;
                     queryCount += searchCondition;
                 }
-
 
                 List<StudentDocumentConfigDTO> studentDocuments;
                 int totalRecords = 0;
@@ -172,14 +180,20 @@ namespace Student_API.Repository.Implementations
 
                     // Build the paginated query with dynamic sorting
                     string queryPaginated = $@"
-                {queryAll}
-                ORDER BY {sortColumn} {sortDirection}
-                OFFSET @Offset ROWS
-                FETCH NEXT @PageSize ROWS ONLY;
+        {queryAll}
+        ORDER BY {sortColumn} {sortDirection}
+        OFFSET @Offset ROWS
+        FETCH NEXT @PageSize ROWS ONLY;
 
-                {queryCount}";
+        {queryCount}";
 
-                    using (var multi = await _connection.QueryMultipleAsync(queryPaginated, new { Offset = offset, PageSize = pageSize, Institute_id = Institute_id }))
+                    using (var multi = await _connection.QueryMultipleAsync(queryPaginated, new
+                    {
+                        Offset = offset,
+                        PageSize = pageSize,
+                        Institute_id = Institute_id,
+                        SearchQuery = searchQuery
+                    }))
                     {
                         studentDocuments = multi.Read<StudentDocumentConfigDTO>().ToList();
                         totalRecords = multi.ReadSingle<int>();
@@ -191,10 +205,12 @@ namespace Student_API.Repository.Implementations
                 {
                     // No pagination, return all records with sorting
                     string querySorted = $@"
-                {queryAll}
-                ORDER BY {sortColumn} {sortDirection}";
+        {queryAll}
+        ORDER BY {sortColumn} {sortDirection}";
 
-                    studentDocuments = (await _connection.QueryAsync<StudentDocumentConfigDTO>(querySorted)).ToList();
+                    studentDocuments = (await _connection.QueryAsync<StudentDocumentConfigDTO>(querySorted,
+                        new { Institute_id = Institute_id, SearchQuery = searchQuery })).ToList();
+
                     return new ServiceResponse<List<StudentDocumentConfigDTO>>(true, "All student documents retrieved successfully", studentDocuments, 200);
                 }
             }
@@ -203,6 +219,7 @@ namespace Student_API.Repository.Implementations
                 return new ServiceResponse<List<StudentDocumentConfigDTO>>(false, ex.Message, null, 500);
             }
         }
+
 
 
     }

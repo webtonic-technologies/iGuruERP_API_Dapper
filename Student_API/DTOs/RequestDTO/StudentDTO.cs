@@ -24,7 +24,7 @@ namespace Student_API.DTOs.RequestDTO
         public string Roll_Number { get; set; }
         [ValidDateString("dd-MM-yyyy")]
         public string Date_of_Joining { get; set; }
-        public int Academic_year_id { get; set; }
+        public string AcademicYearCode { get; set; }
         [Required]
         public int? Nationality_id { get; set; }
         [Required]

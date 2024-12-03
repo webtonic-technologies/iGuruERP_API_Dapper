@@ -19,9 +19,9 @@ namespace Student_API.Services.Implementations
             _documentManagerRepository = documentManagerRepository;
         }
 
-        public async Task<ServiceResponse<List<StudentDocumentInfo>>> GetStudentDocuments(int Institute_id, int classId, int sectionId, string sortColumn, string sortDirection, int? pageSize, int? pageNumber)
+        public async Task<ServiceResponse<List<StudentDocumentInfo>>> GetStudentDocuments(int Institute_id, int classId, int sectionId, string sortColumn, string sortDirection, int? pageSize, int? pageNumber, string searchQuery)
         {
-            return await _documentManagerRepository.GetStudentDocuments(Institute_id,classId, sectionId,sortColumn ,sortDirection,pageSize, pageNumber);
+            return await _documentManagerRepository.GetStudentDocuments(Institute_id,classId, sectionId,sortColumn ,sortDirection,pageSize, pageNumber,searchQuery);
         }
 
         public async Task<ServiceResponse<bool>> UpdateStudentDocumentStatuses(List<DocumentUpdateRequest> updates)
@@ -32,7 +32,7 @@ namespace Student_API.Services.Implementations
         public async Task<ServiceResponse<string>> ExportStudentDocuments(int Institute_id, int classId, int sectionId, string sortColumn, string sortDirection, int? pageSize, int? pageNumber, int exportFormat)
         {
             // Fetch data from the repository
-            var data = await _documentManagerRepository.GetStudentDocuments(Institute_id, classId, sectionId, sortColumn, sortDirection, pageSize, pageNumber);
+            var data = await _documentManagerRepository.GetStudentDocuments(Institute_id, classId, sectionId, sortColumn, sortDirection, pageSize, pageNumber, "");
             var studentDocuments = data.Data;
 
             if (studentDocuments == null || !studentDocuments.Any())
