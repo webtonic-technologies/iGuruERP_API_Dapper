@@ -14,5 +14,6 @@
         public int StudentID { get; set; }
         public int StatusID { get; set; }
         public string Remarks { get; set; }
+        public string AcademicYearCode { get; set; }
     }
 }

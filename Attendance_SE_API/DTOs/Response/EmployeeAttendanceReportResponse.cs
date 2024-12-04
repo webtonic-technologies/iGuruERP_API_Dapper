@@ -21,6 +21,15 @@ namespace Attendance_SE_API.DTOs.Response
         public int Present { get; set; }
         public int Absent { get; set; }
         public double AttendancePercentage { get; set; }
-        public Dictionary<string, string> Attendance { get; set; }
+        //public Dictionary<string, string> Attendance { get; set; }
+        public List<AttendanceDateInfo1> AttendanceList { get; set; }
+
+    }
+
+    public class AttendanceDateInfo1
+    {
+        public string AttendanceDate { get; set; }  // The date in "Dec 01" format
+        public string AttendanceDay { get; set; }   // The day of the week, e.g., "Sun"
+        public string AttendanceStatus { get; set; } // The status, e.g., "Present", "Absent", "-"
     }
 }

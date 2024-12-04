@@ -13,12 +13,13 @@ namespace Attendance_SE_API.DTOs.Requests
         public int? SubjectID { get; set; } // Optional, required for Subject Wise
         public int? TimeSlotTypeID { get; set; } // Optional, required for Date Wise
         public bool IsMarkAsHoliday { get; set; } // Is Marked as Holiday
+        public string AcademicYearCode { get; set; }
     }
 
     public class AttendanceRecord
     {
         public int StudentID { get; set; }
         public int StatusID { get; set; } // Attendance Status (e.g., Present, Absent)
-        public string Remarks { get; set; }
+        public string Remarks { get; set; } 
     }
 }

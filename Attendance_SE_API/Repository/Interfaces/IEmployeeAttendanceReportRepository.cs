@@ -14,5 +14,8 @@ namespace Attendance_SE_API.Repository.Interfaces
         Task<IEnumerable<GetAttendanceGeoFencingReportResponse>> GetAttendanceGeoFencingReport(GetAttendanceGeoFencingReportRequest request);
         Task<MemoryStream> GenerateExcelReport(GetAttendanceGeoFencingReportRequest request); // Add this line
 
+        Task<List<AttendanceMode>> GetAttendanceModes();
+
+
     }
 }

@@ -18,7 +18,17 @@ namespace Attendance_SE_API.DTOs.Responses
         public string RollNumber { get; set; }
         public string StudentName { get; set; }
         public string MobileNumber { get; set; }
-        
-        public Dictionary<string, string> Attendance { get; set; } // Subject attendance
+
+        //public Dictionary<string, string> Attendance { get; set; } // Subject attendance
+
+        public List<AttendanceSubjectInfo> AttendanceList { get; set; }
+
     }
+
+    public class AttendanceSubjectInfo
+    {
+        public string Subject { get; set; }  // Name of the subject
+        public string AttendanceStatus { get; set; }  // Attendance status, e.g., "Present", "Absent", "Sick leave"
+    }
+
 }

@@ -9,6 +9,7 @@
         public int? AttendanceTypeID { get; set; } // Make this nullable if you want to allow nulls
         public int? TimeSlotTypeID { get; set; }   // Add this property
         public int? SubjectID { get; set; }         // Add this property
+        public string AcademicYearCode { get; set; }
     }
 
 

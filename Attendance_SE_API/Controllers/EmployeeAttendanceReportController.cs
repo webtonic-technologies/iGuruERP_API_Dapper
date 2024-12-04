@@ -75,5 +75,13 @@ namespace Attendance_SE_API.Controllers
             // Return the CSV file as a response
             return File(stream, "text/csv", "AttendanceReport.csv");
         }
+
+
+        [HttpPost("GetAttendanceMode")]
+        public async Task<IActionResult> GetAttendanceMode()
+        {
+            var attendanceModes = await _employeeAttendanceReportService.GetAttendanceMode();
+            return Ok(new { Success = true, Message = "Attendance modes fetched successfully.", Data = attendanceModes });
+        }
     }
 }

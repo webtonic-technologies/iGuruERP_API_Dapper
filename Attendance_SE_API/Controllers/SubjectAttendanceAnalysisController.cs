@@ -38,5 +38,7 @@ namespace Attendance_SE_API.Controllers
             var response = await _subjectAttendanceAnalysisService.GetSubjectsAttendanceAnalysis(request);
             return Ok(response);
         }
+         
+
     }
 }

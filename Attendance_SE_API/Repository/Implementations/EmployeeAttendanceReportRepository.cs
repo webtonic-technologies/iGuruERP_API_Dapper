@@ -22,6 +22,7 @@ namespace Attendance_SE_API.Repository.Implementations
             _connection = connection;
         }
 
+            
         public async Task<EmployeeAttendanceReportResponse> GetAttendanceReport(EmployeeAttendanceReportRequest request)
         {
             DateTime parsedStartDate;
@@ -41,10 +42,6 @@ namespace Attendance_SE_API.Repository.Implementations
                 };
             }
 
-
-
-            
-
             // Fetch Status Mapping Dynamically
             var statusMappings = await _connection.QueryAsync<AttendanceStatusMapping>(
                 "SELECT StatusID, ShortName FROM tblEmployeeAttendanceStatus WHERE IsActive = 1");
@@ -53,34 +50,34 @@ namespace Attendance_SE_API.Repository.Implementations
             var statusDict = statusMappings.ToDictionary(x => x.StatusID, x => x.ShortName);
 
             string query = @"
-    WITH AttendanceData AS (
-        SELECT 
-            e.Employee_id AS EmployeeID, 
-            e.Employee_code_id AS EmployeeCode,  
-            CONCAT(e.First_Name, ' ', e.Last_Name) AS EmployeeName, 
-            e.mobile_number AS MobileNumber,  
-            a.AttendanceDate,
-            a.StatusID
-        FROM tbl_EmployeeProfileMaster e
-        LEFT JOIN tblEmployeeAttendance a ON e.Employee_id = a.EmployeeID
-            AND a.AttendanceDate BETWEEN @StartDate AND @EndDate
-        WHERE e.Department_id = @DepartmentID  
-            AND e.Institute_id = @InstituteID
-    )
-    SELECT 
-        EmployeeID,
-        EmployeeCode, 
-        EmployeeName,
-        MobileNumber,
-        AttendanceDate,
-        CASE 
-            WHEN AttendanceStatus.StatusID IS NOT NULL THEN 
-                AttendanceStatus.ShortName
-            ELSE '-'
-        END AS AttendanceStatus
-    FROM AttendanceData a
-    LEFT JOIN tblEmployeeAttendanceStatus AttendanceStatus ON a.StatusID = AttendanceStatus.StatusID
-    ORDER BY EmployeeName, AttendanceDate;";
+            WITH AttendanceData AS (
+                SELECT 
+                    e.Employee_id AS EmployeeID, 
+                    e.Employee_code_id AS EmployeeCode,  
+                    CONCAT(e.First_Name, ' ', e.Last_Name) AS EmployeeName, 
+                    e.mobile_number AS MobileNumber,  
+                    a.AttendanceDate,
+                    a.StatusID
+                FROM tbl_EmployeeProfileMaster e
+                LEFT JOIN tblEmployeeAttendance a ON e.Employee_id = a.EmployeeID
+                    AND a.AttendanceDate BETWEEN @StartDate AND @EndDate
+                WHERE e.Department_id = @DepartmentID  
+                    AND e.Institute_id = @InstituteID
+            )
+            SELECT 
+                EmployeeID,
+                EmployeeCode, 
+                EmployeeName,
+                MobileNumber,
+                AttendanceDate,
+                CASE 
+                    WHEN AttendanceStatus.StatusID IS NOT NULL THEN 
+                        AttendanceStatus.ShortName
+                    ELSE '-'
+                END AS AttendanceStatus
+            FROM AttendanceData a
+            LEFT JOIN tblEmployeeAttendanceStatus AttendanceStatus ON a.StatusID = AttendanceStatus.StatusID
+            ORDER BY EmployeeName, AttendanceDate;";
 
             var parameters = new
             {
@@ -109,10 +106,12 @@ namespace Attendance_SE_API.Repository.Implementations
                     Present = g.Count(x => statusDict.ContainsKey(x.StatusID) && statusDict[x.StatusID] == "P"),
                     Absent = g.Count(x => statusDict.ContainsKey(x.StatusID) && statusDict[x.StatusID] == "A"),
                     AttendancePercentage = Math.Round((double)g.Count(x => statusDict.ContainsKey(x.StatusID) && statusDict[x.StatusID] == "P") / g.Count() * 100, 2),
-                    Attendance = dateRange.ToDictionary(
-                        date => date.ToString("MMM dd, ddd"),  // Format as "Sep 29, Sun"
-                        date => g.FirstOrDefault(x => x.AttendanceDate.Date == date.Date)?.AttendanceStatus ?? "-"  // Use attendance status or "-"
-                    )
+                    AttendanceList = dateRange.Select(date => new AttendanceDateInfo1
+                    {
+                        AttendanceDate = date.ToString("MMM dd"),  // Format as "Dec 01"
+                        AttendanceDay = date.ToString("ddd"),     // Day of the week, e.g., "Sun"
+                        AttendanceStatus = g.FirstOrDefault(x => x.AttendanceDate.Date == date.Date)?.AttendanceStatus ?? "-"  // Use attendance status or "-"
+                    }).ToList()
                 }).ToList();
 
             // Create the final response
@@ -127,129 +126,130 @@ namespace Attendance_SE_API.Repository.Implementations
         }
 
 
-        //    public async Task<EmployeeAttendanceReportResponse> GetAttendanceReport(EmployeeAttendanceReportRequest request)
+        //public async Task<EmployeeAttendanceReportResponse> GetAttendanceReport(EmployeeAttendanceReportRequest request)
+        //{
+        //    DateTime parsedStartDate;
+        //    DateTime parsedEndDate;
+
+        //    // Parse the start and end dates
+        //    if (!DateTime.TryParseExact(request.StartDate, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out parsedStartDate) ||
+        //        !DateTime.TryParseExact(request.EndDate, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out parsedEndDate))
         //    {
-        //        DateTime parsedStartDate;
-        //        DateTime parsedEndDate;
-
-        //        // Parse the start and end dates
-        //        if (!DateTime.TryParseExact(request.StartDate, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out parsedStartDate) ||
-        //            !DateTime.TryParseExact(request.EndDate, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out parsedEndDate))
-        //        {
-        //            return new EmployeeAttendanceReportResponse
-        //            {
-        //                Success = false,
-        //                Message = "Invalid date format. Please use DD-MM-YYYY.",
-        //                Data = null,
-        //                StatusCode = 400,
-        //                TotalCount = 0
-        //            };
-        //        }
-
-        //        string query = @"
-        //WITH AttendanceData AS (
-        //    SELECT 
-        //        e.Employee_id AS EmployeeID, 
-        //        e.Employee_code_id AS EmployeeCode,  
-        //        CONCAT(e.First_Name, ' ', e.Last_Name) AS EmployeeName, 
-        //        e.mobile_number AS MobileNumber,  
-        //        a.AttendanceDate,
-        //        CASE 
-        //            WHEN a.StatusID = 1 THEN 'P'
-        //            WHEN a.StatusID = 2 THEN 'A'
-        //            WHEN a.StatusID = 3 THEN 'HD'
-        //            WHEN a.StatusID = 4 THEN 'L'
-        //            WHEN a.StatusID = 5 THEN 'SL'
-        //            WHEN a.StatusID = 6 THEN 'TL'
-        //            ELSE '-'
-        //        END AS AttendanceStatus
-        //    FROM tbl_EmployeeProfileMaster e
-        //    LEFT JOIN tblEmployeeAttendance a ON e.Employee_id = a.EmployeeID
-        //        AND a.AttendanceDate BETWEEN @StartDate AND @EndDate
-        //    WHERE e.Department_id = @DepartmentID  
-        //        AND e.Institute_id = @InstituteID
-        //)
-        //SELECT 
-        //    EmployeeID,
-        //    EmployeeCode, 
-        //    EmployeeName,
-        //    MobileNumber,
-        //    AttendanceDate,
-        //    AttendanceStatus
-        //FROM AttendanceData
-        //ORDER BY EmployeeName, AttendanceDate;";
-
-        //        var parameters = new
-        //        {
-        //            StartDate = parsedStartDate,
-        //            EndDate = parsedEndDate,
-        //            DepartmentID = request.DepartmentID,
-        //            InstituteID = request.InstituteID,
-        //            TimeSlotTypeID = request.TimeSlotTypeID // If needed
-        //        };
-
-        //        var attendanceRecords = await _connection.QueryAsync<AttendanceRecord2>(query, parameters);
-
-        //        // Create a date range from start to end
-        //        var dateRange = Enumerable.Range(0, (parsedEndDate - parsedStartDate).Days + 1)
-        //            .Select(d => parsedStartDate.AddDays(d))
-        //            .ToList();
-
-        //        // Create a pivot structure
-        //        var pivotedAttendance = attendanceRecords
-        //            .GroupBy(x => new { x.EmployeeID, x.EmployeeCode, x.EmployeeName, x.MobileNumber })
-        //            .Select(g => new AttendanceDetailResponse_EMP
-        //            {
-        //                EmployeeID = g.Key.EmployeeID,
-        //                EmployeeCode = g.Key.EmployeeCode,
-        //                EmployeeName = g.Key.EmployeeName,
-        //                MobileNumber = g.Key.MobileNumber,
-        //                WorkingDays = g.Count(),  // Total working days based on records
-        //                Present = g.Count(x => x.AttendanceStatus == "P"),
-        //                Absent = g.Count(x => x.AttendanceStatus == "A"),
-        //                AttendancePercentage = Math.Round((double)g.Count(x => x.AttendanceStatus == "P") / g.Count() * 100, 2),
-        //                Attendance = dateRange.ToDictionary(
-        //                    date => date.ToString("MMM dd, ddd"),  // Format as "Sep 29, Sun"
-        //                    date => g.FirstOrDefault(x => x.AttendanceDate.Date == date.Date)?.AttendanceStatus ?? "-"  // Use attendance status or "-"
-        //                )
-        //            }).ToList();
-
-        //        // Create the final response
         //        return new EmployeeAttendanceReportResponse
         //        {
-        //            Success = true,
-        //            Message = "Attendance report fetched successfully.",
-        //            Data = pivotedAttendance,
-        //            StatusCode = 200,
-        //            TotalCount = pivotedAttendance.Count()
+        //            Success = false,
+        //            Message = "Invalid date format. Please use DD-MM-YYYY.",
+        //            Data = null,
+        //            StatusCode = 400,
+        //            TotalCount = 0
         //        };
         //    }
 
 
+        //    // Fetch Status Mapping Dynamically
+        //    var statusMappings = await _connection.QueryAsync<AttendanceStatusMapping>(
+        //        "SELECT StatusID, ShortName FROM tblEmployeeAttendanceStatus WHERE IsActive = 1");
+
+        //    // Create a dictionary for easy lookup of StatusID to ShortName
+        //    var statusDict = statusMappings.ToDictionary(x => x.StatusID, x => x.ShortName);
+
+        //    string query = @"
+        //    WITH AttendanceData AS (
+        //        SELECT 
+        //            e.Employee_id AS EmployeeID, 
+        //            e.Employee_code_id AS EmployeeCode,  
+        //            CONCAT(e.First_Name, ' ', e.Last_Name) AS EmployeeName, 
+        //            e.mobile_number AS MobileNumber,  
+        //            a.AttendanceDate,
+        //            a.StatusID
+        //        FROM tbl_EmployeeProfileMaster e
+        //        LEFT JOIN tblEmployeeAttendance a ON e.Employee_id = a.EmployeeID
+        //            AND a.AttendanceDate BETWEEN @StartDate AND @EndDate
+        //        WHERE e.Department_id = @DepartmentID  
+        //            AND e.Institute_id = @InstituteID
+        //    )
+        //    SELECT 
+        //        EmployeeID,
+        //        EmployeeCode, 
+        //        EmployeeName,
+        //        MobileNumber,
+        //        AttendanceDate,
+        //        CASE 
+        //            WHEN AttendanceStatus.StatusID IS NOT NULL THEN 
+        //                AttendanceStatus.ShortName
+        //            ELSE '-'
+        //        END AS AttendanceStatus
+        //    FROM AttendanceData a
+        //    LEFT JOIN tblEmployeeAttendanceStatus AttendanceStatus ON a.StatusID = AttendanceStatus.StatusID
+        //    ORDER BY EmployeeName, AttendanceDate;";
+
+        //    var parameters = new
+        //    {
+        //        StartDate = parsedStartDate,
+        //        EndDate = parsedEndDate,
+        //        DepartmentID = request.DepartmentID,
+        //        InstituteID = request.InstituteID
+        //    };
+
+        //    var attendanceRecords = await _connection.QueryAsync<AttendanceRecord2>(query, parameters);
+
+        //    // Generate the attendance report response, mapping StatusID to the ShortName dynamically
+        //    var dateRange = Enumerable.Range(0, (parsedEndDate - parsedStartDate).Days + 1)
+        //                .Select(d => parsedStartDate.AddDays(d))
+        //                .ToList();
+
+        //    var pivotedAttendance = attendanceRecords
+        //        .GroupBy(x => new { x.EmployeeID, x.EmployeeCode, x.EmployeeName, x.MobileNumber })
+        //        .Select(g => new AttendanceDetailResponse_EMP
+        //        {
+        //            EmployeeID = g.Key.EmployeeID,
+        //            EmployeeCode = g.Key.EmployeeCode,
+        //            EmployeeName = g.Key.EmployeeName,
+        //            MobileNumber = g.Key.MobileNumber,
+        //            WorkingDays = g.Count(),
+        //            Present = g.Count(x => statusDict.ContainsKey(x.StatusID) && statusDict[x.StatusID] == "P"),
+        //            Absent = g.Count(x => statusDict.ContainsKey(x.StatusID) && statusDict[x.StatusID] == "A"),
+        //            AttendancePercentage = Math.Round((double)g.Count(x => statusDict.ContainsKey(x.StatusID) && statusDict[x.StatusID] == "P") / g.Count() * 100, 2),
+        //            Attendance = dateRange.ToDictionary(
+        //                date => date.ToString("MMM dd, ddd"),  // Format as "Sep 29, Sun"
+        //                date => g.FirstOrDefault(x => x.AttendanceDate.Date == date.Date)?.AttendanceStatus ?? "-"  // Use attendance status or "-"
+        //            )
+        //        }).ToList();
+
+        //    // Create the final response
+        //    return new EmployeeAttendanceReportResponse
+        //    {
+        //        Success = true,
+        //        Message = "Attendance report fetched successfully.",
+        //        Data = pivotedAttendance,
+        //        StatusCode = 200,
+        //        TotalCount = pivotedAttendance.Count()
+        //    };
+        //}
 
 
         public async Task<IEnumerable<GetAttendanceGeoFencingReportResponse>> GetAttendanceGeoFencingReport(GetAttendanceGeoFencingReportRequest request)
         {
             var query = @"
-        SELECT 
-            ge.EmployeeID,
-            CONCAT(e.First_Name, ' ', e.Last_Name) AS EmployeeName,
-            e.mobile_number AS PrimaryMobileNo, 
-            ge.GeoFencingDate,
-            ge.ClockIn,
-            ge.ClockOut,
-            ge.Reason,
-            DATEDIFF(MINUTE, ge.ClockIn, ge.ClockOut) / 60 AS HoursWorked,
-            DATEDIFF(MINUTE, ge.ClockIn, ge.ClockOut) % 60 AS MinutesWorked
-        FROM 
-            tblGeoFencingEntry ge
-        JOIN 
-            tbl_EmployeeProfileMaster e ON ge.EmployeeID = e.Employee_id 
-        WHERE 
-            ge.GeoFencingDate BETWEEN @StartDate AND @EndDate
-            AND e.Institute_id = @InstituteID
-        ORDER BY 
-            ge.GeoFencingDate, e.Employee_id";
+            SELECT 
+                ge.EmployeeID,
+                CONCAT(e.First_Name, ' ', e.Last_Name) AS EmployeeName,
+                e.mobile_number AS PrimaryMobileNo, 
+                ge.GeoFencingDate,
+                ge.ClockIn,
+                ge.ClockOut,
+                ge.Reason,
+                DATEDIFF(MINUTE, ge.ClockIn, ge.ClockOut) / 60 AS HoursWorked,
+                DATEDIFF(MINUTE, ge.ClockIn, ge.ClockOut) % 60 AS MinutesWorked
+            FROM 
+                tblGeoFencingEntry ge
+            JOIN 
+                tbl_EmployeeProfileMaster e ON ge.EmployeeID = e.Employee_id 
+            WHERE 
+                ge.GeoFencingDate BETWEEN @StartDate AND @EndDate
+                AND e.Institute_id = @InstituteID
+            ORDER BY 
+                ge.GeoFencingDate, e.Employee_id";
 
             var result = await _connection.QueryAsync<dynamic>(query, new
             {
@@ -311,11 +311,7 @@ namespace Attendance_SE_API.Repository.Implementations
 
             return groupedResults;
         }
-
-
-
-
-
+         
         /////
         ///Working
 
@@ -466,5 +462,11 @@ namespace Attendance_SE_API.Repository.Implementations
             }
         }
 
+        public async Task<List<AttendanceMode>> GetAttendanceModes()
+        {
+            string query = "SELECT AttendanceModeID, AttendanceMode as AttendanceModeName FROM tblAttendanceMode";
+            var attendanceModes = await _connection.QueryAsync<AttendanceMode>(query);
+            return attendanceModes.AsList();
+        }
     }
 }

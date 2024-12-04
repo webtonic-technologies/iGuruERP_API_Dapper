@@ -4,9 +4,9 @@
     {
         public string AcademicYearCode { get; set; }
         public int ClassID { get; set; }
-        public int SectionID { get; set; }
+        public List<int> SectionIDs { get; set; } // Modified to accept multiple sections
         public int InstituteID { get; set; }
-        public int SubjectID { get; set; }
+        public List<int> SubjectIDs { get; set; } // Modified to accept multiple subjects
     }
 
     public class SubjectAttendanceAnalysisRequest1

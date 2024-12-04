@@ -128,5 +128,11 @@ namespace Attendance_SE_API.Services.Implementations
             memoryStream.Position = 0;
             return memoryStream;
         }
+
+        public async Task<List<AttendanceMode>> GetAttendanceMode()
+        {
+            var attendanceModes = await _repository.GetAttendanceModes();
+            return attendanceModes;
+        }
     }
 }

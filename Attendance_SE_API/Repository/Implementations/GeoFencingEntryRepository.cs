@@ -50,7 +50,7 @@ namespace Attendance_SE_API.Repository.Implementations
             using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
             {
                 var query = @"
-                    SELECT e.Employee_id AS EmployeeID, 
+                    SELECT e.Employee_code_id AS EmployeeID, 
                            CONCAT(e.First_Name, ' ', e.Last_Name) AS EmployeeName, 
                            e.mobile_number AS MobileNumber,
                            d.DepartmentName AS Department,

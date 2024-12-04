@@ -10,5 +10,6 @@
         //public int? AttendanceTypeID { get; set; }
         public int? TimeSlotTypeID { get; set; }
         //public int? SubjectID { get; set; }
+        public string AcademicYearCode { get; set; }
     }
 }

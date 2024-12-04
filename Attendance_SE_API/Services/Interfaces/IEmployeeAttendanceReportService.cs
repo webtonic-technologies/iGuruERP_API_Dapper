@@ -13,6 +13,7 @@ namespace Attendance_SE_API.Services.Interfaces
         Task<ServiceResponse<IEnumerable<GetAttendanceGeoFencingReportResponse>>> GetAttendanceGeoFencingReport(GetAttendanceGeoFencingReportRequest request);
         Task<MemoryStream> GenerateExcelReport(GetAttendanceGeoFencingReportRequest request);
         Task<MemoryStream> GenerateCSVReport(GetAttendanceGeoFencingReportRequest request);
+        Task<List<AttendanceMode>> GetAttendanceMode();
 
     }
 }
