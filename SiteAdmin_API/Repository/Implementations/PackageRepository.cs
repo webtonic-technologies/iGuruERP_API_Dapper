@@ -89,31 +89,89 @@ namespace SiteAdmin_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<Package>>> GetAllPackages()
+        public async Task<ServiceResponse<List<GetPackage>>> GetAllPackages()
         {
             try
             {
-                string sql = @"SELECT * FROM tblPackage;
-                               SELECT * FROM tblPackageModuleMapping";
+                // SQL query with JOIN to fetch packages and modules
+                string sql = @"
+            SELECT p.PackageID, p.PackageName, p.IsActive, 
+                   pm.PMMID, pm.PackageID, pm.ModuleID, 
+                   m.ModuleID, m.ModuleName
+            FROM tblPackage p
+            LEFT JOIN tblPackageModuleMapping pm ON p.PackageID = pm.PackageID
+            LEFT JOIN tblModules m ON pm.ModuleID = m.ModuleID";
 
-                using (var multi = await _connection.QueryMultipleAsync(sql))
-                {
-                    var packages = (await multi.ReadAsync<Package>()).ToList();
-                    var mappings = (await multi.ReadAsync<PackageModuleMapping>()).ToList();
-
-                    foreach (var package in packages)
+                var result = await _connection.QueryAsync<GetPackage, Modules, GetPackage>(
+                    sql,
+                    (package, module) =>
                     {
-                        package.PackageModuleMappings = mappings.Where(m => m.PackageID == package.PackageID).ToList();
-                    }
+                        // Ensure the modules list is initialized
+                        if (package.Modules == null)
+                            package.Modules = new List<Modules>();
 
-                    return new ServiceResponse<List<Package>>(true, "Packages retrieved successfully", packages, 200);
-                }
+                        // Add module details to the package's Modules list
+                        if (module != null)
+                        {
+                            // Add unique modules to avoid duplicates
+                            if (!package.Modules.Any(m => m.ModuleID == module.ModuleID))
+                            {
+                                package.Modules.Add(module);
+                            }
+                        }
+
+                        return package;  // Return the package object
+                    },
+                    splitOn: "ModuleID"  // Tell Dapper where to split the result set (for Modules)
+                );
+
+                // Group packages by PackageName to aggregate modules under the same package
+                var groupedPackages = result
+                    .GroupBy(p => p.PackageName)  // Group by PackageName
+                    .Select(g => new GetPackage
+                    {
+                        PackageID = g.First().PackageID,
+                        PackageName = g.Key,
+                        IsActive = g.First().IsActive,
+                        Modules = g.SelectMany(x => x.Modules).Distinct().ToList()  // Aggregate modules for each package and remove duplicates
+                    })
+                    .ToList();
+
+                return new ServiceResponse<List<GetPackage>>(true, "Packages retrieved successfully", groupedPackages, 200);
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<List<Package>>(false, ex.Message, null, 500);
+                return new ServiceResponse<List<GetPackage>>(false, ex.Message, null, 500);
             }
         }
+
+
+
+        //public async Task<ServiceResponse<List<Package>>> GetAllPackages()
+        //{
+        //    try
+        //    {
+        //        string sql = @"SELECT * FROM tblPackage;
+        //                       SELECT * FROM tblPackageModuleMapping";
+
+        //        using (var multi = await _connection.QueryMultipleAsync(sql))
+        //        {
+        //            var packages = (await multi.ReadAsync<Package>()).ToList();
+        //            var mappings = (await multi.ReadAsync<PackageModuleMapping>()).ToList();
+
+        //            foreach (var package in packages)
+        //            {
+        //                package.PackageModuleMappings = mappings.Where(m => m.PackageID == package.PackageID).ToList();
+        //            }
+
+        //            return new ServiceResponse<List<Package>>(true, "Packages retrieved successfully", packages, 200);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return new ServiceResponse<List<Package>>(false, ex.Message, null, 500);
+        //    }
+        //}
 
         public async Task<ServiceResponse<bool>> UpdatePackageStatus(int packageId)
         {

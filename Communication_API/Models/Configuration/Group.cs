@@ -4,7 +4,7 @@
     {
         public int GroupID { get; set; }
         public string GroupName { get; set; }
-        public int AcadamicYearID { get; set; }
+        public string AcademicYearCode { get; set; }
         public int TypeID { get; set; }
     }
 }

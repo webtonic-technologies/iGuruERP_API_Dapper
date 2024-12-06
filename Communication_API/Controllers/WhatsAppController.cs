@@ -56,5 +56,57 @@ namespace Communication_API.Controllers
             var response = await _whatsAppService.GetWhatsAppReport(request);
             return StatusCode(response.StatusCode, response);
         }
+
+        [HttpPost("SendWhatsAppStudent")]
+        public async Task<IActionResult> SendWhatsAppStudent(SendWhatsAppStudentRequest request)
+        {
+            var response = await _whatsAppService.SendWhatsAppToStudents(request);
+
+            if (response.Success)
+            {
+                return Ok(response); // 200 OK response
+            }
+
+            return BadRequest(response); // 400 Bad Request response
+        }
+
+        [HttpPost("SendWhatsAppEmployee")]
+        public async Task<IActionResult> SendWhatsAppEmployee(SendWhatsAppEmployeeRequest request)
+        {
+            var response = await _whatsAppService.SendWhatsAppToEmployees(request);
+
+            if (response.Success)
+            {
+                return Ok(response); // 200 OK response
+            }
+
+            return BadRequest(response); // 400 Bad Request response
+        }
+
+        [HttpPost("UpdateWhatsAppStudentStatus")]
+        public async Task<IActionResult> UpdateWhatsAppStudentStatus(UpdateWhatsAppStudentStatusRequest request)
+        {
+            var response = await _whatsAppService.UpdateWhatsAppStudentStatus(request);
+
+            if (response.Success)
+            {
+                return Ok(response); // 200 OK response
+            }
+
+            return BadRequest(response); // 400 Bad Request response
+        }
+
+        [HttpPost("UpdateWhatsAppEmployeeStatus")]
+        public async Task<IActionResult> UpdateWhatsAppEmployeeStatus(UpdateWhatsAppEmployeeStatusRequest request)
+        {
+            var response = await _whatsAppService.UpdateWhatsAppEmployeeStatus(request);
+
+            if (response.Success)
+            {
+                return Ok(response); // 200 OK response
+            }
+
+            return BadRequest(response); // 400 Bad Request response
+        }
     }
 }

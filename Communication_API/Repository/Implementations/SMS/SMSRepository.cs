@@ -6,6 +6,7 @@ using Communication_API.Repository.Interfaces.SMS;
 using Dapper;
 using System.Data;
 using System.Data.SqlClient;
+using System.Globalization;
 
 namespace Communication_API.Repository.Implementations.SMS
 {
@@ -73,27 +74,123 @@ namespace Communication_API.Repository.Implementations.SMS
             return new ServiceResponse<List<SMSTemplate>>(true, "Records Found", templates.ToList(), 302, totalCount);
         }
 
+        //public async Task<ServiceResponse<string>> SendNewSMS(SendNewSMSRequest request)
+        //{
+        //    // Step 1: Insert or update the SMS message
+        //    string sql;
+        //    if (request.SMSID == 0)
+        //    {
+        //        sql = @"INSERT INTO [tblSMSMessage] (PredefinedTemplateID, SMSMessage, UserTypeID, GroupID, Status, ScheduleNow, ScheduleDate, ScheduleTime) 
+        //        VALUES (@PredefinedTemplateID, @SMSMessage, @UserTypeID, @GroupID, @Status, @ScheduleNow, @ScheduleDate, @ScheduleTime);
+        //        SELECT CAST(SCOPE_IDENTITY() as int);";  // Get the newly inserted ID
+        //    }
+        //    else
+        //    {
+        //        sql = @"UPDATE [tblSMSMessage] 
+        //        SET PredefinedTemplateID = @PredefinedTemplateID, SMSMessage = @SMSMessage, UserTypeID = @UserTypeID, GroupID = @GroupID, 
+        //            Status = @Status, ScheduleNow = @ScheduleNow, ScheduleDate = @ScheduleDate, ScheduleTime = @ScheduleTime 
+        //        WHERE SMSID = @SMSID;
+        //        SELECT @SMSID;";
+        //    }
+
+        //    // Execute the query and get the SMSID
+        //    var smsID = await _connection.ExecuteScalarAsync<int>(sql, request);
+
+        //    if (smsID > 0)
+        //    {
+        //        // Step 2: Handle the student or employee mappings
+        //        if (request.UserTypeID == 1 && request.StudentIDs != null && request.StudentIDs.Count > 0)
+        //        {
+        //            // Delete existing mappings if updating
+        //            if (request.SMSID != 0)
+        //            {
+        //                string deleteStudentMappingSql = "DELETE FROM tblSMSStudentMapping WHERE SMSID = @SMSID";
+        //                await _connection.ExecuteAsync(deleteStudentMappingSql, new { SMSID = smsID });
+        //            }
+
+        //            // Insert into tblSMSStudentMapping
+        //            string insertStudentMappingSql = "INSERT INTO tblSMSStudentMapping (SMSID, StudentID) VALUES (@SMSID, @StudentID)";
+        //            foreach (var studentID in request.StudentIDs)
+        //            {
+        //                await _connection.ExecuteAsync(insertStudentMappingSql, new { SMSID = smsID, StudentID = studentID });
+        //            }
+        //        }
+        //        else if (request.UserTypeID == 2 && request.EmployeeIDs != null && request.EmployeeIDs.Count > 0)
+        //        {
+        //            // Delete existing mappings if updating
+        //            if (request.SMSID != 0)
+        //            {
+        //                string deleteEmployeeMappingSql = "DELETE FROM tblSMSEmployeeMapping WHERE SMSID = @SMSID";
+        //                await _connection.ExecuteAsync(deleteEmployeeMappingSql, new { SMSID = smsID });
+        //            }
+
+        //            // Insert into tblSMSEmployeeMapping
+        //            string insertEmployeeMappingSql = "INSERT INTO tblSMSEmployeeMapping (SMSID, EmployeeID) VALUES (@SMSID, @EmployeeID)";
+        //            foreach (var employeeID in request.EmployeeIDs)
+        //            {
+        //                await _connection.ExecuteAsync(insertEmployeeMappingSql, new { SMSID = smsID, EmployeeID = employeeID });
+        //            }
+        //        }
+
+        //        return new ServiceResponse<string>(true, "Operation Successful", "SMS added/updated successfully", StatusCodes.Status200OK);
+        //    }
+        //    else
+        //    {
+        //        return new ServiceResponse<string>(false, "Operation Failed", "Error adding/updating SMS", StatusCodes.Status400BadRequest);
+        //    }
+        //}
+
         public async Task<ServiceResponse<string>> SendNewSMS(SendNewSMSRequest request)
         {
+            // Convert ScheduleDate and ScheduleTime from string to DateTime for insertion into database
+            DateTime? scheduleDate = null;
+            DateTime? scheduleTime = null;
+
+            // Parse ScheduleDate if provided
+            if (!string.IsNullOrEmpty(request.ScheduleDate))
+            {
+                scheduleDate = DateTime.ParseExact(request.ScheduleDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+            }
+
+            // Parse ScheduleTime if provided
+            if (!string.IsNullOrEmpty(request.ScheduleTime))
+            {
+                scheduleTime = DateTime.ParseExact(request.ScheduleTime, "hh:mm tt", CultureInfo.InvariantCulture);
+            }
+
             // Step 1: Insert or update the SMS message
             string sql;
             if (request.SMSID == 0)
             {
-                sql = @"INSERT INTO [tblSMSMessage] (PredefinedTemplateID, SMSMessage, UserTypeID, GroupID, Status, ScheduleNow, ScheduleDate, ScheduleTime) 
-                VALUES (@PredefinedTemplateID, @SMSMessage, @UserTypeID, @GroupID, @Status, @ScheduleNow, @ScheduleDate, @ScheduleTime);
+                sql = @"INSERT INTO [tblSMSMessage] (PredefinedTemplateID, SMSMessage, UserTypeID, GroupID, Status, ScheduleNow, ScheduleDate, ScheduleTime, AcademicYearCode, InstituteID) 
+                VALUES (@PredefinedTemplateID, @SMSMessage, @UserTypeID, @GroupID, @Status, @ScheduleNow, @ScheduleDate, @ScheduleTime, @AcademicYearCode, @InstituteID);
                 SELECT CAST(SCOPE_IDENTITY() as int);";  // Get the newly inserted ID
-            }
-            else
-            {
-                sql = @"UPDATE [tblSMSMessage] 
+                    }
+                    else
+                    {
+                        sql = @"UPDATE [tblSMSMessage] 
                 SET PredefinedTemplateID = @PredefinedTemplateID, SMSMessage = @SMSMessage, UserTypeID = @UserTypeID, GroupID = @GroupID, 
-                    Status = @Status, ScheduleNow = @ScheduleNow, ScheduleDate = @ScheduleDate, ScheduleTime = @ScheduleTime 
+                    Status = @Status, ScheduleNow = @ScheduleNow, ScheduleDate = @ScheduleDate, ScheduleTime = @ScheduleTime, 
+                    AcademicYearCode = @AcademicYearCode, InstituteID = @InstituteID 
                 WHERE SMSID = @SMSID;
                 SELECT @SMSID;";
             }
 
             // Execute the query and get the SMSID
-            var smsID = await _connection.ExecuteScalarAsync<int>(sql, request);
+            var smsID = await _connection.ExecuteScalarAsync<int>(sql, new
+            {
+                request.PredefinedTemplateID,
+                request.SMSMessage,
+                request.UserTypeID,
+                request.GroupID,
+                request.Status,
+                request.ScheduleNow,
+                ScheduleDate = scheduleDate,
+                ScheduleTime = scheduleTime,
+                request.AcademicYearCode,
+                request.InstituteID,
+                request.SMSID
+            });
 
             if (smsID > 0)
             {
@@ -138,6 +235,7 @@ namespace Communication_API.Repository.Implementations.SMS
                 return new ServiceResponse<string>(false, "Operation Failed", "Error adding/updating SMS", StatusCodes.Status400BadRequest);
             }
         }
+
 
         public async Task<ServiceResponse<List<NotificationReport>>> GetSMSReport(GetSMSReportRequest request)
         {
@@ -202,6 +300,76 @@ namespace Communication_API.Repository.Implementations.SMS
             {
                 return new ServiceResponse<List<NotificationReport>>(false, "No records found", null, 404);
             }
+        }
+
+        public async Task InsertSMSForStudent(int groupID, int instituteID, int studentID, string smsMessage, DateTime smsDate, int smsStatusID)
+        {
+            string sql = @"
+                INSERT INTO tblSMSStudent (GroupID, InstituteID, StudentID, SMSMessage, SMSDate, SMSStatusID)
+                VALUES (@GroupID, @InstituteID, @StudentID, @SMSMessage, @SMSDate, @SMSStatusID)";
+
+            await _connection.ExecuteAsync(sql, new
+            {
+                GroupID = groupID,
+                InstituteID = instituteID,
+                StudentID = studentID,
+                SMSMessage = smsMessage,
+                SMSDate = smsDate,
+                SMSStatusID = smsStatusID
+            });
+        }
+
+        public async Task InsertSMSForEmployee(int groupID, int instituteID, int employeeID, string smsMessage, DateTime smsDate, int smsStatusID)
+        {
+            string sql = @"
+                INSERT INTO tblSMSEmployee (GroupID, InstituteID, EmployeeID, SMSMessage, SMSDate, SMSStatusID)
+                VALUES (@GroupID, @InstituteID, @EmployeeID, @SMSMessage, @SMSDate, @SMSStatusID)";
+
+            await _connection.ExecuteAsync(sql, new
+            {
+                GroupID = groupID,
+                InstituteID = instituteID,
+                EmployeeID = employeeID,
+                SMSMessage = smsMessage,
+                SMSDate = smsDate,
+                SMSStatusID = smsStatusID
+            });
+        }
+
+        public async Task UpdateSMSStudentStatus(int groupID, int instituteID, int studentID, int smsStatusID)
+        {
+            string sql = @"
+                UPDATE tblSMSStudent
+                SET SMSStatusID = @SMSStatusID
+                WHERE GroupID = @GroupID
+                  AND InstituteID = @InstituteID
+                  AND StudentID = @StudentID";
+
+            await _connection.ExecuteAsync(sql, new
+            {
+                GroupID = groupID,
+                InstituteID = instituteID,
+                StudentID = studentID,
+                SMSStatusID = smsStatusID
+            });
+        }
+
+        public async Task UpdateSMSEmployeeStatus(int groupID, int instituteID, int employeeID, int smsStatusID)
+        {
+            string sql = @"
+                UPDATE tblSMSEmployee
+                SET SMSStatusID = @SMSStatusID
+                WHERE GroupID = @GroupID
+                  AND InstituteID = @InstituteID
+                  AND EmployeeID = @EmployeeID";
+
+            await _connection.ExecuteAsync(sql, new
+            {
+                GroupID = groupID,
+                InstituteID = instituteID,
+                EmployeeID = employeeID,
+                SMSStatusID = smsStatusID
+            });
         }
 
     }

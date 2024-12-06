@@ -6,6 +6,7 @@ using Communication_API.Repository.Interfaces.WhatsApp;
 using Dapper;
 using System.Data;
 using System.Data.SqlClient;
+using System.Globalization;
 
 namespace Communication_API.Repository.Implementations.WhatsApp
 {
@@ -76,17 +77,89 @@ namespace Communication_API.Repository.Implementations.WhatsApp
             return new ServiceResponse<List<WhatsAppTemplate>>(true, "Records Found", templates.ToList(), 302, totalCount);
         }
 
+        //public async Task<ServiceResponse<string>> Send(SendWhatsAppRequest request)
+        //{
+        //    // Step 1: Insert the WhatsApp message into tblWhatsAppMessage
+        //    string sql = @"
+        //        INSERT INTO [tblWhatsAppMessage] 
+        //        (PredefinedTemplateID, WhatsAppMessage, UserTypeID, GroupID, ScheduleNow, ScheduleDate, ScheduleTime) 
+        //        VALUES (@PredefinedTemplateID, @WhatsAppMessage, @UserTypeID, @GroupID, @ScheduleNow, @ScheduleDate, @ScheduleTime);
+        //        SELECT CAST(SCOPE_IDENTITY() as int);"; // Get the newly inserted ID
+
+        //    // Execute the query and get the WhatsAppMessageID
+        //    var whatsAppMessageID = await _connection.ExecuteScalarAsync<int>(sql, request);
+
+        //    // Step 2: Proceed with student or employee mappings
+        //    if (whatsAppMessageID > 0)
+        //    {
+        //        // Handle student mapping
+        //        if (request.UserTypeID == 1 && request.StudentIDs != null && request.StudentIDs.Count > 0)
+        //        {
+        //            // Insert into tblWhatsAppStudentMapping
+        //            string insertStudentMappingSql = "INSERT INTO tblWhatsAppStudentMapping (WhatsAppMessageID, StudentID) VALUES (@WhatsAppMessageID, @StudentID)";
+        //            foreach (var studentID in request.StudentIDs)
+        //            {
+        //                await _connection.ExecuteAsync(insertStudentMappingSql, new { WhatsAppMessageID = whatsAppMessageID, StudentID = studentID });
+        //            }
+        //        }
+        //        // Handle employee mapping
+        //        else if (request.UserTypeID == 2 && request.EmployeeIDs != null && request.EmployeeIDs.Count > 0)
+        //        {
+        //            // Insert into tblWhatsAppEmployeeMapping
+        //            string insertEmployeeMappingSql = "INSERT INTO tblWhatsAppEmployeeMapping (WhatsAppMessageID, EmployeeID) VALUES (@WhatsAppMessageID, @EmployeeID)";
+        //            foreach (var employeeID in request.EmployeeIDs)
+        //            {
+        //                await _connection.ExecuteAsync(insertEmployeeMappingSql, new { WhatsAppMessageID = whatsAppMessageID, EmployeeID = employeeID });
+        //            }
+        //        }
+
+        //        return new ServiceResponse<string>(true, "WhatsApp message sent successfully", "WhatsApp message added/updated successfully", 201);
+        //    }
+        //    else
+        //    {
+        //        return new ServiceResponse<string>(false, "Operation Failed", "Error adding/updating WhatsApp message", 400);
+        //    }
+        //}
+
+
         public async Task<ServiceResponse<string>> Send(SendWhatsAppRequest request)
         {
+            // Convert ScheduleDate and ScheduleTime from string to DateTime for insertion into the database
+            DateTime? scheduleDate = null;
+            DateTime? scheduleTime = null;
+
+            // Parse ScheduleDate if provided
+            if (!string.IsNullOrEmpty(request.ScheduleDate))
+            {
+                scheduleDate = DateTime.ParseExact(request.ScheduleDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+            }
+
+            // Parse ScheduleTime if provided
+            if (!string.IsNullOrEmpty(request.ScheduleTime))
+            {
+                scheduleTime = DateTime.ParseExact(request.ScheduleTime, "hh:mm tt", CultureInfo.InvariantCulture);
+            }
+
             // Step 1: Insert the WhatsApp message into tblWhatsAppMessage
             string sql = @"
-                INSERT INTO [tblWhatsAppMessage] 
-                (PredefinedTemplateID, WhatsAppMessage, UserTypeID, GroupID, ScheduleNow, ScheduleDate, ScheduleTime) 
-                VALUES (@PredefinedTemplateID, @WhatsAppMessage, @UserTypeID, @GroupID, @ScheduleNow, @ScheduleDate, @ScheduleTime);
-                SELECT CAST(SCOPE_IDENTITY() as int);"; // Get the newly inserted ID
+        INSERT INTO [tblWhatsAppMessage] 
+        (PredefinedTemplateID, WhatsAppMessage, UserTypeID, GroupID, ScheduleNow, ScheduleDate, ScheduleTime, AcademicYearCode, InstituteID) 
+        VALUES (@PredefinedTemplateID, @WhatsAppMessage, @UserTypeID, @GroupID, @ScheduleNow, @ScheduleDate, @ScheduleTime, @AcademicYearCode, @InstituteID);
+        SELECT CAST(SCOPE_IDENTITY() as int);"; // Get the newly inserted ID
 
             // Execute the query and get the WhatsAppMessageID
-            var whatsAppMessageID = await _connection.ExecuteScalarAsync<int>(sql, request);
+            var whatsAppMessageID = await _connection.ExecuteScalarAsync<int>(sql, new
+            {
+                request.PredefinedTemplateID,
+                request.WhatsAppMessage,
+                request.UserTypeID,
+                request.GroupID,
+                request.ScheduleNow,
+                ScheduleDate = scheduleDate,
+                ScheduleTime = scheduleTime,
+                request.AcademicYearCode,  // Passing the AcademicYearCode
+                request.InstituteID        // Passing the InstituteID
+            });
 
             // Step 2: Proceed with student or employee mappings
             if (whatsAppMessageID > 0)
@@ -184,5 +257,74 @@ namespace Communication_API.Repository.Implementations.WhatsApp
             }
         }
 
+        public async Task InsertWhatsAppForStudent(int groupID, int instituteID, int studentID, string whatsAppMessage, DateTime whatsAppDate, int whatsAppStatusID)
+        {
+            string sql = @"
+                INSERT INTO tblWhatsAppStudent (GroupID, InstituteID, StudentID, WhatsAppMessage, WhatsAppDate, WhatsAppStatusID)
+                VALUES (@GroupID, @InstituteID, @StudentID, @WhatsAppMessage, @WhatsAppDate, @WhatsAppStatusID)";
+
+            await _connection.ExecuteAsync(sql, new
+            {
+                GroupID = groupID,
+                InstituteID = instituteID,
+                StudentID = studentID,
+                WhatsAppMessage = whatsAppMessage,
+                WhatsAppDate = whatsAppDate,
+                WhatsAppStatusID = whatsAppStatusID
+            });
+        }
+
+        public async Task InsertWhatsAppForEmployee(int groupID, int instituteID, int employeeID, string whatsAppMessage, DateTime whatsAppDate, int whatsAppStatusID)
+        {
+            string sql = @"
+                INSERT INTO tblWhatsAppEmployee (GroupID, InstituteID, EmployeeID, WhatsAppMessage, WhatsAppDate, WhatsAppStatusID)
+                VALUES (@GroupID, @InstituteID, @EmployeeID, @WhatsAppMessage, @WhatsAppDate, @WhatsAppStatusID)";
+
+            await _connection.ExecuteAsync(sql, new
+            {
+                GroupID = groupID,
+                InstituteID = instituteID,
+                EmployeeID = employeeID,
+                WhatsAppMessage = whatsAppMessage,
+                WhatsAppDate = whatsAppDate,
+                WhatsAppStatusID = whatsAppStatusID
+            });
+        }
+
+        public async Task UpdateWhatsAppStatusForStudent(int groupID, int instituteID, int studentID, int whatsAppStatusID)
+        {
+            string sql = @"
+                UPDATE tblWhatsAppStudent
+                SET WhatsAppStatusID = @WhatsAppStatusID
+                WHERE GroupID = @GroupID
+                  AND InstituteID = @InstituteID
+                  AND StudentID = @StudentID";
+
+            await _connection.ExecuteAsync(sql, new
+            {
+                GroupID = groupID,
+                InstituteID = instituteID,
+                StudentID = studentID,
+                WhatsAppStatusID = whatsAppStatusID
+            });
+        }
+
+        public async Task UpdateWhatsAppStatusForEmployee(int groupID, int instituteID, int employeeID, int whatsAppStatusID)
+        {
+            string sql = @"
+                UPDATE tblWhatsAppEmployee
+                SET WhatsAppStatusID = @WhatsAppStatusID
+                WHERE GroupID = @GroupID
+                  AND InstituteID = @InstituteID
+                  AND EmployeeID = @EmployeeID";
+
+            await _connection.ExecuteAsync(sql, new
+            {
+                GroupID = groupID,
+                InstituteID = instituteID,
+                EmployeeID = employeeID,
+                WhatsAppStatusID = whatsAppStatusID
+            });
+        }
     }
 }

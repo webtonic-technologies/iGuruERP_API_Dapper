@@ -16,15 +16,20 @@ namespace UserRoleManagement_API.Services.Implementations
         {
             _roleRepository = roleRepository;
         }
-
-        public async Task<ServiceResponse<string>> SetRolePermission(SetRolePermissionRequest request)
+         
+        public async Task<ServiceResponse<CreateNewRoleResponse>> CreateNewRole(CreateNewRoleRequest request)
         {
-            return await _roleRepository.SetRolePermission(request);
+            return await _roleRepository.CreateNewRole(request);
         }
 
-        public async Task<ServiceResponse<List<UserRoleWithPermissionsResponse>>> GetAllUserRoles()
+        public async Task<ServiceResponse<List<GetUserRolesResponse>>> GetUserRoles(GetUserRolesRequest request)
         {
-            return await _roleRepository.GetAllUserRoles();
+            return await _roleRepository.GetUserRoles(request);
+        }
+
+        public async Task<ServiceResponse<string>> AssignRole(AssignRoleRequest request)
+        {
+            return await _roleRepository.AssignRole(request);
         }
     }
 }

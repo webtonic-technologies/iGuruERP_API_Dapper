@@ -7,7 +7,7 @@ namespace SiteAdmin_API.Services.Interfaces
     public interface IPackageService
     {
         Task<ServiceResponse<Package>> AddUpdatePackage(AddUpdatePackageRequest request);
-        Task<ServiceResponse<List<Package>>> GetAllPackages();
+        Task<ServiceResponse<List<GetPackage>>> GetAllPackages();
         Task<ServiceResponse<bool>> UpdatePackageStatus(int packageId);
     }
 }

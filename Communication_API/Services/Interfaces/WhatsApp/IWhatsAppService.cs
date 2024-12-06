@@ -13,5 +13,10 @@ namespace Communication_API.Services.Interfaces.WhatsApp
         Task<ServiceResponse<List<WhatsAppTemplate>>> GetWhatsAppTemplate(GetWhatsAppTemplateRequest request);
         Task<ServiceResponse<string>> Send(SendWhatsAppRequest request);
         Task<ServiceResponse<List<WhatsAppReportResponse>>> GetWhatsAppReport(GetWhatsAppReportRequest request);
+        Task<ServiceResponse<string>> SendWhatsAppToStudents(SendWhatsAppStudentRequest request);
+        Task<ServiceResponse<string>> SendWhatsAppToEmployees(SendWhatsAppEmployeeRequest request);
+        Task<ServiceResponse<string>> UpdateWhatsAppStudentStatus(UpdateWhatsAppStudentStatusRequest request);
+        Task<ServiceResponse<string>> UpdateWhatsAppEmployeeStatus(UpdateWhatsAppEmployeeStatusRequest request);
+
     }
 }

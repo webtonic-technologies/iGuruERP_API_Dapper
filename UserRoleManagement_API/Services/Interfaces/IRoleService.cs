@@ -7,8 +7,10 @@ using UserRoleManagement_API.DTOs.Requests;
 namespace UserRoleManagement_API.Services.Interfaces
 {
     public interface IRoleService
-    {
-        Task<ServiceResponse<string>> SetRolePermission(SetRolePermissionRequest request);
-        Task<ServiceResponse<List<UserRoleWithPermissionsResponse>>> GetAllUserRoles();
+    { 
+        Task<ServiceResponse<CreateNewRoleResponse>> CreateNewRole(CreateNewRoleRequest request);
+        Task<ServiceResponse<List<GetUserRolesResponse>>> GetUserRoles(GetUserRolesRequest request);
+        Task<ServiceResponse<string>> AssignRole(AssignRoleRequest request);
+
     }
 }

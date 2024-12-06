@@ -1,4 +1,5 @@
 ﻿using Communication_API.DTOs.Requests.PushNotification;
+using Communication_API.DTOs.Responses.PushNotification;
 using Communication_API.DTOs.ServiceResponse;
 using Communication_API.Models.PushNotification;
 using Communication_API.Repository.Interfaces.PushNotification;
@@ -6,6 +7,7 @@ using Dapper;
 using System.Data;
 using System.Data.Common;
 using System.Data.SqlClient;
+using System.Globalization;
 
 namespace Communication_API.Repository.Implementations.PushNotification
 {
@@ -20,29 +22,46 @@ namespace Communication_API.Repository.Implementations.PushNotification
 
         public async Task<ServiceResponse<string>> TriggerNotification(TriggerNotificationRequest request)
         {
-            // Step 1: Insert or update the push notification
+            // Step 1: Convert ScheduleDate and ScheduleTime to DateTime and TimeSpan
+            DateTime parsedScheduleDate = DateTime.ParseExact(request.ScheduleDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+            TimeSpan parsedScheduleTime = DateTime.ParseExact(request.ScheduleTime, "hh:mm tt", CultureInfo.InvariantCulture).TimeOfDay;
+
+            // Step 2: Insert or update the push notification
             string sql;
             if (request.PushNotificationID == 0)
             {
                 sql = @"INSERT INTO [tblPushNotificationMaster] 
-                (PredefinedTemplateID, NotificationMessage, UserTypeID, GroupID, Status, ScheduleNow, ScheduleDate, ScheduleTime) 
-                VALUES (@PredefinedTemplateID, @NotificationMessage, @UserTypeID, @GroupID, @Status, @ScheduleNow, @ScheduleDate, @ScheduleTime);
+                (PredefinedTemplateID, NotificationMessage, UserTypeID, GroupID, ScheduleNow, ScheduleDate, ScheduleTime, AcademicYearCode, InstituteID) 
+                VALUES (@PredefinedTemplateID, @NotificationMessage, @UserTypeID, @GroupID, @ScheduleNow, @ScheduleDate, @ScheduleTime, @AcademicYearCode, @InstituteID);
                 SELECT CAST(SCOPE_IDENTITY() as int);";  // Get the newly inserted ID
             }
             else
             {
                 sql = @"UPDATE [tblPushNotificationMaster] 
                 SET PredefinedTemplateID = @PredefinedTemplateID, NotificationMessage = @NotificationMessage, UserTypeID = @UserTypeID, 
-                    GroupID = @GroupID, Status = @Status, ScheduleNow = @ScheduleNow, ScheduleDate = @ScheduleDate, ScheduleTime = @ScheduleTime 
+                    GroupID = @GroupID, ScheduleNow = @ScheduleNow, ScheduleDate = @ScheduleDate, ScheduleTime = @ScheduleTime,
+                    AcademicYearCode = @AcademicYearCode, InstituteID = @InstituteID
                 WHERE PushNotificationID = @PushNotificationID";
             }
 
             // Execute the query and get the PushNotificationID
             var pushNotificationID = request.PushNotificationID == 0
-                ? await _connection.ExecuteScalarAsync<int>(sql, request)
+                ? await _connection.ExecuteScalarAsync<int>(sql, new
+                {
+                    request.PredefinedTemplateID,
+                    request.NotificationMessage,
+                    request.UserTypeID,
+                    request.GroupID,
+                    request.ScheduleNow,
+                    ScheduleDate = parsedScheduleDate, // Pass parsed DateTime
+                    ScheduleTime = parsedScheduleTime, // Pass parsed TimeSpan
+                    request.AcademicYearCode,  // Pass AcademicYearCode
+                    request.InstituteID,       // Pass InstituteID
+                    request.PushNotificationID
+                })
                 : request.PushNotificationID;
 
-            // Step 2: Handle the student or employee mappings
+            // Step 3: Handle the student or employee mappings
             if (pushNotificationID > 0)
             {
                 // If updating, clear existing mappings
@@ -85,6 +104,122 @@ namespace Communication_API.Repository.Implementations.PushNotification
                 return new ServiceResponse<string>(false, "Operation Failed", "Error adding/updating PushNotification", StatusCodes.Status400BadRequest);
             }
         }
+
+        //public async Task<ServiceResponse<List<PushNotificationStudentsResponse>>> GetPushNotificationStudent(PushNotificationStudentsRequest request)
+        //{
+        //    string userStatusCondition = request.UserTypeStatus switch
+        //    {
+        //        1 => "AND sm.isActive = 1",
+        //        2 => "AND sm.isActive = 0",
+        //        _ => "" // 3 means both Active and Inactive, so no filter
+        //    };
+
+        //    // Build the SQL query with IN to handle multiple GroupIDs
+        //    string sql = @"
+        //    SELECT 
+        //        cg.GroupID,
+        //        sm.student_id AS StudentID,
+        //        sm.First_Name + ' ' + sm.Last_Name AS StudentName,
+        //        sm.Roll_Number AS RollNumber,
+        //        sm.Admission_Number AS AdmissionNumber,
+        //        sm.class_id AS ClassID,
+        //        c.class_name AS ClassName,
+        //        sm.section_id AS SectionID,
+        //        s.section_name AS SectionName,
+        //        sm.isActive AS IsActive
+        //    FROM tbl_StudentMaster sm
+        //    INNER JOIN tblGroupClassSectionMapping gcsm ON gcsm.ClassID = sm.class_id AND gcsm.SectionID = sm.section_id
+        //    INNER JOIN tbl_Section s ON s.section_id = sm.section_id
+        //    INNER JOIN tbl_Class c ON c.class_id = sm.class_id
+        //    INNER JOIN tblCommunicationGroup cg ON cg.GroupID IN @GroupIDs  -- Use IN for multiple GroupIDs
+        //    WHERE sm.institute_id = @InstituteID
+        //    " + userStatusCondition + @"
+        //    ORDER BY sm.Roll_Number";
+
+        //    // Execute the query with the provided InstituteID and GroupIDs
+        //    var students = await _connection.QueryAsync<PushNotificationStudentsResponse>(sql, new { request.InstituteID, GroupIDs = request.GroupIDs });
+
+        //    return new ServiceResponse<List<PushNotificationStudentsResponse>>(true, "Students fetched successfully", students.ToList(), 200);
+        //}
+
+        public async Task<ServiceResponse<List<PushNotificationStudentsResponse>>> GetPushNotificationStudent(PushNotificationStudentsRequest request)
+        {
+            // Define the user status condition based on the UserTypeStatus (Active, Inactive, or All)
+            string userStatusCondition = request.UserTypeStatus switch
+            {
+                1 => "AND sm.isActive = 1",  // Active students
+                2 => "AND sm.isActive = 0",  // Inactive students
+                _ => ""  // UserTypeStatus = 3 means both Active and Inactive
+            };
+
+            // Build the SQL query with IN to handle multiple GroupIDs and fetch required student details
+            string sql = @"
+        SELECT DISTINCT
+            scg.GroupID,
+            scg.StudentID,
+            sm.First_Name + ' ' + sm.Last_Name AS StudentName,
+            sm.Roll_Number AS RollNumber,
+            sm.Admission_Number AS AdmissionNumber,
+            sm.class_id AS ClassID,
+            c.class_name AS ClassName,
+            sm.section_id AS SectionID,
+            s.section_name AS SectionName,
+            sm.isActive AS IsActive
+        FROM StudentCommGroup scg
+        INNER JOIN tbl_StudentMaster sm ON sm.student_id = scg.StudentID
+        INNER JOIN tbl_Section s ON s.section_id = sm.section_id
+        INNER JOIN tbl_Class c ON c.class_id = sm.class_id
+        INNER JOIN tblCommunicationGroup cg ON cg.GroupID IN @GroupIDs  -- Use IN for multiple GroupIDs
+        WHERE sm.institute_id = @InstituteID
+        " + userStatusCondition + @"
+        ORDER BY sm.Roll_Number";
+
+            // Execute the query with the provided InstituteID and GroupIDs
+            var students = await _connection.QueryAsync<PushNotificationStudentsResponse>(sql, new { request.InstituteID, GroupIDs = request.GroupIDs });
+
+            // Return the results in a ServiceResponse
+            return new ServiceResponse<List<PushNotificationStudentsResponse>>(true, "Students fetched successfully", students.ToList(), 200);
+        }
+
+        public async Task<ServiceResponse<List<PushNotificationEmployeesResponse>>> GetPushNotificationEmployee(PushNotificationEmployeesRequest request)
+        {
+            // Define the user status condition based on the UserTypeStatus (Active, Inactive, or All)
+            string userStatusCondition = request.UserTypeStatus switch
+            {
+                1 => "AND epm.Status = 1",  // Active employees
+                2 => "AND epm.Status = 0",  // Inactive employees
+                _ => ""  // UserTypeStatus = 3 means both Active and Inactive
+            };
+
+            // Build the SQL query with IN to handle multiple GroupIDs and fetch required employee details
+            string sql = @"
+    SELECT 
+        cg.GroupID,
+        ecg.EmployeeID,
+        epm.First_Name + ' ' + epm.Last_Name AS EmployeeName,
+        epm.Employee_code_id AS EmployeeCode,
+        epm.Department_id AS DepartmentID,
+        d.DepartmentName AS DepartmentName,
+        epm.Designation_id AS DesignationID,
+        des.DesignationName AS DesignationName,
+        epm.Status AS IsActive
+    FROM EmployeeCommGroup ecg
+    INNER JOIN tbl_EmployeeProfileMaster epm ON epm.Employee_id = ecg.EmployeeID
+    INNER JOIN tbl_Department d ON d.Department_id = epm.Department_id
+    INNER JOIN tbl_Designation des ON des.Designation_id = epm.Designation_id
+    INNER JOIN tblCommunicationGroup cg ON cg.GroupID = ecg.GroupID  -- Ensure Employee is mapped to GroupID
+    WHERE epm.Institute_id = @InstituteID
+    AND cg.GroupID IN @GroupIDs  -- Filter by provided GroupIDs
+    " + userStatusCondition + @"
+    ORDER BY epm.Employee_code_id";
+
+            // Execute the query with the provided InstituteID and GroupIDs
+            var employees = await _connection.QueryAsync<PushNotificationEmployeesResponse>(sql, new { request.InstituteID, GroupIDs = request.GroupIDs });
+
+            // Return the results in a ServiceResponse
+            return new ServiceResponse<List<PushNotificationEmployeesResponse>>(true, "Employees fetched successfully", employees.ToList(), 200);
+        }
+
 
         public async Task<ServiceResponse<List<Notification>>> GetNotificationReport(GetNotificationReportRequest request)
         {
@@ -148,6 +283,76 @@ namespace Communication_API.Repository.Implementations.PushNotification
             {
                 return new ServiceResponse<List<Notification>>(false, "No records found", null, 404);
             }
+        }
+
+        public async Task InsertPushNotificationForStudent(int groupID, int instituteID, int studentID, string message, DateTime notificationDate, int statusID)
+        {
+            string sql = @"
+                INSERT INTO tblPushNotificationStudent (GroupID, InstituteID, StudentID, PushNotificationMessage, PushNotificationDate, PushNotificationStatusID)
+                VALUES (@GroupID, @InstituteID, @StudentID, @PushNotificationMessage, @PushNotificationDate, @PushNotificationStatusID)";
+
+            await _connection.ExecuteAsync(sql, new
+            {
+                GroupID = groupID,
+                InstituteID = instituteID,
+                StudentID = studentID,
+                PushNotificationMessage = message,
+                PushNotificationDate = notificationDate,
+                PushNotificationStatusID = statusID
+            });
+        }
+
+        public async Task InsertPushNotificationForEmployee(int groupID, int instituteID, int employeeID, string message, DateTime notificationDate, int statusID)
+        {
+            string sql = @"
+                INSERT INTO tblPushNotificationEmployee (GroupID, InstituteID, EmployeeID, PushNotificationMessage, PushNotificationDate, PushNotificationStatusID)
+                VALUES (@GroupID, @InstituteID, @EmployeeID, @PushNotificationMessage, @PushNotificationDate, @PushNotificationStatusID)";
+
+            await _connection.ExecuteAsync(sql, new
+            {
+                GroupID = groupID,
+                InstituteID = instituteID,
+                EmployeeID = employeeID,
+                PushNotificationMessage = message,
+                PushNotificationDate = notificationDate,
+                PushNotificationStatusID = statusID
+            });
+        }
+
+        public async Task UpdatePushNotificationStudentStatus(int groupID, int instituteID, int studentID, int pushNotificationStatusID)
+        {
+            string sql = @"
+                UPDATE tblPushNotificationStudent
+                SET PushNotificationStatusID = @PushNotificationStatusID
+                WHERE GroupID = @GroupID
+                  AND InstituteID = @InstituteID
+                  AND StudentID = @StudentID";
+
+            await _connection.ExecuteAsync(sql, new
+            {
+                GroupID = groupID,
+                InstituteID = instituteID,
+                StudentID = studentID,
+                PushNotificationStatusID = pushNotificationStatusID
+            });
+        }
+
+        public async Task UpdatePushNotificationEmployeeStatus(int groupID, int instituteID, int employeeID, int pushNotificationStatusID)
+        {
+            string sql = @"
+                UPDATE tblPushNotificationEmployee
+                SET PushNotificationStatusID = @PushNotificationStatusID
+                WHERE GroupID = @GroupID
+                  AND InstituteID = @InstituteID
+                  AND EmployeeID = @EmployeeID";
+
+            await _connection.ExecuteAsync(sql, new
+            {
+                GroupID = groupID,
+                InstituteID = instituteID,
+                EmployeeID = employeeID,
+                PushNotificationStatusID = pushNotificationStatusID
+            });
         }
 
     }

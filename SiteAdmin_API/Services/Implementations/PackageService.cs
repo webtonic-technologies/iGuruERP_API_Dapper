@@ -20,7 +20,7 @@ namespace SiteAdmin_API.Services.Implementations
             return await _packageRepository.AddUpdatePackage(request);
         }
 
-        public async Task<ServiceResponse<List<Package>>> GetAllPackages()
+        public async Task<ServiceResponse<List<GetPackage>>> GetAllPackages()
         {
             return await _packageRepository.GetAllPackages();
         }

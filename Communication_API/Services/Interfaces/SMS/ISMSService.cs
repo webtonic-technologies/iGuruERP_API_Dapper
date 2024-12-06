@@ -13,5 +13,11 @@ namespace Communication_API.Services.Interfaces.SMS
         Task<ServiceResponse<List<SMSTemplate>>> GetAllSMSTemplate(GetAllSMSTemplateRequest request);
         Task<ServiceResponse<string>> SendNewSMS(SendNewSMSRequest request);
         Task<ServiceResponse<List<NotificationReport>>> GetSMSReport(GetSMSReportRequest request);
+        Task<ServiceResponse<string>> SendSMSStudent(SendSMSStudentRequest request);
+        Task<ServiceResponse<string>> SendSMSEmployee(SendSMSEmployeeRequest request);
+        Task<ServiceResponse<string>> UpdateSMSStudentStatus(UpdateSMSStudentStatusRequest request);
+        Task<ServiceResponse<string>> UpdateSMSEmployeeStatus(UpdateSMSEmployeeStatusRequest request);
+
+
     }
 }

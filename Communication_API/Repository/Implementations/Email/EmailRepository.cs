@@ -6,6 +6,7 @@ using Communication_API.Repository.Interfaces.Email;
 using Dapper;
 using System.Data;
 using System.Data.SqlClient;
+using System.Globalization;
 
 namespace Communication_API.Repository.Implementations.Email
 {
@@ -57,13 +58,41 @@ namespace Communication_API.Repository.Implementations.Email
                 return new ServiceResponse<string>(false, "userTypeID 2 cannot be used with StudentIDs", null, 400);
             }
 
+            // Parse ScheduleDate and ScheduleTime from string to DateTime
+            DateTime? scheduleDate = null;
+            DateTime? scheduleTime = null;
+
+            // Parse ScheduleDate if provided
+            if (!string.IsNullOrEmpty(request.ScheduleDate))
+            {
+                scheduleDate = DateTime.ParseExact(request.ScheduleDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+            }
+
+            // Parse ScheduleTime if provided
+            if (!string.IsNullOrEmpty(request.ScheduleTime))
+            {
+                scheduleTime = DateTime.ParseExact(request.ScheduleTime, "hh:mm tt", CultureInfo.InvariantCulture);
+            }
+
             // Insert or update the Email
-            var query = @"INSERT INTO [tblEmailMaster] (EmailSubject, EmailBody, UserTypeID, GroupID, Status, ScheduleNow, ScheduleDate, ScheduleTime) 
-                  VALUES (@EmailSubject, @EmailBody, @UserTypeID, @GroupID, @Status, @ScheduleNow, @ScheduleDate, @ScheduleTime);
-                  SELECT CAST(SCOPE_IDENTITY() as int);";
+            var query = @"INSERT INTO [tblEmailMaster] (EmailSubject, EmailBody, UserTypeID, GroupID, Status, ScheduleNow, ScheduleDate, ScheduleTime, AcademicYearCode, InstituteID) 
+          VALUES (@EmailSubject, @EmailBody, @UserTypeID, @GroupID, @Status, @ScheduleNow, @ScheduleDate, @ScheduleTime, @AcademicYearCode, @InstituteID);
+          SELECT CAST(SCOPE_IDENTITY() as int);";
 
             // Execute the query and get the EmailSendID
-            var emailSendID = await _connection.ExecuteScalarAsync<int>(query, request);
+            var emailSendID = await _connection.ExecuteScalarAsync<int>(query, new
+            {
+                request.EmailSubject,
+                request.EmailBody,
+                request.UserTypeID,
+                request.GroupID,
+                request.Status,
+                request.ScheduleNow,
+                ScheduleDate = scheduleDate,
+                ScheduleTime = scheduleTime,
+                request.AcademicYearCode,
+                request.InstituteID
+            });
 
             // Proceed with student or employee mappings
             if (emailSendID > 0)
@@ -158,6 +187,77 @@ namespace Communication_API.Repository.Implementations.Email
             {
                 return new ServiceResponse<List<EmailReportResponse>>(false, "No records found", null, 404);
             }
+        }
+
+        public async Task InsertEmailForStudent(int groupID, int instituteID, int studentID, string emailSubject, string emailBody, DateTime emailDate, int emailStatusID)
+        {
+            string sql = @"
+                INSERT INTO tblEmailStudent (GroupID, InstituteID, StudentID, EmailSubject, EmailBody, EmailDate, EmailStatusID)
+                VALUES (@GroupID, @InstituteID, @StudentID, @EmailSubject, @EmailBody, @EmailDate, @EmailStatusID)";
+
+            await _connection.ExecuteAsync(sql, new
+            {
+                GroupID = groupID,
+                InstituteID = instituteID,
+                StudentID = studentID,
+                EmailSubject = emailSubject,
+                EmailBody = emailBody,
+                EmailDate = emailDate,
+                EmailStatusID = emailStatusID
+            });
+        }
+        public async Task InsertEmailForEmployee(int groupID, int instituteID, int employeeID, string emailSubject, string emailBody, DateTime emailDate, int emailStatusID)
+        {
+            string sql = @"
+                INSERT INTO tblEmailEmployee (GroupID, InstituteID, EmployeeID, EmailSubject, EmailBody, EmailDate, EmailStatusID)
+                VALUES (@GroupID, @InstituteID, @EmployeeID, @EmailSubject, @EmailBody, @EmailDate, @EmailStatusID)";
+
+            await _connection.ExecuteAsync(sql, new
+            {
+                GroupID = groupID,
+                InstituteID = instituteID,
+                EmployeeID = employeeID,
+                EmailSubject = emailSubject,
+                EmailBody = emailBody,
+                EmailDate = emailDate,
+                EmailStatusID = emailStatusID
+            });
+        }
+
+        public async Task UpdateEmailStatusForStudent(int groupID, int instituteID, int studentID, int emailStatusID)
+        {
+            string sql = @"
+                UPDATE tblEmailStudent
+                SET EmailStatusID = @EmailStatusID
+                WHERE GroupID = @GroupID
+                  AND InstituteID = @InstituteID
+                  AND StudentID = @StudentID";
+
+            await _connection.ExecuteAsync(sql, new
+            {
+                GroupID = groupID,
+                InstituteID = instituteID,
+                StudentID = studentID,
+                EmailStatusID = emailStatusID
+            });
+        }
+
+        public async Task UpdateEmailStatusForEmployee(int groupID, int instituteID, int employeeID, int emailStatusID)
+        {
+            string sql = @"
+                UPDATE tblEmailEmployee
+                SET EmailStatusID = @EmailStatusID
+                WHERE GroupID = @GroupID
+                  AND InstituteID = @InstituteID
+                  AND EmployeeID = @EmployeeID";
+
+            await _connection.ExecuteAsync(sql, new
+            {
+                GroupID = groupID,
+                InstituteID = instituteID,
+                EmployeeID = employeeID,
+                EmailStatusID = emailStatusID
+            });
         }
 
     }

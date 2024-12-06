@@ -11,7 +11,7 @@ namespace Communication_API.DTOs.Requests
         public string GroupName { get; set; }
 
         [Required]
-        public int AcadamicYearID { get; set; }
+        public string AcademicYearCode { get; set; }
 
         [Required]
         public int TypeID { get; set; }  // 1 for Student, 2 for Employee

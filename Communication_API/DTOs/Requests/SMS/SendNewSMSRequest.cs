@@ -9,12 +9,19 @@
         public int GroupID { get; set; }
         public bool Status { get; set; }
         public bool ScheduleNow { get; set; }
-        public DateTime ScheduleDate { get; set; }
-        public DateTime ScheduleTime { get; set; }
+
+        // Changed to string with format DD-MM-YYYY
+        public string ScheduleDate { get; set; }
+
+        // Changed to string with format HH:mm tt (e.g., 02:00 PM)
+        public string ScheduleTime { get; set; }
 
         // Add these properties
         public List<int>? StudentIDs { get; set; }
-        public List<int>? EmployeeIDs { get; set; } 
-    }
+        public List<int>? EmployeeIDs { get; set; }
 
+        // Add new properties for AcademicYearCode and InstituteID
+        public string? AcademicYearCode { get; set; }
+        public int? InstituteID { get; set; }
+    }
 }

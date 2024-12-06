@@ -14,11 +14,11 @@ namespace UserRoleManagement_API.Controllers
         {
             _roleService = roleService;
         }
-
-        [HttpPost("SetRolePermission")]
-        public async Task<IActionResult> SetRolePermission(SetRolePermissionRequest request)
+          
+        [HttpPost("CreateNewRole")]
+        public async Task<IActionResult> CreateNewRole(CreateNewRoleRequest request)
         {
-            var response = await _roleService.SetRolePermission(request);
+            var response = await _roleService.CreateNewRole(request);
             if (response.Success)
             {
                 return Ok(response);
@@ -26,10 +26,21 @@ namespace UserRoleManagement_API.Controllers
             return BadRequest(response);
         }
 
-        [HttpGet("GetAllUserRoles")]
-        public async Task<IActionResult> GetAllUserRoles()
+        [HttpGet("GetUserRoles")]
+        public async Task<IActionResult> GetUserRoles([FromQuery] GetUserRolesRequest request)
         {
-            var response = await _roleService.GetAllUserRoles();
+            var response = await _roleService.GetUserRoles(request);
+            if (response.Success)
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
+        }
+
+        [HttpPost("AssignRole")]
+        public async Task<IActionResult> AssignRole(AssignRoleRequest request)
+        {
+            var response = await _roleService.AssignRole(request);
             if (response.Success)
             {
                 return Ok(response);
