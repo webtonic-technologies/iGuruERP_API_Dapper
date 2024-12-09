@@ -11,6 +11,7 @@ namespace Attendance_SE_API.Repository.Interfaces
         Task<SubjectAttendanceStatisticsResponse> GetStudentAttendanceStatisticsForSubject(SubjectAttendanceAnalysisRequest request);
         Task<ServiceResponse<IEnumerable<MonthlyAttendanceSubjectAnalysisResponse>>> GetMonthlyAttendanceAnalysisForSubject(SubjectAttendanceAnalysisRequest request);
         Task<ServiceResponse<IEnumerable<SubjectsAttendanceAnalysisResponse>>> GetSubjectsAttendanceAnalysis(SubjectAttendanceAnalysisRequest1 request);
+        Task<IEnumerable<dynamic>> GetExportableSubjectsAttendanceData(GetSubjectsAttendanceAnalysisExportRequest request);
 
     }
 }

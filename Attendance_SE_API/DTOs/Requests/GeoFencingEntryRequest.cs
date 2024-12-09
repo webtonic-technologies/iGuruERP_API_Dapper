@@ -13,5 +13,8 @@
     public class GeoFencingEntryRequest2
     { 
         public int InstituteID { get; set; }
+        public int PageNumber { get; set; } // Page number for pagination
+        public int PageSize { get; set; }   // Page size for pagination
+        public string SearchTerm { get; set; }
     }
 }

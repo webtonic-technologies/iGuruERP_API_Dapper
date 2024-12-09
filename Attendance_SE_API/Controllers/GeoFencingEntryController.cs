@@ -31,5 +31,13 @@ namespace Attendance_SE_API.Controllers
             var response = await _geoFencingEntryService.GetGeoFencingEntry(request);
             return Ok(response);
         }
+
+
+        //[HttpPost("GetGeoFencingEntry")]
+        //public async Task<ActionResult<ServiceResponse<IEnumerable<GeoFencingEntryResponse>>>> GetGeoFencingEntry([FromBody] GeoFencingEntryRequest2 request)
+        //{
+        //    var response = await _geoFencingEntryService.GetGeoFencingEntry(request);
+        //    return Ok(response);
+        //}
     }
 }

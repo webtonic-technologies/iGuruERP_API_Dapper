@@ -22,7 +22,8 @@ namespace Attendance_SE_API.Repository.Implementations
             _connection = connection;
         }
 
-            
+
+
         public async Task<EmployeeAttendanceReportResponse> GetAttendanceReport(EmployeeAttendanceReportRequest request)
         {
             DateTime parsedStartDate;
@@ -49,45 +50,76 @@ namespace Attendance_SE_API.Repository.Implementations
             // Create a dictionary for easy lookup of StatusID to ShortName
             var statusDict = statusMappings.ToDictionary(x => x.StatusID, x => x.ShortName);
 
+            // Calculate offset for pagination
+            int offset = (request.PageNumber - 1) * request.PageSize;
+
+            // Main query for paginated results with search parameter
             string query = @"
-            WITH AttendanceData AS (
-                SELECT 
-                    e.Employee_id AS EmployeeID, 
-                    e.Employee_code_id AS EmployeeCode,  
-                    CONCAT(e.First_Name, ' ', e.Last_Name) AS EmployeeName, 
-                    e.mobile_number AS MobileNumber,  
-                    a.AttendanceDate,
-                    a.StatusID
-                FROM tbl_EmployeeProfileMaster e
-                LEFT JOIN tblEmployeeAttendance a ON e.Employee_id = a.EmployeeID
-                    AND a.AttendanceDate BETWEEN @StartDate AND @EndDate
-                WHERE e.Department_id = @DepartmentID  
-                    AND e.Institute_id = @InstituteID
-            )
-            SELECT 
-                EmployeeID,
-                EmployeeCode, 
-                EmployeeName,
-                MobileNumber,
-                AttendanceDate,
-                CASE 
-                    WHEN AttendanceStatus.StatusID IS NOT NULL THEN 
-                        AttendanceStatus.ShortName
-                    ELSE '-'
-                END AS AttendanceStatus
-            FROM AttendanceData a
-            LEFT JOIN tblEmployeeAttendanceStatus AttendanceStatus ON a.StatusID = AttendanceStatus.StatusID
-            ORDER BY EmployeeName, AttendanceDate;";
+    WITH AttendanceData AS (
+        SELECT 
+            e.Employee_id AS EmployeeID, 
+            e.Employee_code_id AS EmployeeCode,  
+            CONCAT(e.First_Name, ' ', e.Last_Name) AS EmployeeName, 
+            e.mobile_number AS MobileNumber,  
+            a.AttendanceDate,
+            a.StatusID
+        FROM tbl_EmployeeProfileMaster e
+        LEFT JOIN tblEmployeeAttendance a ON e.Employee_id = a.EmployeeID
+            AND a.AttendanceDate BETWEEN @StartDate AND @EndDate
+        WHERE e.Department_id = @DepartmentID  
+            AND e.Institute_id = @InstituteID
+            AND (@SearchTerm IS NULL OR 
+                e.Employee_code_id LIKE '%' + @SearchTerm + '%' OR 
+                CONCAT(e.First_Name, ' ', e.Last_Name) LIKE '%' + @SearchTerm + '%' OR 
+                e.mobile_number LIKE '%' + @SearchTerm + '%')
+    )
+    SELECT 
+        ROW_NUMBER() OVER (ORDER BY EmployeeName ASC) AS RowNumber,
+        EmployeeID,
+        EmployeeCode, 
+        EmployeeName,
+        MobileNumber,
+        AttendanceDate,
+        CASE 
+            WHEN AttendanceStatus.StatusID IS NOT NULL THEN 
+                AttendanceStatus.ShortName
+            ELSE '-'
+        END AS AttendanceStatus
+    FROM 
+        AttendanceData a
+    LEFT JOIN 
+        tblEmployeeAttendanceStatus AttendanceStatus ON a.StatusID = AttendanceStatus.StatusID
+    ORDER BY 
+        EmployeeName ASC, AttendanceDate ASC
+    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+
+            // Query for total records count with search parameter
+            string countQuery = @"
+    SELECT COUNT(DISTINCT e.Employee_id) AS TotalCount
+    FROM tbl_EmployeeProfileMaster e
+    LEFT JOIN tblEmployeeAttendance a ON e.Employee_id = a.EmployeeID
+        AND a.AttendanceDate BETWEEN @StartDate AND @EndDate
+    WHERE e.Department_id = @DepartmentID  
+        AND e.Institute_id = @InstituteID
+        AND (@SearchTerm IS NULL OR 
+            e.Employee_code_id LIKE '%' + @SearchTerm + '%' OR 
+            CONCAT(e.First_Name, ' ', e.Last_Name) LIKE '%' + @SearchTerm + '%' OR 
+            e.mobile_number LIKE '%' + @SearchTerm + '%');";
 
             var parameters = new
             {
                 StartDate = parsedStartDate,
                 EndDate = parsedEndDate,
                 DepartmentID = request.DepartmentID,
-                InstituteID = request.InstituteID
+                InstituteID = request.InstituteID,
+                SearchTerm = request.SearchTerm,
+                Offset = offset,
+                PageSize = request.PageSize
             };
 
+            // Fetch attendance records and total count separately
             var attendanceRecords = await _connection.QueryAsync<AttendanceRecord2>(query, parameters);
+            var totalCount = await _connection.ExecuteScalarAsync<int>(countQuery, parameters);
 
             // Generate the attendance report response, mapping StatusID to the ShortName dynamically
             var dateRange = Enumerable.Range(0, (parsedEndDate - parsedStartDate).Days + 1)
@@ -121,9 +153,11 @@ namespace Attendance_SE_API.Repository.Implementations
                 Message = "Attendance report fetched successfully.",
                 Data = pivotedAttendance,
                 StatusCode = 200,
-                TotalCount = pivotedAttendance.Count()
+                TotalCount = totalCount // Total count from separate query
             };
         }
+
+
 
 
         //public async Task<EmployeeAttendanceReportResponse> GetAttendanceReport(EmployeeAttendanceReportRequest request)
@@ -144,7 +178,6 @@ namespace Attendance_SE_API.Repository.Implementations
         //            TotalCount = 0
         //        };
         //    }
-
 
         //    // Fetch Status Mapping Dynamically
         //    var statusMappings = await _connection.QueryAsync<AttendanceStatusMapping>(
@@ -210,10 +243,12 @@ namespace Attendance_SE_API.Repository.Implementations
         //            Present = g.Count(x => statusDict.ContainsKey(x.StatusID) && statusDict[x.StatusID] == "P"),
         //            Absent = g.Count(x => statusDict.ContainsKey(x.StatusID) && statusDict[x.StatusID] == "A"),
         //            AttendancePercentage = Math.Round((double)g.Count(x => statusDict.ContainsKey(x.StatusID) && statusDict[x.StatusID] == "P") / g.Count() * 100, 2),
-        //            Attendance = dateRange.ToDictionary(
-        //                date => date.ToString("MMM dd, ddd"),  // Format as "Sep 29, Sun"
-        //                date => g.FirstOrDefault(x => x.AttendanceDate.Date == date.Date)?.AttendanceStatus ?? "-"  // Use attendance status or "-"
-        //            )
+        //            AttendanceList = dateRange.Select(date => new AttendanceDateInfo1
+        //            {
+        //                AttendanceDate = date.ToString("MMM dd"),  // Format as "Dec 01"
+        //                AttendanceDay = date.ToString("ddd"),     // Day of the week, e.g., "Sun"
+        //                AttendanceStatus = g.FirstOrDefault(x => x.AttendanceDate.Date == date.Date)?.AttendanceStatus ?? "-"  // Use attendance status or "-"
+        //            }).ToList()
         //        }).ToList();
 
         //    // Create the final response
@@ -231,48 +266,60 @@ namespace Attendance_SE_API.Repository.Implementations
         public async Task<IEnumerable<GetAttendanceGeoFencingReportResponse>> GetAttendanceGeoFencingReport(GetAttendanceGeoFencingReportRequest request)
         {
             var query = @"
-            SELECT 
-                ge.EmployeeID,
-                CONCAT(e.First_Name, ' ', e.Last_Name) AS EmployeeName,
-                e.mobile_number AS PrimaryMobileNo, 
-                ge.GeoFencingDate,
-                ge.ClockIn,
-                ge.ClockOut,
-                ge.Reason,
-                DATEDIFF(MINUTE, ge.ClockIn, ge.ClockOut) / 60 AS HoursWorked,
-                DATEDIFF(MINUTE, ge.ClockIn, ge.ClockOut) % 60 AS MinutesWorked
-            FROM 
-                tblGeoFencingEntry ge
-            JOIN 
-                tbl_EmployeeProfileMaster e ON ge.EmployeeID = e.Employee_id 
-            WHERE 
-                ge.GeoFencingDate BETWEEN @StartDate AND @EndDate
-                AND e.Institute_id = @InstituteID
-            ORDER BY 
-                ge.GeoFencingDate, e.Employee_id";
+    SELECT 
+        ge.EmployeeID,
+        CONCAT(e.First_Name, ' ', e.Last_Name) AS EmployeeName,
+        e.mobile_number AS PrimaryMobileNo, 
+        e.Employee_code_id AS EmployeeCode,  -- Added EmployeeCode field
+        ge.GeoFencingDate,
+        ge.ClockIn,
+        ge.ClockOut,
+        ge.Reason,
+        DATEDIFF(MINUTE, ge.ClockIn, ge.ClockOut) / 60 AS HoursWorked,
+        DATEDIFF(MINUTE, ge.ClockIn, ge.ClockOut) % 60 AS MinutesWorked
+    FROM 
+        tblGeoFencingEntry ge
+    JOIN 
+        tbl_EmployeeProfileMaster e ON ge.EmployeeID = e.Employee_id 
+    WHERE 
+        ge.GeoFencingDate BETWEEN @StartDate AND @EndDate
+        AND e.Institute_id = @InstituteID
+        AND (
+            @SearchTerm IS NULL OR 
+            e.Employee_code_id LIKE '%' + @SearchTerm + '%' OR 
+            CONCAT(e.First_Name, ' ', e.Last_Name) LIKE '%' + @SearchTerm + '%' OR 
+            e.mobile_number LIKE '%' + @SearchTerm + '%'
+        )
+    ORDER BY 
+        ge.GeoFencingDate, e.Employee_id
+    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";  // Pagination
 
             var result = await _connection.QueryAsync<dynamic>(query, new
             {
                 InstituteID = request.InstituteID,
                 StartDate = DateTime.ParseExact(request.StartDate, "dd-MM-yyyy", null),
-                EndDate = DateTime.ParseExact(request.EndDate, "dd-MM-yyyy", null)
+                EndDate = DateTime.ParseExact(request.EndDate, "dd-MM-yyyy", null),
+                Offset = (request.PageNumber - 1) * request.PageSize,  // Offset calculation
+                PageSize = request.PageSize,  // Number of records per page
+                SearchTerm = string.IsNullOrEmpty(request.SearchTerm) ? null : request.SearchTerm // Null check for search term
             });
 
-            // Define the start and end date for the range (20 Nov to 30 Nov)
-            var startDate = DateTime.ParseExact("20-11-2024", "dd-MM-yyyy", null);
-            var endDate = DateTime.ParseExact("30-11-2024", "dd-MM-yyyy", null);
+            // Parse the dynamic start and end dates from the request
+            var startDate = DateTime.ParseExact(request.StartDate, "dd-MM-yyyy", null);
+            var endDate = DateTime.ParseExact(request.EndDate, "dd-MM-yyyy", null);
 
-            // Create a list of all dates between startDate and endDate
+            // Create a list of all dates between startDate and endDate dynamically
             var allDatesInRange = Enumerable.Range(0, (endDate - startDate).Days + 1)
                 .Select(offset => startDate.AddDays(offset).ToString("MMM dd, ddd")) // Format as "Nov 20, Mon"
                 .ToList();
 
             // Group the results by employee and ensure every date in the range is represented
             var groupedResults = result
-                .GroupBy(r => new { r.EmployeeID, r.EmployeeName, r.PrimaryMobileNo })
+                .GroupBy(r => new { r.EmployeeID, r.EmployeeCode, r.EmployeeName, r.PrimaryMobileNo })
                 .Select(g => new GetAttendanceGeoFencingReportResponse
                 {
                     EmployeeID = g.Key.EmployeeID,
+                    EmployeeCode = g.Key.EmployeeCode,  // Map EmployeeCode here
                     EmployeeName = g.Key.EmployeeName,
                     PrimaryMobileNumber = g.Key.PrimaryMobileNo,
                     Attendance = allDatesInRange.Select(date =>
@@ -305,38 +352,35 @@ namespace Attendance_SE_API.Repository.Implementations
                                 Time = "0 Hours 0 Minutes" // Default time
                             };
                         }
-
                     }).ToList()
                 }).ToList();
 
             return groupedResults;
         }
-         
-        /////
-        ///Working
+
 
         //public async Task<IEnumerable<GetAttendanceGeoFencingReportResponse>> GetAttendanceGeoFencingReport(GetAttendanceGeoFencingReportRequest request)
         //{
         //    var query = @"
-        //SELECT 
-        //    ge.EmployeeID,
-        //    CONCAT(e.First_Name, ' ', e.Last_Name) AS EmployeeName,
-        //    e.mobile_number AS PrimaryMobileNo, 
-        //    ge.GeoFencingDate,
-        //    ge.ClockIn,
-        //    ge.ClockOut,
-        //    ge.Reason,
-        //    DATEDIFF(MINUTE, ge.ClockIn, ge.ClockOut) / 60 AS HoursWorked,
-        //    DATEDIFF(MINUTE, ge.ClockIn, ge.ClockOut) % 60 AS MinutesWorked
-        //FROM 
-        //    tblGeoFencingEntry ge
-        //JOIN 
-        //    tbl_EmployeeProfileMaster e ON ge.EmployeeID = e.Employee_id 
-        //WHERE 
-        //    ge.GeoFencingDate BETWEEN @StartDate AND @EndDate
-        //    AND e.Institute_id = @InstituteID
-        //ORDER BY 
-        //    ge.GeoFencingDate, e.Employee_id";
+        //    SELECT 
+        //        ge.EmployeeID,
+        //        CONCAT(e.First_Name, ' ', e.Last_Name) AS EmployeeName,
+        //        e.mobile_number AS PrimaryMobileNo, 
+        //        ge.GeoFencingDate,
+        //        ge.ClockIn,
+        //        ge.ClockOut,
+        //        ge.Reason,
+        //        DATEDIFF(MINUTE, ge.ClockIn, ge.ClockOut) / 60 AS HoursWorked,
+        //        DATEDIFF(MINUTE, ge.ClockIn, ge.ClockOut) % 60 AS MinutesWorked
+        //    FROM 
+        //        tblGeoFencingEntry ge
+        //    JOIN 
+        //        tbl_EmployeeProfileMaster e ON ge.EmployeeID = e.Employee_id 
+        //    WHERE 
+        //        ge.GeoFencingDate BETWEEN @StartDate AND @EndDate
+        //        AND e.Institute_id = @InstituteID
+        //    ORDER BY 
+        //        ge.GeoFencingDate, e.Employee_id";
 
         //    var result = await _connection.QueryAsync<dynamic>(query, new
         //    {
@@ -345,50 +389,61 @@ namespace Attendance_SE_API.Repository.Implementations
         //        EndDate = DateTime.ParseExact(request.EndDate, "dd-MM-yyyy", null)
         //    });
 
+        //    // Define the start and end date for the range (20 Nov to 30 Nov)
+        //    var startDate = DateTime.ParseExact("20-11-2024", "dd-MM-yyyy", null);
+        //    var endDate = DateTime.ParseExact("30-11-2024", "dd-MM-yyyy", null);
+
+        //    // Create a list of all dates between startDate and endDate
+        //    var allDatesInRange = Enumerable.Range(0, (endDate - startDate).Days + 1)
+        //        .Select(offset => startDate.AddDays(offset).ToString("MMM dd, ddd")) // Format as "Nov 20, Mon"
+        //        .ToList();
+
+        //    // Group the results by employee and ensure every date in the range is represented
         //    var groupedResults = result
-        //    .GroupBy(r => new { r.EmployeeID, r.EmployeeName, r.PrimaryMobileNo })
-        //    .Select(g => new GetAttendanceGeoFencingReportResponse
-        //    {
-        //        EmployeeID = g.Key.EmployeeID,
-        //        EmployeeName = g.Key.EmployeeName,
-        //        PrimaryMobileNumber = g.Key.PrimaryMobileNo,
-        //        Attendance = g.Select(x =>
+        //        .GroupBy(r => new { r.EmployeeID, r.EmployeeName, r.PrimaryMobileNo })
+        //        .Select(g => new GetAttendanceGeoFencingReportResponse
         //        {
-        //            // Debugging log for each entry
-        //            try
+        //            EmployeeID = g.Key.EmployeeID,
+        //            EmployeeName = g.Key.EmployeeName,
+        //            PrimaryMobileNumber = g.Key.PrimaryMobileNo,
+        //            Attendance = allDatesInRange.Select(date =>
         //            {
-        //                // Parsing GeoFencingDate, ClockIn, and ClockOut
-        //                var parsedDate = DateTime.Parse(x.GeoFencingDate.ToString());
-        //                var parsedClockIn = TimeSpan.Parse(x.ClockIn.ToString());
-        //                var parsedClockOut = TimeSpan.Parse(x.ClockOut.ToString());
-        //            }
-        //            catch (Exception ex)
-        //            {
-        //                // Log the problematic row or error
-        //                Console.WriteLine($"Error parsing row: {ex.Message}");
-        //                // Optionally, log the problematic row itself
-        //                Console.WriteLine($"Problematic row: {x}");
-        //            }
+        //                // Check if attendance exists for the specific date
+        //                var attendanceRecord = g.FirstOrDefault(x => DateTime.Parse(x.GeoFencingDate.ToString()).ToString("MMM dd, ddd") == date);
 
+        //                if (attendanceRecord != null)
+        //                {
+        //                    // Format ClockIn and ClockOut to 12-hour format with AM/PM
+        //                    var clockInTime = DateTime.Parse(attendanceRecord.ClockIn.ToString()).ToString("hh:mm tt");
+        //                    var clockOutTime = DateTime.Parse(attendanceRecord.ClockOut.ToString()).ToString("hh:mm tt");
 
-        //            return new AttendanceDetails
-        //            {
-        //                // Format GeoFencingDate as "Nov 20, Wed"
-        //                Date = x.GeoFencingDate.ToString("MMM dd, ddd"), // Using the DateTime format "MMM dd, ddd"
+        //                    return new AttendanceDetails
+        //                    {
+        //                        Date = date, // Display the date
+        //                        ClockIn = clockInTime, // Formatted ClockIn
+        //                        ClockOut = clockOutTime, // Formatted ClockOut
+        //                        Time = $"{attendanceRecord.HoursWorked} Hours {attendanceRecord.MinutesWorked} Minutes"
+        //                    };
+        //                }
+        //                else
+        //                {
+        //                    // If no attendance for that day, return default values
+        //                    return new AttendanceDetails
+        //                    {
+        //                        Date = date, // Display the date
+        //                        ClockIn = "N/A", // No attendance
+        //                        ClockOut = "N/A", // No attendance
+        //                        Time = "0 Hours 0 Minutes" // Default time
+        //                    };
+        //                }
 
-        //                // Ensure ClockIn and ClockOut are formatted as "hh:mm"
-        //                ClockIn = x.ClockIn.ToString(@"hh\:mm"), // TimeSpan formatting for "hh:mm"
-        //                ClockOut = x.ClockOut.ToString(@"hh\:mm"), // TimeSpan formatting for "hh:mm"
+        //            }).ToList()
+        //        }).ToList();
 
-        //                // Format worked time as "X Hours Y Minutes"
-        //                Time = $"{x.HoursWorked} Hours {x.MinutesWorked} Minutes"
-        //            };
-
-        //        }).ToList()
-        //    }).ToList(); // Ensure we return a list (IEnumerable)
-
-        //    return groupedResults; 
+        //    return groupedResults;
         //}
+
+
 
         public async Task<MemoryStream> GenerateExcelReport(GetAttendanceGeoFencingReportRequest request)
         {

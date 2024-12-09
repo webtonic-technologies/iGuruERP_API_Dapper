@@ -9,6 +9,13 @@ namespace Attendance_SE_API.Services.Interfaces
     {
         Task<ServiceResponse<SubjectAttendanceStatisticsResponse>> GetStudentAttendanceStatisticsForSubject(SubjectAttendanceAnalysisRequest request);
         Task<ServiceResponse<IEnumerable<MonthlyAttendanceSubjectAnalysisResponse>>> GetMonthlyAttendanceAnalysisForSubject(SubjectAttendanceAnalysisRequest request);
-        Task<ServiceResponse<IEnumerable<SubjectsAttendanceAnalysisResponse>>> GetSubjectsAttendanceAnalysis(SubjectAttendanceAnalysisRequest1 request); 
+        //Task<ServiceResponse<IEnumerable<SubjectsAttendanceAnalysisResponse>>> GetSubjectsAttendanceAnalysis(SubjectAttendanceAnalysisRequest1 request);
+        Task<ServiceResponse<IEnumerable<SubjectsAttendanceAnalysisResponse>>> GetSubjectsAttendanceAnalysis(SubjectAttendanceAnalysisRequest1 request);
+
+        Task<IEnumerable<dynamic>> GetExportableSubjectsAttendanceData(GetSubjectsAttendanceAnalysisExportRequest request);
+        Task<byte[]> GetSubjectsAttendanceAnalysisExcelExport(GetSubjectsAttendanceAnalysisExportRequest request);
+
+
+
     }
 }

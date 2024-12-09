@@ -13,6 +13,7 @@ namespace Attendance_SE_API.Services.Interfaces
         Task<ServiceResponse<IEnumerable<AttendanceRangeAnalysisResponse>>> GetAttendanceRangeAnalysis(ClassAttendanceAnalysisRequest request);
         Task<ServiceResponse<IEnumerable<StudentDayWiseAttendanceResponse>>> GetStudentDayWiseAttendance(ClassAttendanceAnalysisRequest request);
         Task<ServiceResponse<IEnumerable<StudentAttendanceAnalysisResponse>>> GetStudentsAttendanceAnalysis(ClassAttendanceAnalysisRequest request);
+        Task<byte[]> GetStudentsAttendanceAnalysisExcelExport(GetStudentsAttendanceAnalysisExcelExportRequest request);
 
 
     }

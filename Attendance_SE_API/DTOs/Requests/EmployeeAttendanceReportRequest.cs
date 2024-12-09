@@ -7,5 +7,8 @@
         public string EndDate { get; set; }   // Date format should be validated in the service/repository
         public int? InstituteID { get; set; }
         public int? TimeSlotTypeID { get; set; }
+        public string SearchTerm { get; set; }
+        public int PageNumber { get; set; } // Pagination: Page number
+        public int PageSize { get; set; }   // Pagination: Page size 
     }
 }

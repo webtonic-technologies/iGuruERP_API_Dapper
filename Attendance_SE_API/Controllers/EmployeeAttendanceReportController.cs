@@ -19,6 +19,24 @@ namespace Attendance_SE_API.Controllers
             _employeeAttendanceReportService = employeeAttendanceReportService;
         }
 
+        //[HttpPost("GetAttendanceReport")]
+        //public async Task<IActionResult> GetAttendanceReport([FromBody] EmployeeAttendanceReportRequest request)
+        //{
+        //    if (request == null)
+        //    {
+        //        return BadRequest("Request body cannot be null.");
+        //    }
+
+        //    // Validate request properties if necessary
+        //    if (string.IsNullOrEmpty(request.StartDate) || string.IsNullOrEmpty(request.EndDate))
+        //    {
+        //        return BadRequest("StartDate and EndDate are required.");
+        //    }
+
+        //    var response = await _employeeAttendanceReportService.GetAttendanceReport(request);
+        //    return StatusCode(response.StatusCode, response);
+        //}
+
         [HttpPost("GetAttendanceReport")]
         public async Task<IActionResult> GetAttendanceReport([FromBody] EmployeeAttendanceReportRequest request)
         {
@@ -27,15 +45,29 @@ namespace Attendance_SE_API.Controllers
                 return BadRequest("Request body cannot be null.");
             }
 
-            // Validate request properties if necessary
+            // Validate mandatory fields
             if (string.IsNullOrEmpty(request.StartDate) || string.IsNullOrEmpty(request.EndDate))
             {
                 return BadRequest("StartDate and EndDate are required.");
             }
 
+            // Validate pagination parameters
+            if (request.PageNumber <= 0 || request.PageSize <= 0)
+            {
+                return BadRequest("PageNumber and PageSize must be greater than zero.");
+            }
+
             var response = await _employeeAttendanceReportService.GetAttendanceReport(request);
             return StatusCode(response.StatusCode, response);
         }
+
+
+        //[HttpPost("GetAttendanceGeoFencingReport")]
+        //public async Task<ActionResult<ServiceResponse<GetAttendanceGeoFencingReportResponse>>> GetAttendanceGeoFencingReport([FromBody] GetAttendanceGeoFencingReportRequest request)
+        //{
+        //    var response = await _employeeAttendanceReportService.GetAttendanceGeoFencingReport(request);
+        //    return Ok(response);
+        //}
 
         [HttpPost("GetAttendanceGeoFencingReport")]
         public async Task<ActionResult<ServiceResponse<GetAttendanceGeoFencingReportResponse>>> GetAttendanceGeoFencingReport([FromBody] GetAttendanceGeoFencingReportRequest request)
@@ -43,6 +75,7 @@ namespace Attendance_SE_API.Controllers
             var response = await _employeeAttendanceReportService.GetAttendanceGeoFencingReport(request);
             return Ok(response);
         }
+
 
         [HttpPost("GetAttendanceGeoFencingReportExportExcel")]
         public async Task<IActionResult> GetAttendanceGeoFencingReportExportExcel([FromBody] GetAttendanceGeoFencingReportRequest request)

@@ -4,7 +4,8 @@ using Attendance_SE_API.DTOs.Responses;
 using Attendance_SE_API.Repository.Interfaces;
 using Attendance_SE_API.Services.Interfaces;
 using Attendance_SE_API.ServiceResponse;
- 
+using OfficeOpenXml;
+
 namespace Attendance_SE_API.Services.Implementations
 {
     public class ClassAttendanceAnalysisService : IClassAttendanceAnalysisService
@@ -65,10 +66,58 @@ namespace Attendance_SE_API.Services.Implementations
             return response;
         }
 
+        //public async Task<ServiceResponse<IEnumerable<StudentAttendanceAnalysisResponse>>> GetStudentsAttendanceAnalysis(ClassAttendanceAnalysisRequest request)
+        //{
+        //    var response = await _repository.GetStudentsAttendanceAnalysis(request);
+        //    return response;
+        //}
+
         public async Task<ServiceResponse<IEnumerable<StudentAttendanceAnalysisResponse>>> GetStudentsAttendanceAnalysis(ClassAttendanceAnalysisRequest request)
         {
             var response = await _repository.GetStudentsAttendanceAnalysis(request);
             return response;
+        }
+
+
+
+        public async Task<byte[]> GetStudentsAttendanceAnalysisExcelExport(GetStudentsAttendanceAnalysisExcelExportRequest request)
+        {
+            var attendanceData = await _repository.GetStudentsAttendanceAnalysisForExport(request);
+            if (attendanceData == null || !attendanceData.Any())
+                return null;
+
+            using var package = new ExcelPackage();
+            var worksheet = package.Workbook.Worksheets.Add("Class Attendance Analysis");
+
+            // Header
+            worksheet.Cells[1, 1].Value = "S.No";
+            worksheet.Cells[1, 2].Value = "Admission Number";
+            worksheet.Cells[1, 3].Value = "Student Name";
+            worksheet.Cells[1, 4].Value = "Total Attended (Total/Present)";
+            worksheet.Cells[1, 5].Value = "Percentage";
+
+            // Styling Header
+            worksheet.Cells[1, 1, 1, 5].Style.Font.Bold = true;
+            worksheet.Cells[1, 1, 1, 5].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+
+            // Freeze header row
+            worksheet.View.FreezePanes(2, 1);
+
+            // Populate Data
+            int row = 2;
+            foreach (var data in attendanceData)
+            {
+                worksheet.Cells[row, 1].Value = row - 1; // S.No
+                worksheet.Cells[row, 2].Value = data.AdmissionNumber; // Admission Number
+                worksheet.Cells[row, 3].Value = data.StudentName; // Student Name
+                worksheet.Cells[row, 4].Value = $"{data.TotalAttendance}/{data.TotalAttended}"; // Combined Total Attended (Total/Present)
+                worksheet.Cells[row, 5].Value = data.AttendancePercentage; // Percentage
+                row++;
+            }
+
+            worksheet.Cells.AutoFitColumns();
+
+            return package.GetAsByteArray();
         }
 
     }

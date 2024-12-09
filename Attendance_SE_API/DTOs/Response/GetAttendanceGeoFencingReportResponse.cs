@@ -11,6 +11,7 @@
     public class GetAttendanceGeoFencingReportResponse
     {
         public int EmployeeID { get; set; }
+        public string EmployeeCode { get; set; }  // Added EmployeeCode property 
         public string EmployeeName { get; set; }
         public string PrimaryMobileNumber { get; set; }
         public List<AttendanceDetails> Attendance { get; set; }

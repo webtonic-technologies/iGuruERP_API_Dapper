@@ -24,6 +24,41 @@ namespace Attendance_SE_API.Services.Implementations
             return await _repository.GetAttendanceReport(request);
         }
 
+
+        //public async Task<EmployeeAttendanceReportResponse> GetAttendanceReport(EmployeeAttendanceReportRequest request)
+        //{
+        //    return await _repository.GetAttendanceReport(request);
+        //}
+
+        //public async Task<ServiceResponse<IEnumerable<GetAttendanceGeoFencingReportResponse>>> GetAttendanceGeoFencingReport(GetAttendanceGeoFencingReportRequest request)
+        //{
+        //    try
+        //    {
+        //        // Fetch the data from the repository
+        //        var data = await _repository.GetAttendanceGeoFencingReport(request);
+
+        //        // Return a successful response with the required parameters
+        //        return new ServiceResponse<IEnumerable<GetAttendanceGeoFencingReportResponse>>(
+        //            success: true,
+        //            message: "Attendance GeoFencing report fetched successfully",
+        //            data: data,
+        //            statusCode: 200,
+        //            totalCount: data?.Count() // Optional: total count of data
+        //        );
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        // Return a failed response in case of an error
+        //        return new ServiceResponse<IEnumerable<GetAttendanceGeoFencingReportResponse>>(
+        //            success: false,
+        //            message: ex.Message,
+        //            data: null,
+        //            statusCode: 500,
+        //            totalCount: null // No data, so the count is null
+        //        );
+        //    }
+        //}
+
         public async Task<ServiceResponse<IEnumerable<GetAttendanceGeoFencingReportResponse>>> GetAttendanceGeoFencingReport(GetAttendanceGeoFencingReportRequest request)
         {
             try
@@ -52,6 +87,7 @@ namespace Attendance_SE_API.Services.Implementations
                 );
             }
         }
+
 
         public async Task<MemoryStream> GenerateExcelReport(GetAttendanceGeoFencingReportRequest request)
         {

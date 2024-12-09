@@ -32,13 +32,29 @@ namespace Attendance_SE_API.Controllers
             return Ok(response);
         }
 
+        //[HttpPost("GetSubjectsAttendanceAnalysis")]
+        //public async Task<ActionResult<ServiceResponse<IEnumerable<SubjectsAttendanceAnalysisResponse>>>> GetSubjectsAttendanceAnalysis([FromBody] SubjectAttendanceAnalysisRequest1 request)
+        //{
+        //    var response = await _subjectAttendanceAnalysisService.GetSubjectsAttendanceAnalysis(request);
+        //    return Ok(response);
+        //}
+
         [HttpPost("GetSubjectsAttendanceAnalysis")]
         public async Task<ActionResult<ServiceResponse<IEnumerable<SubjectsAttendanceAnalysisResponse>>>> GetSubjectsAttendanceAnalysis([FromBody] SubjectAttendanceAnalysisRequest1 request)
         {
             var response = await _subjectAttendanceAnalysisService.GetSubjectsAttendanceAnalysis(request);
             return Ok(response);
         }
-         
 
+
+        [HttpPost("GetSubjectsAttendanceAnalysisExcelExport")]
+        public async Task<IActionResult> GetSubjectsAttendanceAnalysisExcelExport([FromBody] GetSubjectsAttendanceAnalysisExportRequest request)
+        {
+            var excelFile = await _subjectAttendanceAnalysisService.GetSubjectsAttendanceAnalysisExcelExport(request);
+            if (excelFile == null)
+                return NotFound(new { message = "No data found for the given parameters." });
+
+            return File(excelFile, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "SubjectAttendanceAnalysis.xlsx");
+        }
     }
 }

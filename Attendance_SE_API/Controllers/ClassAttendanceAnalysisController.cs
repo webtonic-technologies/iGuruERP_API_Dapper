@@ -4,6 +4,7 @@ using Attendance_SE_API.DTOs.Responses;
 using Attendance_SE_API.DTOs.Requests;
 using System.Threading.Tasks;
 using Attendance_SE_API.ServiceResponse;
+using Attendance_SE_API.Services.Implementations;
 
 
 namespace Attendance_SE_API.Controllers
@@ -47,11 +48,29 @@ namespace Attendance_SE_API.Controllers
             return Ok(response);
         }
 
+        //[HttpPost("GetStudentsAttendanceAnalysis")]
+        //public async Task<ActionResult<ServiceResponse<IEnumerable<StudentAttendanceAnalysisResponse>>>> GetStudentsAttendanceAnalysis([FromBody] ClassAttendanceAnalysisRequest request)
+        //{
+        //    var response = await _attendanceAnalysisService.GetStudentsAttendanceAnalysis(request);
+        //    return Ok(response);
+        //}
+
         [HttpPost("GetStudentsAttendanceAnalysis")]
         public async Task<ActionResult<ServiceResponse<IEnumerable<StudentAttendanceAnalysisResponse>>>> GetStudentsAttendanceAnalysis([FromBody] ClassAttendanceAnalysisRequest request)
         {
             var response = await _attendanceAnalysisService.GetStudentsAttendanceAnalysis(request);
             return Ok(response);
+        }
+
+
+        [HttpPost("GetStudentsAttendanceAnalysisExcelExport")]
+        public async Task<IActionResult> GetStudentsAttendanceAnalysisExcelExport([FromBody] GetStudentsAttendanceAnalysisExcelExportRequest request)
+        {
+            var excelFile = await _attendanceAnalysisService.GetStudentsAttendanceAnalysisExcelExport(request);
+            if (excelFile == null)
+                return NotFound(new { message = "No data found for the given parameters." });
+
+            return File(excelFile, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "ClassAttendanceAnalysis.xlsx");
         }
 
     }

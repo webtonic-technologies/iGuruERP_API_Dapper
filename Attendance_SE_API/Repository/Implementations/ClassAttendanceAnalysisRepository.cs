@@ -253,6 +253,9 @@ namespace Attendance_SE_API.Repository.Implementations
         {
             using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
             {
+                // Calculate offset
+                int offset = (request.PageNumber - 1) * request.PageSize;
+
                 var query = @"
         WITH AttendanceSummary AS (
             SELECT 
@@ -273,27 +276,59 @@ namespace Attendance_SE_API.Repository.Implementations
                 AND sm.section_id = @SectionID
             GROUP BY 
                 sm.student_id, sm.Admission_Number, sm.First_Name, sm.Middle_Name, sm.Last_Name
+        ),
+        TotalCount AS (
+            SELECT COUNT(*) AS TotalRecords FROM AttendanceSummary
         )
-
         SELECT 
             ROW_NUMBER() OVER (ORDER BY 
-                (CAST(PresentCount AS DECIMAL(10, 2)) / NULLIF(TotalAttendance, 0) * 100) DESC
-            ) AS [S.No],
-            AdmissionNumber,
-            StudentName,
-            TotalAttendance,
-            PresentCount AS TotalAttended,
-            -- Handle cases where TotalAttendance is 0 (i.e., no attendance records)
+                (CASE 
+                    WHEN TotalAttendance = 0 THEN 0 
+                    ELSE (CAST(PresentCount AS DECIMAL(10, 2)) / NULLIF(TotalAttendance, 0) * 100) 
+                END) DESC
+            ) AS [SNo],
+            a.AdmissionNumber,
+            a.StudentName,
+            a.TotalAttendance,
+            a.PresentCount AS TotalAttended,
             CASE 
-                WHEN TotalAttendance = 0 THEN 0
-                ELSE (CAST(PresentCount AS DECIMAL(10, 2)) / NULLIF(TotalAttendance, 0) * 100)
+                WHEN a.TotalAttendance = 0 THEN 0
+                ELSE (CAST(a.PresentCount AS DECIMAL(10, 2)) / NULLIF(a.TotalAttendance, 0) * 100)
             END AS AttendancePercentage
         FROM 
-            AttendanceSummary
+            AttendanceSummary AS a
+        CROSS JOIN 
+            TotalCount AS tc
         ORDER BY 
-            AttendancePercentage DESC;";
+            [SNo]
+        OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
                 var result = await connection.QueryAsync<StudentAttendanceAnalysisResponse>(query, new
+                {
+                    InstituteID = request.InstituteID,
+                    ClassID = request.ClassID,
+                    SectionID = request.SectionID,
+                    Offset = offset,
+                    PageSize = request.PageSize
+                });
+
+                // Get total count separately
+                var totalCountQuery = @"
+        WITH AttendanceSummary AS (
+            SELECT 
+                sm.student_id
+            FROM 
+                tbl_StudentMaster sm
+            LEFT JOIN 
+                tblStudentAttendance sa ON sm.student_id = sa.StudentID
+            WHERE 
+                sm.Institute_id = @InstituteID
+                AND sm.class_id = @ClassID
+                AND sm.section_id = @SectionID
+        )
+        SELECT COUNT(*) AS TotalRecords FROM AttendanceSummary;";
+
+                var totalCount = await connection.ExecuteScalarAsync<int>(totalCountQuery, new
                 {
                     InstituteID = request.InstituteID,
                     ClassID = request.ClassID,
@@ -304,9 +339,121 @@ namespace Attendance_SE_API.Repository.Implementations
                     success: true,
                     message: "Students attendance analysis fetched successfully.",
                     data: result,
-                    statusCode: 200
+                    statusCode: 200,
+                    totalCount: totalCount
                 );
             }
         }
+
+
+        //public async Task<ServiceResponse<IEnumerable<StudentAttendanceAnalysisResponse>>> GetStudentsAttendanceAnalysis(ClassAttendanceAnalysisRequest request)
+        //{
+        //    using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
+        //    {
+        //        var query = @"
+        //WITH AttendanceSummary AS (
+        //    SELECT 
+        //        sm.student_id AS StudentID,
+        //        sm.Admission_Number AS AdmissionNumber,
+        //        CONCAT(sm.First_Name, ' ', COALESCE(sm.Middle_Name, ''), ' ', sm.Last_Name) AS StudentName,
+        //        COUNT(sa.AttendanceID) AS TotalAttendance,
+        //        SUM(CASE WHEN sas.StatusID = 1 THEN 1 ELSE 0 END) AS PresentCount
+        //    FROM 
+        //        tbl_StudentMaster sm
+        //    LEFT JOIN 
+        //        tblStudentAttendance sa ON sm.student_id = sa.StudentID
+        //    LEFT JOIN 
+        //        tblStudentAttendanceStatus sas ON sa.StatusID = sas.StatusID
+        //    WHERE 
+        //        sm.Institute_id = @InstituteID
+        //        AND sm.class_id = @ClassID
+        //        AND sm.section_id = @SectionID
+        //    GROUP BY 
+        //        sm.student_id, sm.Admission_Number, sm.First_Name, sm.Middle_Name, sm.Last_Name
+        //)
+
+        //SELECT 
+        //    ROW_NUMBER() OVER (ORDER BY 
+        //        (CAST(PresentCount AS DECIMAL(10, 2)) / NULLIF(TotalAttendance, 0) * 100) DESC
+        //    ) AS [S.No],
+        //    AdmissionNumber,
+        //    StudentName,
+        //    TotalAttendance,
+        //    PresentCount AS TotalAttended,
+        //    -- Handle cases where TotalAttendance is 0 (i.e., no attendance records)
+        //    CASE 
+        //        WHEN TotalAttendance = 0 THEN 0
+        //        ELSE (CAST(PresentCount AS DECIMAL(10, 2)) / NULLIF(TotalAttendance, 0) * 100)
+        //    END AS AttendancePercentage
+        //FROM 
+        //    AttendanceSummary
+        //ORDER BY 
+        //    AttendancePercentage DESC;";
+
+        //        var result = await connection.QueryAsync<StudentAttendanceAnalysisResponse>(query, new
+        //        {
+        //            InstituteID = request.InstituteID,
+        //            ClassID = request.ClassID,
+        //            SectionID = request.SectionID
+        //        });
+
+        //        return new ServiceResponse<IEnumerable<StudentAttendanceAnalysisResponse>>(
+        //            success: true,
+        //            message: "Students attendance analysis fetched successfully.",
+        //            data: result,
+        //            statusCode: 200
+        //        );
+        //    }
+        //}
+
+        public async Task<IEnumerable<dynamic>> GetStudentsAttendanceAnalysisForExport(GetStudentsAttendanceAnalysisExcelExportRequest request)
+        {
+            var query = @"
+        WITH AttendanceSummary AS (
+            SELECT 
+                sm.student_id AS StudentID,
+                sm.Admission_Number AS AdmissionNumber,
+                CONCAT(sm.First_Name, ' ', COALESCE(sm.Middle_Name, ''), ' ', sm.Last_Name) AS StudentName,
+                COUNT(sa.AttendanceID) AS TotalAttendance,
+                SUM(CASE WHEN sas.StatusID = 1 THEN 1 ELSE 0 END) AS PresentCount
+            FROM 
+                tbl_StudentMaster sm
+            LEFT JOIN 
+                tblStudentAttendance sa ON sm.student_id = sa.StudentID
+            LEFT JOIN 
+                tblStudentAttendanceStatus sas ON sa.StatusID = sas.StatusID
+            WHERE 
+                sm.Institute_id = @InstituteID
+                AND sm.class_id = @ClassID
+                AND sm.section_id = @SectionID
+            GROUP BY 
+                sm.student_id, sm.Admission_Number, sm.First_Name, sm.Middle_Name, sm.Last_Name
+        )
+        SELECT 
+            ROW_NUMBER() OVER (ORDER BY 
+                (CAST(PresentCount AS DECIMAL(10, 2)) / NULLIF(TotalAttendance, 0) * 100) DESC
+            ) AS [S.No],
+            AdmissionNumber,
+            StudentName,
+            TotalAttendance,
+            PresentCount AS TotalAttended,
+            CASE 
+                WHEN TotalAttendance = 0 THEN 0
+                ELSE (CAST(PresentCount AS DECIMAL(10, 2)) / NULLIF(TotalAttendance, 0) * 100)
+            END AS AttendancePercentage
+        FROM 
+            AttendanceSummary
+        ORDER BY 
+            AttendancePercentage DESC;";
+
+            using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
+            return await connection.QueryAsync<dynamic>(query, new
+            {
+                request.InstituteID,
+                request.ClassID,
+                request.SectionID
+            });
+        }
+
     }
 }

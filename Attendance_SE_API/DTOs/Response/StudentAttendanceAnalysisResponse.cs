@@ -7,6 +7,6 @@
         public string AdmissionNumber { get; set; }
         public int TotalAttendance { get; set; }
         public int TotalAttended { get; set; }
-        public decimal AttendancePercentage { get; set; }
+        public decimal AttendancePercentage { get; set; } 
     }
 }
