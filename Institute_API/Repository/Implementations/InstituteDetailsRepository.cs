@@ -852,7 +852,94 @@ namespace Institute_API.Repository.Implementations
 
             return rowsAffected;
         }
+        public async Task<ServiceResponse<string>> AddOrUpdateAcademicYear(AcademicInfo request)
+        {
+            if (_connection.State != ConnectionState.Open)
+            {
+                _connection.Open();
+            }
 
+            using var transaction = _connection.BeginTransaction();
+            try
+            {
+                if (request.Academic_Info_id == 0) // Insert operation
+                {
+                    string insertQuery = @"
+            INSERT INTO tbl_AcademicInfo (
+                Institute_id,
+                AcademicYearStartMonth,
+                AcademicYearEndMonth,
+                IsSemester,
+                SemesterStartDate,
+                SemesterEndDate,
+                Status,
+                AcaInfoYearCode
+            )
+            VALUES (
+                @InstituteId,
+                @AcademicYearStartMonth,
+                @AcademicYearEndMonth,
+                @IsSemester,
+                @SemesterStartDate,
+                @SemesterEndDate,
+                @Status,
+                @AcaInfoYearCode
+            );
+            SELECT CAST(SCOPE_IDENTITY() as int);";
+
+                    int newAcademicInfoId = await _connection.ExecuteScalarAsync<int>(insertQuery, new
+                    {
+                        request.Institute_id,
+                        request.AcademicYearStartMonth,
+                        request.AcademicYearEndMonth,
+                        request.Status,
+                        request.AcaInfoYearCode
+                    }, transaction: transaction);
+
+                    transaction.Commit();
+                    return new ServiceResponse<string>(true, $"Academic Year added successfully with ID {newAcademicInfoId}", null, 201);
+                }
+                else // Update operation
+                {
+                    string updateQuery = @"
+            UPDATE tbl_AcademicInfo
+            SET 
+                Institute_id = @InstituteId,
+                AcademicYearStartMonth = @AcademicYearStartMonth,
+                AcademicYearEndMonth = @AcademicYearEndMonth,
+                IsSemester = @IsSemester,
+                SemesterStartDate = @SemesterStartDate,
+                SemesterEndDate = @SemesterEndDate,
+                Status = @Status,
+                AcaInfoYearCode = @AcaInfoYearCode
+            WHERE Academic_Info_id = @AcademicInfoId";
+
+                    int rowsAffected = await _connection.ExecuteAsync(updateQuery, new
+                    {
+                        request.Institute_id,
+                        request.AcademicYearStartMonth,
+                        request.AcademicYearEndMonth,
+                        request.Status,
+                        request.AcaInfoYearCode,
+                        request.Academic_Info_id
+                    }, transaction: transaction);
+
+                    if (rowsAffected == 0)
+                    {
+                        transaction.Rollback();
+                        return new ServiceResponse<string>(false, "Academic Year record not found.", null, 404);
+                    }
+
+                    transaction.Commit();
+                    return new ServiceResponse<string>(true, "Academic Year updated successfully.", null, 200);
+                }
+            }
+            catch (Exception ex)
+            {
+                transaction.Rollback();
+                return new ServiceResponse<string>(false, "An error occurred while processing the academic year.", ex.Message, 500);
+            }
+        }
         //    private async Task<int> AddUpdateSemesterInfo(SemesterInfo request, int InstitutionId)
         //    {
         //        int rowsAffected = 0;

@@ -1,5 +1,6 @@
 ﻿using Institute_API.DTOs;
 using Institute_API.DTOs.ServiceResponse;
+using Institute_API.Models;
 using Institute_API.Repository.Interfaces;
 using Institute_API.Services.Interfaces;
 
@@ -17,6 +18,11 @@ namespace Institute_API.Services.Implementations
         public async Task<ServiceResponse<bool>> ActiveAcademicYear(string AcaInfoYearCode, int InstituteId)
         {
             return await _instituteDetailsRepository.ActiveAcademicYear(AcaInfoYearCode, InstituteId);
+        }
+
+        public async Task<ServiceResponse<string>> AddOrUpdateAcademicYear(AcademicInfo request)
+        {
+            return await _instituteDetailsRepository.AddOrUpdateAcademicYear(request);
         }
 
         public async Task<ServiceResponse<int>> AddUpdateInstititeDetails(InstituteDetailsDTO request)

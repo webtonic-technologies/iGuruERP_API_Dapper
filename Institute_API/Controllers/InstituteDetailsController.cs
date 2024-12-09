@@ -1,4 +1,5 @@
 using Institute_API.DTOs;
+using Institute_API.Models;
 using Institute_API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -154,6 +155,28 @@ namespace Institute_API.Controllers
             {
                 return BadRequest(ex.Message);
             }
+        }
+        [HttpPost("AddOrUpdateAcademicYear")]
+        public async Task<IActionResult> AddOrUpdateAcademicYear(AcademicInfo request)
+        {
+            try
+            {
+                var data = await _instituteDetailsServices.AddOrUpdateAcademicYear(request);
+                if (data != null)
+                {
+                    return Ok(data);
+                }
+                else
+                {
+                    return BadRequest("Bad Request");
+                }
+
+            }
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
+
         }
     }
 }
