@@ -4,6 +4,7 @@ using Lesson_API.DTOs.Responses;
 using Lesson_API.DTOs.ServiceResponse;
 using Lesson_API.Models;
 using Lesson_API.Repository.Interfaces;
+using Lesson_API.DTOs.Responses;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
@@ -44,8 +45,8 @@ namespace Lesson_API.Repository.Implementations
                 if (request.LessonPlanningID == 0)
                 {
                     var lessonPlanningSql = @"INSERT INTO tblLessonPlanning (AcademicYear, ClassID, SectionID, SubjectID, InstituteID, IsActive) 
-                                              VALUES (@AcademicYear, @ClassID, @SectionID, @SubjectID, @InstituteID, 1);
-                                              SELECT CAST(SCOPE_IDENTITY() as int);";
+                                      VALUES (@AcademicYear, @ClassID, @SectionID, @SubjectID, @InstituteID, 1);
+                                      SELECT CAST(SCOPE_IDENTITY() as int);";
                     request.LessonPlanningID = await _dbConnection.QuerySingleAsync<int>(lessonPlanningSql, new
                     {
                         request.AcademicYear,
@@ -58,13 +59,13 @@ namespace Lesson_API.Repository.Implementations
                 else
                 {
                     var lessonPlanningSql = @"UPDATE tblLessonPlanning SET 
-                                              AcademicYear = @AcademicYear, 
-                                              ClassID = @ClassID, 
-                                              SectionID = @SectionID, 
-                                              SubjectID = @SubjectID, 
-                                              InstituteID = @InstituteID,
-                                              IsActive = @IsActive
-                                              WHERE LessonPlanningID = @LessonPlanningID";
+                                      AcademicYear = @AcademicYear, 
+                                      ClassID = @ClassID, 
+                                      SectionID = @SectionID, 
+                                      SubjectID = @SubjectID, 
+                                      InstituteID = @InstituteID,
+                                      IsActive = @IsActive
+                                      WHERE LessonPlanningID = @LessonPlanningID";
                     await _dbConnection.ExecuteAsync(lessonPlanningSql, new
                     {
                         request.LessonPlanningID,
@@ -80,53 +81,59 @@ namespace Lesson_API.Repository.Implementations
                 // Insert or Update LessonPlanning Information
                 foreach (var info in request.LessonPlanningInformation)
                 {
+                    // Convert the lessonDate from 'DD-MM-YYYY' to DateTime
+                    DateTime lessonDate;
+                    if (!DateTime.TryParseExact(info.LessonDate, "dd-MM-yyyy", null, System.Globalization.DateTimeStyles.None, out lessonDate))
+                    {
+                        throw new Exception("Invalid date format. Expected format is DD-MM-YYYY.");
+                    }
+
                     if (info.LessonPlanningInfoID == 0)
                     {
-                        var infoSql = @"INSERT INTO tblLessonPlanningInformation (LessonPlanningID, LessonDate, PlanTypeID, CurriculumChapterID, CurriculumSubTopicID, Synopsis, Introduction, MainTeaching, Conclusion, Attachments) 
-                                        VALUES (@LessonPlanningID, @LessonDate, @PlanTypeID, @CurriculumChapterID, @CurriculumSubTopicID, @Synopsis, @Introduction, @MainTeaching, @Conclusion, @Attachments);
-                                        SELECT CAST(SCOPE_IDENTITY() as int);";
+                        var infoSql = @"INSERT INTO tblLessonPlanningInformation (LessonPlanningID, LessonDate, PlanTypeID, CurriculumChapterID, CurriculumSubTopicID, Synopsis, Introduction, MainTeaching, Conclusion) 
+                                VALUES (@LessonPlanningID, @LessonDate, @PlanTypeID, @CurriculumChapterID, @CurriculumSubTopicID, @Synopsis, @Introduction, @MainTeaching, @Conclusion);
+                                SELECT CAST(SCOPE_IDENTITY() as int);";
                         info.LessonPlanningInfoID = await _dbConnection.QuerySingleAsync<int>(infoSql, new
                         {
                             LessonPlanningID = request.LessonPlanningID,
-                            info.LessonDate,
+                            LessonDate = lessonDate,  // Use converted DateTime object
                             info.PlanTypeID,
                             info.CurriculumChapterID,
                             info.CurriculumSubTopicID,
                             info.Synopsis,
                             info.Introduction,
                             info.MainTeaching,
-                            info.Conclusion,
-                            info.Attachments
+                            info.Conclusion
                         }, transaction);
                     }
                     else
                     {
                         var infoSql = @"UPDATE tblLessonPlanningInformation SET 
-                                        LessonDate = @LessonDate, 
-                                        PlanTypeID = @PlanTypeID, 
-                                        CurriculumChapterID = @CurriculumChapterID, 
-                                        CurriculumSubTopicID = @CurriculumSubTopicID, 
-                                        Synopsis = @Synopsis, 
-                                        Introduction = @Introduction, 
-                                        MainTeaching = @MainTeaching, 
-                                        Conclusion = @Conclusion, 
-                                        Attachments = @Attachments
-                                        WHERE LessonPlanningInfoID = @LessonPlanningInfoID";
+                                LessonDate = @LessonDate, 
+                                PlanTypeID = @PlanTypeID, 
+                                CurriculumChapterID = @CurriculumChapterID, 
+                                CurriculumSubTopicID = @CurriculumSubTopicID, 
+                                Synopsis = @Synopsis, 
+                                Introduction = @Introduction, 
+                                MainTeaching = @MainTeaching, 
+                                Conclusion = @Conclusion
+                                WHERE LessonPlanningInfoID = @LessonPlanningInfoID";
                         await _dbConnection.ExecuteAsync(infoSql, new
                         {
                             info.LessonPlanningInfoID,
-                            info.LessonDate,
+                            LessonDate = lessonDate,  // Use converted DateTime object
                             info.PlanTypeID,
                             info.CurriculumChapterID,
                             info.CurriculumSubTopicID,
                             info.Synopsis,
                             info.Introduction,
                             info.MainTeaching,
-                            info.Conclusion,
-                            info.Attachments
+                            info.Conclusion
                         }, transaction);
                     }
-                    var docs = await AddUpdateDocuments(info.Documents, info.LessonPlanningInfoID);
+
+                    // Handle document saving
+                    var docs = await AddUpdateDocuments(info.Documents, info.LessonPlanningInfoID, transaction);
                 }
 
                 transaction.Commit();
@@ -140,6 +147,62 @@ namespace Lesson_API.Repository.Implementations
             }
         }
 
+
+        private async Task<ServiceResponse<int>> AddUpdateDocuments(List<documents> request, int lessonPlanningInfoID, IDbTransaction transaction)
+        {
+            if (request == null || !request.Any())
+            {
+                return new ServiceResponse<int>(0, false, "No documents provided to update", 400);
+            }
+
+            try
+            {
+                // Step 1: Hard delete existing documents for the given LessonPlanningInfoID
+                string deleteSql = @"DELETE FROM tblLessonDocuments WHERE LessonPlanningInfoID = @LessonPlanningInfoID";
+                await _dbConnection.ExecuteAsync(deleteSql, new { LessonPlanningInfoID = lessonPlanningInfoID }, transaction);
+
+                // Step 2: Insert new documents
+                string insertSql = @"INSERT INTO tblLessonDocuments (LessonPlanningInfoID, DocFile) VALUES (@LessonPlanningInfoID, @DocFile)";
+
+                foreach (var doc in request)
+                {
+                    doc.LessonPlanningInfoID = lessonPlanningInfoID; // Ensure the LessonPlanningInfoID is set for each document
+                    doc.DocFile = SaveBase64File(doc.DocFile, "LessonPlanning");  // Save the file and get file path
+                    await _dbConnection.ExecuteAsync(insertSql, new { LessonPlanningInfoID = lessonPlanningInfoID, DocFile = doc.DocFile }, transaction);
+                }
+
+                return new ServiceResponse<int>(request.Count, true, "Documents added/updated successfully", 200);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while adding/updating documents.");
+                return new ServiceResponse<int>(0, false, ex.Message, 500);
+            }
+        }
+
+        private string SaveBase64File(string base64File, string folderName)
+        {
+            if (string.IsNullOrEmpty(base64File)) return string.Empty;
+
+            byte[] fileBytes = Convert.FromBase64String(base64File);
+            string filePath = Path.Combine(_hostingEnvironment.ContentRootPath, "Assets", folderName);
+
+            // Ensure the folder exists
+            if (!Directory.Exists(filePath))
+            {
+                Directory.CreateDirectory(filePath);
+            }
+
+            // Define the file name
+            string fileName = $"{Guid.NewGuid()}.pdf";  // Adjust the file extension based on the type of file you expect
+            string fullPath = Path.Combine(filePath, fileName);
+
+            // Write the file to disk
+            File.WriteAllBytes(fullPath, fileBytes);
+
+            return fileName;  // Return the file name, not the full path, to store in the database
+        }
+
         public async Task<ServiceResponse<List<GetAllLessonPlanningResponse>>> GetAllLessonPlanning(GetAllLessonPlanningRequest request)
         {
             try
@@ -147,84 +210,54 @@ namespace Lesson_API.Repository.Implementations
                 var sql = @"
             WITH LessonPlanningData AS (
                 SELECT 
-                    lp.LessonPlanningID,
-                    lp.AcademicYear,
-                    lp.ClassID,
+                    c.class_id AS ClassID,
                     c.class_name AS ClassName,
+                    sec.section_id AS SectionID,
                     sec.section_name AS SectionName,
-                    lp.SubjectID,
-                    s.subject_name AS SubjectName,
-                    t.employee_name AS TeacherName,
-                    lp.InstituteID,
-                    lp.IsActive,
-                    ROW_NUMBER() OVER (ORDER BY lp.LessonPlanningID) AS RowNum
+                    sub.SubjectId AS SubjectID,
+                    sub.SubjectName AS SubjectName,
+                    emp.employee_id AS EmployeeID,
+                    emp.First_Name + ' ' + emp.Last_Name AS EmployeeName,
+                    ROW_NUMBER() OVER (ORDER BY c.class_name, sec.section_name, sub.SubjectName) AS RowNum
                 FROM tblLessonPlanning lp
                 INNER JOIN tbl_Class c ON lp.ClassID = c.class_id
                 INNER JOIN tbl_Section sec ON lp.SectionID = sec.section_id
-                INNER JOIN tbl_InstituteSubjects s ON lp.SubjectID = s.institute_subject_id
-                INNER JOIN tbl_EmployeeProfileMaster t ON lp.TeacherID = t.employee_id
-                WHERE lp.InstituteID = @InstituteID AND lp.IsActive = 1
+                INNER JOIN tbl_Subjects sub ON lp.SubjectID = sub.SubjectId
+                -- Join with tbl_EmployeeStappMapClassSection to get the EmployeeID based on ClassId and SectionId
+                INNER JOIN tbl_EmployeeStappMapClassSection map ON map.ClassId = c.class_id AND map.SectionId = sec.section_id
+                -- Join with tbl_EmployeeProfileMaster to get the Employee details
+                INNER JOIN tbl_EmployeeProfileMaster emp ON map.EmployeeId = emp.employee_id
+                WHERE lp.InstituteID = @InstituteID
+                AND lp.AcademicYear = @AcademicYearID
+                AND lp.ClassID = @ClassID
+                AND lp.SectionID = @SectionID
+                AND lp.SubjectID = @SubjectID
+                AND lp.IsActive = 1
             )
             SELECT 
-                lpd.LessonPlanningID,
-                lpd.AcademicYear,
-                lpd.ClassID,
-                lpd.ClassName,
-                lpd.SectionName,
-                lpd.SubjectID,
-                lpd.SubjectName,
-                lpd.TeacherName,
-                lpd.InstituteID,
-                lpd.IsActive
-            FROM LessonPlanningData lpd
-            WHERE lpd.RowNum BETWEEN @Offset + 1 AND @Offset + @PageSize;
+                ClassID, ClassName, SectionID, SectionName, SubjectID, SubjectName, EmployeeID, EmployeeName
+            FROM LessonPlanningData
+            WHERE RowNum BETWEEN @Offset + 1 AND @Offset + @PageSize;
+        ";
 
-            WITH LessonPlanningDataForInfo AS (
-                SELECT 
-                    lp.LessonPlanningID,
-                    ROW_NUMBER() OVER (ORDER BY lp.LessonPlanningID) AS RowNum
-                FROM tblLessonPlanning lp
-                WHERE lp.InstituteID = @InstituteID AND lp.IsActive = 1
-            )
-            SELECT
-                lpi.LessonPlanningInfoID,
-                lpi.LessonPlanningID,
-                lpi.LessonDate,
-                lpi.PlanTypeID,
-                lpi.CurriculumChapterID,
-                lpi.CurriculumSubTopicID,
-                lpi.Synopsis,
-                lpi.Introduction,
-                lpi.MainTeaching,
-                lpi.Conclusion,
-                lpi.Attachments
-            FROM tblLessonPlanningInformation lpi
-            INNER JOIN LessonPlanningDataForInfo lpd ON lpi.LessonPlanningID = lpd.LessonPlanningID
-            WHERE lpd.RowNum BETWEEN @Offset + 1 AND @Offset + @PageSize;";
-
-                using var multi = await _dbConnection.QueryMultipleAsync(sql, new
+                // Execute the query and pass parameters
+                var result = await _dbConnection.QueryAsync<GetAllLessonPlanningResponse>(sql, new
                 {
+                    request.AcademicYearID,
+                    request.ClassID,
+                    request.SectionID,
+                    request.SubjectID,
                     request.InstituteID,
                     Offset = (request.PageNumber - 1) * request.PageSize,
-                    PageSize = request.PageSize
+                    request.PageSize
                 });
 
-                var lessonPlannings = (await multi.ReadAsync<GetAllLessonPlanningResponse>()).ToList();
-                var lessonPlanningInfos = (await multi.ReadAsync<LessonPlanningInformationResponse>()).ToList();
-
-                foreach (var lessonPlanning in lessonPlannings)
-                {
-                    lessonPlanning.LessonPlanningInformation = lessonPlanningInfos
-                        .Where(info => info.LessonPlanningID == lessonPlanning.LessonPlanningID)
-                        .ToList();
-                }
-
-                return new ServiceResponse<List<GetAllLessonPlanningResponse>>(lessonPlannings, true, "Lesson Plannings retrieved successfully.", 200, lessonPlannings.Count);
+                return new ServiceResponse<List<GetAllLessonPlanningResponse>>(result.ToList(), true, "Lesson plannings retrieved successfully.", 200);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while retrieving lesson plannings.");
-                return new ServiceResponse<List<GetAllLessonPlanningResponse>>(null, false, "Operation failed: " + ex.Message, 500, null);
+                return new ServiceResponse<List<GetAllLessonPlanningResponse>>(null, false, "Operation failed: " + ex.Message, 500);
             }
         }
 
@@ -256,6 +289,126 @@ namespace Lesson_API.Repository.Implementations
                 return new ServiceResponse<LessonPlanning>(null, false, "Operation failed: " + ex.Message, 500, null);
             }
         }
+
+        public async Task<ServiceResponse<GetLessonPlanningResponse1>> GetLessonPlanning(GetLessonPlanningRequest request)
+        {
+            try
+            {
+                var sql = @"
+        -- Step 1: Assign LessonPlanningID to the variable
+        DECLARE @LessonPlanningID INT;
+
+        -- Get LessonPlanningID
+        SELECT 
+            @LessonPlanningID = lp.LessonPlanningID
+        FROM tblLessonPlanning lp
+        INNER JOIN tbl_Class c ON lp.ClassID = c.class_id
+        INNER JOIN tbl_Section sec ON lp.SectionID = sec.section_id
+        INNER JOIN tbl_Subjects sub ON lp.SubjectID = sub.SubjectId
+        INNER JOIN tbl_EmployeeStappMapClassSection map ON map.ClassId = lp.ClassID AND map.SectionId = lp.SectionID
+        INNER JOIN tbl_EmployeeProfileMaster emp ON map.EmployeeId = emp.employee_id
+        WHERE lp.ClassID = @ClassID
+        AND lp.SectionID = @SectionID
+        AND lp.SubjectID = @SubjectID
+        AND lp.InstituteID = @InstituteID;
+
+        -- Step 2: Retrieve lesson planning details and information
+        IF @LessonPlanningID IS NOT NULL
+        BEGIN
+            -- Retrieve lesson planning basic details
+            SELECT 
+                c.class_name AS ClassName,
+                sec.section_name AS SectionName,
+                sub.SubjectName,
+                emp.First_Name + ' ' + emp.Last_Name AS Teacher
+            FROM tblLessonPlanning lp
+            INNER JOIN tbl_Class c ON lp.ClassID = c.class_id
+            INNER JOIN tbl_Section sec ON lp.SectionID = sec.section_id
+            INNER JOIN tbl_Subjects sub ON lp.SubjectID = sub.SubjectId
+            INNER JOIN tbl_EmployeeStappMapClassSection map ON map.ClassId = lp.ClassID AND map.SectionId = lp.SectionID
+            INNER JOIN tbl_EmployeeProfileMaster emp ON map.EmployeeId = emp.employee_id
+            WHERE lp.LessonPlanningID = @LessonPlanningID;
+
+            -- Retrieve lesson planning detailed information with multiple lessons and attachments
+            SELECT 
+                lpi.LessonDate,
+                pt.PlanType,
+                cc.ChapterName AS Chapter,
+                st.SubTopicName AS SubTopic,
+                lpi.Synopsis,
+                lpi.Introduction,
+                lpi.MainTeaching,
+                lpi.Conclusion,
+                ld.DocFile AS Attachment
+            FROM tblLessonPlanningInformation lpi
+            INNER JOIN tblPlanType pt ON lpi.PlanTypeID = pt.PlanTypeID
+            LEFT JOIN tblCurriculumChapter cc ON lpi.CurriculumChapterID = cc.CurriculumChapterID
+            LEFT JOIN tblCurriculumSubTopic st ON lpi.CurriculumSubTopicID = st.CurriculumSubTopicID
+            LEFT JOIN tblLessonDocuments ld ON lpi.LessonPlanningInfoID = ld.LessonPlanningInfoID
+            WHERE lpi.LessonPlanningID = @LessonPlanningID;
+        END;
+        ";
+
+                using var multi = await _dbConnection.QueryMultipleAsync(sql, new
+                {
+                    request.ClassID,
+                    request.SectionID,
+                    request.SubjectID,
+                    request.InstituteID
+                });
+
+                // Step 1: Map the first result (basic details)
+                var lessonPlanningDetails = await multi.ReadSingleOrDefaultAsync<GetLessonPlanningResponse1>();
+                if (lessonPlanningDetails == null)
+                {
+                    return new ServiceResponse<GetLessonPlanningResponse1>(null, false, "No lesson planning details found.", 404);
+                }
+
+                // Step 2: Map multiple lessons with multiple attachments
+                var lessonPlanningInformation = await multi.ReadAsync<LessonDetailsResponse>();
+
+                // Ensure lessonPlanningInformation is not null or empty
+                if (lessonPlanningInformation == null || !lessonPlanningInformation.Any())
+                {
+                    return new ServiceResponse<GetLessonPlanningResponse1>(null, false, "No lesson planning details found.", 404);
+                }
+
+                // Group by LessonDate and aggregate the attachments
+                var groupedLessons = lessonPlanningInformation
+                    .GroupBy(l => l.LessonDate)
+                    .Select(group => new LessonDetailsResponse
+                    {
+                        LessonDate = group.Key,
+                        PlanType = group.FirstOrDefault()?.PlanType ?? string.Empty,
+                        Chapter = group.FirstOrDefault()?.Chapter ?? string.Empty,
+                        SubTopic = group.FirstOrDefault()?.SubTopic ?? string.Empty,
+                        Synopsis = group.FirstOrDefault()?.Synopsis ?? string.Empty,
+                        Introduction = group.FirstOrDefault()?.Introduction ?? string.Empty,
+                        MainTeaching = group.FirstOrDefault()?.MainTeaching ?? string.Empty,
+                        Conclusion = group.FirstOrDefault()?.Conclusion ?? string.Empty,
+                        Attachments = group
+                            .Where(l => l.Attachments != null) // Ensure Attachments list is not null
+                            .SelectMany(l => l.Attachments)
+                            .Where(a => !string.IsNullOrEmpty(a)) // Filter out empty or null attachments
+                            .ToList()
+                    })
+                    .ToList();
+
+
+
+
+                lessonPlanningDetails.Lessons = groupedLessons;
+
+                return new ServiceResponse<GetLessonPlanningResponse1>(lessonPlanningDetails, true, "Lesson planning details retrieved successfully.", 200);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while retrieving lesson planning details.");
+                return new ServiceResponse<GetLessonPlanningResponse1>(null, false, "Operation failed: " + ex.Message, 500);
+            }
+        }
+
+
         public async Task<ServiceResponse<int>> HardDeleteDocument(int documentId)
         {
             try

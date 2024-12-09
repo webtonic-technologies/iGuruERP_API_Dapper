@@ -4,6 +4,7 @@ using Lesson_API.DTOs.ServiceResponse;
 using Lesson_API.Models;
 using Lesson_API.Repository.Interfaces;
 using Lesson_API.Services.Interfaces;
+using Lesson_API.DTOs.Requests;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -26,6 +27,10 @@ namespace Lesson_API.Services.Implementations
         public async Task<ServiceResponse<List<GetAllLessonPlanningResponse>>> GetAllLessonPlanning(GetAllLessonPlanningRequest request)
         {
             return await _lessonPlanningRepository.GetAllLessonPlanning(request);
+        }
+        public async Task<ServiceResponse<GetLessonPlanningResponse1>> GetLessonPlanning(GetLessonPlanningRequest request)
+        {
+            return await _lessonPlanningRepository.GetLessonPlanning(request);
         }
 
         public async Task<ServiceResponse<LessonPlanning>> GetLessonPlanningById(int id)

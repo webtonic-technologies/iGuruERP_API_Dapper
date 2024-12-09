@@ -227,7 +227,7 @@ namespace Lesson_API.Repository.Implementations
                         StartDate = group.Key.StartDate,
                         SubmissionDate = group.Key.SubmissionDate,
                         IsActive = group.Key.IsActive,
-                        ClassSections = group.Select(g => new ClassSectionResponse
+                        ClassSections = group.Select(g => new ClassSectionASResponse
                         {
                             AssignmentID = g.AssignmentID,
                             ClassName = g.ClassName,

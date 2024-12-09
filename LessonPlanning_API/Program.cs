@@ -5,19 +5,18 @@ using Lesson_API.Services.Interfaces;
 using System.Data;
 using System.Data.SqlClient;
 
-
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-string connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
 
+string connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
 builder.Services.AddTransient<IDbConnection>(c => new SqlConnection(connectionString));
 
+// Registering repositories and services
 builder.Services.AddTransient<ICurriculumRepository, CurriculumRepository>();
 builder.Services.AddTransient<ICurriculumService, CurriculumService>();
 
@@ -48,6 +47,11 @@ builder.Services.AddScoped<IHomeWorkTypeService, HomeWorkTypeService>();
 builder.Services.AddScoped<IAssignmentTypeRepository, AssignmentTypeRepository>();
 builder.Services.AddScoped<IAssignmentTypeService, AssignmentTypeService>();
 
+// Adding support for hosting environment (e.g., static files)
+builder.Services.AddSingleton<IWebHostEnvironment>(builder.Environment);  // Ensure that the hosting environment is properly injected
+
+builder.Services.AddDirectoryBrowser();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -58,6 +62,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Serve static files (this ensures WebRootPath is set)
+app.UseStaticFiles();
 
 app.UseAuthorization();
 

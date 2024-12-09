@@ -1,6 +1,7 @@
 ﻿using Lesson_API.DTOs.Requests;
 using Lesson_API.DTOs.ServiceResponse;
 using Lesson_API.Services.Interfaces;
+using Lesson_API.DTOs.Requests;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 
@@ -54,6 +55,17 @@ namespace Lesson_API.Controllers
         public async Task<IActionResult> DeleteLessonPlanning(int id)
         {
             var response = await _lessonPlanningService.DeleteLessonPlanning(id);
+            if (response.Success)
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
+        }
+
+        [HttpPost("GetLessonPlanning")]
+        public async Task<IActionResult> GetLessonPlanning([FromBody] GetLessonPlanningRequest request)
+        {
+            var response = await _lessonPlanningService.GetLessonPlanning(request);
             if (response.Success)
             {
                 return Ok(response);

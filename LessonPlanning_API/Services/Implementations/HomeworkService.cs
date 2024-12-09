@@ -3,7 +3,7 @@ using Lesson_API.DTOs.Responses;
 using Lesson_API.DTOs.ServiceResponse;
 using Lesson_API.Models;
 using Lesson_API.Repository.Interfaces;
-using Lesson_API.Services.Interfaces;
+using Lesson_API.Services.Interfaces; 
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -36,6 +36,10 @@ namespace Lesson_API.Services.Implementations
         public async Task<ServiceResponse<bool>> DeleteHomework(int id)
         {
             return await _homeworkRepository.DeleteHomework(id);
+        }
+        public async Task<ServiceResponse<GetHomeworkHistoryResponse>> GetHomeworkHistory(GetHomeworkHistoryRequest request)
+        {
+            return await _homeworkRepository.GetHomeworkHistory(request);
         }
     }
 }

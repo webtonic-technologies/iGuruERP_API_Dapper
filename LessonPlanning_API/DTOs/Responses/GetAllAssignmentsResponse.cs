@@ -14,7 +14,7 @@ namespace Lesson_API.DTOs.Responses
         public DateTime StartDate { get; set; }
         public DateTime SubmissionDate { get; set; }
         public bool IsActive { get; set; }
-        public List<ClassSectionResponse> ClassSections { get; set; }
+        public List<ClassSectionASResponse> ClassSections { get; set; }
         public List<AssignmentDocs> AssignmentDocs { get; set; }
     }
 }

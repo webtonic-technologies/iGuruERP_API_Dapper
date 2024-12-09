@@ -6,6 +6,7 @@ namespace Lesson_API.Models
     public class Curriculum
     {
         public int CurriculumID { get; set; }
+        public string AcademicYearID { get; set; }
         public int ClassID { get; set; }
         public int SubjectID { get; set; }
         public int InstituteID { get; set; }

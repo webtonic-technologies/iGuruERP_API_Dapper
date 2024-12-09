@@ -34,6 +34,7 @@ namespace Lesson_API.Controllers
             return BadRequest(response);
         }
 
+
         [HttpGet("GetCurriculum/{CurriculumID}")]
         public async Task<IActionResult> GetCurriculum(int CurriculumID)
         {

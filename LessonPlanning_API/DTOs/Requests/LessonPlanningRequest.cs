@@ -20,7 +20,7 @@ namespace Lesson_API.DTOs.Requests
     {
         public int LessonPlanningInfoID { get; set; }
         public int LessonPlanningID { get; set; }
-        public DateTime LessonDate { get; set; }
+        public string LessonDate { get; set; }
         public int PlanTypeID { get; set; }
         public int CurriculumChapterID { get; set; }
         public int CurriculumSubTopicID { get; set; }
