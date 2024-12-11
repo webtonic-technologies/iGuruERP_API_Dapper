@@ -62,12 +62,31 @@ namespace FeesManagement_API.Controllers
 
 
 
+        //[HttpPut("Status/{StudentConcessionID}")]
+        //public ActionResult<ServiceResponse<string>> UpdateStatus(int StudentConcessionID)
+        //{
+        //    var response = _concessionMappingService.UpdateStatus(StudentConcessionID);
+        //    return Ok(response);
+        //}
+
         [HttpPut("Status/{StudentConcessionID}")]
-        public ActionResult<ServiceResponse<string>> UpdateStatus(int StudentConcessionID)
+        public async Task<ActionResult<ServiceResponse<string>>> UpdateStatus(int StudentConcessionID, [FromBody] UpdateStatusRequest request)
         {
-            var response = _concessionMappingService.UpdateStatus(StudentConcessionID);
-            return Ok(response);
+            try
+            {
+                // Call the service method asynchronously
+                var response = await _concessionMappingService.UpdateStatus(StudentConcessionID, request.InActiveReason);
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                // Log the exception (in production, use a logging framework)
+                Console.WriteLine($"Error: {ex.Message}");
+                return StatusCode(500, new ServiceResponse<string>(false, "Failed to update status", null, 500));
+            }
         }
+
+
 
         [HttpPost("GetConcessionList")]
         public async Task<ActionResult<ServiceResponse<IEnumerable<ConcessionListResponse>>>> GetConcessionList([FromBody] ConcessionListRequest request)

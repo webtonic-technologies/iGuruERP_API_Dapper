@@ -39,5 +39,41 @@ namespace FeesManagement_API.Controllers
 
             return Ok(response);
         }
+
+        [HttpPost("GetChequeTrackingStatus")]
+        public IActionResult GetChequeTrackingStatus()
+        {
+            var response = _chequeTrackingService.GetChequeTrackingStatus();
+            if (!response.Success)
+            {
+                return BadRequest(response.Message);
+            }
+
+            return Ok(response);
+        }
+
+        [HttpPost("GetChequeTrackingExport")]
+        public IActionResult GetChequeTrackingExport([FromBody] ChequeTrackingExportRequest request)
+        {
+            if (request == null)
+            {
+                return BadRequest("Invalid request: Details are required.");
+            }
+
+            try
+            {
+                var fileData = _chequeTrackingService.GetChequeTrackingExport(request);
+
+                var contentType = request.ExportType == 1 ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "text/csv";
+                var fileName = request.ExportType == 1 ? "ChequeTracking.xlsx" : "ChequeTracking.csv";
+
+                return File(fileData, contentType, fileName);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
     }
 }

@@ -2,6 +2,7 @@
 using FeesManagement_API.DTOs.Responses;
 using FeesManagement_API.Repository.Interfaces;
 using FeesManagement_API.Services.Interfaces;
+using FeesManagement_API.Utilities;
 
 namespace FeesManagement_API.Services.Implementations
 {
@@ -22,6 +23,18 @@ namespace FeesManagement_API.Services.Implementations
         public List<GetWalletResponse> GetWallet(GetWalletRequest request)
         {
             return _walletRepository.GetWallet(request);
+        }
+
+        public byte[] GetWalletExport(GetWalletExportRequest request)
+        {
+            var dataTable = _walletRepository.GetWalletExportData(request);
+
+            return request.ExportType switch
+            {
+                1 => FileExportHelper.ExportToExcel(dataTable), // Excel
+                2 => FileExportHelper.ExportToCsv(dataTable),   // CSV
+                _ => throw new ArgumentException("Invalid ExportType")
+            };
         }
     }
 }

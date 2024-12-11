@@ -27,5 +27,12 @@ namespace FeesManagement_API.Services.Implementations
             return new ServiceResponse<byte[]>(true, "Excel file created successfully", fileBytes, 200);
         }
 
+        public async Task<ServiceResponse<byte[]>> GetFeeStructureCSV(FeeStructureRequest request)
+        {
+            var fileBytes = await _feeStructureRepository.GetFeeStructureCSV(request); // Get the CSV byte array from the repository
+            return new ServiceResponse<byte[]>(true, "CSV file created successfully", fileBytes, 200);
+        }
+
+
     }
 }

@@ -46,9 +46,17 @@ namespace FeesManagement_API.Services.Implementations
             return new ServiceResponse<ConcessionResponse>(true, "Concession group retrieved successfully", result, 200);
         }
 
-        public async Task<int> UpdateConcessionGroupStatus(int concessionGroupID)
+        //public async Task<int> UpdateConcessionGroupStatus(int concessionGroupID)
+        //{
+        //    return await _concessionRepository.UpdateConcessionGroupStatus(concessionGroupID);
+        //}
+
+        public async Task<int> UpdateConcessionGroupStatus(int concessionGroupID, string? inActiveReason)
         {
-            return await _concessionRepository.UpdateConcessionGroupStatus(concessionGroupID);
+            return await _concessionRepository.UpdateConcessionGroupStatus(concessionGroupID, inActiveReason);
         }
+
+
+
     }
 }

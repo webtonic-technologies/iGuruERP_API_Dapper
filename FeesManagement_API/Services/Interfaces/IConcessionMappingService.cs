@@ -12,7 +12,9 @@ namespace FeesManagement_API.Services.Interfaces
         Task<ServiceResponse<byte[]>> GetConcessionListExcel(GetAllConcessionMappingRequest request);
         Task<ServiceResponse<byte[]>> GetConcessionListCsv(GetAllConcessionMappingRequest request);
 
-        ServiceResponse<string> UpdateStatus(int studentConcessionID);
+        //ServiceResponse<string> UpdateStatus(int studentConcessionID);
+        Task<ServiceResponse<string>> UpdateStatus(int studentConcessionID, string inActiveReason);
+
         Task<ServiceResponse<IEnumerable<ConcessionListResponse>>> GetConcessionList(ConcessionListRequest request);
 
     }

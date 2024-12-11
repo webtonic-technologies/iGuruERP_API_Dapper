@@ -4,6 +4,8 @@ using FeesManagement_API.DTOs.Response;
 using FeesManagement_API.DTOs.Responses;
 using FeesManagement_API.Repository.Interfaces;
 using System.Data;
+using FeesManagement_API.DTOs.ServiceResponse;
+
 
 namespace FeesManagement_API.Repository.Implementations
 {
@@ -86,24 +88,65 @@ namespace FeesManagement_API.Repository.Implementations
             }
         }
 
-
-        public async Task<IEnumerable<OptionalFeeResponse>> GetAllOptionalFees(GetAllOptionalFeesRequest request)
+        public async Task<ServiceResponse<IEnumerable<OptionalFeeResponse>>> GetAllOptionalFees(GetAllOptionalFeesRequest request)
         {
-            var query = @"
-                SELECT OptionalFeeID, HeadName, ShortName, FeeAmount, InstituteID, IsActive
-                FROM tblOptionalFee
-                WHERE InstituteID = @InstituteID and IsActive = 1
-                ORDER BY OptionalFeeID
-                OFFSET @PageSize * (@PageNumber - 1) ROWS
-                FETCH NEXT @PageSize ROWS ONLY";
+            // Query to count the total number of records based on filters
+            var countQuery = @"
+            SELECT COUNT(*)
+            FROM tblOptionalFee
+            WHERE InstituteID = @InstituteID AND IsActive = 1
+            ";
 
-            return await _connection.QueryAsync<OptionalFeeResponse>(query, new
+            // Execute the total count query
+            var totalCount = await _connection.ExecuteScalarAsync<int>(countQuery, new
+            {
+                InstituteID = request.InstituteID
+            });
+
+            // Query to fetch the paginated data
+            var query = @"
+            SELECT OptionalFeeID, HeadName, ShortName, FeeAmount, InstituteID, IsActive
+            FROM tblOptionalFee
+            WHERE InstituteID = @InstituteID and IsActive = 1
+            ORDER BY OptionalFeeID
+            OFFSET @PageSize * (@PageNumber - 1) ROWS
+            FETCH NEXT @PageSize ROWS ONLY";
+
+            var result = await _connection.QueryAsync<OptionalFeeResponse>(query, new
             {
                 InstituteID = request.InstituteID,
                 PageNumber = request.PageNumber,
                 PageSize = request.PageSize
             });
+
+            // Return the response with both paginated data and total count
+            return new ServiceResponse<IEnumerable<OptionalFeeResponse>>(
+                true,
+                "Data retrieved successfully",
+                result,
+                200,
+                totalCount);  // Include the total count in the response
         }
+
+
+
+        //public async Task<IEnumerable<OptionalFeeResponse>> GetAllOptionalFees(GetAllOptionalFeesRequest request)
+        //{
+        //    var query = @"
+        //        SELECT OptionalFeeID, HeadName, ShortName, FeeAmount, InstituteID, IsActive
+        //        FROM tblOptionalFee
+        //        WHERE InstituteID = @InstituteID and IsActive = 1
+        //        ORDER BY OptionalFeeID
+        //        OFFSET @PageSize * (@PageNumber - 1) ROWS
+        //        FETCH NEXT @PageSize ROWS ONLY";
+
+        //    return await _connection.QueryAsync<OptionalFeeResponse>(query, new
+        //    {
+        //        InstituteID = request.InstituteID,
+        //        PageNumber = request.PageNumber,
+        //        PageSize = request.PageSize
+        //    });
+        //}
 
         public async Task<OptionalFeeResponse> GetOptionalFeeById(int optionalFeeID)
         {

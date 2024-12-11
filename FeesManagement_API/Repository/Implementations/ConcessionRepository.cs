@@ -172,53 +172,53 @@ namespace FeesManagement_API.Repository.Implementations
         public async Task<ServiceResponse<IEnumerable<ConcessionResponse>>> GetAllConcessions(GetAllConcessionRequest request)
         {
             var query = @"
-        SELECT 
-            cg.ConcessionGroupID, 
-            cg.ConcessionGroupType, 
-            cg.IsAmount, 
-            cg.IsPercentage, 
-            cg.InstituteID,
-            cr.ConcessionRulesID,
-            cr.FeeHeadID,
-            cr.Amount,
-            cr.FeeTenurityID,
-            cr.STMTenurityID,
-            cr.FeeCollectionID,
-            fh.FeeHead,
-            CASE 
-                WHEN cr.FeeTenurityID = 1 THEN 'Single'
-                WHEN cr.FeeTenurityID = 2 THEN tt.TermName
-                WHEN cr.FeeTenurityID = 3 THEN STRING_AGG(tm.Month, ', ') WITHIN GROUP(ORDER BY tm.Month)
-                ELSE ''
-            END AS FeeTenure,
-            CASE 
-                WHEN cg.IsActive = 1 THEN 'true'
-                ELSE 'false'
-            END AS IsActive
-        FROM tblConcessionGroup cg
-        LEFT JOIN tblConcessionRules cr ON cg.ConcessionGroupID = cr.ConcessionGroupID
-        LEFT JOIN tblFeeHead fh ON cr.FeeHeadID = fh.FeeHeadID
-        LEFT JOIN tblTenurityTerm tt ON cr.FeeCollectionID = tt.FeeCollectionID AND cr.FeeTenurityID = 2
-        LEFT JOIN tblTenurityMonthly tm ON cr.FeeCollectionID = tm.FeeCollectionID AND cr.FeeTenurityID = 3
-        WHERE cg.InstituteID = @InstituteID 
-        GROUP BY 
-            cg.ConcessionGroupID, 
-            cg.ConcessionGroupType, 
-            cg.IsAmount, 
-            cg.IsPercentage, 
-            cg.InstituteID,
-            cr.ConcessionRulesID,
-            cr.FeeHeadID,
-            cr.Amount,
-            cr.FeeTenurityID,
-            cr.STMTenurityID,
-            cr.FeeCollectionID,
-            fh.FeeHead,
-            tt.TermName,
-            cg.IsActive
-        ORDER BY cg.ConcessionGroupID
-        OFFSET @PageSize * (@PageNumber - 1) ROWS
-        FETCH NEXT @PageSize ROWS ONLY;";
+            SELECT 
+                cg.ConcessionGroupID, 
+                cg.ConcessionGroupType, 
+                cg.IsAmount, 
+                cg.IsPercentage, 
+                cg.InstituteID,
+                cr.ConcessionRulesID,
+                cr.FeeHeadID,
+                cr.Amount,
+                cr.FeeTenurityID,
+                cr.STMTenurityID,
+                cr.FeeCollectionID,
+                fh.FeeHead,
+                CASE 
+                    WHEN cr.FeeTenurityID = 1 THEN 'Single'
+                    WHEN cr.FeeTenurityID = 2 THEN tt.TermName
+                    WHEN cr.FeeTenurityID = 3 THEN STRING_AGG(tm.Month, ', ') WITHIN GROUP(ORDER BY tm.Month)
+                    ELSE ''
+                END AS FeeTenure,
+                CASE 
+                    WHEN cg.IsActive = 1 THEN 'true'
+                    ELSE 'false'
+                END AS IsActive
+            FROM tblConcessionGroup cg
+            LEFT JOIN tblConcessionRules cr ON cg.ConcessionGroupID = cr.ConcessionGroupID
+            LEFT JOIN tblFeeHead fh ON cr.FeeHeadID = fh.FeeHeadID
+            LEFT JOIN tblTenurityTerm tt ON cr.FeeCollectionID = tt.FeeCollectionID AND cr.FeeTenurityID = 2
+            LEFT JOIN tblTenurityMonthly tm ON cr.FeeCollectionID = tm.FeeCollectionID AND cr.FeeTenurityID = 3
+            WHERE cg.InstituteID = @InstituteID 
+            GROUP BY 
+                cg.ConcessionGroupID, 
+                cg.ConcessionGroupType, 
+                cg.IsAmount, 
+                cg.IsPercentage, 
+                cg.InstituteID,
+                cr.ConcessionRulesID,
+                cr.FeeHeadID,
+                cr.Amount,
+                cr.FeeTenurityID,
+                cr.STMTenurityID,
+                cr.FeeCollectionID,
+                fh.FeeHead,
+                tt.TermName,
+                cg.IsActive
+            ORDER BY cg.ConcessionGroupID
+            OFFSET @PageSize * (@PageNumber - 1) ROWS
+            FETCH NEXT @PageSize ROWS ONLY;";
 
             var concessionGroups = new List<ConcessionResponse>();
 
@@ -325,10 +325,42 @@ namespace FeesManagement_API.Repository.Implementations
         }
 
 
-        public async Task<int> UpdateConcessionGroupStatus(int concessionGroupID)
+        //public async Task<int> UpdateConcessionGroupStatus(int concessionGroupID)
+        //{
+        //    string query = "UPDATE tblConcessionGroup SET IsActive = CASE WHEN IsActive = 1 THEN 0 ELSE 1 END WHERE ConcessionGroupID = @ConcessionGroupID";
+        //    return await _connection.ExecuteAsync(query, new { ConcessionGroupID = concessionGroupID });
+        //}
+
+        //public async Task<int> UpdateConcessionGroupStatus(int concessionGroupID, string? inActiveReason)
+        //{
+
+        //    //string query = "UPDATE tblConcessionGroup SET IsActive = CASE WHEN IsActive = 1 THEN 0 ELSE 1 END WHERE ConcessionGroupID = @ConcessionGroupID";
+
+        //    string query = @"
+        //    UPDATE tblConcessionGroup 
+        //    SET 
+        //        IsActive = CASE WHEN IsActive = 1 THEN 0 ELSE 1 END,
+        //        InActiveReason = CASE WHEN IsActive = 0 THEN @InActiveReason ELSE NULL END
+        //    WHERE ConcessionGroupID = @ConcessionGroupID";
+
+        //    return await _connection.ExecuteAsync(query, new { ConcessionGroupID = concessionGroupID, InActiveReason = inActiveReason });
+        //}
+
+
+        public async Task<int> UpdateConcessionGroupStatus(int concessionGroupID, string? inActiveReason)
         {
-            string query = "UPDATE tblConcessionGroup SET IsActive = CASE WHEN IsActive = 1 THEN 0 ELSE 1 END WHERE ConcessionGroupID = @ConcessionGroupID";
-            return await _connection.ExecuteAsync(query, new { ConcessionGroupID = concessionGroupID });
+            string query = @"
+        UPDATE tblConcessionGroup 
+        SET 
+            IsActive = CASE WHEN IsActive = 1 THEN 0 ELSE 1 END,
+            InActiveReason = CASE 
+                                WHEN IsActive = 0 THEN NULL  -- Clear InActiveReason when activating
+                                WHEN IsActive = 1 THEN @InActiveReason -- Set InActiveReason when deactivating
+                                ELSE InActiveReason
+                             END
+        WHERE ConcessionGroupID = @ConcessionGroupID";
+
+            return await _connection.ExecuteAsync(query, new { ConcessionGroupID = concessionGroupID, InActiveReason = inActiveReason });
         }
 
     }

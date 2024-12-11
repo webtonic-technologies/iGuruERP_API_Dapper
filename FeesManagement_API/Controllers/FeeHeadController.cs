@@ -72,5 +72,16 @@ namespace FeesManagement_API.Controllers
             }
             return BadRequest(response);
         }
+
+        [HttpPost("GetFeeHeadsDDL")]
+        public async Task<IActionResult> GetFeeHeadsDDL(GetFeeHeadsDDLRequest request)
+        {
+            var response = await _feeHeadService.GetFeeHeadsDDL(request);
+            if (response.Success)
+            {
+                return Ok(response);
+            }
+            return NoContent();
+        }
     }
 }

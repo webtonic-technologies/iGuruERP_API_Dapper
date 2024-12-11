@@ -3,6 +3,7 @@ using FeesManagement_API.DTOs.ServiceResponse;
 using FeesManagement_API.DTOs.Responses;
 using FeesManagement_API.Repository.Interfaces;
 using FeesManagement_API.Services.Interfaces;
+using FeesManagement_API.Utilities;
 
 namespace FeesManagement_API.Services.Implementations
 {
@@ -19,5 +20,23 @@ namespace FeesManagement_API.Services.Implementations
         {
             return _chequeTrackingRepository.GetChequeTracking(request);
         }
+
+        public ServiceResponse<List<GetChequeTrackingStatusResponse>> GetChequeTrackingStatus()
+        {
+            return _chequeTrackingRepository.GetChequeTrackingStatus();
+        }
+
+        public byte[] GetChequeTrackingExport(ChequeTrackingExportRequest request)
+        {
+            var dataTable = _chequeTrackingRepository.GetChequeTrackingExportData(request);
+
+            return request.ExportType switch
+            {
+                1 => FileExportHelper.ExportToExcel(dataTable), // Excel
+                2 => FileExportHelper.ExportToCsv(dataTable),   // CSV
+                _ => throw new ArgumentException("Invalid ExportType")
+            };
+        }
+
     }
 }

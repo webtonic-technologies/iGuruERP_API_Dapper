@@ -36,5 +36,20 @@ namespace FeesManagement_API.Controllers
             return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "FeeStructure.xlsx");
         }
 
+        [HttpPost("GetFeeStructure_CSV")]
+        public async Task<IActionResult> GetFeeStructure_CSV([FromBody] FeeStructureRequest request)
+        {
+            var response = await _feeStructureService.GetFeeStructureCSV(request);  // Service call to handle CSV logic
+
+            if (!response.Success)
+            {
+                return BadRequest(response);
+            }
+
+            var fileBytes = response.Data;  // Retrieve the CSV file data as a byte array
+            return File(fileBytes, "text/csv", "FeeStructure.csv");
+        }
+
+
     }
 }

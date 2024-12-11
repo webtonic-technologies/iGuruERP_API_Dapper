@@ -28,20 +28,43 @@
         public decimal LateFee { get; set; }
         public decimal Offer { get; set; }
         public int PaymentModeID { get; set; }
-        public DateTime? CashTransactionDate { get; set; }
+        public string CashTransactionDate { get; set; } // Now string
         public int? ChequeNo { get; set; }
-        public DateTime? ChequeDate { get; set; }
+        public string ChequeDate { get; set; } // Now string
         public string ChequeBankName { get; set; }
         public string CardTransactionDetail { get; set; }
-        public DateTime? CardTransactionDate { get; set; }
+        public string CardTransactionDate { get; set; } // Now string
         public string OnlineTransactionDetail { get; set; }
-        public DateTime? OnlineTransactionDate { get; set; }
-        public DateTime? QRDate { get; set; }
+        public string OnlineTransactionDate { get; set; } // Now string
+        public string QRDate { get; set; } // Now string
         public string ChallanTransactionDetail { get; set; }
-        public DateTime? ChallanTransactionDate { get; set; }
+        public string ChallanTransactionDate { get; set; } // Now string
         public string Remarks { get; set; }
-        //public string PaymentIDs { get; set; }
         public int InstituteID { get; set; }
-        public DateTime SysTransactionDate { get; set; }
+        public string SysTransactionDate { get; set; } // Now string
     }
+
+    //public class PaymentTransaction
+    //{
+    //    public int TransactionID { get; set; }
+    //    public decimal PaymentAmount { get; set; }
+    //    public decimal LateFee { get; set; }
+    //    public decimal Offer { get; set; }
+    //    public int PaymentModeID { get; set; }
+    //    public DateTime? CashTransactionDate { get; set; }
+    //    public int? ChequeNo { get; set; }
+    //    public DateTime? ChequeDate { get; set; }
+    //    public string ChequeBankName { get; set; }
+    //    public string CardTransactionDetail { get; set; }
+    //    public DateTime? CardTransactionDate { get; set; }
+    //    public string OnlineTransactionDetail { get; set; }
+    //    public DateTime? OnlineTransactionDate { get; set; }
+    //    public DateTime? QRDate { get; set; }
+    //    public string ChallanTransactionDetail { get; set; }
+    //    public DateTime? ChallanTransactionDate { get; set; }
+    //    public string Remarks { get; set; }
+    //    //public string PaymentIDs { get; set; }
+    //    public int InstituteID { get; set; }
+    //    public DateTime SysTransactionDate { get; set; }
+    //}
 }

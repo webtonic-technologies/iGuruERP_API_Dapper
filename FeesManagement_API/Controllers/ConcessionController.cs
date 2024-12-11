@@ -50,16 +50,32 @@ namespace FeesManagement_API.Controllers
             return BadRequest(response);
         }
 
-        [HttpPut("DeleteConcession/{concessionGroupID}")]
-        public async Task<IActionResult> UpdateConcessionStatus(int concessionGroupID)
+        //[HttpPut("DeleteConcession/{concessionGroupID}")]
+        //public async Task<IActionResult> UpdateConcessionStatus(int concessionGroupID)
+        //{
+        //    var result = await _concessionService.UpdateConcessionGroupStatus(concessionGroupID);
+        //    if (result > 0)
+        //    {
+        //        return Ok(new { Success = true, Message = "Concession group status updated successfully." });
+        //    }
+        //    return BadRequest(new { Success = false, Message = "Failed to update concession group status." });
+        //}
+
+        [HttpPut("DeleteConcession")]
+        public async Task<IActionResult> UpdateConcessionStatus([FromBody] ConcessionUpdateRequest request)
         {
-            var result = await _concessionService.UpdateConcessionGroupStatus(concessionGroupID);
+            // Use request.ConcessionGroupID and request.InActiveReason
+            var result = await _concessionService.UpdateConcessionGroupStatus(request.ConcessionGroupID, request.InActiveReason);
+
             if (result > 0)
             {
                 return Ok(new { Success = true, Message = "Concession group status updated successfully." });
             }
             return BadRequest(new { Success = false, Message = "Failed to update concession group status." });
         }
+
+
+
 
     }
 }

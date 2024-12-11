@@ -84,7 +84,7 @@ namespace FeesManagement_API.Repository.Implementations
             INNER JOIN tbl_Class c ON sm.class_id = c.class_id
             INNER JOIN tbl_Section s ON sm.section_id = s.section_id
             LEFT JOIN tblStudentConcession sc ON sm.student_id = sc.StudentID AND sc.InstituteID = @InstituteID AND sc.IsActive = 1 
-            LEFT JOIN tblConcessionGroup cg ON sc.ConcessionGroupID = cg.ConcessionGroupID
+            LEFT JOIN tblConcessionGroup cg ON sc.ConcessionGroupID = cg.ConcessionGroupID AND cg.IsActive = 1
             WHERE sm.Institute_id = @InstituteID 
               AND sm.class_id = @ClassID 
               AND sm.section_id = @SectionID";
@@ -106,34 +106,32 @@ namespace FeesManagement_API.Repository.Implementations
             }
         }
 
-
         public byte[] GetConcessionListExcel(GetAllConcessionMappingRequest request)
         {
             using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 var query = @"
-            SELECT 
-                sm.student_id AS StudentID,
-                CONCAT(sm.First_Name, ' ', sm.Middle_Name, ' ', sm.Last_Name) AS StudentName,
-                c.class_name AS ClassName,
-                s.section_name AS SectionName,
-                sm.Admission_Number AS AdmissionNumber,
-                ISNULL(sc.ConcessionGroupID, 0) AS ConcessionGroupID,
-                ISNULL(cg.ConcessionGroupType, 'None') AS ConcessionGroupType,
-                sm.IsActive
-            FROM tbl_StudentMaster sm
-            INNER JOIN tbl_Class c ON sm.class_id = c.class_id
-            INNER JOIN tbl_Section s ON sm.section_id = s.section_id
-            LEFT JOIN tblStudentConcession sc ON sm.student_id = sc.StudentID AND sc.InstituteID = @InstituteID AND sc.IsActive = 1 
-            LEFT JOIN tblConcessionGroup cg ON sc.ConcessionGroupID = cg.ConcessionGroupID
-            WHERE sm.Institute_id = @InstituteID 
-              AND sm.class_id = @ClassID 
-              AND sm.section_id = @SectionID";
+        SELECT 
+            CONCAT(sm.First_Name, ' ', sm.Middle_Name, ' ', sm.Last_Name) AS StudentName,
+            c.class_name AS ClassName,
+            s.section_name AS SectionName,
+            sm.Admission_Number AS AdmissionNumber,
+            ISNULL(sc.ConcessionGroupID, 0) AS ConcessionGroupID,
+            ISNULL(cg.ConcessionGroupType, 'None') AS ConcessionGroupType,
+            sm.IsActive
+        FROM tbl_StudentMaster sm
+        INNER JOIN tbl_Class c ON sm.class_id = c.class_id
+        INNER JOIN tbl_Section s ON sm.section_id = s.section_id
+        LEFT JOIN tblStudentConcession sc ON sm.student_id = sc.StudentID AND sc.InstituteID = @InstituteID AND sc.IsActive = 1 
+        LEFT JOIN tblConcessionGroup cg ON sc.ConcessionGroupID = cg.ConcessionGroupID AND cg.IsActive = 1
+        WHERE sm.Institute_id = @InstituteID 
+          AND sm.class_id = @ClassID 
+          AND sm.section_id = @SectionID";
 
                 if (!string.IsNullOrEmpty(request.Search))
                 {
                     query += @"
-            AND (sm.First_Name LIKE @Search OR sm.Middle_Name LIKE @Search OR sm.Last_Name LIKE @Search OR sm.Admission_Number LIKE @Search)";
+    AND (sm.First_Name LIKE @Search OR sm.Middle_Name LIKE @Search OR sm.Last_Name LIKE @Search OR sm.Admission_Number LIKE @Search)";
                 }
 
                 var concessionList = connection.Query<GetAllConcessionMappingResponse>(query, new
@@ -148,24 +146,22 @@ namespace FeesManagement_API.Repository.Implementations
                 {
                     var worksheet = package.Workbook.Worksheets.Add("Concession List");
 
-                    worksheet.Cells[1, 1].Value = "StudentID";
-                    worksheet.Cells[1, 2].Value = "StudentName";
-                    worksheet.Cells[1, 3].Value = "ClassName";
-                    worksheet.Cells[1, 4].Value = "SectionName";
-                    worksheet.Cells[1, 5].Value = "AdmissionNumber";
-                    worksheet.Cells[1, 6].Value = "ConcessionGroupType";  // Removed ConcessionGroupID
-                    worksheet.Cells[1, 7].Value = "IsActive";
+                    worksheet.Cells[1, 1].Value = "StudentName";
+                    worksheet.Cells[1, 2].Value = "ClassName";
+                    worksheet.Cells[1, 3].Value = "SectionName";
+                    worksheet.Cells[1, 4].Value = "AdmissionNumber";
+                    worksheet.Cells[1, 5].Value = "ConcessionGroupType";  // Removed ConcessionGroupID
+                    worksheet.Cells[1, 6].Value = "IsActive";
 
                     var row = 2;
                     foreach (var concession in concessionList)
                     {
-                        worksheet.Cells[row, 1].Value = concession.StudentID;
-                        worksheet.Cells[row, 2].Value = concession.StudentName;
-                        worksheet.Cells[row, 3].Value = concession.ClassName;
-                        worksheet.Cells[row, 4].Value = concession.SectionName;
-                        worksheet.Cells[row, 5].Value = concession.AdmissionNumber;
-                        worksheet.Cells[row, 6].Value = concession.ConcessionGroupType; // Removed ConcessionGroupID
-                        worksheet.Cells[row, 7].Value = concession.IsActive ? "Yes" : "No";
+                        worksheet.Cells[row, 1].Value = concession.StudentName;
+                        worksheet.Cells[row, 2].Value = concession.ClassName;
+                        worksheet.Cells[row, 3].Value = concession.SectionName;
+                        worksheet.Cells[row, 4].Value = concession.AdmissionNumber;
+                        worksheet.Cells[row, 5].Value = concession.ConcessionGroupType; // Removed ConcessionGroupID
+                        worksheet.Cells[row, 6].Value = concession.IsActive ? "Yes" : "No";
                         row++;
                     }
 
@@ -175,6 +171,76 @@ namespace FeesManagement_API.Repository.Implementations
                 }
             }
         }
+
+
+        //public byte[] GetConcessionListExcel(GetAllConcessionMappingRequest request)
+        //{
+        //    using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        //    {
+        //        var query = @"
+        //    SELECT 
+        //        sm.student_id AS StudentID,
+        //        CONCAT(sm.First_Name, ' ', sm.Middle_Name, ' ', sm.Last_Name) AS StudentName,
+        //        c.class_name AS ClassName,
+        //        s.section_name AS SectionName,
+        //        sm.Admission_Number AS AdmissionNumber,
+        //        ISNULL(sc.ConcessionGroupID, 0) AS ConcessionGroupID,
+        //        ISNULL(cg.ConcessionGroupType, 'None') AS ConcessionGroupType,
+        //        sm.IsActive
+        //    FROM tbl_StudentMaster sm
+        //    INNER JOIN tbl_Class c ON sm.class_id = c.class_id
+        //    INNER JOIN tbl_Section s ON sm.section_id = s.section_id
+        //    LEFT JOIN tblStudentConcession sc ON sm.student_id = sc.StudentID AND sc.InstituteID = @InstituteID AND sc.IsActive = 1 
+        //    LEFT JOIN tblConcessionGroup cg ON sc.ConcessionGroupID = cg.ConcessionGroupID
+        //    WHERE sm.Institute_id = @InstituteID 
+        //      AND sm.class_id = @ClassID 
+        //      AND sm.section_id = @SectionID";
+
+        //        if (!string.IsNullOrEmpty(request.Search))
+        //        {
+        //            query += @"
+        //    AND (sm.First_Name LIKE @Search OR sm.Middle_Name LIKE @Search OR sm.Last_Name LIKE @Search OR sm.Admission_Number LIKE @Search)";
+        //        }
+
+        //        var concessionList = connection.Query<GetAllConcessionMappingResponse>(query, new
+        //        {
+        //            request.InstituteID,
+        //            request.ClassID,
+        //            request.SectionID,
+        //            Search = "%" + request.Search + "%" // To perform a LIKE search
+        //        }).ToList();
+
+        //        using (var package = new ExcelPackage())
+        //        {
+        //            var worksheet = package.Workbook.Worksheets.Add("Concession List");
+
+        //            worksheet.Cells[1, 1].Value = "StudentID";
+        //            worksheet.Cells[1, 2].Value = "StudentName";
+        //            worksheet.Cells[1, 3].Value = "ClassName";
+        //            worksheet.Cells[1, 4].Value = "SectionName";
+        //            worksheet.Cells[1, 5].Value = "AdmissionNumber";
+        //            worksheet.Cells[1, 6].Value = "ConcessionGroupType";  // Removed ConcessionGroupID
+        //            worksheet.Cells[1, 7].Value = "IsActive";
+
+        //            var row = 2;
+        //            foreach (var concession in concessionList)
+        //            {
+        //                worksheet.Cells[row, 1].Value = concession.StudentID;
+        //                worksheet.Cells[row, 2].Value = concession.StudentName;
+        //                worksheet.Cells[row, 3].Value = concession.ClassName;
+        //                worksheet.Cells[row, 4].Value = concession.SectionName;
+        //                worksheet.Cells[row, 5].Value = concession.AdmissionNumber;
+        //                worksheet.Cells[row, 6].Value = concession.ConcessionGroupType; // Removed ConcessionGroupID
+        //                worksheet.Cells[row, 7].Value = concession.IsActive ? "Yes" : "No";
+        //                row++;
+        //            }
+
+        //            worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+
+        //            return package.GetAsByteArray();
+        //        }
+        //    }
+        //}
 
         public async Task<List<GetAllConcessionMappingResponse>> GetConcessionListForExport(GetAllConcessionMappingRequest request)
         {
@@ -193,7 +259,7 @@ namespace FeesManagement_API.Repository.Implementations
             INNER JOIN tbl_Class c ON sm.class_id = c.class_id
             INNER JOIN tbl_Section s ON sm.section_id = s.section_id
             LEFT JOIN tblStudentConcession sc ON sm.student_id = sc.StudentID AND sc.InstituteID = @InstituteID AND sc.IsActive = 1
-            LEFT JOIN tblConcessionGroup cg ON sc.ConcessionGroupID = cg.ConcessionGroupID
+            LEFT JOIN tblConcessionGroup cg ON sc.ConcessionGroupID = cg.ConcessionGroupID AND cg.IsActive = 1
             WHERE sm.Institute_id = @InstituteID 
             AND sm.class_id = @ClassID 
             AND sm.section_id = @SectionID";
@@ -255,17 +321,36 @@ namespace FeesManagement_API.Repository.Implementations
             }
         }
 
-        public string UpdateStatus(int studentConcessionID)
+        //public string UpdateStatus(int studentConcessionID)
+        //{
+        //    using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        //    {
+        //        var query = @"UPDATE tblStudentConcession 
+        //                      SET IsActive = CASE WHEN IsActive = 1 THEN 0 ELSE 1 END 
+        //                      WHERE StudentConcessionID = @StudentConcessionID";
+        //        connection.Execute(query, new { StudentConcessionID = studentConcessionID });
+        //        return "Success";
+        //    }
+        //}
+
+        public async Task<string> UpdateStatus(int studentConcessionID, string inActiveReason)
         {
             using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
-                var query = @"UPDATE tblStudentConcession 
-                              SET IsActive = CASE WHEN IsActive = 1 THEN 0 ELSE 1 END 
-                              WHERE StudentConcessionID = @StudentConcessionID";
-                connection.Execute(query, new { StudentConcessionID = studentConcessionID });
-                return "Success";
+                var query = @"
+            UPDATE tblStudentConcession 
+            SET 
+                IsActive = CASE WHEN IsActive = 1 THEN 0 ELSE 1 END,
+                InActiveReason = CASE WHEN IsActive = 1 THEN @InActiveReason ELSE NULL END
+            WHERE StudentConcessionID = @StudentConcessionID";
+
+                await connection.ExecuteAsync(query, new { StudentConcessionID = studentConcessionID, InActiveReason = inActiveReason });
+                return "Success";  // Return success message or a custom response
             }
         }
+
+
+
 
         public async Task<IEnumerable<ConcessionListResponse>> GetConcessionList(int instituteID)
         {

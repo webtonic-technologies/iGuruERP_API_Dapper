@@ -6,6 +6,6 @@
         public int PayeeTypeID { get; set; }
         public string StartDate { get; set; } // Change to string
         public string EndDate { get; set; }   // Change to string
-        public string Search { get; set; }
+        public string Search { get; set; }  
     }
 }

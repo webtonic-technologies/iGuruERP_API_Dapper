@@ -34,10 +34,22 @@ namespace FeesManagement_API.Controllers
             var response = await _lateFeeService.GetAllLateFee(request);
             if (response.Success)
             {
-                return Ok(response);
+                return Ok(response);  // Return the entire ServiceResponse
             }
             return BadRequest(response);
         }
+
+
+        //[HttpPost("GetAllLateFee")]
+        //public async Task<IActionResult> GetAllLateFee([FromBody] GetAllLateFeeRequest request)
+        //{
+        //    var response = await _lateFeeService.GetAllLateFee(request);
+        //    if (response.Success)
+        //    {
+        //        return Ok(response);
+        //    }
+        //    return BadRequest(response);
+        //}
 
         [HttpGet("GetLateFee/{lateFeeRuleID}")]
         public async Task<IActionResult> GetLateFee(int lateFeeRuleID)

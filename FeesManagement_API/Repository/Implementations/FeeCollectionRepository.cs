@@ -6,6 +6,7 @@ using FeesManagement_API.Repository.Interfaces;
 using Microsoft.AspNetCore.Connections;
 using System.Collections.Generic;
 using System.Data;
+using System.Globalization;
 
 namespace FeesManagement_API.Repository.Implementations
 {
@@ -400,9 +401,9 @@ LEFT JOIN tblStudentFeePayment sp ON sp.StudentID = sm.student_id AND sp.FeeHead
                     foreach (var payment in request.Payment)
                     {
                         var insertPaymentQuery = @"
-                INSERT INTO tblStudentFeePayment (StudentID, ClassID, SectionID, InstituteID, FeeGroupID, FeeHeadID, FeeTenurityID, TenuritySTMID, FeeCollectionSTMID, Amount)
-                OUTPUT INSERTED.FeesPaymentID -- Retrieve the generated FeesPaymentID
-                VALUES (@StudentID, @ClassID, @SectionID, @InstituteID, @FeeGroupID, @FeeHeadID, @FeeTenurityID, @TenuritySTMID, @FeeCollectionSTMID, @Amount);";
+                        INSERT INTO tblStudentFeePayment (StudentID, ClassID, SectionID, InstituteID, FeeGroupID, FeeHeadID, FeeTenurityID, TenuritySTMID, FeeCollectionSTMID, Amount)
+                        OUTPUT INSERTED.FeesPaymentID -- Retrieve the generated FeesPaymentID
+                        VALUES (@StudentID, @ClassID, @SectionID, @InstituteID, @FeeGroupID, @FeeHeadID, @FeeTenurityID, @TenuritySTMID, @FeeCollectionSTMID, @Amount);";
 
                         // Execute the query and retrieve the FeesPaymentID
                         var feesPaymentID = _connection.QuerySingle<int>(insertPaymentQuery, payment, transaction);
@@ -416,32 +417,69 @@ LEFT JOIN tblStudentFeePayment sp ON sp.StudentID = sm.student_id AND sp.FeeHead
                     var paymentTransaction = request.PaymentTransaction;
 
                     var insertTransactionQuery = @"
-            INSERT INTO tblStudentFeePaymentTransaction (PaymentAmount, LateFee, Offer, PaymentModeID, CashTransactionDate, ChequeNo, ChequeDate, ChequeBankName, CardTransactionDetail, CardTransactionDate, OnlineTransactionDetail, OnlineTransactionDate, QRDate, ChallanTransactionDetail, ChallanTransactionDate, Remarks, PaymentIDs, InstituteID, SysTransactionDate)
-            VALUES (@PaymentAmount, @LateFee, @Offer, @PaymentModeID, @CashTransactionDate, @ChequeNo, @ChequeDate, @ChequeBankName, @CardTransactionDetail, @CardTransactionDate, @OnlineTransactionDetail, @OnlineTransactionDate, @QRDate, @ChallanTransactionDetail, @ChallanTransactionDate, @Remarks, @PaymentIDs, @InstituteID, @SysTransactionDate);";
+                    INSERT INTO tblStudentFeePaymentTransaction (PaymentAmount, LateFee, Offer, PaymentModeID, CashTransactionDate, ChequeNo, ChequeDate, ChequeBankName, CardTransactionDetail, CardTransactionDate, OnlineTransactionDetail, OnlineTransactionDate, QRDate, ChallanTransactionDetail, ChallanTransactionDate, Remarks, PaymentIDs, InstituteID, SysTransactionDate)
+                    VALUES (@PaymentAmount, @LateFee, @Offer, @PaymentModeID, @CashTransactionDate, @ChequeNo, @ChequeDate, @ChequeBankName, @CardTransactionDetail, @CardTransactionDate, @OnlineTransactionDetail, @OnlineTransactionDate, @QRDate, @ChallanTransactionDetail, @ChallanTransactionDate, @Remarks, @PaymentIDs, @InstituteID, @SysTransactionDate);";
 
                     // Use a dynamic parameter for the paymentIDs in the insert
+                    //var parameters = new
+                    //{
+                    //    paymentTransaction.PaymentAmount,
+                    //    paymentTransaction.LateFee,
+                    //    paymentTransaction.Offer,
+                    //    paymentTransaction.PaymentModeID,
+                    //    paymentTransaction.CashTransactionDate,
+                    //    paymentTransaction.ChequeNo,
+                    //    paymentTransaction.ChequeDate,
+                    //    paymentTransaction.ChequeBankName,
+                    //    paymentTransaction.CardTransactionDetail,
+                    //    paymentTransaction.CardTransactionDate,
+                    //    paymentTransaction.OnlineTransactionDetail,
+                    //    paymentTransaction.OnlineTransactionDate,
+                    //    paymentTransaction.QRDate,
+                    //    paymentTransaction.ChallanTransactionDetail,
+                    //    paymentTransaction.ChallanTransactionDate,
+                    //    paymentTransaction.Remarks,
+                    //    PaymentIDs = paymentIDsString, // Inline assignment
+                    //    paymentTransaction.InstituteID,
+                    //    paymentTransaction.SysTransactionDate
+                    //};
+
+
                     var parameters = new
                     {
                         paymentTransaction.PaymentAmount,
                         paymentTransaction.LateFee,
                         paymentTransaction.Offer,
                         paymentTransaction.PaymentModeID,
-                        paymentTransaction.CashTransactionDate,
+                        CashTransactionDate = string.IsNullOrEmpty(paymentTransaction.CashTransactionDate) ?
+                          (DateTime?)null :
+                          DateTime.ParseExact(paymentTransaction.CashTransactionDate, "dd-MM-yyyy", CultureInfo.InvariantCulture),
                         paymentTransaction.ChequeNo,
-                        paymentTransaction.ChequeDate,
+                        ChequeDate = string.IsNullOrEmpty(paymentTransaction.ChequeDate) ?
+                 (DateTime?)null :
+                 DateTime.ParseExact(paymentTransaction.ChequeDate, "dd-MM-yyyy", CultureInfo.InvariantCulture),
                         paymentTransaction.ChequeBankName,
                         paymentTransaction.CardTransactionDetail,
-                        paymentTransaction.CardTransactionDate,
+                        CardTransactionDate = string.IsNullOrEmpty(paymentTransaction.CardTransactionDate) ?
+                          (DateTime?)null :
+                          DateTime.ParseExact(paymentTransaction.CardTransactionDate, "dd-MM-yyyy", CultureInfo.InvariantCulture),
                         paymentTransaction.OnlineTransactionDetail,
-                        paymentTransaction.OnlineTransactionDate,
-                        paymentTransaction.QRDate,
+                        OnlineTransactionDate = string.IsNullOrEmpty(paymentTransaction.OnlineTransactionDate) ?
+                            (DateTime?)null :
+                            DateTime.ParseExact(paymentTransaction.OnlineTransactionDate, "dd-MM-yyyy", CultureInfo.InvariantCulture),
+                        QRDate = string.IsNullOrEmpty(paymentTransaction.QRDate) ?
+             (DateTime?)null :
+             DateTime.ParseExact(paymentTransaction.QRDate, "dd-MM-yyyy", CultureInfo.InvariantCulture),
                         paymentTransaction.ChallanTransactionDetail,
-                        paymentTransaction.ChallanTransactionDate,
+                        ChallanTransactionDate = string.IsNullOrEmpty(paymentTransaction.ChallanTransactionDate) ?
+                             (DateTime?)null :
+                             DateTime.ParseExact(paymentTransaction.ChallanTransactionDate, "dd-MM-yyyy", CultureInfo.InvariantCulture),
                         paymentTransaction.Remarks,
-                        PaymentIDs = paymentIDsString, // Inline assignment
+                        PaymentIDs = paymentIDsString,
                         paymentTransaction.InstituteID,
-                        paymentTransaction.SysTransactionDate
+                        SysTransactionDate = DateTime.ParseExact(paymentTransaction.SysTransactionDate, "dd-MM-yyyy", CultureInfo.InvariantCulture)
                     };
+
 
                     // Execute the insert for the payment transaction
                     _connection.Execute(insertTransactionQuery, parameters, transaction);

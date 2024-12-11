@@ -24,9 +24,23 @@ namespace FeesManagement_API.Services.Implementations
 
         public async Task<ServiceResponse<IEnumerable<LateFeeResponse>>> GetAllLateFee(GetAllLateFeeRequest request)
         {
-            var lateFees = await _lateFeeRepository.GetAllLateFee(request);
-            return new ServiceResponse<IEnumerable<LateFeeResponse>>(true, "Late Fees retrieved successfully", lateFees, 200);
+            // Call the repository method
+            var serviceResponse = await _lateFeeRepository.GetAllLateFee(request);
+
+            // Return the ServiceResponse with the data
+            return new ServiceResponse<IEnumerable<LateFeeResponse>>(
+                serviceResponse.Success,
+                serviceResponse.Message,
+                serviceResponse.Data,  // Extract Data from the ServiceResponse
+                serviceResponse.StatusCode,
+                serviceResponse.TotalCount);
         }
+
+        //public async Task<ServiceResponse<IEnumerable<LateFeeResponse>>> GetAllLateFee(GetAllLateFeeRequest request)
+        //{
+        //    var lateFees = await _lateFeeRepository.GetAllLateFee(request);
+        //    return new ServiceResponse<IEnumerable<LateFeeResponse>>(true, "Late Fees retrieved successfully", lateFees, 200);
+        //}
 
         public async Task<ServiceResponse<LateFeeResponse>> GetLateFeeById(int lateFeeID)
         {

@@ -81,5 +81,11 @@ namespace FeesManagement_API.Services.Implementations
             }
             return new ServiceResponse<int>(false, "Failed to delete FeeHead", rowsAffected, 400);
         }
+
+        public async Task<ServiceResponse<IEnumerable<GetFeeHeadsDDLResponse>>> GetFeeHeadsDDL(GetFeeHeadsDDLRequest request)
+        {
+            var response = await _feeHeadRepository.GetFeeHeadsDDL(request);
+            return response;
+        }
     }
 }

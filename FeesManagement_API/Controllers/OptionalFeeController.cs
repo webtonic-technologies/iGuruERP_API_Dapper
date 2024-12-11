@@ -28,16 +28,29 @@ namespace FeesManagement_API.Controllers
             return BadRequest(result);
         }
 
+        //[HttpPost("GetAllOptionalFees")]
+        //public async Task<IActionResult> GetAllOptionalFees([FromBody] GetAllOptionalFeesRequest request)
+        //{
+        //    var response = await _optionalFeeService.GetAllOptionalFees(request);
+        //    if (response.Success)
+        //    {
+        //        return Ok(response);
+        //    }
+        //    return BadRequest(response);
+        //}
+
         [HttpPost("GetAllOptionalFees")]
         public async Task<IActionResult> GetAllOptionalFees([FromBody] GetAllOptionalFeesRequest request)
         {
             var response = await _optionalFeeService.GetAllOptionalFees(request);
             if (response.Success)
             {
-                return Ok(response);
+                return Ok(response); // Return the entire ServiceResponse
             }
             return BadRequest(response);
         }
+
+
 
         [HttpGet("GetOptionalFee/{optionalFeeID}")]
         public async Task<IActionResult> GetOptionalFee(int optionalFeeID)

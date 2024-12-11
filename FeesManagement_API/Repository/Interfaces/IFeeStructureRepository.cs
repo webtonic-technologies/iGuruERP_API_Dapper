@@ -7,6 +7,7 @@ namespace FeesManagement_API.Repository.Interfaces
     {
         FeeStructureResponse GetFeeStructure(FeeStructureRequest request);
         Task<byte[]> GetFeeStructureExcel(FeeStructureRequest request);
+        Task<byte[]> GetFeeStructureCSV(FeeStructureRequest request);
 
     }
 }

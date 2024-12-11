@@ -11,7 +11,9 @@ namespace FeesManagement_API.Repository.Interfaces
         byte[] GetConcessionListExcel(GetAllConcessionMappingRequest request);
         Task<List<GetAllConcessionMappingResponse>> GetConcessionListForExport(GetAllConcessionMappingRequest request);
 
-        string UpdateStatus(int studentConcessionID);
+        //string UpdateStatus(int studentConcessionID);
+        Task<string> UpdateStatus(int studentConcessionID, string inActiveReason);
+
         Task<IEnumerable<ConcessionListResponse>> GetConcessionList(int instituteID);
 
     }

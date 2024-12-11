@@ -477,7 +477,7 @@ namespace FeesManagement_API.Repository.Implementations
             LEFT JOIN tblFeeGroupClassSection fgc ON fg.FeeGroupID = fgc.FeeGroupID
             LEFT JOIN tbl_Class c ON fgc.ClassID = c.class_id
             LEFT JOIN tbl_Section s ON fgc.SectionID = s.section_id
-            WHERE fg.FeeHeadID = @FeeHeadID AND fg.InstituteID = @InstituteID And fg.AcademicYearCode = @AcademicYearCode And fg.IsActive = 1
+            WHERE fg.FeeHeadID = @FeeHeadID AND fg.InstituteID = @InstituteID And fg.AcademicYearCode = @AcademicYearCode --And fg.IsActive = 1
             ORDER BY fg.FeeGroupID
             OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 

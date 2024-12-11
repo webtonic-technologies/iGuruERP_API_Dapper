@@ -7,5 +7,7 @@ namespace FeesManagement_API.Services.Interfaces
     {
         string AddWalletAmount(AddWalletAmountRequest request);
         List<GetWalletResponse> GetWallet(GetWalletRequest request);
+        byte[] GetWalletExport(GetWalletExportRequest request); // Add this
+
     }
 }

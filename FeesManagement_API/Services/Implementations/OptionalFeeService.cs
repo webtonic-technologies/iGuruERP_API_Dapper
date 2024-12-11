@@ -24,9 +24,13 @@ namespace FeesManagement_API.Services.Implementations
 
         public async Task<ServiceResponse<IEnumerable<OptionalFeeResponse>>> GetAllOptionalFees(GetAllOptionalFeesRequest request)
         {
-            var result = await _optionalFeeRepository.GetAllOptionalFees(request);
-            return new ServiceResponse<IEnumerable<OptionalFeeResponse>>(true, "Data retrieved successfully", result, 200);
+            // Get the response from the repository, which already returns ServiceResponse
+            var response = await _optionalFeeRepository.GetAllOptionalFees(request);
+
+            // Return the ServiceResponse as it is
+            return response;
         }
+
 
         public async Task<ServiceResponse<OptionalFeeResponse>> GetOptionalFeeById(int optionalFeeID)
         {

@@ -130,5 +130,63 @@ namespace FeesManagement_API.Repository.Implementations
             }
         }
 
+        public async Task<byte[]> GetFeeStructureCSV(FeeStructureRequest request)
+        {
+            using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            {
+                connection.Open();
+
+                var query = @"
+                SELECT 
+                    fh.FeeHead AS FeeHead,
+                    CASE 
+                        WHEN fg.FeeTenurityID = 1 THEN 'Single'
+                        WHEN fg.FeeTenurityID = 2 THEN tt.TermName
+                        WHEN fg.FeeTenurityID = 3 THEN tm.Month
+                    END AS TenureType,
+                    COALESCE(ts.Amount, tt.Amount, tm.Amount) AS Amount
+                FROM tblFeeGroup fg
+                INNER JOIN tblFeeHead fh ON fg.FeeHeadID = fh.FeeHeadID
+                INNER JOIN tblFeeGroupCollection fgc ON fg.FeeGroupID = fgc.FeeGroupID
+                INNER JOIN tblFeeGroupClassSection fgcs ON fg.FeeGroupID = fgcs.FeeGroupID
+                LEFT JOIN tblTenuritySingle ts ON fgc.FeeCollectionID = ts.FeeCollectionID
+                LEFT JOIN tblTenurityTerm tt ON fgc.FeeCollectionID = tt.FeeCollectionID
+                LEFT JOIN tblTenurityMonthly tm ON fgc.FeeCollectionID = tm.FeeCollectionID
+                WHERE fgcs.ClassID = @ClassID 
+                    AND fgcs.SectionID = @SectionID
+                    AND fg.InstituteID = @InstituteID
+                    AND fg.AcademicYearCode = @AcademicYearCode
+                ORDER BY fh.FeeHead;";
+
+                var feeStructures = connection.Query<FeeDetail>(query, new
+                {
+                    request.ClassID,
+                    request.SectionID,
+                    request.InstituteID,
+                    request.AcademicYearCode
+                }).ToList();
+
+                // Generate CSV content
+                using (var memoryStream = new MemoryStream())
+                using (var writer = new StreamWriter(memoryStream))
+                {
+                    // Write header
+                    writer.WriteLine("Fee Head,Tenure Type,Amount");
+
+                    // Write data
+                    foreach (var feeStructure in feeStructures)
+                    {
+                        writer.WriteLine($"{feeStructure.FeeHead},{feeStructure.TenureType},{feeStructure.Amount}");
+                    }
+
+                    writer.Flush();
+                    memoryStream.Position = 0;
+
+                    return memoryStream.ToArray(); // Return the CSV as a byte array
+                }
+            }
+        }
+
+
     }
 }

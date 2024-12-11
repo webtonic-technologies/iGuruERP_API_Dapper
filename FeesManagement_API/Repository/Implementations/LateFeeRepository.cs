@@ -5,6 +5,8 @@ using FeesManagement_API.Repository.Interfaces;
 using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
+using FeesManagement_API.DTOs.ServiceResponse;
+
 
 namespace FeesManagement_API.Repository.Implementations
 {
@@ -98,33 +100,64 @@ namespace FeesManagement_API.Repository.Implementations
                 }
             }
         }
-         
-        public async Task<IEnumerable<LateFeeResponse>> GetAllLateFee(GetAllLateFeeRequest request)
+
+        public async Task<ServiceResponse<IEnumerable<LateFeeResponse>>> GetAllLateFee(GetAllLateFeeRequest request)
         {
-            var query = @"
-        SELECT 
-            lf.LateFeeRuleID,
-            fh.FeeHeadID,
-            fh.FeeHead AS FeeHead,
-            ft.FeeTenurityID,
-            ft.FeeTenurityType AS FeeTenurity,
-            lf.DueDate,
-            lf.InstituteID,
-            fr.FeeRulesID,
-            fr.MinDays,
-            fr.MaxDays,
-            fr.LateFee,
-            fr.PerDay,
-            fr.TotalLateFee,
-            fr.ConsolidatedAmount
-        FROM tblLateFeeRuleSetup lf
-        LEFT JOIN tblFeeHead fh ON lf.FeeHeadID = fh.FeeHeadID
-        LEFT JOIN tblFeeTenurityMaster ft ON lf.FeeTenurityID = ft.FeeTenurityID
-        LEFT JOIN tblFeesRules fr ON lf.LateFeeRuleID = fr.LateFeeRuleID
-        WHERE lf.InstituteID = @InstituteID AND lf.IsActive = 1
-        ORDER BY lf.LateFeeRuleID
-        OFFSET @PageSize * (@PageNumber - 1) ROWS
-        FETCH NEXT @PageSize ROWS ONLY";
+            // Query to count the total number of records based on filters
+            var countQuery = @"
+            SELECT COUNT(*)
+            FROM tblLateFeeRuleSetup lf
+            LEFT JOIN tblFeeHead fh ON lf.FeeHeadID = fh.FeeHeadID
+            WHERE lf.InstituteID = @InstituteID AND lf.IsActive = 1
+            ";
+
+                    // Add search filter for FeeHead if search term is provided
+                    if (!string.IsNullOrEmpty(request.Search))
+                    {
+                        countQuery += " AND fh.FeeHead LIKE @Search"; // Use LIKE for partial matching on FeeHead
+                    }
+
+                    // Execute the total count query
+                    var totalCount = await _connection.ExecuteScalarAsync<int>(countQuery, new
+                    {
+                        request.InstituteID,
+                        Search = "%" + request.Search + "%"  // Use wildcard for LIKE search
+                    });
+
+                    // Query to fetch the paginated data
+                    var query = @"
+            SELECT 
+                lf.LateFeeRuleID,
+                fh.FeeHeadID,
+                fh.FeeHead AS FeeHead,
+                ft.FeeTenurityID,
+                ft.FeeTenurityType AS FeeTenurity,
+                FORMAT(lf.DueDate, 'dd MMM yyyy') as DueDate,
+                lf.InstituteID,
+                fr.FeeRulesID,
+                fr.MinDays,
+                fr.MaxDays,
+                fr.LateFee,
+                fr.PerDay,
+                fr.TotalLateFee,
+                fr.ConsolidatedAmount
+            FROM tblLateFeeRuleSetup lf
+            LEFT JOIN tblFeeHead fh ON lf.FeeHeadID = fh.FeeHeadID
+            LEFT JOIN tblFeeTenurityMaster ft ON lf.FeeTenurityID = ft.FeeTenurityID
+            LEFT JOIN tblFeesRules fr ON lf.LateFeeRuleID = fr.LateFeeRuleID
+            WHERE lf.InstituteID = @InstituteID AND lf.IsActive = 1
+    ";
+
+            // Add search filter for FeeHead if search term is provided
+            if (!string.IsNullOrEmpty(request.Search))
+            {
+                query += " AND fh.FeeHead LIKE @Search"; // Use LIKE for partial matching on FeeHead
+            }
+
+            query += @"
+            ORDER BY lf.LateFeeRuleID
+            OFFSET @PageSize * (@PageNumber - 1) ROWS
+            FETCH NEXT @PageSize ROWS ONLY";
 
             var lookup = new Dictionary<int, LateFeeResponse>();
 
@@ -135,6 +168,9 @@ namespace FeesManagement_API.Repository.Implementations
                     if (!lookup.TryGetValue(lf.LateFeeRuleID, out var lateFee))
                     {
                         lateFee = lf;
+
+                        // Convert DueDate to string in the required format after the data is fetched
+                        lateFee.DueDate = lateFee.DueDate.ToString();  // Format DateTime to string
                         lateFee.FeesRules = new List<FeesRuleResponse>();
                         lookup.Add(lf.LateFeeRuleID, lateFee);
                     }
@@ -144,11 +180,28 @@ namespace FeesManagement_API.Repository.Implementations
                     }
                     return lateFee;
                 },
-                new { request.InstituteID, request.PageNumber, request.PageSize },
+                new
+                {
+                    request.InstituteID,
+                    request.PageNumber,
+                    request.PageSize,
+                    Search = "%" + request.Search + "%"  // Use wildcard for LIKE search
+                },
                 splitOn: "FeeRulesID");
 
-            return lookup.Values;
+            // Return the response with both paginated data and total count
+            return new ServiceResponse<IEnumerable<LateFeeResponse>>(
+                true,
+                "Late Fees retrieved successfully",
+                lookup.Values,
+                200,
+                totalCount);  // Include the total count
         }
+
+
+
+
+
 
         //public async Task<LateFeeResponse> GetLateFeeById(int lateFeeRuleID)
         //{

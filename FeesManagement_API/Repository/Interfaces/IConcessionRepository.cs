@@ -12,6 +12,8 @@ namespace FeesManagement_API.Repository.Interfaces
         Task<ServiceResponse<IEnumerable<ConcessionResponse>>> GetAllConcessions(GetAllConcessionRequest request);
 
         Task<ConcessionResponse> GetConcessionById(int concessionGroupID);
-        Task<int> UpdateConcessionGroupStatus(int concessionGroupID);
+        //Task<int> UpdateConcessionGroupStatus(int concessionGroupID);
+        Task<int> UpdateConcessionGroupStatus(int concessionGroupID, string? inActiveReason);
+
     }
 }

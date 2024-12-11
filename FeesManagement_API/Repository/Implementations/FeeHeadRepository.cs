@@ -171,5 +171,17 @@ namespace FeesManagement_API.Repository.Implementations
 
             return await _connection.ExecuteAsync(query, new { FeeHeadID = feeHeadId });
         }
+
+        public async Task<ServiceResponse<IEnumerable<GetFeeHeadsDDLResponse>>> GetFeeHeadsDDL(GetFeeHeadsDDLRequest request)
+        {
+            var query = @"SELECT FeeHeadID, FeeHead
+                          FROM tblFeeHead
+                          WHERE InstituteID = @InstituteID AND IsActive = 1
+                          ORDER BY FeeHeadID";
+
+            var feeHeads = await _connection.QueryAsync<GetFeeHeadsDDLResponse>(query, new { request.InstituteID });
+
+            return new ServiceResponse<IEnumerable<GetFeeHeadsDDLResponse>>(true, "Fee heads retrieved successfully", feeHeads, 200);
+        }
     }
 }

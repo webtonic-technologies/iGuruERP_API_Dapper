@@ -9,6 +9,9 @@ namespace FeesManagement_API.Services.Interfaces
     {
         ServiceResponse<string> AddNonAcademicFee(AddUpdateNonAcademicFeeRequest request);
         ServiceResponse<List<GetNonAcademicFeeResponse>> GetNonAcademicFee(GetNonAcademicFeeRequest request);
+
         ServiceResponse<string> DeleteNonAcademicFee(int nonAcademicFeesID);
+        byte[] GetNonAcademicFeeExport(GetNonAcademicFeeExportRequest request);
+
     }
 }

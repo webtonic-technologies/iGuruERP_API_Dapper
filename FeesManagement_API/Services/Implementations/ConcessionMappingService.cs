@@ -43,11 +43,11 @@ namespace FeesManagement_API.Services.Implementations
 
             // Generate the CSV content
             var csvContent = new StringBuilder();
-            csvContent.AppendLine("StudentID,StudentName,ClassName,SectionName,AdmissionNumber,ConcessionGroupType,IsActive");
+            csvContent.AppendLine("StudentName,ClassName,SectionName,AdmissionNumber,ConcessionGroupType,IsActive");
 
             foreach (var concession in concessionList)
             {
-                csvContent.AppendLine($"{concession.StudentID},{concession.StudentName},{concession.ClassName},{concession.SectionName},{concession.AdmissionNumber},{concession.ConcessionGroupType},{(concession.IsActive ? "Yes" : "No")}");
+                csvContent.AppendLine($"{concession.StudentName},{concession.ClassName},{concession.SectionName},{concession.AdmissionNumber},{concession.ConcessionGroupType},{(concession.IsActive ? "Yes" : "No")}");
             }
 
             // Convert the string to byte array for download
@@ -58,11 +58,35 @@ namespace FeesManagement_API.Services.Implementations
 
 
 
-        public ServiceResponse<string> UpdateStatus(int studentConcessionID)
+        //public ServiceResponse<string> UpdateStatus(int studentConcessionID)
+        //{
+        //    var result = _repository.UpdateStatus(studentConcessionID);
+        //    return new ServiceResponse<string>(true, "Status updated successfully", result, 200);
+        //}
+
+        public async Task<ServiceResponse<string>> UpdateStatus(int studentConcessionID, string inActiveReason)
         {
-            var result = _repository.UpdateStatus(studentConcessionID);
-            return new ServiceResponse<string>(true, "Status updated successfully", result, 200);
+            try
+            {
+                // Call the repository method asynchronously
+                var result = await _repository.UpdateStatus(studentConcessionID, inActiveReason);
+
+                // Return a ServiceResponse wrapping the result
+                return new ServiceResponse<string>(true, "Status updated successfully", result, 200);
+            }
+            catch (Exception ex)
+            {
+                // Log the exception (use a logging service for better production logging)
+                Console.WriteLine($"Error: {ex.Message}");
+
+                // Return an error response
+                return new ServiceResponse<string>(false, "Failed to update status", null, 500);
+            }
         }
+
+
+
+
         public async Task<ServiceResponse<IEnumerable<ConcessionListResponse>>> GetConcessionList(ConcessionListRequest request)
         {
             var concessionList = await _repository.GetConcessionList(request.InstituteID);

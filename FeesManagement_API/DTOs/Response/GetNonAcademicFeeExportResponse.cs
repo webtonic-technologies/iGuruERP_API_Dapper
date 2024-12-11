@@ -1,6 +1,6 @@
 ﻿namespace FeesManagement_API.DTOs.Responses
 {
-    public class GetNonAcademicFeeResponse
+    public class GetNonAcademicFeeExportResponse
     {
         public int NonAcademicFeesID { get; set; }
         public int PayeeTypeID { get; set; }

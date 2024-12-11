@@ -33,11 +33,47 @@ namespace FeesManagement_API.Controllers
             return Ok(response);
         }
 
-        [HttpDelete("Delete/{NonAcademicFeesID}")]
+        //[HttpDelete("Delete/{NonAcademicFeesID}")]
+        //public ActionResult<ServiceResponse<string>> DeleteNonAcademicFee(int nonAcademicFeesID)
+        //{
+        //    var response = _service.DeleteNonAcademicFee(nonAcademicFeesID);
+        //    return Ok(response);
+        //}
+
+        [HttpDelete("Delete/{nonAcademicFeesID}")]
         public ActionResult<ServiceResponse<string>> DeleteNonAcademicFee(int nonAcademicFeesID)
         {
             var response = _service.DeleteNonAcademicFee(nonAcademicFeesID);
             return Ok(response);
         }
+
+        [HttpPost("GetNonAcademicFeeExport")]
+        public IActionResult GetNonAcademicFeeExport([FromBody] GetNonAcademicFeeExportRequest request)
+        {
+            if (request == null)
+            {
+                return BadRequest("Invalid request: Details are required.");
+            }
+
+            try
+            {
+                var fileData = _service.GetNonAcademicFeeExport(request);
+
+                var contentType = request.ExportType == 1
+                    ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    : "text/csv";
+                var fileName = request.ExportType == 1
+                    ? "NonAcademicFeeExport.xlsx"
+                    : "NonAcademicFeeExport.csv";
+
+                return File(fileData, contentType, fileName);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+
     }
 }

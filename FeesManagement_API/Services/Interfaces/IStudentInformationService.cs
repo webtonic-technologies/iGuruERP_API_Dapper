@@ -6,6 +6,6 @@ namespace FeesManagement_API.Services.Interfaces
 {
     public interface IStudentInformationService
     {
-        ServiceResponse<StudentInformationResponse> GetStudentInformation(StudentInformationRequest request);
+        ServiceResponse<List<StudentInformationResponse>> GetStudentInformation(StudentInformationRequest request);
     }
 }

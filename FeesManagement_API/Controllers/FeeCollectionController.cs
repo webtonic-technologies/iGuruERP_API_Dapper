@@ -26,12 +26,20 @@ namespace FeesManagement_API.Controllers
             return Ok(response);
         }
 
+        //[HttpPost("CollectFee/GetStudentInformation")]
+        //public ActionResult<ServiceResponse<StudentInformationResponse>> GetStudentInformation([FromBody] StudentInformationRequest request)
+        //{
+        //    var response = _studentInformationService.GetStudentInformation(request);
+        //    return Ok(response);
+        //}
+
         [HttpPost("CollectFee/GetStudentInformation")]
-        public ActionResult<ServiceResponse<StudentInformationResponse>> GetStudentInformation([FromBody] StudentInformationRequest request)
+        public ActionResult<ServiceResponse<List<StudentInformationResponse>>> GetStudentInformation([FromBody] StudentInformationRequest request)
         {
             var response = _studentInformationService.GetStudentInformation(request);
             return Ok(response);
         }
+
 
         [HttpPost("CollectFee/SubmitPayment")]
         public ActionResult<ServiceResponse<bool>> SubmitPayment([FromBody] SubmitPaymentRequest request)

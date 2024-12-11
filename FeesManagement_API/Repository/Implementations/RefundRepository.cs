@@ -4,6 +4,7 @@ using FeesManagement_API.DTOs.Responses;
 using FeesManagement_API.Repository.Interfaces;
 using System.Collections.Generic;
 using System.Data;
+using System.Globalization;
 
 namespace FeesManagement_API.Repository.Implementations
 {
@@ -20,34 +21,36 @@ namespace FeesManagement_API.Repository.Implementations
         {
             int refundID;
 
+            // Convert dates from string to DateTime
+            DateTime refundDate = DateTime.ParseExact(request.RefundDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+
             // SQL query to add or update the refund
             var query = @"
-        DECLARE @NewRefundID INT; -- Declare the variable
+    DECLARE @NewRefundID INT;
 
-        IF EXISTS (SELECT 1 FROM tblRefund WHERE RefundID = @RefundID)
-        BEGIN
-            UPDATE tblRefund 
-            SET AcademiceYearCode = @AcademiceYearCode, ClassID = @ClassID, SectionID = @SectionID,
-                StudentStatus = @StudentStatus, StudentID = @StudentID, RefundAmount = @RefundAmount,
-                RefundDate = @RefundDate, PaymentModeID = @PaymentModeID, Remarks = @Remarks,
-                InstituteID = @InstituteID, EmployeeID = @EmployeeID, IsActive = @IsActive
-            WHERE RefundID = @RefundID;
+    IF EXISTS (SELECT 1 FROM tblRefund WHERE RefundID = @RefundID)
+    BEGIN
+        UPDATE tblRefund 
+        SET AcademiceYearCode = @AcademiceYearCode, ClassID = @ClassID, SectionID = @SectionID,
+            StudentStatus = @StudentStatus, StudentID = @StudentID, RefundAmount = @RefundAmount,
+            RefundDate = @RefundDate, PaymentModeID = @PaymentModeID, Remarks = @Remarks,
+            InstituteID = @InstituteID, EmployeeID = @EmployeeID, IsActive = @IsActive
+        WHERE RefundID = @RefundID;
 
-            SET @NewRefundID = @RefundID; -- Keep the same RefundID after update
-        END
-        ELSE
-        BEGIN
-            INSERT INTO tblRefund (AcademiceYearCode, ClassID, SectionID, StudentStatus, StudentID, 
-                RefundAmount, RefundDate, PaymentModeID, Remarks, InstituteID, EmployeeID, IsActive)
-            VALUES (@AcademiceYearCode, @ClassID, @SectionID, @StudentStatus, @StudentID, 
-                @RefundAmount, @RefundDate, @PaymentModeID, @Remarks, @InstituteID, @EmployeeID, @IsActive);
-            
-            -- Get the last inserted RefundID
-            SET @NewRefundID = SCOPE_IDENTITY();
-        END;
+        SET @NewRefundID = @RefundID;
+    END
+    ELSE
+    BEGIN
+        INSERT INTO tblRefund (AcademiceYearCode, ClassID, SectionID, StudentStatus, StudentID, 
+            RefundAmount, RefundDate, PaymentModeID, Remarks, InstituteID, EmployeeID, IsActive)
+        VALUES (@AcademiceYearCode, @ClassID, @SectionID, @StudentStatus, @StudentID, 
+            @RefundAmount, @RefundDate, @PaymentModeID, @Remarks, @InstituteID, @EmployeeID, @IsActive);
+        
+        SET @NewRefundID = SCOPE_IDENTITY();
+    END;
 
-        SELECT @NewRefundID; -- Return the RefundID at the end
-    ";
+    SELECT @NewRefundID;
+";
 
             // Execute the query and get the RefundID
             refundID = _connection.ExecuteScalar<int>(query, new
@@ -59,7 +62,7 @@ namespace FeesManagement_API.Repository.Implementations
                 request.StudentStatus,
                 request.StudentID,
                 request.RefundAmount,
-                request.RefundDate,
+                RefundDate = refundDate,
                 request.PaymentModeID,
                 request.Remarks,
                 request.InstituteID,
@@ -67,72 +70,181 @@ namespace FeesManagement_API.Repository.Implementations
                 request.IsActive
             });
 
-            // Handle refund transfer
+            // Process RefundTransfer
             if (request.PaymentModeID == 2 && request.RefundTransfer != null)
             {
+                DateTime transactionDate = DateTime.ParseExact(request.RefundTransfer.TransactionDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
                 var refundTransferQuery = @"
-            INSERT INTO tblRefundTransfer (RefundID, BankName, AccountNo, IFSCCode, TransactionDate)
-            VALUES (@RefundID, @BankName, @AccountNo, @IFSCCode, @TransactionDate);";
+        INSERT INTO tblRefundTransfer (RefundID, BankName, AccountNo, IFSCCode, TransactionDate)
+        VALUES (@RefundID, @BankName, @AccountNo, @IFSCCode, @TransactionDate);";
 
                 _connection.Execute(refundTransferQuery, new
                 {
                     RefundID = refundID,
-                    BankName = request.RefundTransfer.BankName,
-                    AccountNo = request.RefundTransfer.AccountNo,
-                    IFSCCode = request.RefundTransfer.IFSCCode,
-                    TransactionDate = request.RefundTransfer.TransactionDate
+                    request.RefundTransfer.BankName,
+                    request.RefundTransfer.AccountNo,
+                    request.RefundTransfer.IFSCCode,
+                    TransactionDate = transactionDate
                 });
             }
 
-            // Handle refund cheque
+            // Process RefundCheque
             if (request.PaymentModeID == 3 && request.RefundCheque != null)
             {
+                DateTime issueDate = DateTime.ParseExact(request.RefundCheque.IssueDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
                 var refundChequeQuery = @"
-            INSERT INTO tblRefundCheque (RefundID, ChequeNo, BankName, AccountNo, IFSCCode, IssueDate)
-            VALUES (@RefundID, @ChequeNo, @BankName, @AccountNo, @IFSCCode, @IssueDate);";
+        INSERT INTO tblRefundCheque (RefundID, ChequeNo, BankName, AccountNo, IFSCCode, IssueDate)
+        VALUES (@RefundID, @ChequeNo, @BankName, @AccountNo, @IFSCCode, @IssueDate);";
 
                 _connection.Execute(refundChequeQuery, new
                 {
                     RefundID = refundID,
-                    ChequeNo = request.RefundCheque.ChequeNo,
-                    BankName = request.RefundCheque.BankName,
-                    AccountNo = request.RefundCheque.AccountNo,
-                    IFSCCode = request.RefundCheque.IFSCCode,
-                    IssueDate = request.RefundCheque.IssueDate
+                    request.RefundCheque.ChequeNo,
+                    request.RefundCheque.BankName,
+                    request.RefundCheque.AccountNo,
+                    request.RefundCheque.IFSCCode,
+                    IssueDate = issueDate
                 });
             }
 
-            // Handle refund card
+            // Process RefundCard
             if (request.PaymentModeID == 4 && request.RefundCard != null)
             {
+                DateTime cardIssueDate = DateTime.ParseExact(request.RefundCard.IssueDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
                 var refundCardQuery = @"
-            INSERT INTO tblRefundCard (RefundID, TransactionID, IssueDate)
-            VALUES (@RefundID, @TransactionID, @IssueDate);";
+        INSERT INTO tblRefundCard (RefundID, TransactionID, IssueDate)
+        VALUES (@RefundID, @TransactionID, @IssueDate);";
 
                 _connection.Execute(refundCardQuery, new
                 {
                     RefundID = refundID,
-                    TransactionID = request.RefundCard.TransactionID,
-                    IssueDate = request.RefundCard.IssueDate
-                });
-            }
-
-            // Handle refund wallet
-            if (request.PaymentModeID == 5 && request.RefundWallet != null)
-            {
-                var refundWalletQuery = @"
-            INSERT INTO tblRefundWallet (RefundID, WalletBalance)
-            VALUES (@RefundID, @WalletBalance);";
-
-                _connection.Execute(refundWalletQuery, new
-                {
-                    RefundID = refundID,
-                    WalletBalance = request.RefundWallet.WalletBalance
+                    request.RefundCard.TransactionID,
+                    IssueDate = cardIssueDate
                 });
             }
 
             return "Success";
         }
+
+
+
+        //    public string AddRefund(AddRefundRequest request)
+        //    {
+        //        int refundID;
+
+        //        // SQL query to add or update the refund
+        //        var query = @"
+        //    DECLARE @NewRefundID INT; -- Declare the variable
+
+        //    IF EXISTS (SELECT 1 FROM tblRefund WHERE RefundID = @RefundID)
+        //    BEGIN
+        //        UPDATE tblRefund 
+        //        SET AcademiceYearCode = @AcademiceYearCode, ClassID = @ClassID, SectionID = @SectionID,
+        //            StudentStatus = @StudentStatus, StudentID = @StudentID, RefundAmount = @RefundAmount,
+        //            RefundDate = @RefundDate, PaymentModeID = @PaymentModeID, Remarks = @Remarks,
+        //            InstituteID = @InstituteID, EmployeeID = @EmployeeID, IsActive = @IsActive
+        //        WHERE RefundID = @RefundID;
+
+        //        SET @NewRefundID = @RefundID; -- Keep the same RefundID after update
+        //    END
+        //    ELSE
+        //    BEGIN
+        //        INSERT INTO tblRefund (AcademiceYearCode, ClassID, SectionID, StudentStatus, StudentID, 
+        //            RefundAmount, RefundDate, PaymentModeID, Remarks, InstituteID, EmployeeID, IsActive)
+        //        VALUES (@AcademiceYearCode, @ClassID, @SectionID, @StudentStatus, @StudentID, 
+        //            @RefundAmount, @RefundDate, @PaymentModeID, @Remarks, @InstituteID, @EmployeeID, @IsActive);
+
+        //        -- Get the last inserted RefundID
+        //        SET @NewRefundID = SCOPE_IDENTITY();
+        //    END;
+
+        //    SELECT @NewRefundID; -- Return the RefundID at the end
+        //";
+
+        //        // Execute the query and get the RefundID
+        //        refundID = _connection.ExecuteScalar<int>(query, new
+        //        {
+        //            request.RefundID,
+        //            request.AcademiceYearCode,
+        //            request.ClassID,
+        //            request.SectionID,
+        //            request.StudentStatus,
+        //            request.StudentID,
+        //            request.RefundAmount,
+        //            request.RefundDate,
+        //            request.PaymentModeID,
+        //            request.Remarks,
+        //            request.InstituteID,
+        //            request.EmployeeID,
+        //            request.IsActive
+        //        });
+
+        //        // Handle refund transfer
+        //        if (request.PaymentModeID == 2 && request.RefundTransfer != null)
+        //        {
+        //            var refundTransferQuery = @"
+        //        INSERT INTO tblRefundTransfer (RefundID, BankName, AccountNo, IFSCCode, TransactionDate)
+        //        VALUES (@RefundID, @BankName, @AccountNo, @IFSCCode, @TransactionDate);";
+
+        //            _connection.Execute(refundTransferQuery, new
+        //            {
+        //                RefundID = refundID,
+        //                BankName = request.RefundTransfer.BankName,
+        //                AccountNo = request.RefundTransfer.AccountNo,
+        //                IFSCCode = request.RefundTransfer.IFSCCode,
+        //                TransactionDate = request.RefundTransfer.TransactionDate
+        //            });
+        //        }
+
+        //        // Handle refund cheque
+        //        if (request.PaymentModeID == 3 && request.RefundCheque != null)
+        //        {
+        //            var refundChequeQuery = @"
+        //        INSERT INTO tblRefundCheque (RefundID, ChequeNo, BankName, AccountNo, IFSCCode, IssueDate)
+        //        VALUES (@RefundID, @ChequeNo, @BankName, @AccountNo, @IFSCCode, @IssueDate);";
+
+        //            _connection.Execute(refundChequeQuery, new
+        //            {
+        //                RefundID = refundID,
+        //                ChequeNo = request.RefundCheque.ChequeNo,
+        //                BankName = request.RefundCheque.BankName,
+        //                AccountNo = request.RefundCheque.AccountNo,
+        //                IFSCCode = request.RefundCheque.IFSCCode,
+        //                IssueDate = request.RefundCheque.IssueDate
+        //            });
+        //        }
+
+        //        // Handle refund card
+        //        if (request.PaymentModeID == 4 && request.RefundCard != null)
+        //        {
+        //            var refundCardQuery = @"
+        //        INSERT INTO tblRefundCard (RefundID, TransactionID, IssueDate)
+        //        VALUES (@RefundID, @TransactionID, @IssueDate);";
+
+        //            _connection.Execute(refundCardQuery, new
+        //            {
+        //                RefundID = refundID,
+        //                TransactionID = request.RefundCard.TransactionID,
+        //                IssueDate = request.RefundCard.IssueDate
+        //            });
+        //        }
+
+        //        // Handle refund wallet
+        //        if (request.PaymentModeID == 5 && request.RefundWallet != null)
+        //        {
+        //            var refundWalletQuery = @"
+        //        INSERT INTO tblRefundWallet (RefundID, WalletBalance)
+        //        VALUES (@RefundID, @WalletBalance);";
+
+        //            _connection.Execute(refundWalletQuery, new
+        //            {
+        //                RefundID = refundID,
+        //                WalletBalance = request.RefundWallet.WalletBalance
+        //            });
+        //        }
+
+        //        return "Success";
+        //    }
 
         public List<GetRefundResponse> GetRefund(GetRefundRequest request)
         {

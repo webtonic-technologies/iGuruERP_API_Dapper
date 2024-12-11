@@ -3,6 +3,7 @@ using FeesManagement_API.DTOs.Responses;
 using FeesManagement_API.DTOs.ServiceResponse;
 using FeesManagement_API.Repository.Interfaces;
 using FeesManagement_API.Services.Interfaces;
+using System.Collections.Generic;
 
 namespace FeesManagement_API.Services.Implementations
 {
@@ -15,9 +16,15 @@ namespace FeesManagement_API.Services.Implementations
             _studentInformationRepository = studentInformationRepository;
         }
 
-        public ServiceResponse<StudentInformationResponse> GetStudentInformation(StudentInformationRequest request)
+        //public ServiceResponse<StudentInformationResponse> GetStudentInformation(StudentInformationRequest request)
+        //{
+        //    return _studentInformationRepository.GetStudentInformation(request);
+        //}
+
+        public ServiceResponse<List<StudentInformationResponse>> GetStudentInformation(StudentInformationRequest request)
         {
             return _studentInformationRepository.GetStudentInformation(request);
         }
+
     }
 }

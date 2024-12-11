@@ -7,7 +7,7 @@
         public string FeeHead { get; set; }
         public int FeeTenurityID { get; set; }
         public string FeeTenurity { get; set; }
-        public DateTime DueDate { get; set; }
+        public string DueDate { get; set; }
         public int InstituteID { get; set; }
         public List<FeesRuleResponse> FeesRules { get; set; } // List of fee rules associated with this late fee
         public List<ClassSectionResponse> ClassSections { get; set; } // List of class sections associated with this late fee

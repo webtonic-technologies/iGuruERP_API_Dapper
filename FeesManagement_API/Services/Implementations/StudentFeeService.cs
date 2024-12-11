@@ -16,18 +16,36 @@ namespace FeesManagement_API.Services.Implementations
             _studentFeeRepository = studentFeeRepository;
         }
 
+        //public ServiceResponse<List<StudentFeeResponse>> GetStudentFees(StudentFeeRequest request)
+        //{
+        //    var studentFees = _studentFeeRepository.GetStudentFees(request);
+        //    var response = new ServiceResponse<List<StudentFeeResponse>>(
+        //        success: true,
+        //        message: "Student fees retrieved successfully",
+        //        data: studentFees,
+        //        statusCode: 200,
+        //        totalCount: studentFees?.Count
+        //    );
+
+        //    return response;
+        //}
+
         public ServiceResponse<List<StudentFeeResponse>> GetStudentFees(StudentFeeRequest request)
         {
             var studentFees = _studentFeeRepository.GetStudentFees(request);
+
+            var totalCount = studentFees?.Count ?? 0; // Calculate total count if needed
+
             var response = new ServiceResponse<List<StudentFeeResponse>>(
                 success: true,
                 message: "Student fees retrieved successfully",
                 data: studentFees,
                 statusCode: 200,
-                totalCount: studentFees?.Count
+                totalCount: totalCount
             );
 
             return response;
         }
+
     }
 }

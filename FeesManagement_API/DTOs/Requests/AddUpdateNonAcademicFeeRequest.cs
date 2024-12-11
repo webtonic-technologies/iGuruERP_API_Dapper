@@ -10,7 +10,7 @@
         public int? StudentID { get; set; }
         public int? EmployeeID { get; set; }  // New field for Employee ID
         public string? PayeeName { get; set; }  // New field for Payee Name
-        public DateTime PaymentDate { get; set; }
+        public string PaymentDate { get; set; }
         public int FeeHeadID { get; set; }
         public decimal FeeAmount { get; set; }
         public int PaymentModeID { get; set; }

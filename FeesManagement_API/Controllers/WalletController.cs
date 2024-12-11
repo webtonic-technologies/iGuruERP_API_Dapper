@@ -29,5 +29,29 @@ namespace FeesManagement_API.Controllers
             var result = _walletService.GetWallet(request);
             return Ok(result);
         }
+
+        [HttpPost("GetWalletExport")]
+        public IActionResult GetWalletExport([FromBody] GetWalletExportRequest request)
+        {
+            if (request == null)
+            {
+                return BadRequest("Invalid request: Details are required.");
+            }
+
+            try
+            {
+                var fileData = _walletService.GetWalletExport(request);
+
+                var contentType = request.ExportType == 1 ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "text/csv";
+                var fileName = request.ExportType == 1 ? "WalletExport.xlsx" : "WalletExport.csv";
+
+                return File(fileData, contentType, fileName);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
     }
 }

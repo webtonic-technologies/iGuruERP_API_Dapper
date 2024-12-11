@@ -14,5 +14,8 @@ namespace FeesManagement_API.Services.Interfaces
 
         Task<ServiceResponse<FeeHeadResponse>> GetFeeHeadById(int feeHeadId);
         Task<ServiceResponse<int>> DeleteFeeHead(int feeHeadId);
+
+        Task<ServiceResponse<IEnumerable<GetFeeHeadsDDLResponse>>> GetFeeHeadsDDL(GetFeeHeadsDDLRequest request);
+
     }
 }
