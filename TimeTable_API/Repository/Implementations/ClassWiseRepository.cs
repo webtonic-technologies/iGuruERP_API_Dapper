@@ -18,6 +18,7 @@ namespace TimeTable_API.Repository.Implementations
             _connection = connection;
         }
 
+
         public async Task<ServiceResponse<ClassWiseResponse>> GetClassWiseTimeTables(ClassWiseRequest request)
         {
             var response = new ServiceResponse<ClassWiseResponse>(
@@ -34,8 +35,8 @@ namespace TimeTable_API.Repository.Implementations
                 // Fetch all classes for the given InstituteID
                 var classes = await _connection.QueryAsync<ClassDetail>(
                     @"SELECT class_id as ClassID, class_name as ClassName
-                      FROM tbl_Class
-                      WHERE institute_id = @InstituteID",
+              FROM tbl_Class
+              WHERE institute_id = @InstituteID",
                     new { request.InstituteID });
 
                 foreach (var classDetail in classes)
@@ -43,17 +44,20 @@ namespace TimeTable_API.Repository.Implementations
                     // Fetch sections for each class
                     var sections = await _connection.QueryAsync<SectionDetail>(
                         @"SELECT section_id as SectionID, section_name as SectionName
-                          FROM tbl_Section
-                          WHERE class_id = @ClassID",
+                  FROM tbl_Section
+                  WHERE class_id = @ClassID",
                         new { ClassID = classDetail.ClassID });
 
                     foreach (var section in sections)
                     {
-                        // Get GroupID by ClassID and SectionID
+                        // Get GroupID by ClassID, SectionID, and AcademicYearCode
                         var groupId = await _connection.ExecuteScalarAsync<int?>(
-                            @"SELECT GroupID FROM tblTimeTableClassSession
-                              WHERE ClassID = @ClassID AND SectionID = @SectionID",
-                            new { ClassID = classDetail.ClassID, SectionID = section.SectionID });
+                            @"SELECT tcs.GroupID FROM tblTimeTableClassSession tcs
+                      JOIN tblTimeTableMaster tm ON tcs.GroupID = tm.GroupID
+                      WHERE tcs.ClassID = @ClassID 
+                        AND tcs.SectionID = @SectionID
+                        AND tm.AcademicYearCode = @AcademicYearCode",
+                            new { ClassID = classDetail.ClassID, SectionID = section.SectionID, AcademicYearCode = request.AcademicYearCode });
 
                         // If GroupID is found, calculate NumberOfSessions and NumberOfSubjects
                         if (groupId.HasValue)
@@ -61,15 +65,15 @@ namespace TimeTable_API.Repository.Implementations
                             // Count Number of Sessions for the group
                             section.NumberOfSessions = await _connection.ExecuteScalarAsync<int>(
                                 @"SELECT COUNT(*) FROM tblTimeTableSessions
-                                  WHERE GroupID = @GroupID",
+                          WHERE GroupID = @GroupID",
                                 new { GroupID = groupId });
 
                             // Count Number of Subjects for the group
                             section.NumberOfSubjects = await _connection.ExecuteScalarAsync<int>(
                                 @"SELECT COUNT(DISTINCT tse.SubjectID)
-                                  FROM tblTimeTableSessionMapping tsm
-                                  JOIN tblTimeTableSessionSubjectEmployee tse ON tsm.TTSessionID = tse.TTSessionID
-                                  WHERE tsm.GroupID = @GroupID",
+                          FROM tblTimeTableSessionMapping tsm
+                          JOIN tblTimeTableSessionSubjectEmployee tse ON tsm.TTSessionID = tse.TTSessionID
+                          WHERE tsm.GroupID = @GroupID",
                                 new { GroupID = groupId });
                         }
                     }
@@ -101,176 +105,93 @@ namespace TimeTable_API.Repository.Implementations
         }
 
 
-        //public async Task<ServiceResponse<ClassWiseTimeTableResponse>> GetClassWiseTimeTables(GetClassWiseTimeTablesRequest request)
+        //public async Task<ServiceResponse<ClassWiseResponse>> GetClassWiseTimeTables(ClassWiseRequest request)
         //{
-        //    var response = new ServiceResponse<ClassWiseTimeTableResponse>(
+        //    var response = new ServiceResponse<ClassWiseResponse>(
         //        success: false,
         //        message: "Initialization failed",
-        //        data: new ClassWiseTimeTableResponse(),
-        //        statusCode: 500,
-        //        totalCount: null
+        //        data: new ClassWiseResponse(),
+        //        statusCode: 500
         //    );
 
         //    try
         //    {
-        //        // Fetch ClassName and SectionName
-        //        var classSection = await _connection.QueryFirstOrDefaultAsync<dynamic>(
-        //            @"SELECT c.class_name AS ClassName, s.section_name AS SectionName 
-        //              FROM tbl_Class c
-        //              JOIN tbl_Section s ON c.class_id = s.class_id
-        //              WHERE c.class_id = @ClassID AND s.section_id = @SectionID",
-        //            new { request.ClassID, request.SectionID });
+        //        var classWiseResponse = new ClassWiseResponse();
 
-        //        if (classSection == null)
+        //        // Fetch all classes for the given InstituteID
+        //        var classes = await _connection.QueryAsync<ClassDetail>(
+        //            @"SELECT class_id as ClassID, class_name as ClassName
+        //              FROM tbl_Class
+        //              WHERE institute_id = @InstituteID",
+        //            new { request.InstituteID });
+
+        //        foreach (var classDetail in classes)
         //        {
-        //            return new ServiceResponse<ClassWiseTimeTableResponse>(
-        //                success: false,
-        //                message: "Class and Section not found",
-        //                data: null,
-        //                statusCode: 404
-        //            );
-        //        }
+        //            // Fetch sections for each class
+        //            var sections = await _connection.QueryAsync<SectionDetail>(
+        //                @"SELECT section_id as SectionID, section_name as SectionName
+        //                  FROM tbl_Section
+        //                  WHERE class_id = @ClassID",
+        //                new { ClassID = classDetail.ClassID });
 
-        //        var timeTableResponse = new ClassWiseTimeTableResponse
-        //        {
-        //            ClassName = classSection.ClassName,
-        //            SectionName = classSection.SectionName
-        //        };
-
-        //        // Fetch GroupID based on ClassID and SectionID
-        //        var groupId = await _connection.ExecuteScalarAsync<int>(
-        //            @"SELECT GroupID FROM tblTimeTableClassSession 
-        //              WHERE ClassID = @ClassID AND SectionID = @SectionID",
-        //            new { request.ClassID, request.SectionID });
-
-        //        // Fetch subject counts (e.g., Subject1: 7/week) and populate the Subjects dictionary
-        //        var subjectCount = await _connection.QueryAsync<dynamic>(
-        //            @"SELECT sub.SubjectName, COUNT(*) AS CountPerWeek 
-        //              FROM tblTimeTableSessionSubjectEmployee tse
-        //              JOIN tbl_Subjects sub ON tse.SubjectID = sub.SubjectId
-        //              WHERE tse.TTSessionID IN (SELECT TTSessionID FROM tblTimeTableSessionMapping WHERE GroupID = @GroupID)
-        //              GROUP BY sub.SubjectName",
-        //            new { GroupID = groupId });
-
-        //        foreach (var subject in subjectCount)
-        //        {
-        //            timeTableResponse.Subjects.Add(subject.SubjectName, $"{subject.CountPerWeek}/Week");
-        //        }
-
-        //        // Fetch PlanID based on the GroupID
-        //        var planId = await _connection.ExecuteScalarAsync<int>(
-        //            @"SELECT PlanID FROM tblTimeTableDayGroupsMapping 
-        //              WHERE GroupID = @GroupID",
-        //            new { GroupID = groupId });
-
-        //        // Fetch the Days associated with the PlanID
-        //        var days = await _connection.QueryAsync<ClassWiseDayResponse>(
-        //            @"SELECT value AS DayID, tdm.DayType 
-        //              FROM tblTimeTableDaySetup tds
-        //              CROSS APPLY STRING_SPLIT(tds.DayIDs, ',')
-        //              JOIN tblTimeTableDayMaster tdm ON value = tdm.DayID
-        //              WHERE tds.PlanID = @PlanID",
-        //            new { PlanID = planId });
-
-        //        // Now populate day-specific data directly into the response
-        //        foreach (var day in days)
-        //        {
-        //            var dayResponse = new ClassWiseTimeTableResponse
+        //            foreach (var section in sections)
         //            {
-        //                DayID = day.DayID,
-        //                DayType = day.DayType,
-        //                Sessions = new List<ClassWiseSessionResponse>(),
-        //                Breaks = new List<ClassWiseBreakResponse>()
-        //            };
+        //                // Get GroupID by ClassID and SectionID
+        //                var groupId = await _connection.ExecuteScalarAsync<int?>(
+        //                    @"SELECT GroupID FROM tblTimeTableClassSession
+        //                      WHERE ClassID = @ClassID AND SectionID = @SectionID",
+        //                    new { ClassID = classDetail.ClassID, SectionID = section.SectionID });
 
-        //                    timeTableResponse.DayID = day.DayID;
-        //                    timeTableResponse.DayType = day.DayType;
+        //                // If GroupID is found, calculate NumberOfSessions and NumberOfSubjects
+        //                if (groupId.HasValue)
+        //                {
+        //                    // Count Number of Sessions for the group
+        //                    section.NumberOfSessions = await _connection.ExecuteScalarAsync<int>(
+        //                        @"SELECT COUNT(*) FROM tblTimeTableSessions
+        //                          WHERE GroupID = @GroupID",
+        //                        new { GroupID = groupId });
 
-        //                    // Fetch sessions for the day along with Start and End Time
-        //                    var sessions = await _connection.QueryAsync<ClassWiseSessionResponse>(
-        //                @"SELECT tsm.SessionID, ts.SessionName,
-        //                   CASE 
-        //                       WHEN ts.StartTime IS NOT NULL AND ts.EndTime IS NOT NULL 
-        //                       THEN CONVERT(VARCHAR, ts.StartTime, 100) + ' - ' + CONVERT(VARCHAR, ts.EndTime, 100)
-        //                       ELSE 'Time Not Available'
-        //                   END AS SessionTime
-        //                FROM tblTimeTableSessionMapping tsm
-        //                JOIN tblTimeTableSessions ts ON tsm.SessionID = ts.SessionID
-        //                WHERE tsm.DayID = @DayID AND tsm.GroupID = @GroupID",
-        //                new { DayID = day.DayID, GroupID = groupId });
+        //                    // Count Number of Subjects for the group
+        //                    section.NumberOfSubjects = await _connection.ExecuteScalarAsync<int>(
+        //                        @"SELECT COUNT(DISTINCT tse.SubjectID)
+        //                          FROM tblTimeTableSessionMapping tsm
+        //                          JOIN tblTimeTableSessionSubjectEmployee tse ON tsm.TTSessionID = tse.TTSessionID
+        //                          WHERE tsm.GroupID = @GroupID",
+        //                        new { GroupID = groupId });
+        //                }
+        //            }
 
-        //                    timeTableResponse.Sessions.AddRange(sessions);
-        //                    //dayResponse.Sessions.AddRange(sessions);
-
-        //                    //// Fetch EmployeeSubjects for each session
-        //                    //foreach (var session in timeTableResponse.Sessions)
-        //                    //{
-        //                    //    var employeeSubjects = await _connection.QueryAsync<ClassWiseEmployeeSubjectResponse>(
-        //                    //        @"SELECT tse.SubjectID, 
-        //                    //               sub.SubjectName, 
-        //                    //               tse.EmployeeID, 
-        //                    //               emp.First_Name + ' ' + emp.Last_Name AS EmployeeName
-        //                    //        FROM tblTimeTableSessionSubjectEmployee tse
-        //                    //        JOIN tbl_Subjects sub ON tse.SubjectID = sub.SubjectId
-        //                    //        JOIN tbl_EmployeeProfileMaster emp ON tse.EmployeeID = emp.Employee_id
-        //                    //        WHERE tse.TTSessionID = @SessionID",
-        //                    //        new { SessionID = session.SessionID });
-
-        //                    //    session.EmployeeSubjects.AddRange(employeeSubjects);
-        //                    //}
-
-        //                    // Fetch EmployeeSubjects for each session
-        //                    foreach (var session in timeTableResponse.Sessions)
-        //                    {
-        //                        var employeeSubjects = await _connection.QueryAsync<ClassWiseEmployeeSubjectResponse>(
-        //                            @"SELECT tse.SubjectID, sub.SubjectName, tse.EmployeeID, 
-        //                                emp.First_Name + ' ' + emp.Last_Name as EmployeeName
-        //                        FROM tblTimeTableSessionSubjectEmployee tse
-        //                        JOIN tbl_Subjects sub ON tse.SubjectID = sub.SubjectId
-        //                        JOIN tbl_EmployeeProfileMaster emp ON tse.EmployeeID = emp.Employee_id
-        //                        JOIN tblTimeTableSessionMapping tsm ON tse.TTSessionID = tsm.TTSessionID
-        //                        WHERE tsm.SessionID = @SessionID",
-        //                            new { SessionID = session.SessionID });
-
-        //                        session.EmployeeSubjects.AddRange(employeeSubjects);
-        //                    }
-
-        //            // Fetch breaks for the day along with Start and End Time
-        //            var breaks = await _connection.QueryAsync<ClassWiseBreakResponse>(
-        //                @"SELECT tbm.BreaksID as BreakID, 
-        //                   tb.BreaksName as BreakName,
-        //                   FORMAT(CAST(tb.StartTime AS DATETIME), 'hh:mm tt') + ' - ' + FORMAT(CAST(tb.EndTime AS DATETIME), 'hh:mm tt') AS BreakTime
-        //                FROM tblTimeTableBreakMapping tbm
-        //                JOIN tblTimeTableBreaks tb ON tbm.BreaksID = tb.BreaksID
-        //                WHERE tbm.DayID = @DayID AND tbm.GroupID = @GroupID",
-        //                new { DayID = day.DayID, GroupID = groupId });
-
-        //            timeTableResponse.Breaks.AddRange(breaks);
+        //            classDetail.SectionList.AddRange(sections);
+        //            classWiseResponse.ClassList.Add(classDetail);
         //        }
 
-        //        // Set response on success
-        //        response = new ServiceResponse<ClassWiseTimeTableResponse>(
+        //        // Set the response as successful
+        //        response = new ServiceResponse<ClassWiseResponse>(
         //            success: true,
-        //            message: "Class-wise TimeTables fetched successfully.",
-        //            data: timeTableResponse,
-        //            statusCode: 200,
-        //            totalCount: null
+        //            message: "Class and Section details fetched successfully.",
+        //            data: classWiseResponse,
+        //            statusCode: 200
         //        );
         //    }
         //    catch (Exception ex)
         //    {
-        //        // Handle error
-        //        response = new ServiceResponse<ClassWiseTimeTableResponse>(
+        //        // Set response in case of failure
+        //        response = new ServiceResponse<ClassWiseResponse>(
         //            success: false,
         //            message: ex.Message,
         //            data: null,
-        //            statusCode: 500,
-        //            totalCount: null
+        //            statusCode: 500
         //        );
         //    }
 
         //    return response;
         //}
+
+
+
+
+
+
 
 
         public async Task<ServiceResponse<ClassWiseTimeTableResponse>> GetClassWiseTimeTables(GetClassWiseTimeTablesRequest request)
@@ -310,11 +231,15 @@ namespace TimeTable_API.Repository.Implementations
                     Subjects = new Dictionary<string, string>()
                 };
 
-                // Fetch GroupID based on ClassID and SectionID
+                // Fetch GroupID based on ClassID, SectionID, and AcademicYearCode
                 var groupId = await _connection.ExecuteScalarAsync<int>(
-                    @"SELECT GroupID FROM tblTimeTableClassSession 
-              WHERE ClassID = @ClassID AND SectionID = @SectionID",
-                    new { request.ClassID, request.SectionID });
+                    @"SELECT tcs.GroupID 
+              FROM tblTimeTableClassSession tcs
+              JOIN tblTimeTableMaster tm ON tcs.GroupID = tm.GroupID
+              WHERE tcs.ClassID = @ClassID 
+                AND tcs.SectionID = @SectionID
+                AND tm.AcademicYearCode = @AcademicYearCode",
+                    new { request.ClassID, request.SectionID, request.AcademicYearCode });
 
                 // Fetch subject counts (e.g., Subject1: 7/week) and populate the Subjects dictionary
                 var subjectCount = await _connection.QueryAsync<dynamic>(
@@ -332,7 +257,8 @@ namespace TimeTable_API.Repository.Implementations
 
                 // Fetch PlanID based on the GroupID
                 var planId = await _connection.ExecuteScalarAsync<int>(
-                    @"SELECT PlanID FROM tblTimeTableDayGroupsMapping 
+                    @"SELECT PlanID 
+              FROM tblTimeTableDayGroupsMapping 
               WHERE GroupID = @GroupID",
                     new { GroupID = groupId });
 
@@ -357,7 +283,7 @@ namespace TimeTable_API.Repository.Implementations
                         Breaks = new List<ClassWiseBreakResponse>()
                     };
 
-                    // Fetch sessions for the day along with Start and End Time
+                    // Fetch sessions for the day
                     var sessions = await _connection.QueryAsync<ClassWiseSessionResponse>(
                         @"SELECT tsm.SessionID, ts.SessionName,
                    CASE 
@@ -377,20 +303,20 @@ namespace TimeTable_API.Repository.Implementations
                     {
                         var employeeSubjects = await _connection.QueryAsync<ClassWiseEmployeeSubjectResponse>(
                             @"SELECT tse.SubjectID, sub.SubjectName, tse.EmployeeID, 
-                        emp.First_Name + ' ' + emp.Last_Name as EmployeeName
-                FROM tblTimeTableSessionSubjectEmployee tse
-                JOIN tbl_Subjects sub ON tse.SubjectID = sub.SubjectId
-                JOIN tbl_EmployeeProfileMaster emp ON tse.EmployeeID = emp.Employee_id
-                JOIN tblTimeTableSessionMapping tsm ON tse.TTSessionID = tsm.TTSessionID
-                WHERE tsm.SessionID = @SessionID",
+                      emp.First_Name + ' ' + emp.Last_Name as EmployeeName
+                      FROM tblTimeTableSessionSubjectEmployee tse
+                      JOIN tbl_Subjects sub ON tse.SubjectID = sub.SubjectId
+                      JOIN tbl_EmployeeProfileMaster emp ON tse.EmployeeID = emp.Employee_id
+                      JOIN tblTimeTableSessionMapping tsm ON tse.TTSessionID = tsm.TTSessionID
+                      WHERE tsm.SessionID = @SessionID",
                             new { SessionID = session.SessionID });
 
                         session.EmployeeSubjects.AddRange(employeeSubjects);
                     }
 
-                    // Fetch breaks for the day along with Start and End Time
+                    // Fetch breaks for the day
                     var breaks = await _connection.QueryAsync<ClassWiseBreakResponse>(
-                        @"SELECT tbm.BreaksID as BreakID, tb.BreaksName as BreakName,
+                        @"SELECT tbm.BreaksID as BreakID, tb.BreaksName,
                    FORMAT(CAST(tb.StartTime AS DATETIME), 'hh:mm tt') + ' - ' + FORMAT(CAST(tb.EndTime AS DATETIME), 'hh:mm tt') AS BreakTime
                 FROM tblTimeTableBreakMapping tbm
                 JOIN tblTimeTableBreaks tb ON tbm.BreaksID = tb.BreaksID
@@ -398,8 +324,6 @@ namespace TimeTable_API.Repository.Implementations
                         new { DayID = day.DayID, GroupID = groupId });
 
                     dayResponse.Breaks.AddRange(breaks);
-
-                    // Add each day's response to the list of days
                     daysList.Add(dayResponse);
                 }
 
@@ -428,6 +352,163 @@ namespace TimeTable_API.Repository.Implementations
 
             return response;
         }
+
+
+        //public async Task<ServiceResponse<ClassWiseTimeTableResponse>> GetClassWiseTimeTables(GetClassWiseTimeTablesRequest request)
+        //{
+        //    var response = new ServiceResponse<ClassWiseTimeTableResponse>(
+        //        success: false,
+        //        message: "Initialization failed",
+        //        data: new ClassWiseTimeTableResponse(),
+        //        statusCode: 500,
+        //        totalCount: null
+        //    );
+
+        //    try
+        //    {
+        //        // Fetch ClassName and SectionName
+        //        var classSection = await _connection.QueryFirstOrDefaultAsync<dynamic>(
+        //            @"SELECT c.class_name AS ClassName, s.section_name AS SectionName 
+        //      FROM tbl_Class c
+        //      JOIN tbl_Section s ON c.class_id = s.class_id
+        //      WHERE c.class_id = @ClassID AND s.section_id = @SectionID",
+        //            new { request.ClassID, request.SectionID });
+
+        //        if (classSection == null)
+        //        {
+        //            return new ServiceResponse<ClassWiseTimeTableResponse>(
+        //                success: false,
+        //                message: "Class and Section not found",
+        //                data: null,
+        //                statusCode: 404
+        //            );
+        //        }
+
+        //        var timeTableResponse = new ClassWiseTimeTableResponse
+        //        {
+        //            ClassName = classSection.ClassName,
+        //            SectionName = classSection.SectionName,
+        //            Subjects = new Dictionary<string, string>()
+        //        };
+
+        //        // Fetch GroupID based on ClassID and SectionID
+        //        var groupId = await _connection.ExecuteScalarAsync<int>(
+        //            @"SELECT GroupID FROM tblTimeTableClassSession 
+        //      WHERE ClassID = @ClassID AND SectionID = @SectionID",
+        //            new { request.ClassID, request.SectionID });
+
+        //        // Fetch subject counts (e.g., Subject1: 7/week) and populate the Subjects dictionary
+        //        var subjectCount = await _connection.QueryAsync<dynamic>(
+        //            @"SELECT sub.SubjectName, COUNT(*) AS CountPerWeek 
+        //      FROM tblTimeTableSessionSubjectEmployee tse
+        //      JOIN tbl_Subjects sub ON tse.SubjectID = sub.SubjectId
+        //      WHERE tse.TTSessionID IN (SELECT TTSessionID FROM tblTimeTableSessionMapping WHERE GroupID = @GroupID)
+        //      GROUP BY sub.SubjectName",
+        //            new { GroupID = groupId });
+
+        //        foreach (var subject in subjectCount)
+        //        {
+        //            timeTableResponse.Subjects.Add(subject.SubjectName, $"{subject.CountPerWeek}/Week");
+        //        }
+
+        //        // Fetch PlanID based on the GroupID
+        //        var planId = await _connection.ExecuteScalarAsync<int>(
+        //            @"SELECT PlanID FROM tblTimeTableDayGroupsMapping 
+        //      WHERE GroupID = @GroupID",
+        //            new { GroupID = groupId });
+
+        //        // Fetch the Days associated with the PlanID
+        //        var days = await _connection.QueryAsync<ClassWiseDayResponse>(
+        //            @"SELECT value AS DayID, tdm.DayType 
+        //      FROM tblTimeTableDaySetup tds
+        //      CROSS APPLY STRING_SPLIT(tds.DayIDs, ',')
+        //      JOIN tblTimeTableDayMaster tdm ON value = tdm.DayID
+        //      WHERE tds.PlanID = @PlanID",
+        //            new { PlanID = planId });
+
+        //        var daysList = new List<ClassWiseDayResponse>();
+
+        //        foreach (var day in days)
+        //        {
+        //            var dayResponse = new ClassWiseDayResponse
+        //            {
+        //                DayID = day.DayID,
+        //                DayType = day.DayType,
+        //                Sessions = new List<ClassWiseSessionResponse>(),
+        //                Breaks = new List<ClassWiseBreakResponse>()
+        //            };
+
+        //            // Fetch sessions for the day along with Start and End Time
+        //            var sessions = await _connection.QueryAsync<ClassWiseSessionResponse>(
+        //                @"SELECT tsm.SessionID, ts.SessionName,
+        //           CASE 
+        //               WHEN ts.StartTime IS NOT NULL AND ts.EndTime IS NOT NULL 
+        //               THEN FORMAT(ts.StartTime, 'hh:mm tt') + ' - ' + FORMAT(ts.EndTime, 'hh:mm tt')
+        //               ELSE 'Time Not Available'
+        //           END AS SessionTime
+        //        FROM tblTimeTableSessionMapping tsm
+        //        JOIN tblTimeTableSessions ts ON tsm.SessionID = ts.SessionID
+        //        WHERE tsm.DayID = @DayID AND tsm.GroupID = @GroupID",
+        //                new { DayID = day.DayID, GroupID = groupId });
+
+        //            dayResponse.Sessions.AddRange(sessions);
+
+        //            // Fetch EmployeeSubjects for each session
+        //            foreach (var session in dayResponse.Sessions)
+        //            {
+        //                var employeeSubjects = await _connection.QueryAsync<ClassWiseEmployeeSubjectResponse>(
+        //                    @"SELECT tse.SubjectID, sub.SubjectName, tse.EmployeeID, 
+        //                emp.First_Name + ' ' + emp.Last_Name as EmployeeName
+        //        FROM tblTimeTableSessionSubjectEmployee tse
+        //        JOIN tbl_Subjects sub ON tse.SubjectID = sub.SubjectId
+        //        JOIN tbl_EmployeeProfileMaster emp ON tse.EmployeeID = emp.Employee_id
+        //        JOIN tblTimeTableSessionMapping tsm ON tse.TTSessionID = tsm.TTSessionID
+        //        WHERE tsm.SessionID = @SessionID",
+        //                    new { SessionID = session.SessionID });
+
+        //                session.EmployeeSubjects.AddRange(employeeSubjects);
+        //            }
+
+        //            // Fetch breaks for the day along with Start and End Time
+        //            var breaks = await _connection.QueryAsync<ClassWiseBreakResponse>(
+        //                @"SELECT tbm.BreaksID as BreakID, tb.BreaksName as BreakName,
+        //           FORMAT(CAST(tb.StartTime AS DATETIME), 'hh:mm tt') + ' - ' + FORMAT(CAST(tb.EndTime AS DATETIME), 'hh:mm tt') AS BreakTime
+        //        FROM tblTimeTableBreakMapping tbm
+        //        JOIN tblTimeTableBreaks tb ON tbm.BreaksID = tb.BreaksID
+        //        WHERE tbm.DayID = @DayID AND tbm.GroupID = @GroupID",
+        //                new { DayID = day.DayID, GroupID = groupId });
+
+        //            dayResponse.Breaks.AddRange(breaks);
+
+        //            // Add each day's response to the list of days
+        //            daysList.Add(dayResponse);
+        //        }
+
+        //        timeTableResponse.Days = daysList;
+
+        //        // Set response on success
+        //        response = new ServiceResponse<ClassWiseTimeTableResponse>(
+        //            success: true,
+        //            message: "Class-wise TimeTables fetched successfully.",
+        //            data: timeTableResponse,
+        //            statusCode: 200,
+        //            totalCount: null
+        //        );
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        // Handle error
+        //        response = new ServiceResponse<ClassWiseTimeTableResponse>(
+        //            success: false,
+        //            message: ex.Message,
+        //            data: null,
+        //            statusCode: 500,
+        //            totalCount: null
+        //        );
+        //    }
+
+        //    return response;
+        //}
 
     }
 }
