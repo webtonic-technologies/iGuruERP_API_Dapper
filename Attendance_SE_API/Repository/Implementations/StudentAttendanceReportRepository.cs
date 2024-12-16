@@ -143,56 +143,60 @@ namespace Attendance_SE_API.Repository.Implementations
             {
                 // Step 1: Get the subject names dynamically from the tbl_Subjects table
                 var subjectsQuery = @"
-        SELECT SubjectName
-        FROM tbl_Subjects
-        WHERE InstituteId = @InstituteID AND IsDeleted = 0";  // Ensure only active subjects are fetched
+SELECT SubjectName
+FROM tbl_Subjects
+WHERE InstituteId = @InstituteID AND IsDeleted = 0";  // Ensure only active subjects are fetched
 
                 var subjectNames = (await _connection.QueryAsync<string>(subjectsQuery, new { request.InstituteID })).ToList();
 
                 // Step 2: Dynamically build the attendance columns for each subject
-                var attendanceColumns = string.Join(", ", subjectNames.Select(sub =>
-                    $"MAX(CASE WHEN sub.SubjectName = '{sub}' THEN COALESCE(CASE WHEN a.StatusID IS NULL THEN '-' ELSE 'P' END, '-') ELSE '-' END) AS {sub}"));
+                var attendanceColumns = string.Join(", ", subjectNames.Select(subject =>
+                    $@"MAX(CASE 
+                WHEN sub.SubjectName = '{subject.Replace("'", "''")}' THEN 
+                    COALESCE(CASE WHEN a.StatusID IS NULL THEN '-' ELSE 'P' END, '-') 
+                ELSE '-' 
+            END) AS [{subject.Replace("'", "''")}]"));
 
                 // Step 3: Construct the full dynamic query
                 string query = $@"
-        SELECT
-            s.student_id AS StudentID,
-            s.Admission_Number AS AdmissionNumber,
-            s.Roll_Number AS RollNumber,
-            s.First_Name + ' ' + s.Last_Name as StudentName,
-            p.Mobile_Number as MobileNumber,
-            {attendanceColumns}  -- Dynamic attendance columns for subjects
-        FROM tbl_StudentMaster s
-        LEFT JOIN tblStudentAttendance a
-            ON s.student_id = a.StudentID
-            AND a.AttendanceTypeID = 2
-            AND a.AttendanceDate = CONVERT(DATE, @Date, 105)  -- Filter by AttendanceDate in JOIN
-            AND a.AcademicYearCode = @AcademicYearCode  -- Filter by AcademicYearCode
-        LEFT JOIN tbl_StudentParentsInfo p
-            ON s.student_id = p.student_id
-            AND p.Parent_Type_id = 1
-        LEFT JOIN tbl_Subjects sub
-            ON sub.SubjectID = a.SubjectID  -- Join with subjects
-        WHERE s.class_id = @ClassID
-            AND s.section_id = @SectionID
-            AND s.Institute_id = @InstituteID
-        GROUP BY s.student_id, s.Admission_Number, s.Roll_Number, s.First_Name, s.Last_Name, p.Mobile_Number;
-        ";
+SELECT
+    s.student_id AS StudentID,
+    s.Admission_Number AS AdmissionNumber,
+    s.Roll_Number AS RollNumber,
+    s.First_Name + ' ' + s.Last_Name as StudentName,
+    p.Mobile_Number as MobileNumber,
+    {attendanceColumns}  -- Dynamic attendance columns for subjects
+FROM tbl_StudentMaster s
+LEFT JOIN tblStudentAttendance a
+    ON s.student_id = a.StudentID
+    AND a.AttendanceTypeID = 2
+    AND a.AttendanceDate = CONVERT(DATE, @Date, 105)  -- Filter by AttendanceDate in JOIN
+    AND a.AcademicYearCode = @AcademicYearCode  -- Filter by AcademicYearCode
+LEFT JOIN tbl_StudentParentsInfo p
+    ON s.student_id = p.student_id
+    AND p.Parent_Type_id = 1
+LEFT JOIN tbl_Subjects sub
+    ON sub.SubjectID = a.SubjectID  -- Join with subjects
+WHERE s.class_id = @ClassID
+    AND s.section_id = @SectionID
+    AND s.Institute_id = @InstituteID
+GROUP BY s.student_id, s.Admission_Number, s.Roll_Number, s.First_Name, s.Last_Name, p.Mobile_Number;
+";
 
-                // Query parameters (removed AttendanceTypeID and SubjectID)
+                // Query parameters
                 var parameters = new
                 {
                     request.ClassID,
                     request.SectionID,
                     request.InstituteID,
-                    Date = request.Date, // Assuming Date is in string format (e.g., '25-11-2024')
-                    AcademicYearCode = request.AcademicYearCode // Pass the AcademicYearCode parameter
+                    Date = request.Date, // Assuming Date is in string format (e.g., '15-12-2024')
+                    AcademicYearCode = request.AcademicYearCode
                 };
 
                 // Step 4: Execute the dynamic query
                 var attendanceRecords = await _connection.QueryAsync(query, parameters);
 
-                // Step 5: Map the results to the response, dynamically generating the attendance for each subject
+                // Step 5: Map the results to the response
                 var response = new StudentAttendanceReportPeriodWiseResponse
                 {
                     Success = true,
@@ -206,7 +210,9 @@ namespace Attendance_SE_API.Repository.Implementations
                         MobileNumber = record.MobileNumber,
                         AttendanceList = subjectNames.Select(subject =>
                         {
-                            var value = ((IDictionary<string, object>)record).ContainsKey(subject) ? ((IDictionary<string, object>)record)[subject] : "-";
+                            var value = ((IDictionary<string, object>)record).ContainsKey(subject)
+                                ? ((IDictionary<string, object>)record)[subject]
+                                : "-";
 
                             return new AttendanceSubjectInfo
                             {
@@ -236,111 +242,106 @@ namespace Attendance_SE_API.Repository.Implementations
         }
 
 
-        //        public async Task<StudentAttendanceReportPeriodWiseResponse> GetAttendanceReportPeriodWise(StudentAttendanceReportPeriodWiseRequest request)
-        //        {
-        //            try
-        //            {
-        //                // Step 1: Get the subject names dynamically from the tbl_Subjects table
-        //                var subjectsQuery = @"
-        //                SELECT SubjectName
-        //                FROM tbl_Subjects
-        //                WHERE InstituteId = @InstituteID AND IsDeleted = 0";  // Ensure only active subjects are fetched
+        //public async Task<StudentAttendanceReportPeriodWiseResponse> GetAttendanceReportPeriodWise(StudentAttendanceReportPeriodWiseRequest request)
+        //{
+        //    try
+        //    {
+        //        // Step 1: Get the subject names dynamically from the tbl_Subjects table
+        //        var subjectsQuery = @"
+        //SELECT SubjectName
+        //FROM tbl_Subjects
+        //WHERE InstituteId = @InstituteID AND IsDeleted = 0";  // Ensure only active subjects are fetched
 
-        //                            var subjectNames = (await _connection.QueryAsync<string>(subjectsQuery, new { request.InstituteID })).ToList();
+        //        var subjectNames = (await _connection.QueryAsync<string>(subjectsQuery, new { request.InstituteID })).ToList();
 
-        //                            // Step 2: Dynamically build the attendance columns for each subject
-        //                            var attendanceColumns = string.Join(", ", subjectNames.Select(sub =>
-        //                                $"MAX(CASE WHEN sub.SubjectName = '{sub}' THEN COALESCE(CASE WHEN a.StatusID IS NULL THEN '-' ELSE 'P' END, '-') ELSE '-' END) AS {sub}"));
+        //        // Step 2: Dynamically build the attendance columns for each subject
+        //        var attendanceColumns = string.Join(", ", subjectNames.Select(sub =>
+        //            $"MAX(CASE WHEN sub.SubjectName = '{sub}' THEN COALESCE(CASE WHEN a.StatusID IS NULL THEN '-' ELSE 'P' END, '-') ELSE '-' END) AS {sub}"));
 
-        //                            // Step 3: Construct the full dynamic query without WorkingDays, Present, Absent, and AttendancePercentage
-        //                            string query = $@"
-        //                SELECT
-        //                    s.student_id AS StudentID,
-        //                    s.Admission_Number AS AdmissionNumber,
-        //                    s.Roll_Number AS RollNumber,
-        //                    s.First_Name + ' ' + s.Last_Name as StudentName,
-        //                    p.Mobile_Number as MobileNumber,
-        //                    {attendanceColumns}  -- Dynamic attendance columns for subjects
-        //                FROM tbl_StudentMaster s
-        //                LEFT JOIN tblStudentAttendance a
-        //                    ON s.student_id = a.StudentID
-        //                    AND a.AttendanceTypeID = 2
-        //                    AND a.AttendanceDate = CONVERT(DATE, @Date, 105)  -- Filter by AttendanceDate in JOIN
-        //                    AND a.AcademicYearCode = @AcademicYearCode  -- Filter by AcademicYearCode
-        //                LEFT JOIN tbl_StudentParentsInfo p
-        //                    ON s.student_id = p.student_id
-        //                    AND p.Parent_Type_id = 1
-        //                LEFT JOIN tbl_Subjects sub
-        //                    ON sub.SubjectID = a.SubjectID  -- Join with subjects
-        //                WHERE s.class_id = @ClassID
-        //                  AND s.section_id = @SectionID
-        //                  AND s.Institute_id = @InstituteID
-        //                GROUP BY s.student_id, s.Admission_Number, s.Roll_Number, s.First_Name, s.Last_Name, p.Mobile_Number;
+        //        // Step 3: Construct the full dynamic query
+        //        string query = $@"
+        //SELECT
+        //    s.student_id AS StudentID,
+        //    s.Admission_Number AS AdmissionNumber,
+        //    s.Roll_Number AS RollNumber,
+        //    s.First_Name + ' ' + s.Last_Name as StudentName,
+        //    p.Mobile_Number as MobileNumber,
+        //    {attendanceColumns}  -- Dynamic attendance columns for subjects
+        //FROM tbl_StudentMaster s
+        //LEFT JOIN tblStudentAttendance a
+        //    ON s.student_id = a.StudentID
+        //    AND a.AttendanceTypeID = 2
+        //    AND a.AttendanceDate = CONVERT(DATE, @Date, 105)  -- Filter by AttendanceDate in JOIN
+        //    AND a.AcademicYearCode = @AcademicYearCode  -- Filter by AcademicYearCode
+        //LEFT JOIN tbl_StudentParentsInfo p
+        //    ON s.student_id = p.student_id
+        //    AND p.Parent_Type_id = 1
+        //LEFT JOIN tbl_Subjects sub
+        //    ON sub.SubjectID = a.SubjectID  -- Join with subjects
+        //WHERE s.class_id = @ClassID
+        //    AND s.section_id = @SectionID
+        //    AND s.Institute_id = @InstituteID
+        //GROUP BY s.student_id, s.Admission_Number, s.Roll_Number, s.First_Name, s.Last_Name, p.Mobile_Number;
         //";
 
-        //                // Query parameters (removed AttendanceTypeID and SubjectID)
-        //                var parameters = new
-        //                {
-        //                    request.ClassID,
-        //                    request.SectionID,
-        //                    request.InstituteID,
-        //                    Date = request.Date, // Assuming Date is in string format (e.g., '25-11-2024')
-        //                    AcademicYearCode = request.AcademicYearCode // Pass the AcademicYearCode parameter
-        //                };
+        //        // Query parameters (removed AttendanceTypeID and SubjectID)
+        //        var parameters = new
+        //        {
+        //            request.ClassID,
+        //            request.SectionID,
+        //            request.InstituteID,
+        //            Date = request.Date, // Assuming Date is in string format (e.g., '25-11-2024')
+        //            AcademicYearCode = request.AcademicYearCode // Pass the AcademicYearCode parameter
+        //        };
 
-        //                // Step 4: Execute the dynamic query
-        //                var attendanceRecords = await _connection.QueryAsync(query, parameters);
+        //        // Step 4: Execute the dynamic query
+        //        var attendanceRecords = await _connection.QueryAsync(query, parameters);
 
-        //                // Step 5: Map the results to the response, dynamically generating the attendance for each subject
-        //                var response = new StudentAttendanceReportPeriodWiseResponse
-        //                {
-        //                    Success = true,
-        //                    Message = "Attendance report fetched successfully.",
-        //                    Data = attendanceRecords.Select(record => new AttendanceDetailResponse_PW
-        //                    {
-        //                        StudentID = record.StudentID,
-        //                        AdmissionNumber = record.AdmissionNumber,
-        //                        RollNumber = record.RollNumber,
-        //                        StudentName = record.StudentName,
-        //                        MobileNumber = record.MobileNumber,
-        //                        // Dynamically populate attendance for each subject, replace NULL with "-"
-        //                        Attendance = subjectNames.ToDictionary(
-        //                            subject => subject,
-        //                            subject =>
-        //                            {
-        //                                // Ensure that record is not null before attempting to access its properties
-        //                                if (record == null)
-        //                                {
-        //                                    return subject; // If record is null, return the subject name
-        //                                }
-
-        //                                // Dynamically fetch the subject attendance, check if the key exists and return "-" if null or missing
-        //                                var value = ((IDictionary<string, object>)record).ContainsKey(subject) ? ((IDictionary<string, object>)record)[subject] : "-";
-
-        //                                // Return the value if not null, otherwise fallback to "-"
-        //                                return value != null ? value.ToString() : "-";
-        //                            }
-        //                        )
-        //                    }).ToList(),
-        //                    StatusCode = 200,
-        //                    TotalCount = attendanceRecords.Count()
-        //                };
-
-        //                return response;
-        //            }
-        //            catch (Exception ex)
+        //        // Step 5: Map the results to the response, dynamically generating the attendance for each subject
+        //        var response = new StudentAttendanceReportPeriodWiseResponse
+        //        {
+        //            Success = true,
+        //            Message = "Attendance report fetched successfully.",
+        //            Data = attendanceRecords.Select(record => new AttendanceDetailResponse_PW
         //            {
-        //                // Catch any errors and return a custom error response
-        //                return new StudentAttendanceReportPeriodWiseResponse
+        //                StudentID = record.StudentID,
+        //                AdmissionNumber = record.AdmissionNumber,
+        //                RollNumber = record.RollNumber,
+        //                StudentName = record.StudentName,
+        //                MobileNumber = record.MobileNumber,
+        //                AttendanceList = subjectNames.Select(subject =>
         //                {
-        //                    Success = false,
-        //                    Message = $"An error occurred while fetching the attendance report: {ex.Message}",
-        //                    Data = new List<AttendanceDetailResponse_PW>(),
-        //                    StatusCode = 500,
-        //                    TotalCount = 0
-        //                };
-        //            }
-        //        }
+        //                    var value = ((IDictionary<string, object>)record).ContainsKey(subject) ? ((IDictionary<string, object>)record)[subject] : "-";
+
+        //                    return new AttendanceSubjectInfo
+        //                    {
+        //                        Subject = subject,
+        //                        AttendanceStatus = value != null ? value.ToString() : "-" // Ensure value is not null and set to "-"
+        //                    };
+        //                }).ToList()
+        //            }).ToList(),
+        //            StatusCode = 200,
+        //            TotalCount = attendanceRecords.Count()
+        //        };
+
+        //        return response;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        // Catch any errors and return a custom error response
+        //        return new StudentAttendanceReportPeriodWiseResponse
+        //        {
+        //            Success = false,
+        //            Message = $"An error occurred while fetching the attendance report: {ex.Message}",
+        //            Data = new List<AttendanceDetailResponse_PW>(),
+        //            StatusCode = 500,
+        //            TotalCount = 0
+        //        };
+        //    }
+        //}
+
+
+
 
         public async Task<byte[]> GetAttendanceReportExport(StudentAttendanceReportRequest request)
         {

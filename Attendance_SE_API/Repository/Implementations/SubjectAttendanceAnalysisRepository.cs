@@ -24,36 +24,37 @@ namespace Attendance_SE_API.Repository.Implementations
             using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
             {
                 var query = @"
-        WITH AttendanceStats AS (
-            SELECT 
-                sa.StudentID,
-                COUNT(CASE WHEN sa.StatusID = 1 THEN 1 END) AS PresentCount,
-                COUNT(CASE WHEN sa.StatusID = 2 THEN 1 END) AS AbsentCount,
-                COUNT(sa.StatusID) AS TotalCount,
-                MAX(sa.ClassID) AS ClassID,
-                MAX(sa.SectionID) AS SectionID,
-                MAX(sa.SubjectID) AS SubjectID
-            FROM 
-                tblStudentAttendance sa
-            INNER JOIN 
-                tblAttendanceTypeMaster atm ON sa.AttendanceTypeID = atm.AttendanceTypeID
-            WHERE 
-                sa.InstituteID = @InstituteID
-                AND sa.ClassID = @ClassID
-                AND sa.SectionID IN @SectionIDs   -- Modified to support multiple sections
-                AND sa.SubjectID IN @SubjectIDs   -- Modified to support multiple subjects
-            GROUP BY 
-                sa.StudentID
-        )
-        SELECT 
-            COUNT(DISTINCT StudentID) AS TotalStudents,
-            SUM(TotalCount) AS TotalWorkingDays,
-            CAST(SUM(PresentCount) AS FLOAT) / NULLIF(SUM(TotalCount), 0) * 100 AS AverageAttendancePercentage,
-            SUM(CASE WHEN PresentCount = TotalCount THEN 1 ELSE 0 END) AS StudentsWith100PercentAttendance,
-            COUNT(CASE WHEN (TotalCount * 1.0 / 90) >= 0.8 THEN 1 END) AS StudentsAbove80PercentAttendance
-        FROM 
-            AttendanceStats;";
+                WITH AttendanceStats AS (
+                    SELECT 
+                        sa.StudentID,
+                        COUNT(CASE WHEN sa.StatusID = 1 THEN 1 END) AS PresentCount,
+                        COUNT(CASE WHEN sa.StatusID = 2 THEN 1 END) AS AbsentCount,
+                        COUNT(sa.StatusID) AS TotalCount,
+                        MAX(sa.ClassID) AS ClassID,
+                        MAX(sa.SectionID) AS SectionID,
+                        MAX(sa.SubjectID) AS SubjectID
+                    FROM 
+                        tblStudentAttendance sa
+                    INNER JOIN 
+                        tblAttendanceTypeMaster atm ON sa.AttendanceTypeID = atm.AttendanceTypeID
+                    WHERE 
+                        sa.InstituteID = @InstituteID
+                        AND sa.ClassID = @ClassID
+                        AND sa.SectionID IN @SectionIDs   -- Modified to support multiple sections
+                        AND sa.SubjectID IN @SubjectIDs   -- Modified to support multiple subjects
+                    GROUP BY 
+                        sa.StudentID
+                )
+                SELECT 
+                    SUM(TotalCount) AS TotalSessions, -- Total number of attendance entries (sessions)
+                    SUM(TotalCount) AS TotalWorkingDays, -- Retained to align with TotalSessions logic
+                    CAST(SUM(PresentCount) AS FLOAT) / NULLIF(SUM(TotalCount), 0) * 100 AS AverageAttendancePercentage,
+                    SUM(CASE WHEN PresentCount = TotalCount THEN 1 ELSE 0 END) AS StudentsWith100PercentAttendance,
+                    COUNT(CASE WHEN (TotalCount * 1.0 / 90) >= 0.8 THEN 1 END) AS StudentsAbove80PercentAttendance
+                FROM 
+                    AttendanceStats;";
 
+                // Execute the query with the provided request parameters
                 var result = await connection.QuerySingleOrDefaultAsync<SubjectAttendanceStatisticsResponse>(query, new
                 {
                     InstituteID = request.InstituteID,
@@ -67,51 +68,56 @@ namespace Attendance_SE_API.Repository.Implementations
         }
 
 
+
         //public async Task<SubjectAttendanceStatisticsResponse> GetStudentAttendanceStatisticsForSubject(SubjectAttendanceAnalysisRequest request)
         //{
         //    using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
         //    {
         //        var query = @"
-        //        WITH AttendanceStats AS (
-        //            SELECT 
-        //                sa.StudentID,
-        //                COUNT(CASE WHEN sa.StatusID = 1 THEN 1 END) AS PresentCount,
-        //                COUNT(CASE WHEN sa.StatusID = 2 THEN 1 END) AS AbsentCount,
-        //                COUNT(sa.StatusID) AS TotalCount,
-        //                MAX(sa.ClassID) AS ClassID,
-        //                MAX(sa.SectionID) AS SectionID
-        //            FROM 
-        //                tblStudentAttendance sa
-        //            INNER JOIN 
-        //                tblAttendanceTypeMaster atm ON sa.AttendanceTypeID = atm.AttendanceTypeID
-        //            WHERE 
-        //                sa.InstituteID = @InstituteID
-        //                AND sa.ClassID = @ClassID
-        //                AND sa.SectionID = @SectionID
-        //                AND sa.SubjectID = @SubjectID
-        //            GROUP BY 
-        //                sa.StudentID
-        //        )
-        //        SELECT 
-        //            COUNT(DISTINCT StudentID) AS TotalStudents,
-        //            SUM(TotalCount) AS TotalWorkingDays,
-        //            CAST(SUM(PresentCount) AS FLOAT) / NULLIF(SUM(TotalCount), 0) * 100 AS AverageAttendancePercentage,
-        //            SUM(CASE WHEN PresentCount = TotalCount THEN 1 ELSE 0 END) AS StudentsWith100PercentAttendance,
-        //            COUNT(CASE WHEN (TotalCount * 1.0 / 90) >= 0.8 THEN 1 END) AS StudentsAbove80PercentAttendance
-        //        FROM 
-        //            AttendanceStats;";
+        //WITH AttendanceStats AS (
+        //    SELECT 
+        //        sa.StudentID,
+        //        COUNT(CASE WHEN sa.StatusID = 1 THEN 1 END) AS PresentCount,
+        //        COUNT(CASE WHEN sa.StatusID = 2 THEN 1 END) AS AbsentCount,
+        //        COUNT(sa.StatusID) AS TotalCount,
+        //        MAX(sa.ClassID) AS ClassID,
+        //        MAX(sa.SectionID) AS SectionID,
+        //        MAX(sa.SubjectID) AS SubjectID
+        //    FROM 
+        //        tblStudentAttendance sa
+        //    INNER JOIN 
+        //        tblAttendanceTypeMaster atm ON sa.AttendanceTypeID = atm.AttendanceTypeID
+        //    WHERE 
+        //        sa.InstituteID = @InstituteID
+        //        AND sa.ClassID = @ClassID
+        //        AND sa.SectionID IN @SectionIDs   -- Modified to support multiple sections
+        //        AND sa.SubjectID IN @SubjectIDs   -- Modified to support multiple subjects
+        //    GROUP BY 
+        //        sa.StudentID
+        //)
+        //SELECT 
+        //    COUNT(DISTINCT StudentID) AS TotalStudents,
+        //    SUM(TotalCount) AS TotalWorkingDays,
+        //    CAST(SUM(PresentCount) AS FLOAT) / NULLIF(SUM(TotalCount), 0) * 100 AS AverageAttendancePercentage,
+        //    SUM(CASE WHEN PresentCount = TotalCount THEN 1 ELSE 0 END) AS StudentsWith100PercentAttendance,
+        //    COUNT(CASE WHEN (TotalCount * 1.0 / 90) >= 0.8 THEN 1 END) AS StudentsAbove80PercentAttendance
+        //FROM 
+        //    AttendanceStats;";
 
         //        var result = await connection.QuerySingleOrDefaultAsync<SubjectAttendanceStatisticsResponse>(query, new
         //        {
         //            InstituteID = request.InstituteID,
         //            ClassID = request.ClassID,
-        //            SectionID = request.SectionID,
-        //            SubjectID = request.SubjectID
+        //            SectionIDs = request.SectionIDs,  // Pass the list of SectionIDs
+        //            SubjectIDs = request.SubjectIDs   // Pass the list of SubjectIDs
         //        });
 
         //        return result;
         //    }
         //}
+
+
+
 
         public async Task<ServiceResponse<IEnumerable<MonthlyAttendanceSubjectAnalysisResponse>>> GetMonthlyAttendanceAnalysisForSubject(SubjectAttendanceAnalysisRequest request)
         {
@@ -242,7 +248,8 @@ WITH AttendanceSummary AS (
     WHERE 
         sm.Institute_id = @InstituteID
         AND sm.class_id = @ClassID
-        AND sm.section_id = @SectionID
+        AND sm.section_id IN @SectionIDs
+        AND sa.SubjectID IN @SubjectIDs
     GROUP BY 
         sm.student_id, sm.Admission_Number, sm.First_Name, sm.Middle_Name, sm.Last_Name, sa.SubjectID
 ),
@@ -307,7 +314,8 @@ ORDER BY
                 {
                     request.InstituteID,
                     request.ClassID,
-                    request.SectionID,
+                    SectionIDs = request.SectionIDs,
+                    SubjectIDs = request.SubjectIDs,
                     StartRow = startRow,
                     EndRow = endRow
                 });
@@ -544,7 +552,8 @@ ORDER BY
             WHERE 
                 sm.Institute_id = @InstituteID
                 AND sm.class_id = @ClassID
-                AND sm.section_id = @SectionID
+                AND sm.section_id IN @SectionIDs
+                AND sa.SubjectID IN @SubjectIDs
             GROUP BY 
                 sm.student_id, sm.Admission_Number, sm.First_Name, sm.Middle_Name, sm.Last_Name, sa.SubjectID
         ),
@@ -582,7 +591,8 @@ ORDER BY
                 {
                     request.InstituteID,
                     request.ClassID,
-                    request.SectionID
+                    SectionIDs = request.SectionIDs,
+                    SubjectIDs = request.SubjectIDs
                 });
             }
         }

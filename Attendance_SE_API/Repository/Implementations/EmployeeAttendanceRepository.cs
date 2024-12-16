@@ -29,6 +29,12 @@ namespace Attendance_SE_API.Repository.Implementations
             {
                 foreach (var record in request.AttendanceRecords)
                 {
+                    // Parse the attendance date to ensure the correct format
+                    if (!DateTime.TryParseExact(request.AttendanceDate, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
+                    {
+                        throw new ArgumentException("Invalid date format. Please use DD-MM-YYYY.");
+                    }
+
                     // Create the attendance object
                     var attendance = new EmployeeAttendance
                     {
@@ -42,14 +48,25 @@ namespace Attendance_SE_API.Repository.Implementations
                         Remarks = record.Remarks
                     };
 
-                    // Prepare the SQL insert query
-                    string query = @"INSERT INTO tblEmployeeAttendance (InstituteID, DepartmentID, 
-                             AttendanceDate, TimeSlotTypeID, IsMarkAsHoliday, EmployeeID, StatusID, Remarks) 
-                             VALUES (@InstituteID, @DepartmentID, @AttendanceDate, 
-                             @TimeSlotTypeID, @IsMarkAsHoliday, @EmployeeID, @StatusID, @Remarks)";
+                    // Remove existing records for the same key fields
+                    string deleteQuery = @"
+                    DELETE FROM tblEmployeeAttendance 
+                    WHERE EmployeeID = @EmployeeID
+                      AND InstituteID = @InstituteID
+                      AND DepartmentID = @DepartmentID
+                      AND AttendanceDate = @AttendanceDate
+                      AND TimeSlotTypeID = @TimeSlotTypeID";
 
-                    // Execute the query
-                    await _connection.ExecuteAsync(query, attendance);
+                    await _connection.ExecuteAsync(deleteQuery, attendance);
+
+                    // Insert the new record
+                    string insertQuery = @"
+                    INSERT INTO tblEmployeeAttendance (InstituteID, DepartmentID, 
+                         AttendanceDate, TimeSlotTypeID, IsMarkAsHoliday, EmployeeID, StatusID, Remarks) 
+                    VALUES (@InstituteID, @DepartmentID, @AttendanceDate, 
+                            @TimeSlotTypeID, @IsMarkAsHoliday, @EmployeeID, @StatusID, @Remarks)";
+
+                    await _connection.ExecuteAsync(insertQuery, attendance);
                 }
 
                 return new ServiceResponse<bool>(true, "Attendance marked successfully.", true, 200);
@@ -60,6 +77,45 @@ namespace Attendance_SE_API.Repository.Implementations
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
+
+
+        //public async Task<ServiceResponse<bool>> SetAttendance(EmployeeSetAttendanceRequest request)
+        //{
+        //    try
+        //    {
+        //        foreach (var record in request.AttendanceRecords)
+        //        {
+        //            // Create the attendance object
+        //            var attendance = new EmployeeAttendance
+        //            {
+        //                InstituteID = request.InstituteID,
+        //                DepartmentID = request.DepartmentID,
+        //                AttendanceDate = DateTime.ParseExact(request.AttendanceDate, "dd-MM-yyyy", CultureInfo.InvariantCulture).ToString(), // Ensure correct date format
+        //                TimeSlotTypeID = request.TimeSlotTypeID,
+        //                IsMarkAsHoliday = request.IsMarkAsHoliday,
+        //                EmployeeID = record.EmployeeID,
+        //                StatusID = record.StatusID,
+        //                Remarks = record.Remarks
+        //            };
+
+        //            // Prepare the SQL insert query
+        //            string query = @"INSERT INTO tblEmployeeAttendance (InstituteID, DepartmentID, 
+        //                     AttendanceDate, TimeSlotTypeID, IsMarkAsHoliday, EmployeeID, StatusID, Remarks) 
+        //                     VALUES (@InstituteID, @DepartmentID, @AttendanceDate, 
+        //                     @TimeSlotTypeID, @IsMarkAsHoliday, @EmployeeID, @StatusID, @Remarks)";
+
+        //            // Execute the query
+        //            await _connection.ExecuteAsync(query, attendance);
+        //        }
+
+        //        return new ServiceResponse<bool>(true, "Attendance marked successfully.", true, 200);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        // Log the exception (optional)
+        //        return new ServiceResponse<bool>(false, ex.Message, false, 500);
+        //    }
+        //}
 
 
         public async Task<ServiceResponse<List<EmployeeAttendanceResponse>>> GetAttendance_EMP(GetEmployeeAttendanceRequest request)

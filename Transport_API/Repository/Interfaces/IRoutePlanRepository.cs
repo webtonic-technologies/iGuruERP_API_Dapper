@@ -9,6 +9,8 @@ namespace Transport_API.Repository.Interfaces
     {
         Task<ServiceResponse<string>> AddUpdateRoutePlan(RoutePlanRequestDTO routePlan);
         Task<ServiceResponse<IEnumerable<RoutePlanResponseDTO>>> GetAllRoutePlans(GetAllRoutePlanRequest request);
+        Task<ServiceResponse<IEnumerable<RoutePlanResponseDTOExport>>> FetchRoutePlansForExport(GetAllRoutePlanExportRequest request);
+
         Task<ServiceResponse<RoutePlanResponseDTO>> GetRoutePlanById(int routePlanId);
         Task<ServiceResponse<bool>> UpdateRoutePlanStatus(int routePlanId);
         Task<ServiceResponse<RouteDetailsResponseDTO>> GetRouteDetails(GetRouteDetailsRequest request);

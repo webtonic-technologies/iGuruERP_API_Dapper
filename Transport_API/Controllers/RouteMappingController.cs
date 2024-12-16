@@ -188,5 +188,23 @@ namespace Transport_API.Controllers
                 return BadRequest(e.Message);
             }
         }
+
+        [HttpPost("GetAllRouteAssignedInfo")]
+        public async Task<IActionResult> GetAllRouteAssignedInfo([FromBody] GetAllRouteAssignedInfoRequest request)
+        {
+            try
+            {
+                var response = await _routeMappingService.GetAllRouteAssignedInfo(request);
+                if (response.Success)
+                {
+                    return Ok(response);
+                }
+                return StatusCode(response.StatusCode, response);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
     }
 }

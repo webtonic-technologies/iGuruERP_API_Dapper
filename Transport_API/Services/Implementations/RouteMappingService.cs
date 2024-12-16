@@ -117,5 +117,39 @@ namespace Transport_API.Services.Implementations
             return await _routeMappingRepository.GetRouteList(instituteID);
         }
 
+        public async Task<ServiceResponse<GetAllRouteAssignedInfoResponse>> GetAllRouteAssignedInfo(GetAllRouteAssignedInfoRequest request)
+        {
+            try
+            {
+                // Query to fetch route and stop details along with student and employee counts
+                var routeDetails = await _routeMappingRepository.GetRouteDetailsWithStopInfo(request);
+
+                if (routeDetails != null)
+                {
+                    // Calculate Total Student Count and Total Employee Count across all stops
+                    var totalStudentCount = routeDetails.Stops.Sum(stop => stop.StudentCount);
+                    var totalEmployeeCount = routeDetails.Stops.Sum(stop => stop.EmployeeCount);
+
+                    // Return the response with the total counts and route details
+                    var response = new GetAllRouteAssignedInfoResponse
+                    {
+                        TotalStudentCount = totalStudentCount,
+                        TotalEmployeeCount = totalEmployeeCount,
+                        RouteDetails = routeDetails
+                    };
+
+                    return new ServiceResponse<GetAllRouteAssignedInfoResponse>(true, "Route Assigned Info Retrieved Successfully", response, StatusCodes.Status200OK);
+                }
+                else
+                {
+                    return new ServiceResponse<GetAllRouteAssignedInfoResponse>(false, "No records found", null, StatusCodes.Status204NoContent);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<GetAllRouteAssignedInfoResponse>(false, ex.Message, null, StatusCodes.Status500InternalServerError);
+            }
+        }
+
     }
 }

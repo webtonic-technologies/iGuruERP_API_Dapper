@@ -181,6 +181,39 @@ namespace Transport_API.Repository.Implementations
             }
         }
 
+        public async Task<ServiceResponse<IEnumerable<RoutePlanResponseDTOExport>>> FetchRoutePlansForExport(GetAllRoutePlanExportRequest request)
+        {
+            var query = @"
+            SELECT 
+                rp.RoutePlanID, 
+                rp.RouteName, 
+                rp.VehicleID, 
+                v.VehicleNumber, 
+                (SELECT COUNT(*) FROM tblRouteStopMaster rs WHERE rs.RoutePlanID = rp.RoutePlanID) AS NoOfStops,
+                (SELECT MIN(PickUpTime) FROM tblRouteStopMaster WHERE RoutePlanID = rp.RoutePlanID) AS PickUpTime,
+                (SELECT MAX(DropTime) FROM tblRouteStopMaster WHERE RoutePlanID = rp.RoutePlanID) AS DropTime,
+                ISNULL(CONCAT(e.First_Name, ' ', e.Last_Name), '') AS DriverName
+            FROM 
+                tblRoutePlan rp
+                JOIN tblVehicleMaster v ON rp.VehicleID = v.VehicleID
+                LEFT JOIN tbl_EmployeeProfileMaster e ON v.AssignDriverID = e.Employee_id
+            WHERE 
+                rp.IsActive = 1 
+                AND rp.InstituteID = @InstituteID
+                AND (v.VehicleNumber LIKE @SearchTerm OR rp.RouteName LIKE @SearchTerm)
+            ORDER BY 
+                rp.RoutePlanID";
+
+            var routePlans = await _dbConnection.QueryAsync<RoutePlanResponseDTOExport>(query, new
+            {
+                InstituteID = request.InstituteId,
+                SearchTerm = $"%{request.SearchTerm}%"
+            });
+
+            return new ServiceResponse<IEnumerable<RoutePlanResponseDTOExport>>(true, "Route plans fetched", routePlans, 200);
+        }
+
+
 
         //public async Task<ServiceResponse<IEnumerable<RoutePlanResponseDTO>>> GetAllRoutePlans(GetAllRoutePlanRequest request)
         //{

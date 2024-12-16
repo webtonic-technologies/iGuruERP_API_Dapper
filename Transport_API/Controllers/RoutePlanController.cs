@@ -43,6 +43,24 @@ namespace Transport_API.Controllers
             }
         }
 
+        [HttpPost("GetAllRoutePlanExport")]
+        public async Task<IActionResult> GetAllRoutePlanExport([FromBody] GetAllRoutePlanExportRequest request)
+        {
+            try
+            {
+                var response = await _routePlanService.ExportRoutePlansData(request); // Using the updated method name
+                if (response.Success)
+                {
+                    return File(response.Data.FileData, "application/octet-stream", response.Data.FileName);
+                }
+                return StatusCode(response.StatusCode, response);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
         [HttpGet("GetRoutePlan/{RoutePlanId}")]
         public async Task<IActionResult> GetRoutePlan(int RoutePlanId)
         {

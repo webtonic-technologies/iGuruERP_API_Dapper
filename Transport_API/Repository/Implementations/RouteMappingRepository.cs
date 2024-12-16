@@ -102,10 +102,91 @@ namespace Transport_API.Repository.Implementations
             }
         }
 
+        //public async Task<ServiceResponse<IEnumerable<RouteMappingResponse>>> GetAllRouteMappings(GetAllRouteMappingRequest request)
+        //{
+        //    try
+        //    {
+        //        string countSql = @"
+        //    SELECT COUNT(DISTINCT rp.RoutePlanID)
+        //    FROM tblRoutePlan rp
+        //    JOIN tblAssignRoute ar ON rp.RoutePlanID = ar.RoutePlanID
+        //    WHERE rp.IsActive = 1 AND rp.InstituteID = @InstituteID;
+        //";
+
+        //        int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql, new { request.InstituteID });
+
+        //        string sql = @"
+        //    SELECT 
+        //        rp.RoutePlanID AS RouteMappingId, 
+        //        rp.RouteName, 
+        //        v.VehicleID,
+        //        v.VehicleNumber, 
+        //        ISNULL(CONCAT(e.First_Name, ' ', e.Last_Name), '') AS DriverName, 
+        //        ISNULL(CONCAT(ts.First_Name, ' ', ts.Last_Name), '') AS TransportStaffName,
+        //        (SELECT COUNT(*) 
+        //         FROM tblStudentStopMapping ssm 
+        //         JOIN tblRouteStopMaster rsm ON ssm.StopID = rsm.StopID 
+        //         WHERE rsm.RoutePlanID = rp.RoutePlanID) AS TotalStudents,
+        //        (SELECT COUNT(*) 
+        //         FROM tblEmployeeStopMapping esm 
+        //         JOIN tblRouteStopMaster rsm ON esm.StopID = rsm.StopID 
+        //         WHERE rsm.RoutePlanID = rp.RoutePlanID) AS TotalEmployees,
+        //        (v.SeatingCapacity - 
+        //            (
+        //                (SELECT COUNT(*) 
+        //                 FROM tblStudentStopMapping ssm 
+        //                 JOIN tblRouteStopMaster rsm ON ssm.StopID = rsm.StopID 
+        //                 WHERE rsm.RoutePlanID = rp.RoutePlanID) + 
+        //                (SELECT COUNT(*) 
+        //                 FROM tblEmployeeStopMapping esm 
+        //                 JOIN tblRouteStopMaster rsm ON esm.StopID = rsm.StopID 
+        //                 WHERE rsm.RoutePlanID = rp.RoutePlanID)
+        //            )
+        //        ) AS Availability
+        //    FROM 
+        //        tblRoutePlan rp
+        //        JOIN tblAssignRoute ar ON rp.RoutePlanID = ar.RoutePlanID
+        //        JOIN tblVehicleMaster v ON ar.VehicleID = v.VehicleID
+        //        LEFT JOIN tbl_EmployeeProfileMaster e ON ar.DriverID = e.Employee_id
+        //        LEFT JOIN tbl_EmployeeProfileMaster ts ON ar.TransportStaffID = ts.Employee_id
+        //    WHERE 
+        //        rp.IsActive = 1  AND ar.IsActive = 1 
+        //        AND rp.InstituteID = @InstituteID
+        //    GROUP BY 
+        //        rp.RoutePlanID, rp.RouteName, v.VehicleID, v.VehicleNumber, e.First_Name, e.Last_Name, ts.First_Name, ts.Last_Name, v.SeatingCapacity
+        //    ORDER BY 
+        //        rp.RoutePlanID  
+        //    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+
+        //        var routeMappings = await _dbConnection.QueryAsync<RouteMappingResponse>(sql, new
+        //        {
+        //            Offset = (request.PageNumber - 1) * request.PageSize,
+        //            PageSize = request.PageSize,
+        //            InstituteID = request.InstituteID
+        //        });
+
+        //        if (routeMappings != null && routeMappings.Any())
+        //        {
+        //            return new ServiceResponse<IEnumerable<RouteMappingResponse>>(true, "Records found successfully.", routeMappings, StatusCodes.Status200OK, totalCount);
+        //        }
+        //        else
+        //        {
+        //            // Instead of returning a 204, we now return a 200 with a clear message that no data was found.
+        //            return new ServiceResponse<IEnumerable<RouteMappingResponse>>(false, "No route mappings found for the provided InstituteID.", new List<RouteMappingResponse>(), StatusCodes.Status200OK);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        // Log the exception for debugging
+        //        return new ServiceResponse<IEnumerable<RouteMappingResponse>>(false, "An error occurred while fetching route mappings. Please try again later.", new List<RouteMappingResponse>(), StatusCodes.Status500InternalServerError);
+        //    }
+        //}
+
         public async Task<ServiceResponse<IEnumerable<RouteMappingResponse>>> GetAllRouteMappings(GetAllRouteMappingRequest request)
         {
             try
             {
+                // SQL to get total count of the route mappings
                 string countSql = @"
             SELECT COUNT(DISTINCT rp.RoutePlanID)
             FROM tblRoutePlan rp
@@ -115,6 +196,7 @@ namespace Transport_API.Repository.Implementations
 
                 int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql, new { request.InstituteID });
 
+                // Updated SQL query to get route details, including total students, employees, and availability
                 string sql = @"
             SELECT 
                 rp.RoutePlanID AS RouteMappingId, 
@@ -123,14 +205,17 @@ namespace Transport_API.Repository.Implementations
                 v.VehicleNumber, 
                 ISNULL(CONCAT(e.First_Name, ' ', e.Last_Name), '') AS DriverName, 
                 ISNULL(CONCAT(ts.First_Name, ' ', ts.Last_Name), '') AS TransportStaffName,
+                -- Subquery to count total students assigned to the route's stops
                 (SELECT COUNT(*) 
                  FROM tblStudentStopMapping ssm 
                  JOIN tblRouteStopMaster rsm ON ssm.StopID = rsm.StopID 
                  WHERE rsm.RoutePlanID = rp.RoutePlanID) AS TotalStudents,
+                -- Subquery to count total employees assigned to the route's stops
                 (SELECT COUNT(*) 
                  FROM tblEmployeeStopMapping esm 
                  JOIN tblRouteStopMaster rsm ON esm.StopID = rsm.StopID 
                  WHERE rsm.RoutePlanID = rp.RoutePlanID) AS TotalEmployees,
+                -- Calculation of available seats
                 (v.SeatingCapacity - 
                     (
                         (SELECT COUNT(*) 
@@ -150,14 +235,24 @@ namespace Transport_API.Repository.Implementations
                 LEFT JOIN tbl_EmployeeProfileMaster e ON ar.DriverID = e.Employee_id
                 LEFT JOIN tbl_EmployeeProfileMaster ts ON ar.TransportStaffID = ts.Employee_id
             WHERE 
-                rp.IsActive = 1  AND ar.IsActive = 1 
+                rp.IsActive = 1 
+                AND ar.IsActive = 1 
                 AND rp.InstituteID = @InstituteID
             GROUP BY 
-                rp.RoutePlanID, rp.RouteName, v.VehicleID, v.VehicleNumber, e.First_Name, e.Last_Name, ts.First_Name, ts.Last_Name, v.SeatingCapacity
+                rp.RoutePlanID, 
+                rp.RouteName, 
+                v.VehicleID, 
+                v.VehicleNumber, 
+                e.First_Name, 
+                e.Last_Name, 
+                ts.First_Name, 
+                ts.Last_Name, 
+                v.SeatingCapacity
             ORDER BY 
                 rp.RoutePlanID  
             OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 
+                // Execute the query to fetch the route mappings with the necessary details
                 var routeMappings = await _dbConnection.QueryAsync<RouteMappingResponse>(sql, new
                 {
                     Offset = (request.PageNumber - 1) * request.PageSize,
@@ -165,122 +260,89 @@ namespace Transport_API.Repository.Implementations
                     InstituteID = request.InstituteID
                 });
 
+                // Check if any records are found
                 if (routeMappings != null && routeMappings.Any())
                 {
                     return new ServiceResponse<IEnumerable<RouteMappingResponse>>(true, "Records found successfully.", routeMappings, StatusCodes.Status200OK, totalCount);
                 }
                 else
                 {
-                    // Instead of returning a 204, we now return a 200 with a clear message that no data was found.
+                    // If no records are found, return an appropriate response
                     return new ServiceResponse<IEnumerable<RouteMappingResponse>>(false, "No route mappings found for the provided InstituteID.", new List<RouteMappingResponse>(), StatusCodes.Status200OK);
                 }
             }
             catch (Exception ex)
             {
-                // Log the exception for debugging
+                // Return error response if an exception occurs
                 return new ServiceResponse<IEnumerable<RouteMappingResponse>>(false, "An error occurred while fetching route mappings. Please try again later.", new List<RouteMappingResponse>(), StatusCodes.Status500InternalServerError);
             }
         }
 
 
-        //        public async Task<ServiceResponse<IEnumerable<RouteMappingResponse>>> GetAllRouteMappings(GetAllRouteMappingRequest request)
+        //public async Task<ServiceResponse<RouteMappingResponse>> GetRouteMappingById(int AssignRouteID)
+        //{
+        //    try
+        //    {
+        //        string sql = @"
+        //    SELECT ar.AssignRouteID as RouteMappingId, 
+        //           rp.RouteName, 
+        //           v.VehicleID, 
+        //           v.VehicleNumber, 
+        //           e.Employee_id as EmployeeId,
+        //           ISNULL(CONCAT(e.First_Name, ' ', e.Last_Name), '') AS DriverName,
+        //           ts.Employee_id as TransportStaffID,
+        //           ISNULL(CONCAT(ts.First_Name, ' ', ts.Last_Name), '') AS TransportStaffName,
+        //           (SELECT COUNT(*) FROM tblStudentStopMapping srm WHERE srm.RoutePlanID = rp.RoutePlanID) AS TotalStudents,
+        //           (SELECT COUNT(*) FROM tblEmployeeStopMapping erm WHERE erm.RoutePlanID = rp.RoutePlanID) AS TotalEmployees
+        //    FROM tblAssignRoute ar
+        //    JOIN tblRoutePlan rp ON ar.RoutePlanID = rp.RoutePlanID
+        //    JOIN tblVehicleMaster v ON ar.VehicleID = v.VehicleID
+        //    LEFT JOIN tbl_EmployeeProfileMaster e ON v.AssignDriverID = e.Employee_id
+        //    LEFT JOIN tbl_EmployeeProfileMaster ts ON ar.TransportStaffID = ts.Employee_id
+        //    WHERE ar.AssignRouteID = @AssignRouteID
+        //    AND ar.IsActive = 1";
+
+        //        var routeMapping = await _dbConnection.QueryFirstOrDefaultAsync<RouteMappingResponse>(sql, new { AssignRouteID });
+
+        //        if (routeMapping != null)
         //        {
-        //            try
-        //            {
-        //                string countSql = @"
-        //            SELECT COUNT(DISTINCT rp.RoutePlanID)
-        //            FROM tblRoutePlan rp
-        //            JOIN tblAssignRoute ar ON rp.RoutePlanID = ar.RoutePlanID
-        //            WHERE rp.IsActive = 1 AND rp.InstituteID = @InstituteID;
-        //";
-
-        //                int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql, new { request.InstituteID });
-
-        //                string sql = @"
-        //                                SELECT 
-        //                        rp.RoutePlanID AS RouteMappingId, 
-        //                        rp.RouteName, 
-        //                        v.VehicleID,
-        //                        v.VehicleNumber, 
-        //                        ISNULL(CONCAT(e.First_Name, ' ', e.Last_Name), '') AS DriveName, 
-        //                        ISNULL(CONCAT(ts.First_Name, ' ', ts.Last_Name), '') AS TransportStaffName,
-        //                        (SELECT COUNT(*) 
-        //                         FROM tblStudentStopMapping ssm 
-        //                         JOIN tblRouteStopMaster rsm ON ssm.StopID = rsm.StopID 
-        //                         WHERE rsm.RoutePlanID = rp.RoutePlanID) AS TotalStudents,
-        //                        (SELECT COUNT(*) 
-        //                         FROM tblEmployeeStopMapping esm 
-        //                         JOIN tblRouteStopMaster rsm ON esm.StopID = rsm.StopID 
-        //                         WHERE rsm.RoutePlanID = rp.RoutePlanID) AS TotalEmployee,
-        //                        (v.SeatingCapacity - 
-        //                            (
-        //                                (SELECT COUNT(*) 
-        //                                 FROM tblStudentStopMapping ssm 
-        //                                 JOIN tblRouteStopMaster rsm ON ssm.StopID = rsm.StopID 
-        //                                 WHERE rsm.RoutePlanID = rp.RoutePlanID) + 
-        //                                (SELECT COUNT(*) 
-        //                                 FROM tblEmployeeStopMapping esm 
-        //                                 JOIN tblRouteStopMaster rsm ON esm.StopID = rsm.StopID 
-        //                                 WHERE rsm.RoutePlanID = rp.RoutePlanID)
-        //                            )
-        //                        ) AS Availability
-        //                    FROM 
-        //                        tblRoutePlan rp
-        //                        JOIN tblAssignRoute ar ON rp.RoutePlanID = ar.RoutePlanID
-        //                        JOIN tblVehicleMaster v ON ar.VehicleID = v.VehicleID
-        //                        LEFT JOIN tbl_EmployeeProfileMaster e ON ar.DriverID = e.Employee_id
-        //                        LEFT JOIN tbl_EmployeeProfileMaster ts ON ar.TransportStaffID = ts.Employee_id
-        //                    WHERE 
-        //                        rp.IsActive = 1  AND ar.IsActive = 1 
-        //                        AND rp.InstituteID = @InstituteID
-        //                    GROUP BY 
-        //                        rp.RoutePlanID, rp.RouteName, v.VehicleID, v.VehicleNumber, e.First_Name, e.Last_Name, ts.First_Name, ts.Last_Name, v.SeatingCapacity
-        //                    ORDER BY 
-        //                        rp.RoutePlanID  
-        //            OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
-
-
-
-
-        //                var routeMappings = await _dbConnection.QueryAsync<RouteMappingResponse>(sql, new
-        //                {
-        //                    Offset = (request.PageNumber - 1) * request.PageSize,
-        //                    PageSize = request.PageSize,
-        //                    InstituteID = request.InstituteID
-        //                });
-
-        //                if (routeMappings.Any())
-        //                {
-        //                    return new ServiceResponse<IEnumerable<RouteMappingResponse>>(true, "Records Found", routeMappings, StatusCodes.Status200OK, totalCount);
-        //                }
-        //                else
-        //                {
-        //                    return new ServiceResponse<IEnumerable<RouteMappingResponse>>(false, "No Records Found", new List<RouteMappingResponse>(), StatusCodes.Status204NoContent);
-        //                }
-        //            }
-        //            catch (Exception ex)
-        //            {
-        //                return new ServiceResponse<IEnumerable<RouteMappingResponse>>(false, ex.Message, new List<RouteMappingResponse>(), StatusCodes.Status500InternalServerError);
-        //            }
+        //            return new ServiceResponse<RouteMappingResponse>(true, "Record Found", routeMapping, StatusCodes.Status200OK);
         //        }
-
-
+        //        else
+        //        {
+        //            return new ServiceResponse<RouteMappingResponse>(false, "Record Not Found", new RouteMappingResponse(), StatusCodes.Status204NoContent);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return new ServiceResponse<RouteMappingResponse>(false, ex.Message, new RouteMappingResponse(), StatusCodes.Status500InternalServerError);
+        //    }
+        //}
 
         public async Task<ServiceResponse<RouteMappingResponse>> GetRouteMappingById(int AssignRouteID)
         {
             try
             {
                 string sql = @"
-            SELECT ar.AssignRouteID as RouteMappingId, 
-                   rp.RouteName, 
-                   v.VehicleID, 
-                   v.VehicleNumber, 
-                   e.Employee_id as EmployeeId,
-                   ISNULL(CONCAT(e.First_Name, ' ', e.Last_Name), '') AS DriverName,
-                   ts.Employee_id as TransportStaffID,
-                   ISNULL(CONCAT(ts.First_Name, ' ', ts.Last_Name), '') AS TransportStaffName,
-                   (SELECT COUNT(*) FROM tblStudentStopMapping srm WHERE srm.RoutePlanID = rp.RoutePlanID) AS TotalStudents,
-                   (SELECT COUNT(*) FROM tblEmployeeStopMapping erm WHERE erm.RoutePlanID = rp.RoutePlanID) AS TotalEmployees
+            SELECT 
+                ar.AssignRouteID as RouteMappingId, 
+                rp.RouteName, 
+                v.VehicleID, 
+                v.VehicleNumber, 
+                e.Employee_id as EmployeeId,
+                ISNULL(CONCAT(e.First_Name, ' ', e.Last_Name), '') AS DriverName,
+                ts.Employee_id as TransportStaffID,
+                ISNULL(CONCAT(ts.First_Name, ' ', ts.Last_Name), '') AS TransportStaffName,
+                -- Subquery to count total students assigned to the route's stops
+                (SELECT COUNT(*) 
+                 FROM tblStudentStopMapping srm 
+                 JOIN tblRouteStopMaster rs ON srm.StopID = rs.StopID
+                 WHERE rs.RoutePlanID = rp.RoutePlanID) AS TotalStudents,
+                -- Subquery to count total employees assigned to the route's stops
+                (SELECT COUNT(*) 
+                 FROM tblEmployeeStopMapping erm 
+                 JOIN tblRouteStopMaster rs ON erm.StopID = rs.StopID
+                 WHERE rs.RoutePlanID = rp.RoutePlanID) AS TotalEmployees
             FROM tblAssignRoute ar
             JOIN tblRoutePlan rp ON ar.RoutePlanID = rp.RoutePlanID
             JOIN tblVehicleMaster v ON ar.VehicleID = v.VehicleID
@@ -289,22 +351,29 @@ namespace Transport_API.Repository.Implementations
             WHERE ar.AssignRouteID = @AssignRouteID
             AND ar.IsActive = 1";
 
+                // Execute the query with the AssignRouteID as parameter
                 var routeMapping = await _dbConnection.QueryFirstOrDefaultAsync<RouteMappingResponse>(sql, new { AssignRouteID });
 
+                // If route mapping is found, return it with a success message
                 if (routeMapping != null)
                 {
                     return new ServiceResponse<RouteMappingResponse>(true, "Record Found", routeMapping, StatusCodes.Status200OK);
                 }
                 else
                 {
+                    // If no route mapping is found, return a no content response
                     return new ServiceResponse<RouteMappingResponse>(false, "Record Not Found", new RouteMappingResponse(), StatusCodes.Status204NoContent);
                 }
             }
             catch (Exception ex)
             {
+                // Return an error response if an exception occurs
                 return new ServiceResponse<RouteMappingResponse>(false, ex.Message, new RouteMappingResponse(), StatusCodes.Status500InternalServerError);
             }
         }
+
+
+
         public async Task<ServiceResponse<bool>> UpdateRouteMappingStatus(int AssignRouteID)
         {
             string sql = @"UPDATE tblAssignRoute SET IsActive = @IsActive WHERE AssignRouteID = @AssignRouteID";
@@ -512,7 +581,7 @@ namespace Transport_API.Repository.Implementations
                 FROM tblRoutePlan rp
                 INNER JOIN tblVehicleMaster vm ON rp.VehicleID = vm.VehicleID
                 LEFT JOIN tbl_EmployeeProfileMaster ep ON vm.AssignDriverID = ep.Employee_id
-                WHERE rp.RoutePlanID = @RoutePlanID";
+                WHERE rp.RoutePlanID = @RoutePlanID AND rp.IsActive = 1";
 
             var result = await _dbConnection.QuerySingleOrDefaultAsync<RouteVehicleDriverInfoResponse>(sql, new { RoutePlanID = routePlanID });
 
@@ -585,6 +654,54 @@ namespace Transport_API.Repository.Implementations
             }
 
             return new ServiceResponse<IEnumerable<GetRouteListResponse>>(true, "Route plans fetched successfully", routePlans, StatusCodes.Status200OK);
+        }
+
+        public async Task<RouteDetailsResponseDTO1> GetRouteDetailsWithStopInfo(GetAllRouteAssignedInfoRequest request)
+        {
+            var routeSql = @"
+                SELECT 
+                    rp.RoutePlanID, 
+                    rp.RouteName
+                FROM 
+                    tblRoutePlan rp
+                WHERE 
+                    rp.RoutePlanID = @RouteID
+                    AND rp.InstituteID = @InstituteID
+                    AND rp.IsActive = 1";
+
+            var stopsSql = @"
+                SELECT 
+                    rs.StopID,
+                    rs.StopName, 
+                    rs.PickUpTime, 
+                    rs.DropTime, 
+                    rs.FeeAmount AS Fee,
+                    (SELECT COUNT(*) FROM tblStudentStopMapping ss WHERE ss.StopID = rs.StopID) AS StudentCount,
+                    (SELECT COUNT(*) FROM tblEmployeeStopMapping es WHERE es.StopID = rs.StopID) AS EmployeeCount
+                FROM 
+                    tblRouteStopMaster rs
+                WHERE 
+                    rs.RoutePlanID = @RouteID";
+
+            var routeDetails = await _dbConnection.QueryFirstOrDefaultAsync<RouteDetailsResponseDTO1>(routeSql, new
+            {
+                RouteID = request.RouteID,
+                InstituteID = request.InstituteID
+            });
+
+            if (routeDetails != null)
+            {
+                var stops = await _dbConnection.QueryAsync<RouteStopResponseDTO1>(stopsSql, new
+                {
+                    RouteID = request.RouteID
+                });
+
+                routeDetails.Stops = stops.ToList();
+
+                return routeDetails;
+            }
+
+            return null;
         }
 
     }

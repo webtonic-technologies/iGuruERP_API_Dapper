@@ -129,8 +129,6 @@ namespace Attendance_SE_API.Repository.Implementations
             return attendanceList.AsList();
         }
 
-
-
         public async Task<bool> SetAttendance(SetAttendanceRequest request)
         {
             // Parse the attendance date from the provided string format
@@ -143,7 +141,7 @@ namespace Attendance_SE_API.Repository.Implementations
 
             foreach (var record in request.AttendanceRecords)
             {
-                // Check required fields based on AttendanceTypeID
+                // Validate required fields based on AttendanceTypeID
                 if (request.AttendanceTypeID == 1) // Assuming 1 = Date Wise
                 {
                     if (!request.TimeSlotTypeID.HasValue)
@@ -159,6 +157,7 @@ namespace Attendance_SE_API.Repository.Implementations
                     }
                 }
 
+                // Create the attendance record object
                 var attendance = new StudentAttendance
                 {
                     InstituteID = request.InstituteID,
@@ -166,30 +165,47 @@ namespace Attendance_SE_API.Repository.Implementations
                     ClassID = request.ClassID,
                     SectionID = request.SectionID,
                     AttendanceDate = parsedDate,
-                    SubjectID = request.SubjectID ?? 0, // Use 0 or any default value if SubjectID is null
-                    TimeSlotTypeID = request.TimeSlotTypeID ?? 0, // Use 0 or any default value if TimeSlotTypeID is null
+                    SubjectID = request.SubjectID ?? 0, // Use 0 if SubjectID is null
+                    TimeSlotTypeID = request.TimeSlotTypeID ?? 0, // Use 0 if TimeSlotTypeID is null
                     IsMarkAsHoliday = request.IsMarkAsHoliday,
                     StudentID = record.StudentID,
                     StatusID = record.StatusID,
                     Remarks = record.Remarks,
-                    AcademicYearCode = request.AcademicYearCode // Set the AcademicYearCode
+                    AcademicYearCode = request.AcademicYearCode
                 };
 
-                string query = @"INSERT INTO tblStudentAttendance 
-                         (InstituteID, AttendanceTypeID, ClassID, SectionID, 
-                          AttendanceDate, SubjectID, TimeSlotTypeID, IsMarkAsHoliday, 
-                          StudentID, StatusID, Remarks, AcademicYearCode)
-                         VALUES 
-                         (@InstituteID, @AttendanceTypeID, @ClassID, @SectionID, 
-                          @AttendanceDate, @SubjectID, @TimeSlotTypeID, @IsMarkAsHoliday, 
-                          @StudentID, @StatusID, @Remarks, @AcademicYearCode)";
+                // Delete existing records for the same key fields
+                string deleteQuery = @"
+            DELETE FROM tblStudentAttendance 
+            WHERE StudentID = @StudentID 
+              AND AttendanceDate = @AttendanceDate 
+              AND ClassID = @ClassID 
+              AND SectionID = @SectionID
+              AND InstituteID = @InstituteID 
+              AND AttendanceTypeID = @AttendanceTypeID 
+              AND SubjectID = @SubjectID 
+              AND TimeSlotTypeID = @TimeSlotTypeID
+              AND AcademicYearCode = @AcademicYearCode";
 
-                await _connection.ExecuteAsync(query, attendance);
+                await _connection.ExecuteAsync(deleteQuery, attendance);
+
+                // Insert the new record
+                string insertQuery = @"
+            INSERT INTO tblStudentAttendance 
+                 (InstituteID, AttendanceTypeID, ClassID, SectionID, 
+                  AttendanceDate, SubjectID, TimeSlotTypeID, IsMarkAsHoliday, 
+                  StudentID, StatusID, Remarks, AcademicYearCode)
+            VALUES 
+                 (@InstituteID, @AttendanceTypeID, @ClassID, @SectionID, 
+                  @AttendanceDate, @SubjectID, @TimeSlotTypeID, @IsMarkAsHoliday, 
+                  @StudentID, @StatusID, @Remarks, @AcademicYearCode)";
+
+                await _connection.ExecuteAsync(insertQuery, attendance);
             }
 
             return true;
         }
-
+         
 
         //public async Task<bool> SetAttendance(SetAttendanceRequest request)
         //{
@@ -231,18 +247,24 @@ namespace Attendance_SE_API.Repository.Implementations
         //            IsMarkAsHoliday = request.IsMarkAsHoliday,
         //            StudentID = record.StudentID,
         //            StatusID = record.StatusID,
-        //            Remarks = record.Remarks
+        //            Remarks = record.Remarks,
+        //            AcademicYearCode = request.AcademicYearCode // Set the AcademicYearCode
         //        };
 
-        //        string query = @"INSERT INTO tblStudentAttendance (InstituteID, AttendanceTypeID, ClassID, SectionID, 
-        //                AttendanceDate, SubjectID, TimeSlotTypeID, IsMarkAsHoliday, StudentID, StatusID, Remarks)
-        //                VALUES (@InstituteID, @AttendanceTypeID, @ClassID, @SectionID, 
-        //                @AttendanceDate, @SubjectID, @TimeSlotTypeID, @IsMarkAsHoliday, @StudentID, @StatusID, @Remarks)";
+        //        string query = @"INSERT INTO tblStudentAttendance 
+        //                 (InstituteID, AttendanceTypeID, ClassID, SectionID, 
+        //                  AttendanceDate, SubjectID, TimeSlotTypeID, IsMarkAsHoliday, 
+        //                  StudentID, StatusID, Remarks, AcademicYearCode)
+        //                 VALUES 
+        //                 (@InstituteID, @AttendanceTypeID, @ClassID, @SectionID, 
+        //                  @AttendanceDate, @SubjectID, @TimeSlotTypeID, @IsMarkAsHoliday, 
+        //                  @StudentID, @StatusID, @Remarks, @AcademicYearCode)";
 
         //        await _connection.ExecuteAsync(query, attendance);
         //    }
 
         //    return true;
         //}
+
     }
 }

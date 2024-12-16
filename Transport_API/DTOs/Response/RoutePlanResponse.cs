@@ -1,5 +1,18 @@
 ﻿namespace Transport_API.DTOs.Response
 {
+
+
+    public class RoutePlanResponseDTOExport
+    {
+        public string RouteName { get; set; }
+        public string VehicleNumber { get; set; }
+        public int NoOfStops { get; set; }
+        public string PickUpTime { get; set; }
+        public string DropTime { get; set; }
+        public string DriverName { get; set; }
+
+    }
+
     public class RoutePlanResponseDTO
     {
         //public int RoutePlanID { get; set; }
