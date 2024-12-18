@@ -60,6 +60,19 @@ builder.Services.AddScoped<IGeoFencingEntryService, GeoFencingEntryService>();
 builder.Services.AddScoped<IAttendanceDashboardRepository, AttendanceDashboardRepository>();
 builder.Services.AddScoped<IAttendanceDashboardService, AttendanceDashboardService>();
 
+builder.Services.AddSingleton<IStudentImportRepository, StudentImportRepository>();
+builder.Services.AddSingleton<IStudentImportService, StudentImportService>();
+
+builder.Services.AddSingleton<IEmployeeImportRepository, EmployeeImportRepository>();
+builder.Services.AddSingleton<IEmployeeImportService, EmployeeImportService>();
+
+builder.Services.AddSingleton<IGeoFencingImportRepository, GeoFencingImportRepository>();
+builder.Services.AddSingleton<IGeoFencingImportService, GeoFencingImportService>();
+
+builder.Services.AddSingleton<IBioMetricImportRepository, BioMetricImportRepository>();
+builder.Services.AddSingleton<IBioMetricImportService, BioMetricImportService>();
+
+
 var app = builder.Build();
 
 

@@ -3,5 +3,6 @@
     public class GetStudentAttendanceDashboardRequest
     {
         public int InstituteID { get; set; }
+        public string AcademicYearCode { get; set; } 
     }
 }

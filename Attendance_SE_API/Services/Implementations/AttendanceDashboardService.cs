@@ -16,13 +16,13 @@ namespace Attendance_SE_API.Services.Implementations
             _repository = repository;
         }
 
-        public async Task<ServiceResponse<DashboardAttendanceStatisticsResponse>> GetStudentAttendanceStatistics(int instituteId)
+        public async Task<ServiceResponse<DashboardAttendanceStatisticsResponse>> GetStudentAttendanceStatistics(int instituteId, string AcademicYearCode)
         {
-            return await _repository.GetStudentAttendanceStatistics(instituteId);
+            return await _repository.GetStudentAttendanceStatistics(instituteId, AcademicYearCode);
         }
-        public async Task<ServiceResponse<List<GetStudentAttendanceDashboardResponse>>> GetStudentAttendanceDashboard(int instituteId)
+        public async Task<ServiceResponse<List<GetStudentAttendanceDashboardResponse>>> GetStudentAttendanceDashboard(int instituteId, string AcademicYearCode)
         {
-            return await _repository.GetStudentAttendanceDashboard(instituteId);
+            return await _repository.GetStudentAttendanceDashboard(instituteId, AcademicYearCode);
         }
         public async Task<ServiceResponse<GetEmployeeAttendanceStatisticsResponse>> GetEmployeeAttendanceStatistics(int instituteId)
         {

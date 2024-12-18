@@ -18,7 +18,7 @@ namespace Attendance_SE_API.Repository.Implementations
             _config = config;
         }
 
-        public async Task<ServiceResponse<DashboardAttendanceStatisticsResponse>> GetStudentAttendanceStatistics(int instituteId)
+        public async Task<ServiceResponse<DashboardAttendanceStatisticsResponse>> GetStudentAttendanceStatistics(int instituteId, string AcademicYearCode)
         {
             string query = @"
             SELECT 
@@ -27,14 +27,14 @@ namespace Attendance_SE_API.Repository.Implementations
                  WHERE sa.StatusID = 1 
                  AND sa.AttendanceTypeID = 1
                  AND sa.AttendanceDate = CAST(GETDATE() AS DATE)
-                 AND sa.InstituteID = @InstituteID) AS NoOfPresent,
+                 AND sa.InstituteID = @InstituteID AND sa.AcademicYearCode = @AcademicYearCode) AS NoOfPresent,
 
                 (SELECT COUNT(DISTINCT sa.StudentID) 
                  FROM tblStudentAttendance sa 
                  WHERE sa.StatusID = 2 
                  AND sa.AttendanceTypeID = 1
                  AND sa.AttendanceDate = CAST(GETDATE() AS DATE)
-                 AND sa.InstituteID = @InstituteID) AS NoOfAbsent,
+                 AND sa.InstituteID = @InstituteID AND sa.AcademicYearCode = @AcademicYearCode) AS NoOfAbsent,
 
                 (SELECT COUNT(DISTINCT sm.student_id) 
                  FROM tbl_StudentMaster sm
@@ -44,7 +44,7 @@ namespace Attendance_SE_API.Repository.Implementations
                      WHERE sa.StudentID = sm.student_id 
                      AND sa.AttendanceTypeID = 1
                      AND sa.AttendanceDate = CAST(GETDATE() AS DATE)
-                     AND sa.InstituteID = @InstituteID
+                     AND sa.InstituteID = @InstituteID AND sa.AcademicYearCode = @AcademicYearCode
                  )) AS NoOfNotMarked";
 
             try
@@ -52,7 +52,7 @@ namespace Attendance_SE_API.Repository.Implementations
                 // Use _config to get the connection string
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
                 {
-                    var result = await connection.QueryFirstOrDefaultAsync(query, new { InstituteID = instituteId });
+                    var result = await connection.QueryFirstOrDefaultAsync(query, new { InstituteID = instituteId, AcademicYearCode = AcademicYearCode });
 
                     var response = new DashboardAttendanceStatisticsResponse
                     {
@@ -81,7 +81,7 @@ namespace Attendance_SE_API.Repository.Implementations
         }
 
 
-        public async Task<ServiceResponse<List<GetStudentAttendanceDashboardResponse>>> GetStudentAttendanceDashboard(int instituteId)
+        public async Task<ServiceResponse<List<GetStudentAttendanceDashboardResponse>>> GetStudentAttendanceDashboard(int instituteId, string AcademicYearCode)
         {
             string query = @"
     SELECT 
@@ -94,7 +94,7 @@ namespace Attendance_SE_API.Repository.Implementations
          AND sa.AttendanceTypeID = 1
          AND sa.AttendanceDate = CAST(GETDATE() AS DATE)
          AND sa.ClassID = c.class_id
-         AND sa.InstituteID = @InstituteID) AS Present,
+         AND sa.InstituteID = @InstituteID AND sa.AcademicYearCode = @AcademicYearCode) AS Present,
 
         (SELECT COUNT(DISTINCT sa.StudentID) 
          FROM tblStudentAttendance sa 
@@ -102,7 +102,7 @@ namespace Attendance_SE_API.Repository.Implementations
          AND sa.AttendanceTypeID = 1
          AND sa.AttendanceDate = CAST(GETDATE() AS DATE)
          AND sa.ClassID = c.class_id
-         AND sa.InstituteID = @InstituteID) AS Absent,
+         AND sa.InstituteID = @InstituteID AND sa.AcademicYearCode = @AcademicYearCode) AS Absent,
 
         (SELECT COUNT(DISTINCT sm.student_id) 
          FROM tbl_StudentMaster sm
@@ -112,7 +112,7 @@ namespace Attendance_SE_API.Repository.Implementations
              FROM tblStudentAttendance sa
              WHERE sa.StudentID = sm.student_id
              AND sa.AttendanceDate = CAST(GETDATE() AS DATE)
-             AND sa.InstituteID = @InstituteID
+             AND sa.InstituteID = @InstituteID AND sa.AcademicYearCode = @AcademicYearCode
          )) AS NotMarked
     FROM 
         tbl_Class c
@@ -126,7 +126,7 @@ namespace Attendance_SE_API.Repository.Implementations
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
                 {
                     // QueryAsync returns an IEnumerable<T> collection, so we convert it to a List
-                    var result = await connection.QueryAsync<GetStudentAttendanceDashboardResponse>(query, new { InstituteID = instituteId });
+                    var result = await connection.QueryAsync<GetStudentAttendanceDashboardResponse>(query, new { InstituteID = instituteId, AcademicYearCode = AcademicYearCode });
 
                     // Return the result as a list in the ServiceResponse
                     return new ServiceResponse<List<GetStudentAttendanceDashboardResponse>>(

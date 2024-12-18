@@ -21,7 +21,7 @@ namespace Attendance_SE_API.Controllers
         [HttpPost("GetStudentAttendanceStatistics")]
         public async Task<IActionResult> GetStudentAttendanceStatistics([FromBody] AttendanceStatisticsRequest request)
         {
-            var response = await _attendanceDashboardService.GetStudentAttendanceStatistics(request.InstituteID);
+            var response = await _attendanceDashboardService.GetStudentAttendanceStatistics(request.InstituteID, request.AcademicYearCode);
 
             if (response.Success)
             {
@@ -34,7 +34,7 @@ namespace Attendance_SE_API.Controllers
         [HttpPost("GetStudentAttendanceDashboard")]
         public async Task<IActionResult> GetStudentAttendanceDashboard([FromBody] GetStudentAttendanceDashboardRequest request)
         {
-            var response = await _attendanceDashboardService.GetStudentAttendanceDashboard(request.InstituteID);
+            var response = await _attendanceDashboardService.GetStudentAttendanceDashboard(request.InstituteID, request.AcademicYearCode);
 
             if (response.Success)
             {
