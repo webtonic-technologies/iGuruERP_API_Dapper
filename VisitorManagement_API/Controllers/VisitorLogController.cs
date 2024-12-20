@@ -135,5 +135,18 @@ namespace VisitorManagement_API.Controllers
             }
             return BadRequest(response);
         }
+
+
+        [HttpPost("GetVisitorLogsExport")]
+        public async Task<IActionResult> GetVisitorLogsExport([FromBody] GetVisitorLogsExportRequest request)
+        {
+            var response = await _visitorLogService.GetVisitorLogsExport(request);
+            if (response.Success)
+            {
+                return File(response.Data, response.StatusCode == 200 ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "text/csv", "VisitorLogsExport" + (request.ExportType == 1 ? ".xlsx" : ".csv"));
+            }
+
+            return BadRequest(response);
+        }
     }
 }

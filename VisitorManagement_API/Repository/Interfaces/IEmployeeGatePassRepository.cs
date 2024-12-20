@@ -14,6 +14,7 @@ namespace VisitorManagement_API.Repository.Interfaces
         Task<ServiceResponse<List<Visitedfor>>> GetAllVisitedForReason();
         Task<List<GetVisitorForDDLResponse>> GetVisitorForDDL();
         Task<GetGatePassSlipResponse> GetGatePassSlip(int gatePassID, int instituteID);
+        Task<IEnumerable<GetEmployeeGatePassExportResponse>> GetEmployeeGatePassExport(GetEmployeeGatePassExportRequest request);
 
     }
 }

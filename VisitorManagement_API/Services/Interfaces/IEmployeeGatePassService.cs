@@ -15,7 +15,8 @@ namespace VisitorManagement_API.Services.Interfaces
         Task<ServiceResponse<bool>> UpdateEmployeeGatePassStatus(int gatePassId);
         Task<ServiceResponse<List<Visitedfor>>> GetAllVisitedForReason();
         Task<List<GetVisitorForDDLResponse>> GetVisitorForDDL();
-        Task<GetGatePassSlipResponse> GetGatePassSlip(int gatePassID, int instituteID);
+        Task<GetGatePassSlipResponse> GetGatePassSlip(int gatePassID, int instituteID); 
+        Task<ServiceResponse<byte[]>> GetEmployeeGatePassExport(GetEmployeeGatePassExportRequest request);
 
     }
 }

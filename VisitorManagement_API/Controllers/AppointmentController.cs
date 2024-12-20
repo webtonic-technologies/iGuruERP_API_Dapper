@@ -60,5 +60,19 @@ namespace VisitorManagement_API.Controllers
             }
             return BadRequest(response);
         }
+
+        [HttpPost("GetAppointmentsExport")]
+        public async Task<IActionResult> GetAppointmentsExport([FromBody] GetAppointmentsExportRequest request)
+        {
+            var response = await _appointmentService.GetAppointmentsExport(request);
+            if (response.Success)
+            {
+                return File(response.Data,
+                    response.StatusCode == 200 ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "text/csv",
+                    "AppointmentsExport" + (request.ExportType == 1 ? ".xlsx" : ".csv"));
+            }
+
+            return BadRequest(response);
+        }
     }
 }

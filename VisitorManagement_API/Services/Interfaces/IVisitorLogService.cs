@@ -19,8 +19,8 @@ namespace VisitorManagement_API.Services.Interfaces
         Task<ServiceResponse<IEnumerable<GetApprovalTypeResponse>>> GetApprovalType();
         Task<ServiceResponse<IEnumerable<GetEmployeeResponse>>> GetEmployee(GetEmployeeRequest request);
         Task<ServiceResponse<GetVisitorSlipResponse>> GetVisitorSlip(GetVisitorSlipRequest request);
-        Task<ServiceResponse<string>> ChangeApprovalStatus(ChangeApprovalStatusRequest request);
-
+        Task<ServiceResponse<string>> ChangeApprovalStatus(ChangeApprovalStatusRequest request); 
+        Task<ServiceResponse<byte[]>> GetVisitorLogsExport(GetVisitorLogsExportRequest request);
 
     }
 }

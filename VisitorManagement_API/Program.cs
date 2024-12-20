@@ -4,9 +4,13 @@ using VisitorManagement_API.Repository.Implementations;
 using VisitorManagement_API.Repository.Interfaces;
 using VisitorManagement_API.Services.Implementations;
 using VisitorManagement_API.Services.Interfaces;
+using OfficeOpenXml;
 
 var builder = WebApplication.CreateBuilder(args);
 string connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
+
+// Set the license context for EPPlus to NonCommercial
+ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
 builder.Services.AddTransient<IDbConnection>(c => new SqlConnection(connectionString));
 builder.Services.AddTransient<ISourceRepository, SourceRepository>();

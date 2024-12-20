@@ -91,6 +91,20 @@ namespace VisitorManagement_API.Controllers
                 return Ok(new { Success = true, Data = response });
             }
             return BadRequest(new { Success = false, Message = "Failed to retrieve GatePass Slip." });
+        } 
+
+
+        [HttpPost("EmployeeGatePass/GetEmployeeGatePassExport")]
+        public async Task<IActionResult> GetEmployeeGatePassExport([FromBody] GetEmployeeGatePassExportRequest request)
+        {
+            var response = await _employeeGatePassService.GetEmployeeGatePassExport(request);
+            if (response.Success)
+            {
+                return File(response.Data, response.StatusCode == 200 ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "text/csv", "EmployeeGatePassExport" + (request.ExportType == 1 ? ".xlsx" : ".csv"));
+            }
+
+            return BadRequest(response);
         }
+
     }
 }

@@ -359,5 +359,41 @@ namespace VisitorManagement_API.Repository.Implementations
                 VisitorSlip = visitorSlip
             };
         }
+
+
+
+        public async Task<IEnumerable<GetEmployeeGatePassExportResponse>> GetEmployeeGatePassExport(GetEmployeeGatePassExportRequest request)
+        {
+            string query = @"
+            SELECT gp.GatePassID, gp.EmployeeID, 
+                e.First_Name + ' ' + e.Middle_Name + ' ' + e.Last_Name AS EmployeeName, 
+                e.Department_id AS Departmentid, d.DepartmentName, 
+                e.Designation_id AS Designationid, des.DesignationName, 
+                gp.PassNo, gp.VisitorFor, vf.VisitedForName as VisitorForName, 
+                gp.CheckOutTime, gp.CheckInTime, gp.Purpose, gp.PlanOfVisit, 
+                gp.Remarks, gp.StatusID, a.ApprovalType AS StatusName, gp.InstituteId
+            FROM tblGatePass gp
+            JOIN tbl_EmployeeProfileMaster e ON gp.EmployeeID = e.Employee_id
+            JOIN tbl_Department d ON e.Department_id = d.Department_id
+            JOIN tbl_Designation des ON e.Designation_id = des.Designation_id
+            JOIN tblVisitorApprovalMaster a ON gp.StatusID = a.ApprovalTypeID
+            JOIN tblVisitedFor vf ON gp.VisitorFor = vf.VisitedFor
+            WHERE gp.IsDeleted = 0 AND gp.InstituteId = @InstituteId";
+
+            // Prepare the parameters
+            var parameters = new
+            {
+                InstituteId = request.InstituteId,
+                EmployeeId = request.EmployeeId,
+                StartDate = request.StartDate,
+                EndDate = request.EndDate,
+                SearchText = request.SearchText
+            };
+
+            // Execute the query and fetch results
+            var GatePass = await _dbConnection.QueryAsync<GetEmployeeGatePassExportResponse>(query, parameters);
+            return GatePass;
+        }
+
     }
 }

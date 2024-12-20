@@ -13,5 +13,7 @@ namespace VisitorManagement_API.Services.Interfaces
         Task<ServiceResponse<IEnumerable<AppointmentResponse>>> GetAllAppointments(GetAllAppointmentsRequest request);
         Task<ServiceResponse<AppointmentResponse>> GetAppointmentById(int appointmentId);
         Task<ServiceResponse<bool>> UpdateAppointmentStatus(int appointmentId);
+        Task<ServiceResponse<byte[]>> GetAppointmentsExport(GetAppointmentsExportRequest request);
+
     }
 }

@@ -20,6 +20,7 @@ namespace VisitorManagement_API.Repository.Interfaces
         Task<ServiceResponse<IEnumerable<GetEmployeeResponse>>> GetEmployee(GetEmployeeRequest request);
         Task<ServiceResponse<GetVisitorSlipResponse>> GetVisitorSlip(GetVisitorSlipRequest request);
         Task<bool> UpdateApprovalStatus(int visitorID, int approvalTypeID, int instituteID);
+        Task<IEnumerable<GetVisitorLogsExportResponse>> GetVisitorLogs(GetVisitorLogsExportRequest request);
 
 
     }

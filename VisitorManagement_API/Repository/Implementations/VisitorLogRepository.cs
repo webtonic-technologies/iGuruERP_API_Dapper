@@ -642,5 +642,42 @@ namespace VisitorManagement_API.Repository.Implementations
         }
 
 
+        public async Task<IEnumerable<GetVisitorLogsExportResponse>> GetVisitorLogs(GetVisitorLogsExportRequest request)
+        {
+            // SQL query to fetch visitor logs
+            string query = @"
+                SELECT vm.VisitorCodeID, vm.VisitorName, s.Source AS Sourcename, p.Purpose AS Purposename,
+                       vm.MobileNo, vm.EmailID, vm.Address, vm.OrganizationName,
+                       CONCAT(e.First_Name, ' ', e.Middle_Name, ' ', e.Last_Name) AS EmployeeFullName,
+                       vm.NoOfVisitor, vm.AccompaniedBy, vm.CheckInTime, vm.CheckOutTime,
+                       vm.Remarks, a.ApprovalType AS ApprovalTypeName
+                FROM tblVisitorMaster vm
+                LEFT JOIN tblSources s ON vm.SourceID = s.SourceID
+                LEFT JOIN tblPurposeType p ON vm.PurposeID = p.PurposeID
+                LEFT JOIN tbl_EmployeeProfileMaster e ON vm.EmployeeID = e.Employee_id
+                LEFT JOIN tblVisitorApprovalMaster a ON vm.ApprovalTypeID = a.ApprovalTypeID
+                WHERE vm.Status = 1 AND vm.InstituteId = @InstituteId";
+
+            // Initialize Dynamic Parameters for the query
+            var parameters = new DynamicParameters();
+            parameters.Add("InstituteId", request.InstituteId);
+
+            // Add filters for StartDate and EndDate if provided
+            if (!string.IsNullOrEmpty(request.StartDate) && !string.IsNullOrEmpty(request.EndDate))
+            {
+                var startDate = DateTime.ParseExact(request.StartDate, "dd-MM-yyyy", null);
+                var endDate = DateTime.ParseExact(request.EndDate, "dd-MM-yyyy", null);
+
+                query += " AND vm.CheckInTime >= @StartDate AND vm.CheckOutTime <= @EndDate";
+                parameters.Add("StartDate", startDate);
+                parameters.Add("EndDate", endDate);
+            }
+
+            // Execute the query and return the visitor logs
+            var visitorLogs = await _dbConnection.QueryAsync<GetVisitorLogsExportResponse>(query, parameters);
+            return visitorLogs;
+        }
+
+
     }
 }

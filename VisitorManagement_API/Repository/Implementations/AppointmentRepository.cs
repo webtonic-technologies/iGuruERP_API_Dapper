@@ -270,5 +270,42 @@ namespace VisitorManagement_API.Repository.Implementations
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
         }
+
+        public async Task<IEnumerable<GetAppointmentsExportResponse>> GetAppointments(GetAppointmentsExportRequest request)
+        {
+            string query = @"
+        SELECT a.Appointee, a.OrganizationName, a.MobileNo, a.EmailID, p.Purpose AS PurposeName, 
+               e.First_Name + ' ' + e.Middle_Name + ' ' + e.Last_Name AS EmployeeFullName, 
+               a.CheckInTime, a.CheckOutTime, a.Description, a.NoOfVisitors, 
+               s.ApprovalType AS ApprovalStatusName
+        FROM tblAppointment a
+        LEFT JOIN tblPurposeType p ON a.PurposeID = p.PurposeID
+        LEFT JOIN tbl_EmployeeProfileMaster e ON a.EmployeeID = e.Employee_id
+        LEFT JOIN tblVisitorApprovalMaster s ON a.ApprovalStatus = s.ApprovalTypeID
+        WHERE a.InstituteId = @InstituteId AND a.Status = 1";
+
+            // Initialize Dapper DynamicParameters
+            var parameters = new DynamicParameters();
+            parameters.Add("InstituteId", request.InstituteId);
+
+            // Add filters for StartDate and EndDate if provided
+            if (!string.IsNullOrEmpty(request.StartDate) && !string.IsNullOrEmpty(request.EndDate))
+            {
+                var startDate = DateTime.ParseExact(request.StartDate, "dd-MM-yyyy", null);
+                var endDate = DateTime.ParseExact(request.EndDate, "dd-MM-yyyy", null);
+
+                // Add StartDate and EndDate to parameters
+                parameters.Add("StartDate", startDate);
+                parameters.Add("EndDate", endDate);
+
+                // Modify the query to add the date filters
+                query += " AND a.CheckInTime >= @StartDate AND a.CheckOutTime <= @EndDate";
+            }
+
+            // Execute the query with the parameters
+            return await _dbConnection.QueryAsync<GetAppointmentsExportResponse>(query, parameters);
+        }
+
+
     }
 }
