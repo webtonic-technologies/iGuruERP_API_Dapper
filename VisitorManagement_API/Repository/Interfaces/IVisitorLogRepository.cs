@@ -13,5 +13,14 @@ namespace VisitorManagement_API.Repository.Interfaces
         Task<ServiceResponse<IEnumerable<Visitorlogresponse>>> GetAllVisitorLogs(GetAllVisitorLogsRequest request);
         Task<ServiceResponse<Visitorlogresponse>> GetVisitorLogById(int visitorId);
         Task<ServiceResponse<bool>> UpdateVisitorLogStatus(int visitorId);
+        Task<ServiceResponse<IEnumerable<GetSourcesResponse>>> GetSources(GetSourcesRequest request);  // Added GetSources method
+        Task<ServiceResponse<IEnumerable<GetPurposeResponse>>> GetPurpose(GetPurposeRequest request);  // New method
+        Task<ServiceResponse<IEnumerable<GetIDProofResponse>>> GetIDProof();
+        Task<ServiceResponse<IEnumerable<GetApprovalTypeResponse>>> GetApprovalType();
+        Task<ServiceResponse<IEnumerable<GetEmployeeResponse>>> GetEmployee(GetEmployeeRequest request);
+        Task<ServiceResponse<GetVisitorSlipResponse>> GetVisitorSlip(GetVisitorSlipRequest request);
+        Task<bool> UpdateApprovalStatus(int visitorID, int approvalTypeID, int instituteID);
+
+
     }
 }

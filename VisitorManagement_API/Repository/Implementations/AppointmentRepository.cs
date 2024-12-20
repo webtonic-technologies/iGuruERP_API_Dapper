@@ -64,15 +64,15 @@ namespace VisitorManagement_API.Repository.Implementations
             try
             {
                 string query = @"
-        SELECT a.AppointmentID, a.Appointee, a.OrganizationName, a.MobileNo, a.EmailID, a.PurposeID, 
-               p.Purpose as PurposeName, a.EmployeeID, e.First_Name + ' ' + e.Middle_Name + ' ' + e.Last_Name AS EmployeeFullName,
-               a.CheckInTime, a.CheckOutTime, a.Description, a.NoOfVisitors, a.Status, a.InstituteId,
-               a.ApprovalStatus, s.ApprovalType as ApprovalStatusName
-        FROM tblAppointment a
-        JOIN tblPurposeType p ON a.PurposeID = p.PurposeID
-        JOIN tbl_EmployeeProfileMaster e ON a.EmployeeID = e.Employee_id
-        JOIN tblVisitorApprovalMaster s ON a.ApprovalStatus = s.ApprovalTypeID
-        WHERE a.InstituteId = @InstituteId AND a.Status = 1";
+                SELECT a.AppointmentID, a.Appointee, a.OrganizationName, a.MobileNo, a.EmailID, a.PurposeID, 
+                       p.Purpose as PurposeName, a.EmployeeID, e.First_Name + ' ' + e.Middle_Name + ' ' + e.Last_Name AS EmployeeFullName,
+                       a.CheckInTime, a.CheckOutTime, a.Description, a.NoOfVisitors, a.Status, a.InstituteId,
+                       a.ApprovalStatus, s.ApprovalType as ApprovalStatusName
+                FROM tblAppointment a
+                LEFT OUTER JOIN tblPurposeType p ON a.PurposeID = p.PurposeID
+                LEFT OUTER JOIN tbl_EmployeeProfileMaster e ON a.EmployeeID = e.Employee_id
+                LEFT OUTER JOIN tblVisitorApprovalMaster s ON a.ApprovalStatus = s.ApprovalTypeID
+                WHERE a.InstituteId = @InstituteId AND a.Status = 1";
 
                 var parameters = new DynamicParameters();
                 parameters.Add("InstituteId", request.InstituteId);
@@ -102,16 +102,16 @@ namespace VisitorManagement_API.Repository.Implementations
             try
             {
                 string query = @"
-        SELECT a.AppointmentID, a.Appointee, a.OrganizationName, a.MobileNo, a.EmailID, a.PurposeID, 
-               p.Purpose as PurposeName, a.EmployeeID, 
-               e.First_Name + ' ' + e.Middle_Name + ' ' + e.Last_Name AS EmployeeFullName,
-               a.CheckInTime, a.CheckOutTime, a.Description, a.NoOfVisitors, a.Status, a.InstituteId,
-               a.ApprovalStatus, s.ApprovalType as ApprovalStatusName
-        FROM tblAppointment a
-        JOIN tblPurposeType p ON a.PurposeID = p.PurposeID
-        JOIN tbl_EmployeeProfileMaster e ON a.EmployeeID = e.Employee_id
-        JOIN tblVisitorApprovalMaster s ON a.ApprovalStatus = s.ApprovalTypeID
-        WHERE a.AppointmentID = @AppointmentID AND a.Status = 1";
+                SELECT a.AppointmentID, a.Appointee, a.OrganizationName, a.MobileNo, a.EmailID, a.PurposeID, 
+                       p.Purpose as PurposeName, a.EmployeeID, 
+                       e.First_Name + ' ' + e.Middle_Name + ' ' + e.Last_Name AS EmployeeFullName,
+                       a.CheckInTime, a.CheckOutTime, a.Description, a.NoOfVisitors, a.Status, a.InstituteId,
+                       a.ApprovalStatus, s.ApprovalType as ApprovalStatusName
+                FROM tblAppointment a
+                LEFT OUTER JOIN tblPurposeType p ON a.PurposeID = p.PurposeID
+                LEFT OUTER JOIN tbl_EmployeeProfileMaster e ON a.EmployeeID = e.Employee_id
+                LEFT OUTER JOIN tblVisitorApprovalMaster s ON a.ApprovalStatus = s.ApprovalTypeID
+                WHERE a.AppointmentID = @AppointmentID AND a.Status = 1";
 
                 var appointment = await _dbConnection.QueryFirstOrDefaultAsync<AppointmentResponse>(query, new { AppointmentID = appointmentId });
 

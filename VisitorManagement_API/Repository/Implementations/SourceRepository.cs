@@ -28,21 +28,36 @@ namespace VisitorManagement_API.Repository.Implementations
             {
                 if (source.SourceID == 0)
                 {
-                    // Insert new source
-                    string query = @"INSERT INTO tblSources (Source, Description, Status) VALUES (@Source, @Description, @Status)";
-                    source.Status = true;
-                    int insertedValue = await _dbConnection.ExecuteAsync(query, new { source.Source, source.Description, source.Status });
+                    // Insert new source with InstituteID
+                    string query = @"INSERT INTO tblSources (Source, Description, Status, InstituteID) 
+                             VALUES (@Source, @Description, @Status, @InstituteID)";
+                    source.Status = true; // Set default value for status
+                    int insertedValue = await _dbConnection.ExecuteAsync(query, new
+                    {
+                        source.Source,
+                        source.Description,
+                        source.Status,
+                        source.InstituteID  // Include InstituteID in the insert query
+                    });
                     if (insertedValue > 0)
                     {
-                        return new ServiceResponse<string>(true, "Source Added Successfully", "Success", 201);
+                        return new ServiceResponse<string>(true, "Source Added Successfully", "Success", 200);
                     }
                     return new ServiceResponse<string>(false, "Failed to Add Source", "Failure", 400);
                 }
                 else
                 {
-                    // Update existing source
-                    string query = @"UPDATE tblSources SET Source = @Source, Description = @Description, Status = @Status WHERE SourceID = @SourceID";
-                    int rowsAffected = await _dbConnection.ExecuteAsync(query, new { source.Source, source.Description, source.SourceID, source.Status });
+                    // Update existing source with InstituteID
+                    string query = @"UPDATE tblSources SET Source = @Source, Description = @Description, 
+                             Status = @Status, InstituteID = @InstituteID WHERE SourceID = @SourceID";
+                    int rowsAffected = await _dbConnection.ExecuteAsync(query, new
+                    {
+                        source.Source,
+                        source.Description,
+                        source.SourceID,
+                        source.Status,
+                        source.InstituteID  // Include InstituteID in the update query
+                    });
                     if (rowsAffected > 0)
                     {
                         return new ServiceResponse<string>(true, "Source Updated Successfully", "Success", 200);
@@ -56,13 +71,20 @@ namespace VisitorManagement_API.Repository.Implementations
             }
         }
 
+
         public async Task<ServiceResponse<IEnumerable<Sources>>> GetAllSources(GetAllSourcesRequest request)
         {
             try
             {
-                string query = "SELECT * FROM tblSources";
-                var sources = await _dbConnection.QueryAsync<Sources>(query);
+                // Updated query to filter by InstituteID
+                string query = "SELECT * FROM tblSources WHERE Status = 1 AND InstituteID = @InstituteID";
+
+                // Fetch the data based on the InstituteID
+                var sources = await _dbConnection.QueryAsync<Sources>(query, new { InstituteID = request.InstituteID });
+
+                // Apply pagination
                 var paginatedSources = sources.Skip((request.PageNumber - 1) * request.PageSize).Take(request.PageSize);
+
                 return new ServiceResponse<IEnumerable<Sources>>(true, "Sources Retrieved Successfully", paginatedSources, 200, sources.Count());
             }
             catch (Exception ex)
@@ -70,6 +92,7 @@ namespace VisitorManagement_API.Repository.Implementations
                 return new ServiceResponse<IEnumerable<Sources>>(false, ex.Message, null, 500);
             }
         }
+
 
         public async Task<ServiceResponse<Sources>> GetSourceById(int sourceId)
         {

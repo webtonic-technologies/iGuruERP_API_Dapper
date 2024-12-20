@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using System.Data;
 using System.Data.SqlClient;
+using System.Globalization;
 using VisitorManagement_API.DTOs.Requests;
 using VisitorManagement_API.DTOs.Responses;
 using VisitorManagement_API.DTOs.ServiceResponse;
@@ -29,26 +30,87 @@ namespace VisitorManagement_API.Repository.Implementations
             {
                 int affectedRows = 0;
                 string insertOrUpdateQuery;
+
+                // Convert CheckInTime and CheckOutTime to DateTime using ParseExact with AM/PM format
+                DateTime checkInTime = DateTime.ParseExact(visitorLog.CheckInTime, "dd-MM-yyyy, hh:mm tt", CultureInfo.InvariantCulture);
+                DateTime checkOutTime = DateTime.ParseExact(visitorLog.CheckOutTime, "dd-MM-yyyy, hh:mm tt", CultureInfo.InvariantCulture);
+
+                // Format DateTime to the database format (standard format)
+                string formattedCheckInTime = checkInTime.ToString("yyyy-MM-dd HH:mm:ss");
+                string formattedCheckOutTime = checkOutTime.ToString("yyyy-MM-dd HH:mm:ss");
+
+                // Format DateTime for the response (with AM/PM)
+                string formattedCheckInTimeForResponse = checkInTime.ToString("dd-MM-yyyy, hh:mm tt");
+                string formattedCheckOutTimeForResponse = checkOutTime.ToString("dd-MM-yyyy, hh:mm tt");
+
                 if (visitorLog.VisitorID == 0)
                 {
                     // Insert new visitor log
                     insertOrUpdateQuery = @"
-                INSERT INTO tblVisitorMaster (VisitorCodeID, VisitorName, Photo, SourceID, PurposeID, MobileNo, EmailID, Address, OrganizationName, EmployeeID, NoOfVisitor, AccompaniedBy, CheckInTime, CheckOutTime, Remarks, IDProofDocumentID, Information, ApprovalTypeID, Status, InstituteId)
-                VALUES (@VisitorCodeID, @VisitorName, @Photo, @SourceID, @PurposeID, @MobileNo, @EmailID, @Address, @OrganizationName, @EmployeeID, @NoOfVisitor, @AccompaniedBy, @CheckInTime, @CheckOutTime, @Remarks, @IDProofDocumentID, @Information, @ApprovalTypeID, @Status, @InstituteId);
-                SELECT CAST(SCOPE_IDENTITY() as int)";
+                    INSERT INTO tblVisitorMaster (VisitorCodeID, VisitorName, Photo, SourceID, PurposeID, MobileNo, EmailID, Address, OrganizationName, EmployeeID, NoOfVisitor, AccompaniedBy, CheckInTime, CheckOutTime, Remarks, IDProofDocumentID, Information, ApprovalTypeID, Status, InstituteId)
+                    VALUES (@VisitorCodeID, @VisitorName, @Photo, @SourceID, @PurposeID, @MobileNo, @EmailID, @Address, @OrganizationName, @EmployeeID, @NoOfVisitor, @AccompaniedBy, @CheckInTime, @CheckOutTime, @Remarks, @IDProofDocumentID, @Information, @ApprovalTypeID, @Status, @InstituteId);
+                    SELECT CAST(SCOPE_IDENTITY() as int)";
                     visitorLog.Photo = ImageUpload(visitorLog.Photo);
-                    visitorLog.VisitorID = await _dbConnection.QuerySingleAsync<int>(insertOrUpdateQuery, visitorLog, transaction);
+                    visitorLog.VisitorID = await _dbConnection.QuerySingleAsync<int>(insertOrUpdateQuery,
+                        new
+                        {
+                            visitorLog.VisitorCodeID,
+                            visitorLog.VisitorName,
+                            visitorLog.Photo,
+                            visitorLog.SourceID,
+                            visitorLog.PurposeID,
+                            visitorLog.MobileNo,
+                            visitorLog.EmailID,
+                            visitorLog.Address,
+                            visitorLog.OrganizationName,
+                            visitorLog.EmployeeID,
+                            visitorLog.NoOfVisitor,
+                            visitorLog.AccompaniedBy,
+                            CheckInTime = formattedCheckInTime,
+                            CheckOutTime = formattedCheckOutTime,
+                            visitorLog.Remarks,
+                            visitorLog.IDProofDocumentID,
+                            visitorLog.Information,
+                            visitorLog.ApprovalTypeID,
+                            visitorLog.Status,
+                            visitorLog.InstituteId
+                        }, transaction);
+
                     affectedRows = visitorLog.VisitorID > 0 ? 1 : 0;
                 }
                 else
                 {
                     // Update existing visitor log
                     insertOrUpdateQuery = @"
-                UPDATE tblVisitorMaster 
-                SET VisitorCodeID = @VisitorCodeID, VisitorName = @VisitorName, Photo = @Photo, SourceID = @SourceID, PurposeID = @PurposeID, MobileNo = @MobileNo, EmailID = @EmailID, Address = @Address, OrganizationName = @OrganizationName, EmployeeID = @EmployeeID, NoOfVisitor = @NoOfVisitor, AccompaniedBy = @AccompaniedBy, CheckInTime = @CheckInTime, CheckOutTime = @CheckOutTime, Remarks = @Remarks, IDProofDocumentID = @IDProofDocumentID, Information = @Information, ApprovalTypeID = @ApprovalTypeID, Status = @Status, InstituteId = @InstituteId
-                WHERE VisitorID = @VisitorID";
+                    UPDATE tblVisitorMaster 
+                    SET VisitorCodeID = @VisitorCodeID, VisitorName = @VisitorName, Photo = @Photo, SourceID = @SourceID, PurposeID = @PurposeID, MobileNo = @MobileNo, EmailID = @EmailID, Address = @Address, OrganizationName = @OrganizationName, EmployeeID = @EmployeeID, NoOfVisitor = @NoOfVisitor, AccompaniedBy = @AccompaniedBy, CheckInTime = @CheckInTime, CheckOutTime = @CheckOutTime, Remarks = @Remarks, IDProofDocumentID = @IDProofDocumentID, Information = @Information, ApprovalTypeID = @ApprovalTypeID, Status = @Status, InstituteId = @InstituteId
+                    WHERE VisitorID = @VisitorID";
                     visitorLog.Photo = ImageUpload(visitorLog.Photo);
-                    affectedRows = await _dbConnection.ExecuteAsync(insertOrUpdateQuery, visitorLog, transaction);
+                    affectedRows = await _dbConnection.ExecuteAsync(insertOrUpdateQuery,
+                        new
+                        {
+                            visitorLog.VisitorID,
+                            visitorLog.VisitorCodeID,
+                            visitorLog.VisitorName,
+                            visitorLog.Photo,
+                            visitorLog.SourceID,
+                            visitorLog.PurposeID,
+                            visitorLog.MobileNo,
+                            visitorLog.EmailID,
+                            visitorLog.Address,
+                            visitorLog.OrganizationName,
+                            visitorLog.EmployeeID,
+                            visitorLog.NoOfVisitor,
+                            visitorLog.AccompaniedBy,
+                            CheckInTime = formattedCheckInTime,
+                            CheckOutTime = formattedCheckOutTime,
+                            visitorLog.Remarks,
+                            visitorLog.IDProofDocumentID,
+                            visitorLog.Information,
+                            visitorLog.ApprovalTypeID,
+                            visitorLog.Status,
+                            visitorLog.InstituteId
+                        }, transaction);
                 }
 
                 if (affectedRows == 0)
@@ -67,7 +129,7 @@ namespace VisitorManagement_API.Repository.Implementations
                 }
 
                 transaction.Commit();
-                return new ServiceResponse<string>(true, "Visitor Log Saved Successfully", "Success", 201);
+                return new ServiceResponse<string>(true, "Visitor Log Saved Successfully", "Success", 200);
             }
             catch (Exception ex)
             {
@@ -76,6 +138,7 @@ namespace VisitorManagement_API.Repository.Implementations
             }
             finally { _dbConnection.Close(); }
         }
+         
         private async Task<bool> HandleVisitorDocuments(int visitorId, List<VisitorDocument>? documents, IDbTransaction transaction)
         {
             // Delete existing documents for the visitor
@@ -103,29 +166,34 @@ namespace VisitorManagement_API.Repository.Implementations
 
             return true;
         }
+
         public async Task<ServiceResponse<IEnumerable<Visitorlogresponse>>> GetAllVisitorLogs(GetAllVisitorLogsRequest request)
         {
             try
             {
                 string query = @"SELECT vm.*, s.Source as Sourcename, p.Purpose as Purposename, e.First_Name, e.Middle_Name, e.Last_Name,  i.IDProofDocument as IDProofDocumentName, 
-                                a.ApprovalType as ApprovalTypeName
-                         FROM tblVisitorMaster vm
-                         LEFT JOIN tblSources s ON vm.SourceID = s.SourceID
-                         LEFT JOIN tblPurposeType p ON vm.PurposeID = p.PurposeID
-                         LEFT JOIN tbl_EmployeeProfileMaster e ON vm.EmployeeID = e.Employee_id
-                         LEFT JOIN tblIDProofDocument i ON vm.IDProofDocumentID = i.IDProofDocumentID
-                         LEFT JOIN tblVisitorApprovalMaster a ON vm.ApprovalTypeID = a.ApprovalTypeID
-                         WHERE vm.Status = 1 AND vm.InstituteId = @InstituteId";
+                         a.ApprovalType as ApprovalTypeName
+                 FROM tblVisitorMaster vm
+                 LEFT JOIN tblSources s ON vm.SourceID = s.SourceID
+                 LEFT JOIN tblPurposeType p ON vm.PurposeID = p.PurposeID
+                 LEFT JOIN tbl_EmployeeProfileMaster e ON vm.EmployeeID = e.Employee_id
+                 LEFT JOIN tblIDProofDocument i ON vm.IDProofDocumentID = i.IDProofDocumentID
+                 LEFT JOIN tblVisitorApprovalMaster a ON vm.ApprovalTypeID = a.ApprovalTypeID
+                 WHERE vm.Status = 1 AND vm.InstituteId = @InstituteId";
 
                 var visitorLogs = await _dbConnection.QueryAsync(query, new { InstituteId = request.InstituteId });
 
                 // Filter by date range if provided
                 IEnumerable<dynamic> filteredVisitorLogs;
 
-                if (request.StartDate.HasValue && request.EndDate.HasValue)
+                if (!string.IsNullOrEmpty(request.StartDate) && !string.IsNullOrEmpty(request.EndDate))
                 {
+                    // Convert StartDate and EndDate strings to DateTime
+                    DateTime startDate = DateTime.ParseExact(request.StartDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+                    DateTime endDate = DateTime.ParseExact(request.EndDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+
                     filteredVisitorLogs = visitorLogs
-                        .Where(v => v.CheckInTime >= request.StartDate && v.CheckInTime <= request.EndDate);
+                        .Where(v => v.CheckInTime >= startDate && v.CheckInTime <= endDate);
                 }
                 else
                 {
@@ -168,8 +236,8 @@ namespace VisitorManagement_API.Repository.Implementations
                 {
                     // Fetch documents related to the visitor
                     string documentQuery = @"SELECT DocumentId, VisitorId, PdfDoc
-                                     FROM tblVisitorDocuments
-                                     WHERE VisitorId = @VisitorId";
+                             FROM tblVisitorDocuments
+                             WHERE VisitorId = @VisitorId";
                     var documents = await _dbConnection.QueryAsync<VisitorDocumentResponse>(documentQuery, new { VisitorId = data.VisitorID });
                     foreach (var item in documents)
                     {
@@ -177,13 +245,16 @@ namespace VisitorManagement_API.Repository.Implementations
                     }
                     data.VisitorDocuments = documents.ToList();
                 }
+
+                // Filter by SearchText if provided
                 if (!string.IsNullOrWhiteSpace(request.SearchText))
                 {
                     filteredVisitorLogs = filteredVisitorLogs
                         .Where(v => v.VisitorName.Contains(request.SearchText, StringComparison.OrdinalIgnoreCase) ||
-                                     v.MobileNo.Contains(request.SearchText) ||
-                                     v.EmailID.Contains(request.SearchText));
+                                   v.VisitorCodeID.Contains(request.SearchText, StringComparison.OrdinalIgnoreCase) ||
+                                   v.MobileNo.Contains(request.SearchText));
                 }
+
                 var paginatedVisitorLogs = visitorLogResponses
                     .Skip((request.PageNumber - 1) * request.PageSize)
                     .Take(request.PageSize);
@@ -195,6 +266,8 @@ namespace VisitorManagement_API.Repository.Implementations
                 return new ServiceResponse<IEnumerable<Visitorlogresponse>>(false, ex.Message, null, 500);
             }
         }
+
+
         public async Task<ServiceResponse<Visitorlogresponse>> GetVisitorLogById(int visitorId)
         {
             try
@@ -379,5 +452,195 @@ namespace VisitorManagement_API.Repository.Implementations
             string base64String = Convert.ToBase64String(fileBytes);
             return base64String;
         }
+
+
+        public async Task<ServiceResponse<IEnumerable<GetSourcesResponse>>> GetSources(GetSourcesRequest request)
+        {
+            try
+            {
+                // Query to fetch SourceID and Source based on InstituteID
+                string query = "SELECT SourceID, Source FROM tblSources WHERE Status = 1 AND InstituteID = @InstituteID";
+
+                // Fetch the sources from the database
+                var sources = await _dbConnection.QueryAsync<GetSourcesResponse>(query, new { InstituteID = request.InstituteID });
+
+                return new ServiceResponse<IEnumerable<GetSourcesResponse>>(true, "Sources Retrieved Successfully", sources, 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<IEnumerable<GetSourcesResponse>>(false, ex.Message, null, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<IEnumerable<GetPurposeResponse>>> GetPurpose(GetPurposeRequest request)
+        {
+            try
+            {
+                string query = @"SELECT PurposeID, Purpose FROM tblPurposeType WHERE Status = 1 AND InstituteID = @InstituteID";
+                var purposes = await _dbConnection.QueryAsync<GetPurposeResponse>(query, new { InstituteID = request.InstituteID });
+
+                return new ServiceResponse<IEnumerable<GetPurposeResponse>>(true, "Purpose List Retrieved Successfully", purposes, 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<IEnumerable<GetPurposeResponse>>(false, ex.Message, null, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<IEnumerable<GetIDProofResponse>>> GetIDProof()
+        {
+            try
+            {
+                string query = "SELECT IDProofID, IDProof FROM tblVisitorIDProof";
+                var idProofs = await _dbConnection.QueryAsync<GetIDProofResponse>(query);
+
+                if (idProofs.Any())
+                {
+                    return new ServiceResponse<IEnumerable<GetIDProofResponse>>(true, "ID Proofs Retrieved Successfully", idProofs, 200);
+                }
+                return new ServiceResponse<IEnumerable<GetIDProofResponse>>(false, "No ID Proofs Found", null, 404);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<IEnumerable<GetIDProofResponse>>(false, ex.Message, null, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<IEnumerable<GetApprovalTypeResponse>>> GetApprovalType()
+        {
+            try
+            {
+                string query = "SELECT ApprovalTypeID, ApprovalType FROM tblVisitorApprovalMaster";
+                var approvalTypes = await _dbConnection.QueryAsync<GetApprovalTypeResponse>(query);
+
+                if (approvalTypes.Any())
+                {
+                    return new ServiceResponse<IEnumerable<GetApprovalTypeResponse>>(true, "Approval Types Retrieved Successfully", approvalTypes, 200);
+                }
+                return new ServiceResponse<IEnumerable<GetApprovalTypeResponse>>(false, "No Approval Types Found", null, 404);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<IEnumerable<GetApprovalTypeResponse>>(false, ex.Message, null, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<IEnumerable<GetEmployeeResponse>>> GetEmployee(GetEmployeeRequest request)
+        {
+            try
+            {
+                string query = @"
+                    SELECT e.Employee_id AS EmployeeID, e.Employee_code_id AS EmployeeCode, 
+                           CONCAT(e.First_Name, ' ', e.Middle_Name, ' ', e.Last_Name) AS EmployeeName,
+                           d.DepartmentName AS Department,
+                           des.DesignationName AS Designation
+                    FROM tbl_EmployeeProfileMaster e
+                    INNER JOIN tbl_Department d ON e.Department_id = d.Department_id
+                    INNER JOIN tbl_Designation des ON e.Designation_id = des.Designation_id
+                    WHERE e.Institute_id = @InstituteID AND e.Status = 1";
+
+                var employees = await _dbConnection.QueryAsync<GetEmployeeResponse>(query, new { InstituteID = request.InstituteID });
+
+                if (employees.Any())
+                {
+                    return new ServiceResponse<IEnumerable<GetEmployeeResponse>>(true, "Employees Retrieved Successfully", employees, 200);
+                }
+
+                return new ServiceResponse<IEnumerable<GetEmployeeResponse>>(false, "No Employees Found", null, 404);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<IEnumerable<GetEmployeeResponse>>(false, ex.Message, null, 500);
+            }
+        }
+
+
+        public async Task<ServiceResponse<GetVisitorSlipResponse>> GetVisitorSlip(GetVisitorSlipRequest request)
+        {
+            try
+            {
+                // Query to get Institute details
+                string instituteQuery = @"
+            SELECT 
+                i.Institute_name AS InstituteName, 
+                CONCAT(ia.house, ', ', ia.Locality, ', ', ia.Landmark, ', ', ia.pincode) AS Address, 
+                ia.Mobile_number AS Mobile, 
+                ia.Email
+            FROM 
+                tbl_InstituteDetails i
+            JOIN 
+                tbl_InstituteAddress ia ON i.Institute_id = ia.Institute_id
+            WHERE 
+                i.Institute_id = @InstituteID";
+                var instituteInfo = await _dbConnection.QueryFirstOrDefaultAsync<InstituteInfo>(instituteQuery, new { InstituteID = request.InstituteID });
+
+                if (instituteInfo == null)
+                {
+                    return new ServiceResponse<GetVisitorSlipResponse>(false, "Institute not found", null, 404);
+                }
+
+                // Query to get Visitor details, including the purpose directly from tblPurposeType
+                string visitorQuery = @"
+            SELECT 
+                VisitorCodeID AS VisitorCode, 
+                VisitorName, 
+                OrganizationName, 
+                MobileNo AS MobileNumber, 
+                Address, 
+                vm.PurposeID, 
+                CONCAT(e.First_Name, ' ', e.Middle_Name, ' ', e.Last_Name) AS MeetingWith, 
+                Remarks, 
+                FORMAT(CheckInTime, 'dd-MM-yyyy, hh:mm tt') AS CheckInTime,  -- Formatting CheckInTime with AM/PM
+                FORMAT(CheckOutTime, 'dd-MM-yyyy, hh:mm tt') AS CheckOutTime, -- Formatting CheckOutTime with AM/PM
+                p.Purpose AS Purpose  -- Directly get the purpose from tblPurposeType
+            FROM 
+                tblVisitorMaster vm
+            LEFT OUTER JOIN  
+                tbl_EmployeeProfileMaster e ON vm.EmployeeID = e.Employee_id
+            LEFT OUTER JOIN  
+                tblPurposeType p ON vm.PurposeID = p.PurposeID  -- Join with tblPurposeType to get the purpose name
+            WHERE 
+                vm.VisitorID = @VisitorID AND vm.InstituteID = @InstituteID";
+
+                var visitorInfo = await _dbConnection.QueryFirstOrDefaultAsync<VisitorSlip>(visitorQuery, new { VisitorID = request.VisitorID, InstituteID = request.InstituteID });
+
+                if (visitorInfo == null)
+                {
+                    return new ServiceResponse<GetVisitorSlipResponse>(false, "Visitor not found", null, 404);
+                }
+
+                // Populate the response object
+                var response = new GetVisitorSlipResponse
+                {
+                    InstituteInfo = instituteInfo,
+                    VisitorSlip = visitorInfo
+                };
+
+                return new ServiceResponse<GetVisitorSlipResponse>(true, "Visitor Slip Retrieved Successfully", response, 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<GetVisitorSlipResponse>(false, ex.Message, null, 500);
+            }
+        }
+
+        public async Task<bool> UpdateApprovalStatus(int visitorID, int approvalTypeID, int instituteID)
+        {
+            string query = @"
+                UPDATE tblVisitorMaster 
+                SET ApprovalTypeID = @ApprovalTypeID
+                WHERE VisitorID = @VisitorID AND InstituteID = @InstituteID";
+
+            var rowsAffected = await _dbConnection.ExecuteAsync(query, new
+            {
+                VisitorID = visitorID,
+                ApprovalTypeID = approvalTypeID,
+                InstituteID = instituteID
+            });
+
+            return rowsAffected > 0; // Returns true if update was successful
+        }
+
+
     }
 }

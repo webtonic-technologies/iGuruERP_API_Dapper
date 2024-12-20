@@ -70,5 +70,27 @@ namespace VisitorManagement_API.Controllers
             }
             return BadRequest(response);
         }
+
+        [HttpGet("EmployeeGatePass/GetVisitorForDDL")]
+        public async Task<IActionResult> GetVisitorForDDL()
+        {
+            var response = await _employeeGatePassService.GetVisitorForDDL();
+            if (response != null)
+            {
+                return Ok(new { Success = true, Data = response });
+            }
+            return BadRequest(new { Success = false, Message = "Failed to retrieve visitor types." });
+        }
+
+        [HttpGet("EmployeeGatePass/GetGatePassSlip")]
+        public async Task<IActionResult> GetGatePassSlip([FromQuery] GetGatePassSlipRequest request)
+        {
+            var response = await _employeeGatePassService.GetGatePassSlip(request.GatePassID, request.InstituteID);
+            if (response != null)
+            {
+                return Ok(new { Success = true, Data = response });
+            }
+            return BadRequest(new { Success = false, Message = "Failed to retrieve GatePass Slip." });
+        }
     }
 }

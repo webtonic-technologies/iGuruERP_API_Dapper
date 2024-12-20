@@ -42,5 +42,14 @@ namespace VisitorManagement_API.Services.Implementations
         {
             return await _employeeGatePassRepository.UpdateEmployeeGatePassStatus(gatePassId);
         }
+        public async Task<List<GetVisitorForDDLResponse>> GetVisitorForDDL()
+        {
+            return await _employeeGatePassRepository.GetVisitorForDDL();
+        }
+
+        public async Task<GetGatePassSlipResponse> GetGatePassSlip(int gatePassID, int instituteID)
+        {
+            return await _employeeGatePassRepository.GetGatePassSlip(gatePassID, instituteID);
+        }
     }
 }

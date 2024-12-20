@@ -23,21 +23,38 @@ namespace VisitorManagement_API.Repository.Implementations
             {
                 if (purposeType.PurposeID == 0)
                 {
-                    // Insert new purpose type
-                    string query = @"INSERT INTO tblPurposeType (Purpose, Description, Status) VALUES (@Purpose, @Description, @Status)";
+                    // Insert new purpose type with InstituteID
+                    string query = @"INSERT INTO tblPurposeType (Purpose, Description, Status, InstituteID) 
+                             VALUES (@Purpose, @Description, @Status, @InstituteID)";
                     purposeType.Status = true;
-                    int insertedValue = await _dbConnection.ExecuteAsync(query, new { purposeType.Purpose, purposeType.Description, purposeType.Status });
+                    int insertedValue = await _dbConnection.ExecuteAsync(query, new
+                    {
+                        purposeType.Purpose,
+                        purposeType.Description,
+                        purposeType.Status,
+                        purposeType.InstituteID  // Include InstituteID in the insert query
+                    });
                     if (insertedValue > 0)
                     {
-                        return new ServiceResponse<string>(true, "Purpose Type Added Successfully", "Success", 201);
+                        return new ServiceResponse<string>(true, "Purpose Type Added Successfully", "Success", 200);
                     }
                     return new ServiceResponse<string>(false, "Failed to Add Purpose Type", "Failure", 400);
                 }
                 else
                 {
-                    // Update existing purpose type
-                    string query = @"UPDATE tblPurposeType SET Purpose = @Purpose, Description = @Description, Status = @Status WHERE PurposeID = @PurposeID";
-                    int rowsAffected = await _dbConnection.ExecuteAsync(query, new { purposeType.Purpose, purposeType.Description, purposeType.PurposeID, purposeType.Status });
+                    // Update existing purpose type with InstituteID
+                    string query = @"UPDATE tblPurposeType 
+                             SET Purpose = @Purpose, Description = @Description, 
+                                 Status = @Status, InstituteID = @InstituteID 
+                             WHERE PurposeID = @PurposeID";
+                    int rowsAffected = await _dbConnection.ExecuteAsync(query, new
+                    {
+                        purposeType.Purpose,
+                        purposeType.Description,
+                        purposeType.PurposeID,
+                        purposeType.Status,
+                        purposeType.InstituteID  // Include InstituteID in the update query
+                    });
                     if (rowsAffected > 0)
                     {
                         return new ServiceResponse<string>(true, "Purpose Type Updated Successfully", "Success", 200);
@@ -55,9 +72,15 @@ namespace VisitorManagement_API.Repository.Implementations
         {
             try
             {
-                string query = "SELECT * FROM tblPurposeType";
-                var purposeTypes = await _dbConnection.QueryAsync<PurposeType>(query);
+                // Update the query to filter by InstituteID
+                string query = "SELECT * FROM tblPurposeType WHERE Status = 1 AND InstituteID = @InstituteID";
+
+                // Fetch the purpose types based on InstituteID
+                var purposeTypes = await _dbConnection.QueryAsync<PurposeType>(query, new { InstituteID = request.InstituteID });
+
+                // Apply pagination
                 var paginatedPurposeTypes = purposeTypes.Skip((request.PageNumber - 1) * request.PageSize).Take(request.PageSize);
+
                 return new ServiceResponse<IEnumerable<PurposeType>>(true, "Purpose Types Retrieved Successfully", paginatedPurposeTypes, 200, purposeTypes.Count());
             }
             catch (Exception ex)
@@ -65,6 +88,7 @@ namespace VisitorManagement_API.Repository.Implementations
                 return new ServiceResponse<IEnumerable<PurposeType>>(false, ex.Message, null, 500);
             }
         }
+
 
         public async Task<ServiceResponse<PurposeType>> GetPurposeTypeById(int purposeTypeId)
         {

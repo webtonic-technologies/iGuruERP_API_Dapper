@@ -37,5 +37,53 @@ namespace VisitorManagement_API.Services.Implementations
         {
             return await _visitorLogRepository.UpdateVisitorLogStatus(visitorId);
         }
+
+        public async Task<ServiceResponse<IEnumerable<GetSourcesResponse>>> GetSources(GetSourcesRequest request)
+        {
+            return await _visitorLogRepository.GetSources(request);
+        }
+        public async Task<ServiceResponse<IEnumerable<GetPurposeResponse>>> GetPurpose(GetPurposeRequest request)
+        {
+            return await _visitorLogRepository.GetPurpose(request);
+        }
+        public async Task<ServiceResponse<IEnumerable<GetIDProofResponse>>> GetIDProof()
+        {
+            return await _visitorLogRepository.GetIDProof();
+        }
+        public async Task<ServiceResponse<IEnumerable<GetApprovalTypeResponse>>> GetApprovalType()
+        {
+            return await _visitorLogRepository.GetApprovalType();
+        }
+
+        public async Task<ServiceResponse<IEnumerable<GetEmployeeResponse>>> GetEmployee(GetEmployeeRequest request)
+        {
+            return await _visitorLogRepository.GetEmployee(request);
+        }
+        public async Task<ServiceResponse<GetVisitorSlipResponse>> GetVisitorSlip(GetVisitorSlipRequest request)
+        {
+            return await _visitorLogRepository.GetVisitorSlip(request);
+        }
+
+        public async Task<ServiceResponse<string>> ChangeApprovalStatus(ChangeApprovalStatusRequest request)
+        {
+            try
+            {
+                // Call repository to change approval status
+                var result = await _visitorLogRepository.UpdateApprovalStatus(request.VisitorID, request.ApprovalTypeID, request.InstituteID);
+
+                if (result)
+                {
+                    return new ServiceResponse<string>(true, "Approval status updated successfully.", null, 200);
+                }
+                else
+                {
+                    return new ServiceResponse<string>(false, "Failed to update approval status.", null, 400);
+                }
+            }
+            catch (System.Exception ex)
+            {
+                return new ServiceResponse<string>(false, ex.Message, null, 500);
+            }
+        }
     }
 }

@@ -20,5 +20,9 @@
         public int StatusID { get; set; }
         public string StatusName { get; set; }  
         public int InstituteId {  get; set; }
+
+        // New properties for formatted dates
+        public string FormattedCheckInTime => CheckInTime.ToString("dd-MM-yyyy, HH:mm");
+        public string FormattedCheckOutTime => CheckOutTime.ToString("dd-MM-yyyy, HH:mm");
     }
 }

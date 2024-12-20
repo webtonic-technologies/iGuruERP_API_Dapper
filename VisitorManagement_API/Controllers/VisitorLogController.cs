@@ -58,5 +58,82 @@ namespace VisitorManagement_API.Controllers
             }
             return BadRequest(response);
         }
+
+        [HttpGet("VisitorLogs/GetSources")]
+        public async Task<IActionResult> GetSources([FromQuery] GetSourcesRequest request)
+        {
+            var response = await _visitorLogService.GetSources(request);
+            if (response.Success)
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
+        }
+
+        [HttpGet("VisitorLogs/GetPurpose")]
+        public async Task<IActionResult> GetPurpose([FromQuery] GetPurposeRequest request)
+        {
+            var response = await _visitorLogService.GetPurpose(request);
+            if (response.Success)
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
+        }
+
+        [HttpGet("VisitorLogs/GetIDProof")]
+        public async Task<IActionResult> GetIDProof()
+        {
+            var response = await _visitorLogService.GetIDProof();
+            if (response.Success)
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
+        }
+
+        [HttpGet("VisitorLogs/GetApprovalType")]
+        public async Task<IActionResult> GetApprovalType()
+        {
+            var response = await _visitorLogService.GetApprovalType();
+            if (response.Success)
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
+        }
+
+        [HttpGet("VisitorLogs/GetEmployee")]
+        public async Task<IActionResult> GetEmployee([FromQuery] GetEmployeeRequest request)
+        {
+            var response = await _visitorLogService.GetEmployee(request);
+            if (response.Success)
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
+        }
+
+        [HttpGet("VisitorLogs/GetVisitorSlip")]
+        public async Task<IActionResult> GetVisitorSlip([FromQuery] GetVisitorSlipRequest request)
+        {
+            var response = await _visitorLogService.GetVisitorSlip(request);
+            if (response.Success)
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
+        }
+
+        [HttpGet("VisitorLogs/ChangeApprovalStatus")]
+        public async Task<IActionResult> ChangeApprovalStatus([FromQuery] ChangeApprovalStatusRequest request)
+        {
+            var response = await _visitorLogService.ChangeApprovalStatus(request);
+            if (response.Success)
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
+        }
     }
 }

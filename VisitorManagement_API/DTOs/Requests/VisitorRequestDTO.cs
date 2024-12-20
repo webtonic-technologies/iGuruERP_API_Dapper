@@ -15,8 +15,8 @@
         public int EmployeeID { get; set; }
         public int NoOfVisitor { get; set; }
         public string AccompaniedBy { get; set; }
-        public DateTime CheckInTime { get; set; }
-        public DateTime CheckOutTime { get; set; }
+        public string CheckInTime { get; set; }  // Changed to string
+        public string CheckOutTime { get; set; } // Changed to string
         public string Remarks { get; set; }
         public int IDProofDocumentID { get; set; }
         public string Information { get; set; }
