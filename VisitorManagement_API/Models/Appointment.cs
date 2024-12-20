@@ -9,8 +9,9 @@
         public string EmailID { get; set; }
         public int PurposeID { get; set; }
         public int EmployeeID { get; set; }
-        public DateTime CheckInTime { get; set; }
-        public DateTime CheckOutTime { get; set; }
+        public string CheckInTime { get; set; }  // Changed from DateTime to string
+        public string CheckOutTime { get; set; }  // Changed from DateTime to string
+
         public string Description { get; set; }
         public int NoOfVisitors { get; set; }
         public bool Status { get; set; }  // Assuming there is a Status column
