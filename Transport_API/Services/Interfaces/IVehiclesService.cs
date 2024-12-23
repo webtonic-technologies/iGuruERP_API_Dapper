@@ -14,6 +14,7 @@ namespace Transport_API.Services.Interfaces
         Task<ServiceResponse<byte[]>> ExportCSV(GetAllExportVehiclesRequest request);
         Task<ServiceResponse<IEnumerable<GetVehicleTypeResponse>>> GetVehicleTypes();
         Task<ServiceResponse<IEnumerable<GetFuelTypeResponse>>> GetFuelTypes();
+        Task<ServiceResponse<IEnumerable<GetDriverResponse>>> GetDriver(GetDriverRequest request);
 
     }
 }

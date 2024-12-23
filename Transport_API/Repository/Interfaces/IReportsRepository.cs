@@ -27,7 +27,7 @@ namespace Transport_API.Repository.Interfaces
         // Additional methods
         Task<VehicleDetails> GetVehicleDetails(int routePlanID, int instituteID);
         Task<int> GetTotalStudentCount(int routePlanID, int vehicleID);
-        Task<IEnumerable<StudentDetails>> GetStudentsForRoute(int routePlanID);
+        Task<IEnumerable<StudentDetails>> GetStudentsForRoute(int routePlanID, string Search);
 
         Task<ServiceResponse<IEnumerable<GetTransportAttendanceResponse>>> GetTransportAttendanceReport(TransportAttendanceReportRequest request); // New method for Transport Attendance Report
 

@@ -7,6 +7,7 @@ using Infirmary_API.Repository.Interfaces;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -22,6 +23,91 @@ namespace Infirmary_API.Repository.Implementations
             _hostingEnvironment = hostingEnvironment;
         }
 
+
+        //public async Task<ServiceResponse<string>> AddUpdateInfirmaryVisit(AddUpdateInfirmaryVisitRequest request)
+        //{
+        //    try
+        //    {
+        //        _connection.Open();
+        //        using (var transaction = _connection.BeginTransaction())
+        //        {
+        //            try
+        //            {
+        //                // Convert EntryDate and ExitDate from string to DateTime
+        //                DateTime entryDate = DateTime.ParseExact(request.EntryDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+        //                DateTime? exitDate = string.IsNullOrEmpty(request.ExitDate) ? (DateTime?)null : DateTime.ParseExact(request.ExitDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+
+        //                // Convert EntryTime and ExitTime from string to TimeSpan
+        //                TimeSpan entryTime = DateTime.ParseExact(request.EntryTime, "hh:mm tt", CultureInfo.InvariantCulture).TimeOfDay;
+        //                TimeSpan? exitTime = string.IsNullOrEmpty(request.ExitTime) ? (TimeSpan?)null : DateTime.ParseExact(request.ExitTime, "hh:mm tt", CultureInfo.InvariantCulture).TimeOfDay;
+
+        //                string query = request.VisitID == 0
+        //                    ? @"INSERT INTO tblInfirmaryVisit (VisitorTypeID, VisitorID, EntryDate, EntryTime, ExitDate, ExitTime, ReasonToVisitInfirmary, Diagnosis, Treatment, Prescription, DiagnosisBy, PrescriptionFile, InstituteID, IsActive) 
+        //               VALUES (@VisitorTypeID, @VisitorID, @EntryDate, @EntryTime, @ExitDate, @ExitTime, @ReasonToVisitInfirmary, @Diagnosis, @Treatment, @Prescription, @DiagnosisBy, @PrescriptionFile, @InstituteID, @IsActive);
+        //               SELECT CAST(SCOPE_IDENTITY() as int);"
+        //                    : @"UPDATE tblInfirmaryVisit SET VisitorTypeID = @VisitorTypeID, VisitorID = @VisitorID, EntryDate = @EntryDate, EntryTime = @EntryTime, ExitDate = @ExitDate, ExitTime = @ExitTime, 
+        //               ReasonToVisitInfirmary = @ReasonToVisitInfirmary, Diagnosis = @Diagnosis, Treatment = @Treatment, Prescription = @Prescription, DiagnosisBy = @DiagnosisBy, PrescriptionFile = @PrescriptionFile, 
+        //               InstituteID = @InstituteID, IsActive = @IsActive 
+        //               WHERE VisitID = @VisitID;
+        //               SELECT @VisitID;";
+
+        //                var visitID = await _connection.ExecuteScalarAsync<int>(query, new
+        //                {
+        //                    request.VisitorTypeID,
+        //                    request.VisitorID,
+        //                    EntryDate = entryDate,
+        //                    EntryTime = entryTime,
+        //                    ExitDate = exitDate,
+        //                    ExitTime = exitTime,
+        //                    request.ReasonToVisitInfirmary,
+        //                    request.Diagnosis,
+        //                    request.Treatment,
+        //                    request.Prescription,
+        //                    request.DiagnosisBy,
+        //                    request.PrescriptionFile,
+        //                    request.InstituteID,
+        //                    request.IsActive,
+        //                    request.VisitID
+        //                }, transaction);
+
+        //                // Insert/Update Medicines
+        //                if (request.Medicines != null && request.Medicines.Count > 0)
+        //                {
+        //                    foreach (var medicine in request.Medicines)
+        //                    {
+        //                        medicine.VisitID = visitID;
+        //                        string medicineQuery = medicine.MedicineID == 0
+        //                            ? @"INSERT INTO tblMedicine (VisitID, ItemTypeID, PrescribedMedicineID, NoOfDose, Quantity, Remarks, IsActive) 
+        //                       VALUES (@VisitID, @ItemTypeID, @PrescribedMedicineID, @NoOfDose, @Quantity, @Remarks, @IsActive)"
+        //                            : @"UPDATE tblMedicine SET VisitID = @VisitID, ItemTypeID = @ItemTypeID, PrescribedMedicineID = @PrescribedMedicineID, NoOfDose = @NoOfDose, Quantity = @Quantity, Remarks = @Remarks, IsActive = @IsActive 
+        //                       WHERE MedicineID = @MedicineID";
+
+        //                        await _connection.ExecuteAsync(medicineQuery, medicine, transaction);
+        //                    }
+        //                }
+
+        //                // Insert/Update Documents
+        //                var docs = await AddUpdateInfirmaryVisitDocs(request.InfirmaryVisitDocs, visitID);
+        //                transaction.Commit();
+        //                return new ServiceResponse<string>(true, "Operation Successful", "Infirmary visit updated successfully", 200);
+        //            }
+        //            catch (Exception ex)
+        //            {
+        //                transaction.Rollback();
+        //                return new ServiceResponse<string>(false, ex.Message, null, 500);
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return new ServiceResponse<string>(false, ex.Message, null, 500);
+        //    }
+        //    finally
+        //    {
+        //        _connection.Close();
+        //    }
+        //}
+
         public async Task<ServiceResponse<string>> AddUpdateInfirmaryVisit(AddUpdateInfirmaryVisitRequest request)
         {
             try
@@ -31,32 +117,61 @@ namespace Infirmary_API.Repository.Implementations
                 {
                     try
                     {
+                        // Convert EntryDate and ExitDate from string to DateTime
+                        DateTime entryDate = DateTime.ParseExact(request.EntryDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+                        DateTime? exitDate = string.IsNullOrEmpty(request.ExitDate) ? (DateTime?)null : DateTime.ParseExact(request.ExitDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+
+                        // Convert EntryTime and ExitTime from string to TimeSpan
+                        TimeSpan entryTime = DateTime.ParseExact(request.EntryTime, "hh:mm tt", CultureInfo.InvariantCulture).TimeOfDay;
+                        TimeSpan? exitTime = string.IsNullOrEmpty(request.ExitTime) ? (TimeSpan?)null : DateTime.ParseExact(request.ExitTime, "hh:mm tt", CultureInfo.InvariantCulture).TimeOfDay;
+
                         string query = request.VisitID == 0
                             ? @"INSERT INTO tblInfirmaryVisit (VisitorTypeID, VisitorID, EntryDate, EntryTime, ExitDate, ExitTime, ReasonToVisitInfirmary, Diagnosis, Treatment, Prescription, DiagnosisBy, PrescriptionFile, InstituteID, IsActive) 
-                               VALUES (@VisitorTypeID, @VisitorID, @EntryDate, @EntryTime, @ExitDate, @ExitTime, @ReasonToVisitInfirmary, @Diagnosis, @Treatment, @Prescription, @DiagnosisBy, @PrescriptionFile, @InstituteID, @IsActive);
-                               SELECT CAST(SCOPE_IDENTITY() as int);"
+                        VALUES (@VisitorTypeID, @VisitorID, @EntryDate, @EntryTime, @ExitDate, @ExitTime, @ReasonToVisitInfirmary, @Diagnosis, @Treatment, @Prescription, @DiagnosisBy, @PrescriptionFile, @InstituteID, @IsActive);
+                        SELECT CAST(SCOPE_IDENTITY() as int);"
                             : @"UPDATE tblInfirmaryVisit SET VisitorTypeID = @VisitorTypeID, VisitorID = @VisitorID, EntryDate = @EntryDate, EntryTime = @EntryTime, ExitDate = @ExitDate, ExitTime = @ExitTime, 
-                               ReasonToVisitInfirmary = @ReasonToVisitInfirmary, Diagnosis = @Diagnosis, Treatment = @Treatment, Prescription = @Prescription, DiagnosisBy = @DiagnosisBy, PrescriptionFile = @PrescriptionFile, 
-                               InstituteID = @InstituteID, IsActive = @IsActive 
-                               WHERE VisitID = @VisitID;
-                               SELECT @VisitID;";
+                        ReasonToVisitInfirmary = @ReasonToVisitInfirmary, Diagnosis = @Diagnosis, Treatment = @Treatment, Prescription = @Prescription, DiagnosisBy = @DiagnosisBy, PrescriptionFile = @PrescriptionFile, 
+                        InstituteID = @InstituteID, IsActive = @IsActive 
+                        WHERE VisitID = @VisitID;
+                        SELECT @VisitID;";
 
-                        var visitID = await _connection.ExecuteScalarAsync<int>(query, request, transaction);
+                        var visitID = await _connection.ExecuteScalarAsync<int>(query, new
+                        {
+                            request.VisitorTypeID,
+                            request.VisitorID,
+                            EntryDate = entryDate,
+                            EntryTime = entryTime,
+                            ExitDate = exitDate,
+                            ExitTime = exitTime,
+                            request.ReasonToVisitInfirmary,
+                            request.Diagnosis,
+                            request.Treatment,
+                            request.Prescription,
+                            request.DiagnosisBy,
+                            request.PrescriptionFile,
+                            request.InstituteID,
+                            request.IsActive,
+                            request.VisitID
+                        }, transaction);
 
+                        // Remove previous medicines before inserting new ones
+                        string deleteMedicinesQuery = @"DELETE FROM tblMedicine WHERE VisitID = @VisitID";
+                        await _connection.ExecuteAsync(deleteMedicinesQuery, new { VisitID = visitID }, transaction);
+
+                        // Insert new medicines
                         if (request.Medicines != null && request.Medicines.Count > 0)
                         {
                             foreach (var medicine in request.Medicines)
                             {
                                 medicine.VisitID = visitID;
-                                string medicineQuery = medicine.MedicineID == 0
-                                    ? @"INSERT INTO tblMedicine (VisitID, ItemTypeID, PrescribedMedicineID, NoOfDose, Quantity, Remarks, IsActive) 
-                                       VALUES (@VisitID, @ItemTypeID, @PrescribedMedicineID, @NoOfDose, @Quantity, @Remarks, @IsActive)"
-                                    : @"UPDATE tblMedicine SET VisitID = @VisitID, ItemTypeID = @ItemTypeID, PrescribedMedicineID = @PrescribedMedicineID, NoOfDose = @NoOfDose, Quantity = @Quantity, Remarks = @Remarks, IsActive = @IsActive 
-                                       WHERE MedicineID = @MedicineID";
-
-                                await _connection.ExecuteAsync(medicineQuery, medicine, transaction);
+                                string medicineInsertQuery = @"INSERT INTO tblMedicine (VisitID, ItemTypeID, PrescribedMedicineID, NoOfDose, Quantity, Remarks, IsActive) 
+                                      VALUES (@VisitID, @ItemTypeID, @PrescribedMedicineID, @NoOfDose, @Quantity, @Remarks, @IsActive)";
+                                await _connection.ExecuteAsync(medicineInsertQuery, medicine, transaction);
                             }
                         }
+
+
+                        // Insert/Update Documents
                         var docs = await AddUpdateInfirmaryVisitDocs(request.InfirmaryVisitDocs, visitID);
                         transaction.Commit();
                         return new ServiceResponse<string>(true, "Operation Successful", "Infirmary visit updated successfully", 200);
@@ -77,64 +192,50 @@ namespace Infirmary_API.Repository.Implementations
                 _connection.Close();
             }
         }
+
+
+
+
         public async Task<ServiceResponse<List<InfirmaryVisitResponse>>> GetAllInfirmaryVisits(GetAllInfirmaryVisitsRequest request)
         {
             try
             {
-                string countSql = @"
-            SELECT COUNT(*) 
-            FROM tblInfirmaryVisit 
-            WHERE IsActive = 1 AND InstituteID = @InstituteID
-            AND (@VisitorTypeId = 0 OR VisitorTypeID = @VisitorTypeId)
-            AND (@StartDate IS NULL OR EntryDate >= @StartDate)
-            AND (@EndDate IS NULL OR ExitDate <= @EndDate)
-           "; 
-
-                int totalCount = await _connection.ExecuteScalarAsync<int>(countSql, new
-                {
-                    request.InstituteID,
-                    request.VisitorTypeId,
-                    StartDate = (object)request.StartDate ?? null,
-                    EndDate = (object)request.EndDate ?? null,
-                    request.SearchText
-                });
+                string countSql = @"SELECT COUNT(*) FROM tblInfirmaryVisit WHERE IsActive = 1 AND InstituteID = @InstituteID";
+                int totalCount = await _connection.ExecuteScalarAsync<int>(countSql, new { request.InstituteID });
 
                 string sql = @"
-            SELECT 
-                iv.VisitID,
-                iv.VisitorTypeID,
-                iv.VisitorID,
-                iv.EntryDate,
-                iv.EntryTime,
-                iv.ExitDate,
-                iv.ExitTime,
-                iv.ReasonToVisitInfirmary,
-                iv.Diagnosis,
-                iv.Treatment,
-                iv.Prescription,
-                iv.DiagnosisBy,
-                iv.PrescriptionFile,
-                iv.InstituteID,
-                iv.IsActive,
-                m.MedicineID,
-                m.ItemTypeID,
-                m.PrescribedMedicineID,
-                m.NoOfDose,
-                m.Quantity,
-                m.Remarks,
-                m.IsActive as MedicineIsActive
-            FROM 
-                tblInfirmaryVisit iv
-            LEFT JOIN 
-                tblMedicine m ON iv.VisitID = m.VisitID
-            WHERE
-                iv.IsActive = 1 AND iv.InstituteID = @InstituteID
-                AND (@VisitorTypeId = 0 OR iv.VisitorTypeID = @VisitorTypeId)
-                AND (@StartDate IS NULL OR iv.EntryDate >= @StartDate)
-                AND (@EndDate IS NULL OR iv.ExitDate <= @EndDate)
-            ORDER BY 
-                iv.VisitID
-            OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+                SELECT 
+                    iv.VisitID,
+                    iv.VisitorTypeID,
+                    iv.VisitorID,
+                    iv.EntryDate,
+                    iv.EntryTime,
+                    iv.ExitDate,
+                    iv.ExitTime,
+                    iv.ReasonToVisitInfirmary,
+                    iv.Diagnosis,
+                    iv.Treatment,
+                    iv.Prescription,
+                    iv.DiagnosisBy,
+                    iv.PrescriptionFile,
+                    iv.InstituteID,
+                    iv.IsActive,
+                    m.MedicineID,
+                    m.ItemTypeID,
+                    m.PrescribedMedicineID,
+                    m.NoOfDose,
+                    m.Quantity,
+                    m.Remarks,
+                    m.IsActive as MedicineIsActive
+                FROM 
+                    tblInfirmaryVisit iv
+                LEFT JOIN 
+                    tblMedicine m ON iv.VisitID = m.VisitID
+                WHERE
+                    iv.IsActive = 1 AND iv.InstituteID = @InstituteID
+                ORDER BY 
+                    iv.VisitID
+                OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 
                 var result = await _connection.QueryAsync<InfirmaryVisitResponse, MedicineResponse, InfirmaryVisitResponse>(
                     sql,
@@ -150,10 +251,6 @@ namespace Infirmary_API.Repository.Implementations
                     new
                     {
                         request.InstituteID,
-                        request.VisitorTypeId,
-                        StartDate = (object)request.StartDate ?? null,
-                        EndDate = (object)request.EndDate ?? null,
-                        request.SearchText,
                         Offset = (request.PageNumber - 1) * request.PageSize,
                         PageSize = request.PageSize
                     },
@@ -166,12 +263,10 @@ namespace Infirmary_API.Repository.Implementations
                     groupedVisit.Medicines = g.SelectMany(v => v.Medicines).ToList();
                     return groupedVisit;
                 }).ToList();
-
                 foreach (var data in groupedResult)
                 {
                     data.InfirmaryVisitDocs = await GetInfirmaryVisitDocs(data.VisitID);
                 }
-
                 return new ServiceResponse<List<InfirmaryVisitResponse>>(true, "Records found", groupedResult, 200, totalCount);
             }
             catch (Exception ex)
@@ -179,84 +274,7 @@ namespace Infirmary_API.Repository.Implementations
                 return new ServiceResponse<List<InfirmaryVisitResponse>>(false, ex.Message, null, 500);
             }
         }
-        //public async Task<ServiceResponse<List<InfirmaryVisitResponse>>> GetAllInfirmaryVisits(GetAllInfirmaryVisitsRequest request)
-        //{
-        //    try
-        //    {
-        //        string countSql = @"SELECT COUNT(*) FROM tblInfirmaryVisit WHERE IsActive = 1 AND InstituteID = @InstituteID";
-        //        int totalCount = await _connection.ExecuteScalarAsync<int>(countSql, new { request.InstituteID });
 
-        //        string sql = @"
-        //        SELECT 
-        //            iv.VisitID,
-        //            iv.VisitorTypeID,
-        //            iv.VisitorID,
-        //            iv.EntryDate,
-        //            iv.EntryTime,
-        //            iv.ExitDate,
-        //            iv.ExitTime,
-        //            iv.ReasonToVisitInfirmary,
-        //            iv.Diagnosis,
-        //            iv.Treatment,
-        //            iv.Prescription,
-        //            iv.DiagnosisBy,
-        //            iv.PrescriptionFile,
-        //            iv.InstituteID,
-        //            iv.IsActive,
-        //            m.MedicineID,
-        //            m.ItemTypeID,
-        //            m.PrescribedMedicineID,
-        //            m.NoOfDose,
-        //            m.Quantity,
-        //            m.Remarks,
-        //            m.IsActive as MedicineIsActive
-        //        FROM 
-        //            tblInfirmaryVisit iv
-        //        LEFT JOIN 
-        //            tblMedicine m ON iv.VisitID = m.VisitID
-        //        WHERE
-        //            iv.IsActive = 1 AND iv.InstituteID = @InstituteID
-        //        ORDER BY 
-        //            iv.VisitID
-        //        OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
-
-        //        var result = await _connection.QueryAsync<InfirmaryVisitResponse, MedicineResponse, InfirmaryVisitResponse>(
-        //            sql,
-        //            (visit, medicine) =>
-        //            {
-        //                visit.Medicines = visit.Medicines ?? new List<MedicineResponse>();
-        //                if (medicine != null && medicine.MedicineID != 0)
-        //                {
-        //                    visit.Medicines.Add(medicine);
-        //                }
-        //                return visit;
-        //            },
-        //            new
-        //            {
-        //                request.InstituteID,
-        //                Offset = (request.PageNumber - 1) * request.PageSize,
-        //                PageSize = request.PageSize
-        //            },
-        //            splitOn: "MedicineID"
-        //        );
-
-        //        var groupedResult = result.GroupBy(v => v.VisitID).Select(g =>
-        //        {
-        //            var groupedVisit = g.First();
-        //            groupedVisit.Medicines = g.SelectMany(v => v.Medicines).ToList();
-        //            return groupedVisit;
-        //        }).ToList();
-        //        foreach(var data in groupedResult)
-        //        {
-        //            data.InfirmaryVisitDocs = await GetInfirmaryVisitDocs(data.VisitID);
-        //        }
-        //        return new ServiceResponse<List<InfirmaryVisitResponse>>(true, "Records found", groupedResult, 200, totalCount);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return new ServiceResponse<List<InfirmaryVisitResponse>>(false, ex.Message, null, 500);
-        //    }
-        //}
         public async Task<ServiceResponse<InfirmaryVisit>> GetInfirmaryVisitById(int id)
         {
             try

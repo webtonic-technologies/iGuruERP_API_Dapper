@@ -73,5 +73,66 @@ namespace Transport_API.Controllers
                 return BadRequest(e.Message);
             }
         }
+
+        [HttpGet("GetVehicleExpenseType")]
+        public async Task<IActionResult> GetVehicleExpenseType()
+        {
+            try
+            {
+                var response = await _vehicleMaintenanceService.GetVehicleExpenseType();
+                return StatusCode(response.StatusCode, response);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+        //[HttpPost("GetAllExpenseExport")]
+        //public async Task<IActionResult> GetAllExpenseExport([FromBody] GetAllExpenseExportRequest request)
+        //{
+        //    // Call the service to generate the Excel file
+        //    var response = await _vehicleMaintenanceService.GetAllExpenseExport(request);
+
+        //    if (response.Success)
+        //    {
+        //        // Return the file as a downloadable Excel
+        //        return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "VehicleExpenses.xlsx");
+        //    }
+        //    else
+        //    {
+        //        return StatusCode(response.StatusCode, response.Message);
+        //    }
+        //}
+
+        [HttpPost("GetAllExpenseExport")]
+        public async Task<IActionResult> GetAllExpenseExport([FromBody] GetAllExpenseExportRequest request)
+        {
+            // Call the service to generate the file
+            var response = await _vehicleMaintenanceService.GetAllExpenseExport(request);
+
+            if (response.Success)
+            {
+                // If export type is 1 (Excel)
+                if (request.ExportType == 1)
+                {
+                    return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "VehicleExpenses.xlsx");
+                }
+                // If export type is 2 (CSV)
+                else if (request.ExportType == 2)
+                {
+                    return File(response.Data, "text/csv", "VehicleExpenses.csv");
+                }
+                else
+                {
+                    return BadRequest("Invalid Export Type");
+                }
+            }
+            else
+            {
+                return StatusCode(response.StatusCode, response.Message);
+            }
+        }
+
     }
 }

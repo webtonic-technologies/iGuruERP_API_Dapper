@@ -151,5 +151,20 @@ namespace Transport_API.Services.Implementations
             }
         }
 
+
+        public async Task<ServiceResponse<IEnumerable<GetTransportStaffResponse>>> GetTransportStaff(GetTransportStaffRequest request)
+        {
+            // Pass the InstituteID from the request object
+            var transportStaff = await _routeMappingRepository.GetTransportStaff(request.InstituteID);
+
+            if (transportStaff == null || !transportStaff.Any())
+            {
+                return new ServiceResponse<IEnumerable<GetTransportStaffResponse>>(false, "No transport staff found", new List<GetTransportStaffResponse>(), StatusCodes.Status404NotFound);
+            }
+
+            return new ServiceResponse<IEnumerable<GetTransportStaffResponse>>(true, "Transport staff found", transportStaff, StatusCodes.Status200OK);
+        }
+
+
     }
 }

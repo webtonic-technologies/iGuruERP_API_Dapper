@@ -12,8 +12,9 @@
         public string Diagnosis { get; set; }
         public int Quantity { get; set; }
         public decimal PricePerQuantity { get; set; }
-        public DateTime ExpiryDate { get; set; }
-        public DateTime EntryDate { get; set; }
+        public string ExpiryDate { get; set; }  // Changed to string
+        public string EntryDate { get; set; }   // Changed to string
+
         public string DosageDetails { get; set; }
         public int InstituteID { get; set; }
         public bool IsActive { get; set; }

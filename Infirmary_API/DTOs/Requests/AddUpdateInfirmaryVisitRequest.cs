@@ -8,10 +8,14 @@ namespace Infirmary_API.DTOs.Requests
         public int VisitID { get; set; }
         public int VisitorTypeID { get; set; }
         public int VisitorID { get; set; }
-        public DateTime EntryDate { get; set; }
-        public TimeSpan EntryTime { get; set; }
-        public DateTime? ExitDate { get; set; }
-        public TimeSpan? ExitTime { get; set; }
+        //public DateTime EntryDate { get; set; }
+        //public TimeSpan EntryTime { get; set; }
+        //public DateTime? ExitDate { get; set; }
+        //public TimeSpan? ExitTime { get; set; }
+        public string EntryDate { get; set; }  // Changed to string with format 'DD-MM-YYYY'
+        public string EntryTime { get; set; }  // Changed to string with format 'hh:mm tt'
+        public string ExitDate { get; set; }   // Changed to string with format 'DD-MM-YYYY'
+        public string ExitTime { get; set; }   // Changed to string with format 'hh:mm tt'
         public string ReasonToVisitInfirmary { get; set; }
         public string Diagnosis { get; set; }
         public string Treatment { get; set; }

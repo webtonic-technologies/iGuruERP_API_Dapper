@@ -23,6 +23,7 @@ namespace Transport_API.Repository.Interfaces
         Task<IEnumerable<GetEmployeesForRouteMappingResponse>> GetEmployeesForRouteMapping(int departmentID, int designationID, int instituteID, string search);
         Task<ServiceResponse<IEnumerable<GetRouteListResponse>>> GetRouteList(int instituteID);
         Task<RouteDetailsResponseDTO1> GetRouteDetailsWithStopInfo(GetAllRouteAssignedInfoRequest request);
+        Task<IEnumerable<GetTransportStaffResponse>> GetTransportStaff(int instituteID);
 
 
     }

@@ -562,6 +562,27 @@ namespace Transport_API.Repository.Implementations
             return new ServiceResponse<IEnumerable<GetFuelTypeResponse>>(true, "Fuel types fetched successfully", fuelTypes, StatusCodes.Status200OK);
         }
 
+        public async Task<ServiceResponse<IEnumerable<GetDriverResponse>>> GetDriver(GetDriverRequest request)
+        {
+            string sql = @"
+        SELECT e.Employee_id AS EmployeeID, 
+               CONCAT(e.First_Name, ' ', e.Last_Name) AS EmployeeName, 
+               d.DesignationName AS Designation
+        FROM tbl_EmployeeProfileMaster e
+        LEFT OUTER JOIN tbl_Designation d 
+            ON e.Designation_id = d.Designation_id
+        WHERE d.DesignationName = 'Driver' 
+        AND e.Institute_id = @InstituteID";
+
+            var drivers = await _dbConnection.QueryAsync<GetDriverResponse>(sql, new { request.InstituteID });
+
+            if (drivers == null || !drivers.Any())
+            {
+                return new ServiceResponse<IEnumerable<GetDriverResponse>>(false, "No drivers found", new List<GetDriverResponse>(), StatusCodes.Status204NoContent);
+            }
+
+            return new ServiceResponse<IEnumerable<GetDriverResponse>>(true, "Drivers fetched successfully", drivers, StatusCodes.Status200OK);
+        }
 
     }
 }

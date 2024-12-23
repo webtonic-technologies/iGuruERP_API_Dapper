@@ -206,5 +206,20 @@ namespace Transport_API.Controllers
                 return BadRequest(e.Message);
             }
         }
+
+        [HttpPost("GetTransportStaff")]
+        public async Task<IActionResult> GetTransportStaff([FromBody] GetTransportStaffRequest request)
+        {
+            try
+            {
+                var response = await _routeMappingService.GetTransportStaff(request); // Pass the request object
+                return StatusCode(response.StatusCode, response);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
     }
 }

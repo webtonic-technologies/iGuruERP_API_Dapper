@@ -13,5 +13,7 @@ namespace Infirmary_API.Services.Interfaces
         Task<ServiceResponse<List<ItemTypeResponse>>> GetAllItemTypes(GetAllItemTypesRequest request);
         Task<ServiceResponse<ItemType>> GetItemTypeById(int id);
         Task<ServiceResponse<bool>> DeleteItemType(int id);
+        Task<ServiceResponse<byte[]>> ExportItemTypesData(GetItemTypesExportRequest request);
+
     }
 }

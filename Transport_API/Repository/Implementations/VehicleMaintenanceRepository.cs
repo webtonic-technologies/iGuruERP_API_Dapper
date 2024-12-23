@@ -10,6 +10,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Hosting.Internal;
 using Transport_API.DTOs.Requests.Transport_API.DTOs.Requests;
 using System.Globalization;
+using Transport_API.DTOs.Responses;
 
 namespace Transport_API.Repository.Implementations
 {
@@ -234,30 +235,87 @@ namespace Transport_API.Repository.Implementations
 
 
 
-        public async Task<ServiceResponse<VehicleExpense>> GetVehicleExpenseById(int VehicleID)
-        {
-            //string sql = @"SELECT * FROM tblVehicleExpense WHERE VehicleExpenseID = @VehicleExpenseID";
-            string sql = @"SELECT  
-                        VM.VehicleID, VM.VehicleModel, FT.Fuel_type_name, SUM(VE.Cost) AS TotalCost
-                        from tblVehicleMaster VM
-                        Left Outer Join tblVehicleExpense VE ON VE.VehicleID = VM.VehicleID
-                        Left Outer Join tbl_Fuel_Type FT ON FT.Fuel_type_id = VE.VehicleExpenseTypeID
-                        where VM.VehicleID = @VehicleExpenseID
-                        GROUP BY VM.VehicleModel, FT.Fuel_type_name, VM.VehicleID";
 
-            var vehicleExpense = await _dbConnection.QueryFirstOrDefaultAsync<VehicleExpense>(sql, new { VehicleExpenseID = VehicleID });
+
+        public async Task<ServiceResponse<GetAllExpenseResponse>> GetVehicleExpenseById(int VehicleID)
+        {
+            // SQL query to fetch the vehicle expense data for a specific VehicleID
+            string sql = @"
+        SELECT  
+            ve.VehicleExpenseID, 
+            ve.VehicleID, 
+            vm.VehicleNumber, 
+            vet.VehicleExpenseType AS ExpenseType, 
+            ve.ExpenseDate, 
+            ve.Remarks, 
+            ve.Cost AS Amount
+        FROM 
+            tblVehicleExpense ve
+        JOIN 
+            tblVehicleMaster vm ON ve.VehicleID = vm.VehicleID
+        JOIN 
+            tblVehicleExpenseType vet ON ve.VehicleExpenseTypeID = vet.VehicleExpenseTypeID
+        WHERE 
+            ve.VehicleID = @VehicleID
+            AND ve.IsActive = 1
+        ORDER BY 
+            ve.ExpenseDate";
+
+            // Fetch the vehicle expense data using the provided query and VehicleID parameter
+            var vehicleExpense = await _dbConnection.QueryFirstOrDefaultAsync<GetAllExpenseResponse>(sql, new { VehicleID });
 
             if (vehicleExpense != null)
             {
-                vehicleExpense.VehicleExpenseDocuments = GetListOfVehiclesExpenseDocument(vehicleExpense.VehicleExpenseID);
+                // Map VehicleExpense data to GetAllExpenseResponse
+                var expenseResponse = new GetAllExpenseResponse
+                {
+                    VehicleExpenseID = vehicleExpense.VehicleExpenseID,
+                    VehicleID = vehicleExpense.VehicleID,
+                    VehicleNumber = vehicleExpense.VehicleNumber,
+                    ExpenseType = vehicleExpense.ExpenseType,
+                    // Parse the date in the format of 'MM/dd/yyyy HH:mm:ss' and convert to 'dd-MM-yyyy'
+                    ExpenseDate = DateTime.ParseExact(vehicleExpense.ExpenseDate, "MM/dd/yyyy HH:mm:ss", CultureInfo.InvariantCulture).ToString("dd-MM-yyyy"),
+                    Remarks = vehicleExpense.Remarks,
+                    Amount = vehicleExpense.Amount
+                    //Documents = GetListOfVehiclesExpenseDocument(vehicleExpense.VehicleExpenseID)  // Un-comment when implemented
+                };
 
-                return new ServiceResponse<VehicleExpense>(true, "Record Found", vehicleExpense, StatusCodes.Status200OK);
+                // Return success response with the mapped response data
+                return new ServiceResponse<GetAllExpenseResponse>(true, "Record Found", expenseResponse, StatusCodes.Status200OK);
             }
             else
             {
-                return new ServiceResponse<VehicleExpense>(false, "Record Not Found", null, StatusCodes.Status204NoContent);
+                // Return not found response
+                return new ServiceResponse<GetAllExpenseResponse>(false, "Record Not Found", null, StatusCodes.Status204NoContent);
             }
         }
+
+
+
+        //public async Task<ServiceResponse<VehicleExpense>> GetVehicleExpenseById(int VehicleID)
+        //{
+        //    //string sql = @"SELECT * FROM tblVehicleExpense WHERE VehicleExpenseID = @VehicleExpenseID";
+        //    string sql = @"SELECT  
+        //                VM.VehicleID, VM.VehicleModel, FT.Fuel_type_name, SUM(VE.Cost) AS TotalCost
+        //                from tblVehicleMaster VM
+        //                Left Outer Join tblVehicleExpense VE ON VE.VehicleID = VM.VehicleID
+        //                Left Outer Join tbl_Fuel_Type FT ON FT.Fuel_type_id = VE.VehicleExpenseTypeID
+        //                where VM.VehicleID = @VehicleExpenseID
+        //                GROUP BY VM.VehicleModel, FT.Fuel_type_name, VM.VehicleID";
+
+        //    var vehicleExpense = await _dbConnection.QueryFirstOrDefaultAsync<VehicleExpense>(sql, new { VehicleExpenseID = VehicleID });
+
+        //    if (vehicleExpense != null)
+        //    {
+        //        vehicleExpense.VehicleExpenseDocuments = GetListOfVehiclesExpenseDocument(vehicleExpense.VehicleExpenseID);
+
+        //        return new ServiceResponse<VehicleExpense>(true, "Record Found", vehicleExpense, StatusCodes.Status200OK);
+        //    }
+        //    else
+        //    {
+        //        return new ServiceResponse<VehicleExpense>(false, "Record Not Found", null, StatusCodes.Status204NoContent);
+        //    }
+        //}
 
         public async Task<ServiceResponse<bool>> DeleteVehicleExpense(int VehicleExpenseID)
         {
@@ -374,20 +432,56 @@ namespace Transport_API.Repository.Implementations
                    fileData[0] == 0x25 && fileData[1] == 0x50 && fileData[2] == 0x44 && fileData[3] == 0x46;
         }
 
+        //private List<VehicleExpenseDocumentRequest> GetListOfVehiclesExpenseDocument(int VehicleExpenseID)
+        //{
+        //    string boardQuery = @"
+        //    select * From tblVehicleExpenseDocument
+        //    WHERE VehicleExpenseID = @VehicleExpenseID";
+
+        //    // Execute the SQL query with the SOTDID parameter
+        //    var data = _dbConnection.Query<VehicleExpenseDocumentRequest>(boardQuery, new { VehicleExpenseID });
+        //    foreach (var item in data)
+        //    {
+        //        item.Attachment = GetPDF(item.Attachment);
+        //    }
+        //    return data != null ? data.AsList() : [];
+        //}
+
+
         private List<VehicleExpenseDocumentRequest> GetListOfVehiclesExpenseDocument(int VehicleExpenseID)
         {
             string boardQuery = @"
             select * From tblVehicleExpenseDocument
             WHERE VehicleExpenseID = @VehicleExpenseID";
 
-            // Execute the SQL query with the SOTDID parameter
-            var data = _dbConnection.Query<VehicleExpenseDocumentRequest>(boardQuery, new { VehicleExpenseID });
+            // Execute the SQL query with the VehicleExpenseID parameter
+            var data = _dbConnection.Query<VehicleExpenseDocumentRequest>(boardQuery, new { VehicleExpenseID }).ToList();
+
+            // Check if data is null or empty
+            if (data == null || !data.Any())
+            {
+                return new List<VehicleExpenseDocumentRequest>(); // Return an empty list if no documents found
+            }
+
+            // Loop through each document and validate the attachment before calling GetPDF
             foreach (var item in data)
             {
-                item.Attachment = GetPDF(item.Attachment);
+                // Check if the Attachment is null or empty
+                if (string.IsNullOrEmpty(item.Attachment))
+                {
+                    // Handle invalid attachment path if necessary, e.g., set a default or log an error
+                    item.Attachment = "No attachment found"; // You can set a placeholder or log a warning
+                }
+                else
+                {
+                    // If the attachment exists, call GetPDF
+                    item.Attachment = GetPDF(item.Attachment);
+                }
             }
-            return data != null ? data.AsList() : [];
+
+            return data;
         }
+
 
         private string GetPDF(string Filename)
         {
@@ -400,5 +494,112 @@ namespace Transport_API.Repository.Implementations
             string base64String = Convert.ToBase64String(fileBytes);
             return base64String;
         }
+
+        public async Task<IEnumerable<GetVehicleExpenseTypeResponse>> GetVehicleExpenseTypes()
+        {
+            string sql = @"SELECT VehicleExpenseTypeID, VehicleExpenseType 
+                           FROM tblVehicleExpenseType";
+
+            var result = await _dbConnection.QueryAsync<GetVehicleExpenseTypeResponse>(sql);
+            return result;
+        }
+
+        //public async Task<List<GetAllExpenseExportResponse>> GetAllExpenseExport(GetAllExpenseExportRequest request)
+        //{
+        //    // Parse StartDate and EndDate from string to DateTime
+        //    DateTime startDate;
+        //    DateTime endDate;
+
+        //    // Attempt to parse the dates in the required format
+        //    if (!DateTime.TryParseExact(request.StartDate, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out startDate) ||
+        //        !DateTime.TryParseExact(request.EndDate, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out endDate))
+        //    {
+        //        throw new ArgumentException("Invalid date format. Please use 'DD-MM-YYYY'.");
+        //    }
+
+        //    // SQL query with DateTime parameters
+        //    string sql = @"
+        //        SELECT 
+        //            ve.VehicleID, 
+        //            vm.VehicleNumber, 
+        //            vet.VehicleExpenseType AS ExpenseType, 
+        //            ve.ExpenseDate, 
+        //            ve.Remarks, 
+        //            ve.Cost AS Amount
+        //        FROM 
+        //            tblVehicleExpense ve
+        //        JOIN 
+        //            tblVehicleMaster vm ON ve.VehicleID = vm.VehicleID
+        //        JOIN 
+        //            tblVehicleExpenseType vet ON ve.VehicleExpenseTypeID = vet.VehicleExpenseTypeID
+        //        WHERE 
+        //            ve.InstituteID = @InstituteID
+        //            AND ve.ExpenseDate BETWEEN @StartDate AND @EndDate
+        //            AND ve.IsActive = 1
+        //            AND (@VehicleID = 0 OR ve.VehicleID = @VehicleID)
+        //            AND (@ExpenseTypeID = 0 OR ve.VehicleExpenseTypeID = @ExpenseTypeID)
+        //        ORDER BY 
+        //            ve.ExpenseDate";
+
+        //    // Execute the query with the proper DateTime parameters
+        //    return (await _dbConnection.QueryAsync<GetAllExpenseExportResponse>(sql, new
+        //    {
+        //        InstituteID = request.InstituteID,
+        //        StartDate = startDate,
+        //        EndDate = endDate,
+        //        VehicleID = request.VehicleID,
+        //        ExpenseTypeID = request.ExpenseTypeID
+        //    })).AsList();
+        //}
+
+        public async Task<List<GetAllExpenseExportResponse>> GetAllExpenseExport(GetAllExpenseExportRequest request)
+        {
+            // Parse StartDate and EndDate from string to DateTime
+            DateTime startDate;
+            DateTime endDate;
+
+            // Attempt to parse the dates in the required format
+            if (!DateTime.TryParseExact(request.StartDate, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out startDate) ||
+                !DateTime.TryParseExact(request.EndDate, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out endDate))
+            {
+                throw new ArgumentException("Invalid date format. Please use 'DD-MM-YYYY'.");
+            }
+
+            // SQL query with DateTime parameters
+            string sql = @"
+        SELECT 
+            ve.VehicleID, 
+            vm.VehicleNumber, 
+            vet.VehicleExpenseType AS ExpenseType, 
+            ve.ExpenseDate, 
+            ve.Remarks, 
+            ve.Cost AS Amount
+        FROM 
+            tblVehicleExpense ve
+        JOIN 
+            tblVehicleMaster vm ON ve.VehicleID = vm.VehicleID
+        JOIN 
+            tblVehicleExpenseType vet ON ve.VehicleExpenseTypeID = vet.VehicleExpenseTypeID
+        WHERE 
+            ve.InstituteID = @InstituteID
+            AND ve.ExpenseDate BETWEEN @StartDate AND @EndDate
+            AND ve.IsActive = 1
+            AND (@VehicleID = 0 OR ve.VehicleID = @VehicleID)
+            AND (@ExpenseTypeID = 0 OR ve.VehicleExpenseTypeID = @ExpenseTypeID)
+        ORDER BY 
+            ve.ExpenseDate";
+
+            // Execute the query with the proper DateTime parameters
+            return (await _dbConnection.QueryAsync<GetAllExpenseExportResponse>(sql, new
+            {
+                InstituteID = request.InstituteID,
+                StartDate = startDate,
+                EndDate = endDate,
+                VehicleID = request.VehicleID,
+                ExpenseTypeID = request.ExpenseTypeID
+            })).AsList();
+        }
+
+
     }
 }

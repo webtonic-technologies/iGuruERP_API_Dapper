@@ -1,11 +1,15 @@
-﻿using Dapper;
+﻿using CsvHelper;
+using Dapper;
 using Infirmary_API.DTOs.Requests;
 using Infirmary_API.DTOs.Response;
+using Infirmary_API.DTOs.Responses;
 using Infirmary_API.DTOs.ServiceResponse;
 using Infirmary_API.Models;
 using Infirmary_API.Repository.Interfaces;
+using OfficeOpenXml;
 using System.Collections.Generic;
 using System.Data;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -152,6 +156,22 @@ namespace Infirmary_API.Repository.Implementations
             {
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
+        }
+
+        public async Task<List<GetItemTypesExportResponse>> GetItemTypesData(int instituteId)
+        {
+            string query = @"
+                SELECT 
+                    ItemType AS ItemTypeName,
+                    Description
+                FROM 
+                    tblInfirmaryItemType
+                WHERE
+                    IsActive = 1 AND InstituteID = @InstituteID
+                ORDER BY 
+                    ItemTypeID";
+
+            return (await _connection.QueryAsync<GetItemTypesExportResponse>(query, new { InstituteID = instituteId })).AsList();
         }
     }
 }

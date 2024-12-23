@@ -21,6 +21,9 @@
         public string FatherName { get; set; }
         public string MobileNumber { get; set; }
         public string StopName { get; set; }
+        public string TransportFee { get; set; }
+
+        
     }
     public class VehicleDetails
     {

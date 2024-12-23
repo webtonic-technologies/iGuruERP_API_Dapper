@@ -54,6 +54,10 @@ namespace Transport_API.Services.Implementations
         {
             return await _vehiclesRepository.GetFuelTypes();
         }
+        public async Task<ServiceResponse<IEnumerable<GetDriverResponse>>> GetDriver(GetDriverRequest request)
+        {
+            return await _vehiclesRepository.GetDriver(request);
+        }
 
     }
 }

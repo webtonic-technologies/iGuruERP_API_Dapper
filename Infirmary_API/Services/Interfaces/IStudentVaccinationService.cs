@@ -11,7 +11,9 @@ namespace Infirmary_API.Services.Interfaces
     {
         Task<ServiceResponse<string>> AddUpdateStudentVaccination(AddUpdateStudentVaccinationRequest request);
         Task<ServiceResponse<List<StudentVaccinationResponse>>> GetAllStudentVaccinations(GetAllStudentVaccinationsRequest request);
-        Task<ServiceResponse<StudentVaccination>> GetStudentVaccinationById(int id);
+        Task<ServiceResponse<List<StudentVaccinationResponse>>> GetStudentVaccinationById(int id);
         Task<ServiceResponse<bool>> DeleteStudentVaccination(int id);
+        Task<ServiceResponse<byte[]>> ExportStudentVaccinationsData(GetStudentVaccinationsExportRequest request);
+
     }
 }

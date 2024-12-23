@@ -24,11 +24,13 @@
 
     public class EmployeeDetails
     {
-        public int EmployeeID { get; set; }
+        public string EmployeeID { get; set; }
         public string EmployeeName { get; set; }
         public string Department { get; set; }
         public string Designation { get; set; }
         public string MobileNumber { get; set; }
         public string StopName { get; set; }
+        public string TransportFee { get; set; }
+        
     }
 }

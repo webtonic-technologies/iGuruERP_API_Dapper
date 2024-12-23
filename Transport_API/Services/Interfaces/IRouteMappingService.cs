@@ -22,6 +22,7 @@ namespace Transport_API.Services.Interfaces
         Task<ServiceResponse<IEnumerable<GetEmployeesForRouteMappingResponse>>> GetEmployeesForRouteMapping(GetEmployeesForRouteMappingRequest request);
         Task<ServiceResponse<IEnumerable<GetRouteListResponse>>> GetRouteList(int instituteID);
         Task<ServiceResponse<GetAllRouteAssignedInfoResponse>> GetAllRouteAssignedInfo(GetAllRouteAssignedInfoRequest request);
+        Task<ServiceResponse<IEnumerable<GetTransportStaffResponse>>> GetTransportStaff(GetTransportStaffRequest request);
 
     }
 }

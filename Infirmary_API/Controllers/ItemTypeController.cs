@@ -100,5 +100,21 @@ namespace Infirmary_API.Controllers
                 return this.BadRequest(e.Message);
             }
         }
+
+        [HttpPost("ItemType/GetItemTypesExport")]
+        public async Task<IActionResult> GetItemTypesExport([FromBody] GetItemTypesExportRequest request)
+        {
+            var response = await _itemTypeService.ExportItemTypesData(request);
+
+            if (response.Success)
+            {
+                string fileName = "ItemTypes_" + System.DateTime.Now.ToString("yyyyMMddHHmmss") + (request.ExportType == 1 ? ".xlsx" : ".csv");
+                string contentType = request.ExportType == 1 ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "text/csv";
+
+                return File(response.Data, contentType, fileName);
+            }
+
+            return BadRequest(response.Message);
+        }
     }
 }

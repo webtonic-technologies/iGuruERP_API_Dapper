@@ -13,5 +13,7 @@ namespace Infirmary_API.Services.Interfaces
         Task<ServiceResponse<List<StockEntryResponse>>> GetAllStockEntries(GetAllStockEntriesRequest request);
         Task<ServiceResponse<StockEntry>> GetStockEntryById(int id);
         Task<ServiceResponse<bool>> DeleteStockEntry(int id);
+        Task<ServiceResponse<byte[]>> ExportStockEntriesData(GetStockEntriesExportRequest request);
+
     }
 }

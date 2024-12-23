@@ -10,7 +10,10 @@ namespace Transport_API.Services.Interfaces
     {
         Task<ServiceResponse<string>> AddUpdateVehicleExpense(VehicleExpenseRequest vehicleExpense);
         Task<ServiceResponse<IEnumerable<GetAllExpenseResponse>>> GetAllVehicleExpenses(GetAllExpenseRequest request);
-        Task<ServiceResponse<VehicleExpense>> GetVehicleExpenseById(int VehicleId);
+        Task<ServiceResponse<GetAllExpenseResponse>> GetVehicleExpenseById(int VehicleId);
         Task<ServiceResponse<bool>> DeleteVehicleExpense(int vehicleExpenseId);
+        Task<ServiceResponse<IEnumerable<GetVehicleExpenseTypeResponse>>> GetVehicleExpenseType();
+        Task<ServiceResponse<byte[]>> GetAllExpenseExport(GetAllExpenseExportRequest request);
+
     }
 }

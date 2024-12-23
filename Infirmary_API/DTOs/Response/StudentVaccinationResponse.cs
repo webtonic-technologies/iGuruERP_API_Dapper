@@ -11,7 +11,7 @@
         public int StudentID { get; set; }
         public string StudentName { get; set; } // Additional field to include student name
         public int VaccinationID { get; set; }
-        public DateTime DateOfVaccination { get; set; }
+        public string DateOfVaccination { get; set; } // Changed to string
         public int InstituteID { get; set; }
         public bool IsActive { get; set; }
     }

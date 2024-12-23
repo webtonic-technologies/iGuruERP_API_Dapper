@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Infirmary_API.DTOs.Requests;
 using Infirmary_API.DTOs.Response;
+using Infirmary_API.DTOs.Responses;
 using Infirmary_API.DTOs.ServiceResponse;
 using Infirmary_API.Models;
 using Infirmary_API.Repository.Interfaces;
@@ -119,6 +120,26 @@ namespace Infirmary_API.Repository.Implementations
             {
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
+        }
+
+        public async Task<List<GetInfirmaryExportResponse>> GetInfirmaryData(int instituteId)
+        {
+            string query = @"
+                SELECT 
+                    i.InfirmaryName,
+                    e.First_Name + ' ' + e.Last_Name AS InfirmaryIncharge, 
+                    i.NoOfBeds,
+                    i.Description
+                FROM 
+                    tblInfirmary i
+                JOIN 
+                    tbl_EmployeeProfileMaster e ON i.InfirmaryIncharge = e.Employee_id
+                WHERE
+                    i.IsActive = 1 AND i.InstituteID = @InstituteID
+                ORDER BY 
+                    i.InfirmaryID";
+
+            return (await _connection.QueryAsync<GetInfirmaryExportResponse>(query, new { InstituteID = instituteId })).AsList();
         }
     }
 }

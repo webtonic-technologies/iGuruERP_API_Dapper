@@ -3,6 +3,8 @@ using Infirmary_API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
+using Infirmary_API.DTOs.ServiceResponse;
+
 
 namespace Infirmary_API.Controllers
 {
@@ -99,6 +101,22 @@ namespace Infirmary_API.Controllers
             {
                 return this.BadRequest(e.Message);
             }
+        }
+
+        [HttpPost("Infirmary/GetInfirmaryExport")]
+        public async Task<IActionResult> GetInfirmaryExport([FromBody] GetInfirmaryExportRequest request)
+        {
+            var response = await _infirmaryService.ExportInfirmaryData(request);
+
+            if (response.Success)
+            {
+                string fileName = "InfirmaryData_" + System.DateTime.Now.ToString("yyyyMMddHHmmss") + (request.ExportType == 1 ? ".xlsx" : ".csv");
+                string contentType = request.ExportType == 1 ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "text/csv";
+
+                return File(response.Data, contentType, fileName);
+            }
+
+            return BadRequest(response.Message);
         }
     }
 }

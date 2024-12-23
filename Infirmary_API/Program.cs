@@ -8,6 +8,7 @@ using InfirmaryVisit_API.Repositories.Implementations;
 using InfirmaryVisit_API.Repositories.Interfaces;
 using InfirmaryVisit_API.Services.Implementations;
 using InfirmaryVisit_API.Services.Interfaces;
+using OfficeOpenXml;
 using System.Data;
 using System.Data.SqlClient;
 
@@ -20,6 +21,9 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 string connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
+
+// Set the license context for EPPlus to NonCommercial
+ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
 builder.Services.AddTransient<IDbConnection>(c => new SqlConnection(connectionString));
 builder.Services.AddTransient<IInfirmaryRepository, InfirmaryRepository>();

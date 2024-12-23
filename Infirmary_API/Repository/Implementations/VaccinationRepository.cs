@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Infirmary_API.DTOs.Requests;
 using Infirmary_API.DTOs.Response;
+using Infirmary_API.DTOs.Responses;
 using Infirmary_API.DTOs.ServiceResponse;
 using Infirmary_API.Models;
 using Infirmary_API.Repository.Interfaces;
@@ -115,6 +116,22 @@ namespace Infirmary_API.Repository.Implementations
             {
                 return new ServiceResponse<bool>(false, ex.Message, false, 500);
             }
+        }
+
+        public async Task<List<GetVaccinationsExportResponse>> GetVaccinationData(int instituteId)
+        {
+            string query = @"
+                SELECT 
+                    VaccinationName,
+                    Description
+                FROM 
+                    tblVaccination
+                WHERE
+                    IsActive = 1 AND InstituteID = @InstituteID
+                ORDER BY 
+                    VaccinationID";
+
+            return (await _connection.QueryAsync<GetVaccinationsExportResponse>(query, new { InstituteID = instituteId })).AsList();
         }
     }
 }

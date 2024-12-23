@@ -123,5 +123,20 @@ namespace Transport_API.Controllers
                 return BadRequest(e.Message);
             }
         }
+
+        [HttpPost("GetDriver")]
+        public async Task<IActionResult> GetDriver(GetDriverRequest request)
+        {
+            try
+            {
+                var response = await _vehiclesService.GetDriver(request);
+                return StatusCode(response.StatusCode, response);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
     }
 }

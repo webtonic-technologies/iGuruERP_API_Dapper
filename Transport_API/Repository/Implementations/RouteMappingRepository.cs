@@ -704,5 +704,21 @@ namespace Transport_API.Repository.Implementations
             return null;
         }
 
+        public async Task<IEnumerable<GetTransportStaffResponse>> GetTransportStaff(int instituteID)
+        {
+            string sql = @"
+            SELECT 
+                e.Employee_id AS EmployeeID, 
+                CONCAT(e.First_Name, ' ', e.Last_Name) AS EmployeeName, 
+                d.DesignationName AS Designation
+            FROM tbl_EmployeeProfileMaster e
+            LEFT JOIN tbl_Designation d ON e.Designation_id = d.Designation_id
+            WHERE d.DesignationName = 'Transport Staff' AND e.Institute_id = @InstituteID";
+
+            var result = await _dbConnection.QueryAsync<GetTransportStaffResponse>(sql, new { InstituteID = instituteID });
+
+            return result;
+        }
+
     }
 }

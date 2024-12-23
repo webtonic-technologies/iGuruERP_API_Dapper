@@ -13,5 +13,7 @@ namespace Infirmary_API.Services.Interfaces
         Task<ServiceResponse<List<InfirmaryResponse>>> GetAllInfirmary(GetAllInfirmaryRequest request);
         Task<ServiceResponse<Infirmary>> GetInfirmaryById(int id);
         Task<ServiceResponse<bool>> DeleteInfirmary(int id);
+        Task<ServiceResponse<byte[]>> ExportInfirmaryData(GetInfirmaryExportRequest request);
+
     }
 }

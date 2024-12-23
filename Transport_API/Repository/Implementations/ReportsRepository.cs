@@ -51,7 +51,7 @@ namespace Transport_API.Repository.Implementations
             int totalEmployeeCount = await GetTotalEmployeeCount(request.RoutePlanID.Value, vehicleDetails.VehicleID);
 
             // Fetch employee details for the route
-            var employees = await GetEmployeesForRoute(request.RoutePlanID.Value);
+            var employees = await GetEmployeesForRoute(request.RoutePlanID.Value, request.Search);
 
             // Prepare the response object
             var response = new GetEmployeeTransportationReportResponse
@@ -117,32 +117,85 @@ namespace Transport_API.Repository.Implementations
         }
 
 
-        public async Task<IEnumerable<EmployeeDetails>> GetEmployeesForRoute(int routePlanID)
-        {
-            string sql = @"
-        SELECT 
-            esm.EmployeeID,
-            CONCAT(ep.First_Name, ' ', ep.Last_Name) AS EmployeeName,
-            d.DepartmentName AS Department,
-            des.DesignationName AS Designation,
-            ep.mobile_number AS MobileNumber,
-            rsm.StopName AS StopName
-        FROM 
-            tblEmployeeStopMapping esm
-        JOIN 
-            tbl_EmployeeProfileMaster ep ON esm.EmployeeID = ep.Employee_id
-        JOIN 
-            tbl_Department d ON ep.Department_id = d.Department_id
-        JOIN 
-            tbl_Designation des ON ep.Designation_id = des.Designation_id
-        JOIN 
-            tblRouteStopMaster rsm ON esm.StopID = rsm.StopID
-        WHERE 
-            rsm.RoutePlanID = @RoutePlanID
-        ORDER BY 
-            ep.Employee_id";
+        //public async Task<IEnumerable<EmployeeDetails>> GetEmployeesForRoute(int routePlanID, string Search)
+        //{
+        //    // Base SQL query to fetch employee details
+        //    string sql = @"
+        //SELECT 
+        //    ep.Employee_code_id AS EmployeeID,
+        //    CONCAT(ep.First_Name, ' ', ep.Last_Name) AS EmployeeName,
+        //    d.DepartmentName AS Department,
+        //    des.DesignationName AS Designation,
+        //    ep.mobile_number AS MobileNumber,
+        //    rsm.StopName AS StopName
+        //FROM 
+        //    tblEmployeeStopMapping esm
+        //JOIN 
+        //    tbl_EmployeeProfileMaster ep ON esm.EmployeeID = ep.Employee_id
+        //JOIN 
+        //    tbl_Department d ON ep.Department_id = d.Department_id
+        //JOIN 
+        //    tbl_Designation des ON ep.Designation_id = des.Designation_id
+        //JOIN 
+        //    tblRouteStopMaster rsm ON esm.StopID = rsm.StopID
+        //WHERE 
+        //    rsm.RoutePlanID = @RoutePlanID";
 
-            return await _dbConnection.QueryAsync<EmployeeDetails>(sql, new { RoutePlanID = routePlanID });
+        //    // Add the search condition if Search is provided
+        //    if (!string.IsNullOrEmpty(Search))
+        //    {
+        //        sql += " AND CONCAT(ep.First_Name, ' ', ep.Last_Name) LIKE @Search";
+        //    }
+
+        //    // Execute the query
+        //    return await _dbConnection.QueryAsync<EmployeeDetails>(sql, new { RoutePlanID = routePlanID, Search = "%" + Search + "%" });
+        //}
+
+        public async Task<IEnumerable<EmployeeDetails>> GetEmployeesForRoute(int routePlanID, string Search)
+        {
+            // Base SQL query to fetch employee details along with the Transport Fee calculation
+            string sql = @"
+            SELECT 
+                ep.Employee_code_id AS EmployeeID,
+                CONCAT(ep.First_Name, ' ', ep.Last_Name) AS EmployeeName,
+                d.DepartmentName AS Department,
+                des.DesignationName AS Designation,
+                ep.mobile_number AS MobileNumber,
+                rsm.StopName AS StopName,
+                -- Adding Transport Fee calculation
+                CASE 
+                    WHEN rsf.FeesAmount IS NOT NULL THEN rsf.FeesAmount 
+                    WHEN rtf.FeesAmount IS NOT NULL THEN rtf.FeesAmount
+                    WHEN rmf.FeesAmount IS NOT NULL THEN rmf.FeesAmount 
+                    ELSE 0 
+                END AS TransportFee
+            FROM 
+                tblEmployeeStopMapping esm
+            JOIN 
+                tbl_EmployeeProfileMaster ep ON esm.EmployeeID = ep.Employee_id
+            JOIN 
+                tbl_Department d ON ep.Department_id = d.Department_id
+            JOIN 
+                tbl_Designation des ON ep.Designation_id = des.Designation_id
+            JOIN 
+                tblRouteStopMaster rsm ON esm.StopID = rsm.StopID
+            LEFT JOIN 
+                tblRouteSingleFeesPayment rsf ON rsf.StopID = rsm.StopID
+            LEFT JOIN 
+                tblRouteTermFeesPayment rtf ON rtf.StopID = rsm.StopID
+            LEFT JOIN 
+                tblRouteMonthlyFeesPayment rmf ON rmf.StopID = rsm.StopID
+            WHERE 
+                rsm.RoutePlanID = @RoutePlanID";
+
+            // Add the search condition if Search is provided
+            if (!string.IsNullOrEmpty(Search))
+            {
+                sql += " AND CONCAT(ep.First_Name, ' ', ep.Last_Name) LIKE @Search";
+            }
+
+            // Execute the query and return the result
+            return await _dbConnection.QueryAsync<EmployeeDetails>(sql, new { RoutePlanID = routePlanID, Search = "%" + Search + "%" });
         }
 
 
@@ -166,7 +219,7 @@ namespace Transport_API.Repository.Implementations
             int totalCount = await GetTotalStudentCount(request.RoutePlanID.Value, vehicleDetails.VehicleID);
 
             // Fetch students for the route
-            var students = await GetStudentsForRoute(request.RoutePlanID.Value);
+            var students = await GetStudentsForRoute(request.RoutePlanID.Value, request.Search);
 
             var reportResponse = new GetStudentTransportReportResponse
             {
@@ -180,14 +233,11 @@ namespace Transport_API.Repository.Implementations
                 Students = students.ToList()
             };
 
-            return new ServiceResponse<GetStudentTransportReportResponse>(true, "Record Found", reportResponse, StatusCodes.Status200OK);
+            return new ServiceResponse<GetStudentTransportReportResponse>(true, "Record Found", reportResponse, StatusCodes.Status200OK, totalCount);
         }
 
 
 
-
-
-        // Method to fetch vehicle, driver, and coordinator details
         public async Task<VehicleDetails> GetVehicleDetails(int routePlanID, int instituteID)
         {
             string sql = @"
@@ -215,7 +265,6 @@ namespace Transport_API.Repository.Implementations
             return await _dbConnection.QueryFirstOrDefaultAsync<VehicleDetails>(sql, new { RoutePlanID = routePlanID, InstituteID = instituteID });
         }
 
-        // Method to fetch the total count of students assigned to the route
         public async Task<int> GetTotalStudentCount(int routePlanID, int vehicleID)
         {
             string sql = @"
@@ -234,36 +283,89 @@ namespace Transport_API.Repository.Implementations
             return await _dbConnection.ExecuteScalarAsync<int>(sql, new { RoutePlanID = routePlanID, VehicleID = vehicleID });
         }
 
-        // Method to fetch all students assigned to the route with their stop details
-        public async Task<IEnumerable<StudentDetails>> GetStudentsForRoute(int routePlanID)
-        {
-            string sql = @"
-                SELECT 
-                    ssm.StudentID,
-                    CONCAT(sm.First_Name, ' ', sm.Last_Name) AS StudentName,
-                    sm.Admission_Number AS AdmissionNumber,
-                    CONCAT(c.class_name, ' - ', sec.section_name) AS ClassSection,
-                    sm.Roll_Number AS RollNumber,
-                    '-' AS FatherName,
-                    '-' AS MobileNumber,
-                    rsm.StopName AS StopName
-                FROM 
-                    tblStudentStopMapping ssm
-                JOIN 
-                    tbl_StudentMaster sm ON ssm.StudentID = sm.student_id
-                JOIN 
-                    tbl_Class c ON sm.class_id = c.class_id
-                JOIN 
-                    tbl_Section sec ON sm.section_id = sec.section_id
-                JOIN 
-                    tblRouteStopMaster rsm ON ssm.StopID = rsm.StopID
-                WHERE 
-                    rsm.RoutePlanID = @RoutePlanID
-                ORDER BY 
-                    sm.Admission_Number";
 
-            return await _dbConnection.QueryAsync<StudentDetails>(sql, new { RoutePlanID = routePlanID });
+
+
+        // Method to fetch all students assigned to the route with their stop details
+        //public async Task<IEnumerable<StudentDetails>> GetStudentsForRoute(int routePlanID, string Search)
+        //{
+        //    string sql = @"
+        //        SELECT 
+        //            ssm.StudentID,
+        //            CONCAT(sm.First_Name, ' ', sm.Last_Name) AS StudentName,
+        //            sm.Admission_Number AS AdmissionNumber,
+        //            CONCAT(c.class_name, ' - ', sec.section_name) AS ClassSection,
+        //            sm.Roll_Number AS RollNumber,
+        //            '-' AS FatherName,
+        //            '-' AS MobileNumber,
+        //            rsm.StopName AS StopName
+        //        FROM 
+        //            tblStudentStopMapping ssm
+        //        JOIN 
+        //            tbl_StudentMaster sm ON ssm.StudentID = sm.student_id
+        //        JOIN 
+        //            tbl_Class c ON sm.class_id = c.class_id
+        //        JOIN 
+        //            tbl_Section sec ON sm.section_id = sec.section_id
+        //        JOIN 
+        //            tblRouteStopMaster rsm ON ssm.StopID = rsm.StopID
+        //        WHERE 
+        //            rsm.RoutePlanID = @RoutePlanID
+        //        ORDER BY 
+        //            sm.Admission_Number";
+
+        //    return await _dbConnection.QueryAsync<StudentDetails>(sql, new { RoutePlanID = routePlanID });
+        //}
+
+        public async Task<IEnumerable<StudentDetails>> GetStudentsForRoute(int routePlanID, string Search)
+        {
+            // Base SQL query to fetch students with Transport Fee calculation
+            string sql = @"
+            SELECT 
+                ssm.StudentID,
+                CONCAT(sm.First_Name, ' ', sm.Last_Name) AS StudentName,
+                sm.Admission_Number AS AdmissionNumber,
+                CONCAT(c.class_name, ' - ', sec.section_name) AS ClassSection,
+                sm.Roll_Number AS RollNumber,
+                '-' AS FatherName,
+                '-' AS MobileNumber,
+                rsm.StopName AS StopName,
+                -- Adding Transport Fee calculation
+                CASE 
+                    WHEN rsf.FeesAmount IS NOT NULL THEN rsf.FeesAmount 
+                    WHEN rtf.FeesAmount IS NOT NULL THEN rtf.FeesAmount
+                    WHEN rmf.FeesAmount IS NOT NULL THEN rmf.FeesAmount 
+                    ELSE 0 
+                END AS TransportFee
+            FROM 
+                tblStudentStopMapping ssm
+            JOIN 
+                tbl_StudentMaster sm ON ssm.StudentID = sm.student_id
+            JOIN 
+                tbl_Class c ON sm.class_id = c.class_id
+            JOIN 
+                tbl_Section sec ON sm.section_id = sec.section_id
+            JOIN 
+                tblRouteStopMaster rsm ON ssm.StopID = rsm.StopID
+            LEFT JOIN 
+                tblRouteSingleFeesPayment rsf ON rsf.StopID = rsm.StopID
+            LEFT JOIN 
+                tblRouteTermFeesPayment rtf ON rtf.StopID = rsm.StopID
+            LEFT JOIN 
+                tblRouteMonthlyFeesPayment rmf ON rmf.StopID = rsm.StopID
+            WHERE 
+                rsm.RoutePlanID = @RoutePlanID";
+
+            // Add search condition if the Search parameter is provided
+            if (!string.IsNullOrEmpty(Search))
+            {
+                sql += " AND CONCAT(sm.First_Name, ' ', sm.Last_Name) LIKE @Search";
+            }
+
+            // Execute the query
+            return await _dbConnection.QueryAsync<StudentDetails>(sql, new { RoutePlanID = routePlanID, Search = "%" + Search + "%" });
         }
+
 
 
         /// <summary>
