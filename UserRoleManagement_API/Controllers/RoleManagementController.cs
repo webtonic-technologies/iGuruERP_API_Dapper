@@ -26,8 +26,8 @@ namespace UserRoleManagement_API.Controllers
             return BadRequest(response);
         }
 
-        [HttpGet("GetUserRoles")]
-        public async Task<IActionResult> GetUserRoles([FromQuery] GetUserRolesRequest request)
+        [HttpPost("GetUserRoles")]
+        public async Task<IActionResult> GetUserRoles([FromBody] GetUserRolesRequest request)
         {
             var response = await _roleService.GetUserRoles(request);
             if (response.Success)
@@ -37,6 +37,7 @@ namespace UserRoleManagement_API.Controllers
             return BadRequest(response);
         }
 
+
         [HttpPost("AssignRole")]
         public async Task<IActionResult> AssignRole(AssignRoleRequest request)
         {
@@ -45,6 +46,45 @@ namespace UserRoleManagement_API.Controllers
             {
                 return Ok(response);
             }
+            return BadRequest(response);
+        }
+
+        //[HttpPost("DeleteRole")]
+        //public async Task<IActionResult> DeleteRole([FromBody] DeleteRoleRequest request)
+        //{
+        //    var response = await _roleService.DeleteRole(request);
+
+        //    if (response.Success)
+        //    {
+        //        return Ok(response);
+        //    }
+
+        //    return BadRequest(response);
+        //}
+
+        [HttpPost("GetRolesPermissions")]
+        public async Task<IActionResult> GetRolesPermissions([FromBody] GetRolesPermissionsRequest request)
+        {
+            var response = await _roleService.GetRolesPermissions(request);
+
+            if (response.Success)
+            {
+                return Ok(response);
+            }
+
+            return BadRequest(response);
+        }
+
+        [HttpPost("DeleteEmployeeFromRole")]
+        public async Task<IActionResult> DeleteEmployeeFromRole([FromBody] DeleteEmployeeFromRoleRequest request)
+        {
+            var response = await _roleService.DeleteEmployeeFromRole(request);
+
+            if (response.Success)
+            {
+                return Ok(response);
+            }
+
             return BadRequest(response);
         }
     }
