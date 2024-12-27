@@ -22,12 +22,13 @@ namespace SiteAdmin_API.Controllers
             return StatusCode(response.StatusCode, response);
         }
 
-        [HttpGet("GetAllInstituteOnboard")]
-        public async Task<IActionResult> GetAllInstituteOnboard()
+        [HttpPost("GetAllInstituteOnboard")]
+        public async Task<IActionResult> GetAllInstituteOnboard([FromBody] GetAllInstituteOnboardRequest request)
         {
-            var response = await _instituteOnboardService.GetAllInstituteOnboard();
+            var response = await _instituteOnboardService.GetAllInstituteOnboard(request.PageNumber, request.PageSize);
             return StatusCode(response.StatusCode, response);
         }
+
 
         [HttpGet("GetInstituteOnboard/{instituteOnboardId}")]
         public async Task<IActionResult> GetInstituteOnboardById(int instituteOnboardId)

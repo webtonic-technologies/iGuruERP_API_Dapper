@@ -15,10 +15,16 @@ namespace SiteAdmin_API.Services.Implementations
             _moduleRepository = moduleRepository;
         }
 
-        public async Task<ServiceResponse<List<ModuleResponse>>> GetAllModules()
+        //public async Task<ServiceResponse<List<ModuleResponse>>> GetAllModules()
+        //{
+        //    return await _moduleRepository.GetAllModules();
+        //}
+
+        public async Task<ServiceResponse<List<ModuleResponse>>> GetAllModules(int pageNumber, int pageSize)
         {
-            return await _moduleRepository.GetAllModules();
+            return await _moduleRepository.GetAllModules(pageNumber, pageSize);
         }
+
 
         public async Task<ServiceResponse<bool>> UpdateModule(UpdateModuleRequest request)
         {

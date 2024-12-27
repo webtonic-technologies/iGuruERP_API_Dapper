@@ -6,7 +6,10 @@ namespace SiteAdmin_API.Services.Interfaces
 {
     public interface IModuleService
     {
-        Task<ServiceResponse<List<ModuleResponse>>> GetAllModules();
+        //Task<ServiceResponse<List<ModuleResponse>>> GetAllModules();
+
+        Task<ServiceResponse<List<ModuleResponse>>> GetAllModules(int pageNumber, int pageSize);
+
         Task<ServiceResponse<bool>> UpdateModule(UpdateModuleRequest request);
 
         Task<ServiceResponse<bool>> UpdateModuleStatus(int moduleId);

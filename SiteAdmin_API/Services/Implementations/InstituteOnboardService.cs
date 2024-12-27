@@ -20,9 +20,9 @@ namespace SiteAdmin_API.Services.Implementations
             return await _instituteOnboardRepository.AddUpdateInstituteOnboard(request);
         }
 
-        public async Task<ServiceResponse<List<InstituteOnboard>>> GetAllInstituteOnboard()
+        public async Task<ServiceResponse<List<InstituteOnboard>>> GetAllInstituteOnboard(int pageNumber, int pageSize)
         {
-            return await _instituteOnboardRepository.GetAllInstituteOnboard();
+            return await _instituteOnboardRepository.GetAllInstituteOnboard(pageNumber, pageSize);
         }
 
         public async Task<ServiceResponse<InstituteOnboard>> GetInstituteOnboardById(int instituteOnboardId)

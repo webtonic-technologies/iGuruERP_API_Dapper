@@ -37,6 +37,15 @@ builder.Services.AddTransient<IPackageService_Institute, PackageService_Institut
 
 builder.Services.AddTransient<IInstituteOnboardService_Credentials, InstituteOnboardService_Credentials>();
 
+builder.Services.AddTransient<IChairmanRepository, ChairmanRepository>();
+builder.Services.AddTransient<IChairmanService, ChairmanService>();
+
+builder.Services.AddTransient<ISMSRepository, SMSRepository>();
+builder.Services.AddTransient<ISMSService, SMSService>();
+
+builder.Services.AddTransient<IWhatsAppRepository, WhatsAppRepository>();
+builder.Services.AddTransient<IWhatsAppService, WhatsAppService>();
+
 
 var app = builder.Build();
 

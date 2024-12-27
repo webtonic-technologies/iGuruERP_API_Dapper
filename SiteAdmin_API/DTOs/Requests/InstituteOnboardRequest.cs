@@ -39,7 +39,7 @@
         public decimal PSPA { get; set; }
         public decimal GST { get; set; }
         public decimal TotalDealValue { get; set; }
-        public DateTime SignUpDate { get; set; }
-        public DateTime ValidUpto { get; set; }
+        public string SignUpDate { get; set; }  // Changed to string
+        public string ValidUpto { get; set; }   // Changed to string
     }
 }

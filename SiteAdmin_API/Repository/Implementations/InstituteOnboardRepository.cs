@@ -4,6 +4,7 @@ using SiteAdmin_API.DTOs.ServiceResponse;
 using SiteAdmin_API.Models;
 using SiteAdmin_API.Repository.Interfaces;
 using System.Data;
+using System.Globalization;
 
 namespace SiteAdmin_API.Repository.Implementations
 {
@@ -32,13 +33,13 @@ namespace SiteAdmin_API.Repository.Implementations
                         instituteOnboardId = request.InstituteOnboardID.Value;
 
                         string updateInstituteSql = @"UPDATE tblInstituteOnboard 
-                                                      SET InstituteOnboardName = @InstituteOnboardName, 
-                                                          AliasName = @AliasName, 
-                                                          CountryID = @CountryID, 
-                                                          StateID = @StateID, 
-                                                          City = @City, 
-                                                          Pincode = @Pincode
-                                                      WHERE InstituteOnboardID = @InstituteOnboardID";
+                                              SET InstituteOnboardName = @InstituteOnboardName, 
+                                                  AliasName = @AliasName, 
+                                                  CountryID = @CountryID, 
+                                                  StateID = @StateID, 
+                                                  City = @City, 
+                                                  Pincode = @Pincode
+                                              WHERE InstituteOnboardID = @InstituteOnboardID";
 
                         await _connection.ExecuteAsync(updateInstituteSql, new { InstituteOnboardID = instituteOnboardId, request.InstituteOnboardName, request.AliasName, request.CountryID, request.StateID, request.City, request.Pincode }, transaction);
 
@@ -51,15 +52,15 @@ namespace SiteAdmin_API.Repository.Implementations
                     {
                         // Insert new institute
                         string insertInstituteSql = @"INSERT INTO tblInstituteOnboard (InstituteOnboardName, AliasName, CountryID, StateID, City, Pincode) 
-                                                      VALUES (@InstituteOnboardName, @AliasName, @CountryID, @StateID, @City, @Pincode);
-                                                      SELECT CAST(SCOPE_IDENTITY() as int)";
+                                              VALUES (@InstituteOnboardName, @AliasName, @CountryID, @StateID, @City, @Pincode);
+                                              SELECT CAST(SCOPE_IDENTITY() as int)";
 
                         instituteOnboardId = await _connection.QuerySingleAsync<int>(insertInstituteSql, new { request.InstituteOnboardName, request.AliasName, request.CountryID, request.StateID, request.City, request.Pincode }, transaction);
                     }
 
                     // Insert into tblInstituteOnboardContact
                     string insertContactSql = @"INSERT INTO tblInstituteOnboardContact (InstituteOnboardID, PrimaryContactName, PrimaryTelephoneNumber, PrimaryMobileNumber, PrimaryEmailID, SecondaryContactName, SecondaryTelephoneNumber, SecondaryMobileNumber, SecondaryEmailID) 
-                                                VALUES (@InstituteOnboardID, @PrimaryContactName, @PrimaryTelephoneNumber, @PrimaryMobileNumber, @PrimaryEmailID, @SecondaryContactName, @SecondaryTelephoneNumber, @SecondaryMobileNumber, @SecondaryEmailID)";
+                                        VALUES (@InstituteOnboardID, @PrimaryContactName, @PrimaryTelephoneNumber, @PrimaryMobileNumber, @PrimaryEmailID, @SecondaryContactName, @SecondaryTelephoneNumber, @SecondaryMobileNumber, @SecondaryEmailID)";
 
                     foreach (var contact in request.InstituteOnboardContacts)
                     {
@@ -68,7 +69,7 @@ namespace SiteAdmin_API.Repository.Implementations
 
                     // Insert into tblInstituteOnboardCredentials
                     string insertCredentialsSql = @"INSERT INTO tblInstituteOnboardCredentials (InstituteOnboardID, UserName, Password) 
-                                                    VALUES (@InstituteOnboardID, @UserName, @Password)";
+                                            VALUES (@InstituteOnboardID, @UserName, @Password)";
 
                     foreach (var credential in request.InstituteOnboardCredentials)
                     {
@@ -77,11 +78,15 @@ namespace SiteAdmin_API.Repository.Implementations
 
                     // Insert into tblInstitutePackage
                     string insertPackageSql = @"INSERT INTO tblInstitutePackage (InstituteOnboardID, PackageID, MSG, PSPA, GST, TotalDealValue, SignUpDate, ValidUpto) 
-                                                VALUES (@InstituteOnboardID, @PackageID, @MSG, @PSPA, @GST, @TotalDealValue, @SignUpDate, @ValidUpto)";
+                                        VALUES (@InstituteOnboardID, @PackageID, @MSG, @PSPA, @GST, @TotalDealValue, @SignUpDate, @ValidUpto)";
 
                     foreach (var package in request.InstitutePackages)
                     {
-                        await _connection.ExecuteAsync(insertPackageSql, new { InstituteOnboardID = instituteOnboardId, package.PackageID, package.MSG, package.PSPA, package.GST, package.TotalDealValue, package.SignUpDate, package.ValidUpto }, transaction);
+                        // Convert SignUpDate and ValidUpto to DateTime
+                        DateTime signUpDate = DateTime.ParseExact(package.SignUpDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+                        DateTime validUpto = DateTime.ParseExact(package.ValidUpto, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+
+                        await _connection.ExecuteAsync(insertPackageSql, new { InstituteOnboardID = instituteOnboardId, package.PackageID, package.MSG, package.PSPA, package.GST, package.TotalDealValue, SignUpDate = signUpDate, ValidUpto = validUpto }, transaction);
                     }
 
                     // Commit transaction
@@ -141,16 +146,66 @@ namespace SiteAdmin_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<List<InstituteOnboard>>> GetAllInstituteOnboard()
+
+        public async Task<ServiceResponse<List<InstituteOnboard>>> GetAllInstituteOnboard(int pageNumber, int pageSize)
         {
             try
             {
-                string sql = @"SELECT * FROM tblInstituteOnboard;
-                               SELECT * FROM tblInstituteOnboardContact;
-                               SELECT * FROM tblInstituteOnboardCredentials;
-                               SELECT * FROM tblInstitutePackage";
+                // Calculate the OFFSET based on the page number and page size
+                int offset = (pageNumber - 1) * pageSize;
 
-                using (var multi = await _connection.QueryMultipleAsync(sql))
+                string sql = @"
+            SELECT 
+                io.InstituteOnboardID, 
+                io.InstituteOnboardName, 
+                io.AliasName, 
+                io.CountryID, 
+                io.StateID, 
+                io.City, 
+                io.Pincode
+            FROM 
+                tblInstituteOnboard io
+            ORDER BY 
+                io.InstituteOnboardID
+            OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;
+
+            SELECT 
+                ioc.ContactID, 
+                ioc.InstituteOnboardID, 
+                ioc.PrimaryContactName, 
+                ioc.PrimaryTelephoneNumber, 
+                ioc.PrimaryMobileNumber, 
+                ioc.PrimaryEmailID, 
+                ioc.SecondaryContactName, 
+                ioc.SecondaryTelephoneNumber, 
+                ioc.SecondaryMobileNumber, 
+                ioc.SecondaryEmailID
+            FROM 
+                tblInstituteOnboardContact ioc;
+
+            SELECT 
+                iocr.CredentialID, 
+                iocr.InstituteOnboardID, 
+                iocr.UserName, 
+                iocr.Password
+            FROM 
+                tblInstituteOnboardCredentials iocr;
+
+            SELECT 
+                ip.InstitutePackageID, 
+                ip.InstituteOnboardID, 
+                ip.PackageID, 
+                ip.MSG, 
+                ip.PSPA, 
+                ip.GST, 
+                ip.TotalDealValue, 
+                ip.SignUpDate, 
+                ip.ValidUpto
+            FROM 
+                tblInstitutePackage ip;
+        ";
+
+                using (var multi = await _connection.QueryMultipleAsync(sql, new { Offset = offset, PageSize = pageSize }))
                 {
                     var institutes = (await multi.ReadAsync<InstituteOnboard>()).ToList();
                     var contacts = (await multi.ReadAsync<InstituteOnboardContact>()).ToList();
@@ -162,9 +217,27 @@ namespace SiteAdmin_API.Repository.Implementations
                         institute.InstituteOnboardContacts = contacts.Where(c => c.InstituteOnboardID == institute.InstituteOnboardID).ToList();
                         institute.InstituteOnboardCredentials = credentials.Where(c => c.InstituteOnboardID == institute.InstituteOnboardID).ToList();
                         institute.InstitutePackages = packages.Where(p => p.InstituteOnboardID == institute.InstituteOnboardID).ToList();
+
+                        // Format the SignUpDate and ValidUpto in 'DD-MM-YYYY' format for each InstitutePackage
+                        foreach (var package in institute.InstitutePackages)
+                        {
+                            if (DateTime.TryParse(package.SignUpDate, out DateTime signUpDate))
+                            {
+                                package.SignUpDate = signUpDate.ToString("dd-MM-yyyy");
+                            }
+
+                            if (DateTime.TryParse(package.ValidUpto, out DateTime validUpto))
+                            {
+                                package.ValidUpto = validUpto.ToString("dd-MM-yyyy");
+                            }
+                        }
                     }
 
-                    return new ServiceResponse<List<InstituteOnboard>>(true, "All institutes onboard retrieved successfully", institutes, 200);
+                    // Get the total count of institutes for pagination metadata
+                    string countSql = "SELECT COUNT(*) FROM tblInstituteOnboard";
+                    var totalCount = await _connection.ExecuteScalarAsync<int>(countSql);
+
+                    return new ServiceResponse<List<InstituteOnboard>>(true, "Institutes onboard retrieved successfully", institutes, 200, totalCount);
                 }
             }
             catch (Exception ex)
@@ -173,20 +246,107 @@ namespace SiteAdmin_API.Repository.Implementations
             }
         }
 
+
+
+        //public async Task<ServiceResponse<InstituteOnboard>> GetInstituteOnboardById(int instituteOnboardId)
+        //{
+        //    try
+        //    {
+        //        string sql = @"SELECT * FROM tblInstituteOnboard WHERE InstituteOnboardID = @InstituteOnboardID;
+        //                       SELECT * FROM tblInstituteOnboardContact WHERE InstituteOnboardID = @InstituteOnboardID;
+        //                       SELECT * FROM tblInstituteOnboardCredentials WHERE InstituteOnboardID = @InstituteOnboardID;
+        //                       SELECT * FROM tblInstitutePackage WHERE InstituteOnboardID = @InstituteOnboardID";
+
+        //        using (var multi = await _connection.QueryMultipleAsync(sql, new { InstituteOnboardID = instituteOnboardId }))
+        //        {
+        //            var institute = await multi.ReadSingleOrDefaultAsync<InstituteOnboard>();
+        //            if (institute != null)
+        //            {
+        //                institute.InstituteOnboardContacts = (await multi.ReadAsync<InstituteOnboardContact>()).ToList();
+        //                institute.InstituteOnboardCredentials = (await multi.ReadAsync<InstituteOnboardCredentials>()).ToList();
+        //                institute.InstitutePackages = (await multi.ReadAsync<InstitutePackage>()).ToList();
+        //            }
+
+        //            return new ServiceResponse<InstituteOnboard>(true, "Institute onboard retrieved successfully", institute, 200);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return new ServiceResponse<InstituteOnboard>(false, ex.Message, null, 500);
+        //    }
+        //}
+
         public async Task<ServiceResponse<InstituteOnboard>> GetInstituteOnboardById(int instituteOnboardId)
         {
             try
             {
-                string sql = @"SELECT * FROM tblInstituteOnboard WHERE InstituteOnboardID = @InstituteOnboardID;
-                               SELECT * FROM tblInstituteOnboardContact WHERE InstituteOnboardID = @InstituteOnboardID;
-                               SELECT * FROM tblInstituteOnboardCredentials WHERE InstituteOnboardID = @InstituteOnboardID;
-                               SELECT * FROM tblInstitutePackage WHERE InstituteOnboardID = @InstituteOnboardID";
+                string sql = @"
+            SELECT 
+                io.InstituteOnboardID, 
+                io.InstituteOnboardName, 
+                io.AliasName, 
+                io.CountryID, 
+                io.StateID, 
+                io.City, 
+                io.Pincode
+            FROM 
+                tblInstituteOnboard io
+            WHERE 
+                io.InstituteOnboardID = @InstituteOnboardID;
+
+            -- Join tblInstituteOnboardContact
+            SELECT 
+                ioc.ContactID, 
+                ioc.InstituteOnboardID, 
+                ioc.PrimaryContactName, 
+                ioc.PrimaryTelephoneNumber, 
+                ioc.PrimaryMobileNumber, 
+                ioc.PrimaryEmailID, 
+                ioc.SecondaryContactName, 
+                ioc.SecondaryTelephoneNumber, 
+                ioc.SecondaryMobileNumber, 
+                ioc.SecondaryEmailID
+            FROM 
+                tblInstituteOnboardContact ioc
+            WHERE 
+                ioc.InstituteOnboardID = @InstituteOnboardID;
+
+            -- Join tblInstituteOnboardCredentials
+            SELECT 
+                iocr.CredentialID, 
+                iocr.InstituteOnboardID, 
+                iocr.UserName, 
+                iocr.Password
+            FROM 
+                tblInstituteOnboardCredentials iocr
+            WHERE 
+                iocr.InstituteOnboardID = @InstituteOnboardID;
+
+            -- Join tblInstitutePackage and format dates
+            SELECT 
+                ip.InstitutePackageID, 
+                ip.InstituteOnboardID, 
+                ip.PackageID, 
+                ip.MSG, 
+                ip.PSPA, 
+                ip.GST, 
+                ip.TotalDealValue, 
+                FORMAT(ip.SignUpDate, 'dd-MM-yyyy') AS SignUpDate, 
+                FORMAT(ip.ValidUpto, 'dd-MM-yyyy') AS ValidUpto
+            FROM 
+                tblInstitutePackage ip
+            WHERE 
+                ip.InstituteOnboardID = @InstituteOnboardID;
+        ";
 
                 using (var multi = await _connection.QueryMultipleAsync(sql, new { InstituteOnboardID = instituteOnboardId }))
                 {
+                    // Read the first result set for InstituteOnboard
                     var institute = await multi.ReadSingleOrDefaultAsync<InstituteOnboard>();
+
                     if (institute != null)
                     {
+                        // Read the remaining result sets and assign them to the InstituteOnboard object
                         institute.InstituteOnboardContacts = (await multi.ReadAsync<InstituteOnboardContact>()).ToList();
                         institute.InstituteOnboardCredentials = (await multi.ReadAsync<InstituteOnboardCredentials>()).ToList();
                         institute.InstitutePackages = (await multi.ReadAsync<InstitutePackage>()).ToList();
@@ -200,5 +360,6 @@ namespace SiteAdmin_API.Repository.Implementations
                 return new ServiceResponse<InstituteOnboard>(false, ex.Message, null, 500);
             }
         }
+
     }
 }

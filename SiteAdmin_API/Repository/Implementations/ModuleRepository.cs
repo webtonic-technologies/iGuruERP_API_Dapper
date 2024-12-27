@@ -17,20 +17,49 @@ namespace SiteAdmin_API.Repository.Implementations
             _connection = connection;
         }
 
-        public async Task<ServiceResponse<List<ModuleResponse>>> GetAllModules()
+        //public async Task<ServiceResponse<List<ModuleResponse>>> GetAllModules()
+        //{
+        //    try
+        //    {
+        //        string sql = @"SELECT ModuleID, ModuleName, Description, Icon, ModuleOrder, IsActive FROM tblModules";
+        //        var modules = await _connection.QueryAsync<ModuleResponse>(sql);
+
+        //        return new ServiceResponse<List<ModuleResponse>>(true, "Modules retrieved successfully", modules.ToList(), 200);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return new ServiceResponse<List<ModuleResponse>>(false, ex.Message, null, 500);
+        //    }
+        //}
+
+        public async Task<ServiceResponse<List<ModuleResponse>>> GetAllModules(int pageNumber, int pageSize)
         {
             try
             {
-                string sql = @"SELECT ModuleID, ModuleName, Description, Icon, ModuleOrder, IsActive FROM tblModules";
-                var modules = await _connection.QueryAsync<ModuleResponse>(sql);
+                // Calculate the OFFSET based on the page number and page size
+                int offset = (pageNumber - 1) * pageSize;
 
-                return new ServiceResponse<List<ModuleResponse>>(true, "Modules retrieved successfully", modules.ToList(), 200);
+                string sql = @"
+            SELECT ModuleID, ModuleName, Description, Icon, ModuleOrder, IsActive 
+            FROM tblModules
+            ORDER BY ModuleID 
+            OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+
+                // Execute the query with parameters for OFFSET and PageSize
+                var modules = await _connection.QueryAsync<ModuleResponse>(sql, new { Offset = offset, PageSize = pageSize });
+
+                // Get the total count of modules for pagination metadata
+                string countSql = "SELECT COUNT(*) FROM tblModules";
+                var totalCount = await _connection.ExecuteScalarAsync<int>(countSql);
+
+                return new ServiceResponse<List<ModuleResponse>>(true, "Modules retrieved successfully", modules.ToList(), 200, totalCount);
             }
             catch (Exception ex)
             {
                 return new ServiceResponse<List<ModuleResponse>>(false, ex.Message, null, 500);
             }
         }
+
 
         public async Task<ServiceResponse<bool>> UpdateModule(UpdateModuleRequest request)
         {

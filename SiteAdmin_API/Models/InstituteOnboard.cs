@@ -12,5 +12,6 @@
         public List<InstituteOnboardContact> InstituteOnboardContacts { get; set; }
         public List<InstituteOnboardCredentials> InstituteOnboardCredentials { get; set; }
         public List<InstitutePackage> InstitutePackages { get; set; }
+         
     }
 }
