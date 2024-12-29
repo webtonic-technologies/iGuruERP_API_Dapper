@@ -54,6 +54,9 @@ builder.Services.AddScoped<IAssignmentTypeService, AssignmentTypeService>();
 builder.Services.AddScoped<IAssignmentReportRepository, AssignmentReportRepository>();
 builder.Services.AddScoped<IAssignmentReportService, AssignmentReportService>();
 
+builder.Services.AddScoped<ITeacherTrackingRepository, TeacherTrackingRepository>();
+builder.Services.AddScoped<ITeacherTrackingService, TeacherTrackingService>();
+
 
 // Adding support for hosting environment (e.g., static files)
 builder.Services.AddSingleton<IWebHostEnvironment>(builder.Environment);  // Ensure that the hosting environment is properly injected
