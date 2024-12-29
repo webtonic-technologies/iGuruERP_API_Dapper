@@ -14,6 +14,7 @@ namespace Lesson_API.Services.Interfaces
         Task<ServiceResponse<Homework>> GetHomeworkById(int id);
         Task<ServiceResponse<bool>> DeleteHomework(int id);
         Task<ServiceResponse<GetHomeworkHistoryResponse>> GetHomeworkHistory(GetHomeworkHistoryRequest request);
+        Task<ServiceResponse<byte[]>> GetAllHomeworkExport(GetAllHomeworkExportRequest request);
 
     }
 }

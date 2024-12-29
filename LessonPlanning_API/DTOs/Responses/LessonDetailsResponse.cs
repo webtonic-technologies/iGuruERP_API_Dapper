@@ -2,7 +2,7 @@
 {
     public class LessonDetailsResponse
     {
-        public DateTime LessonDate { get; set; }
+        public string LessonDate { get; set; }
         public string PlanType { get; set; }
         public string Chapter { get; set; }
         public string SubTopic { get; set; }

@@ -16,6 +16,7 @@ namespace Lesson_API.DTOs.Requests
         public string Notes { get; set; }
         public int InstituteID { get; set; }
         public int CreatedBy { get; set; } // New field
+        public DateTime CreatedOn { get; set; }
         public bool IsActive { get; set; }
         public List<HomeworkClassSectionRequest> ClassSections { get; set; }
         public List<HomeworkDocs> HomeworkDocs { get; set; } // Attachments

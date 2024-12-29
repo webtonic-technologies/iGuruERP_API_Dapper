@@ -2,6 +2,7 @@ using Lesson_API.Repository.Implementations;
 using Lesson_API.Repository.Interfaces;
 using Lesson_API.Services.Implementations;
 using Lesson_API.Services.Interfaces;
+using OfficeOpenXml;
 using System.Data;
 using System.Data.SqlClient;
 
@@ -15,6 +16,9 @@ builder.Services.AddSwaggerGen();
 
 string connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
 builder.Services.AddTransient<IDbConnection>(c => new SqlConnection(connectionString));
+
+// Set the license context for EPPlus to NonCommercial
+ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
 // Registering repositories and services
 builder.Services.AddTransient<ICurriculumRepository, CurriculumRepository>();
@@ -46,6 +50,10 @@ builder.Services.AddScoped<IHomeWorkTypeService, HomeWorkTypeService>();
 
 builder.Services.AddScoped<IAssignmentTypeRepository, AssignmentTypeRepository>();
 builder.Services.AddScoped<IAssignmentTypeService, AssignmentTypeService>();
+
+builder.Services.AddScoped<IAssignmentReportRepository, AssignmentReportRepository>();
+builder.Services.AddScoped<IAssignmentReportService, AssignmentReportService>();
+
 
 // Adding support for hosting environment (e.g., static files)
 builder.Services.AddSingleton<IWebHostEnvironment>(builder.Environment);  // Ensure that the hosting environment is properly injected

@@ -42,5 +42,10 @@ namespace Lesson_API.Services.Implementations
         {
             return await _lessonPlanningRepository.DeleteLessonPlanning(id);
         }
+
+        public async Task<ServiceResponse<List<GetLessonStatusResponse>>> GetLessonStatus()
+        {
+            return await _lessonPlanningRepository.GetLessonStatus();
+        }
     }
 }

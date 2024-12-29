@@ -13,4 +13,10 @@
         public string ClassName { get; set; }
         public string SectionName { get; set; }
     }
+
+    public class StudentASResponse
+    {
+        public int StudentID { get; set; }
+        public string StudentName { get; set; }
+    }
 }

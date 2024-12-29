@@ -14,5 +14,8 @@ namespace Lesson_API.Services.Interfaces
         Task<ServiceResponse<Assignment>> GetAssignmentById(int id);
         Task<ServiceResponse<bool>> DeleteAssignment(int id);
         Task<ServiceResponse<byte[]>> DownloadDocument(int documentId);
+        Task<ServiceResponse<byte[]>> GetAssignmentsExport(GetAssignmentsExportRequest request);
+        Task<ServiceResponse<List<GetTypeWiseResponse>>> GetTypeWise();
+
     }
 }

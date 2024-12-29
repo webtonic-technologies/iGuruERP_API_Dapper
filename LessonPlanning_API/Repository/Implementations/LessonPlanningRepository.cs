@@ -317,6 +317,7 @@ namespace Lesson_API.Repository.Implementations
         BEGIN
             -- Retrieve lesson planning basic details
             SELECT 
+                lp.LessonPlanningID,
                 c.class_name AS ClassName,
                 sec.section_name AS SectionName,
                 sub.SubjectName,
@@ -373,6 +374,15 @@ namespace Lesson_API.Repository.Implementations
                     return new ServiceResponse<GetLessonPlanningResponse1>(null, false, "No lesson planning details found.", 404);
                 }
 
+                // Format the LessonDate to 'DD-MM-YYYY'
+                foreach (var lesson in lessonPlanningInformation)
+                {
+                    if (DateTime.TryParse(lesson.LessonDate, out DateTime parsedDate))
+                    {
+                        lesson.LessonDate = parsedDate.ToString("dd-MM-yyyy"); // Format to 'DD-MM-YYYY'
+                    }
+                }
+
                 // Group by LessonDate and aggregate the attachments
                 var groupedLessons = lessonPlanningInformation
                     .GroupBy(l => l.LessonDate)
@@ -394,12 +404,10 @@ namespace Lesson_API.Repository.Implementations
                     })
                     .ToList();
 
-
-
-
                 lessonPlanningDetails.Lessons = groupedLessons;
 
                 return new ServiceResponse<GetLessonPlanningResponse1>(lessonPlanningDetails, true, "Lesson planning details retrieved successfully.", 200);
+
             }
             catch (Exception ex)
             {
@@ -569,6 +577,21 @@ namespace Lesson_API.Repository.Implementations
             catch (Exception ex)
             {
                 return [];
+            }
+        }
+
+        public async Task<ServiceResponse<List<GetLessonStatusResponse>>> GetLessonStatus()
+        {
+            try
+            {
+                var query = "SELECT LPStatusID, LPStatus FROM tblLessonPlanningStatus";
+                var result = await _dbConnection.QueryAsync<GetLessonStatusResponse>(query);
+
+                return new ServiceResponse<List<GetLessonStatusResponse>>(result.AsList(), true, "Lesson statuses retrieved successfully.", 200);
+            }
+            catch (System.Exception ex)
+            {
+                return new ServiceResponse<List<GetLessonStatusResponse>>(null, false, "Error retrieving lesson statuses: " + ex.Message, 500);
             }
         }
     }

@@ -71,5 +71,32 @@ namespace Lesson_API.Controllers
             }
             return BadRequest(response);
         }
+
+
+
+        [HttpPost("GetAllHomeworkExport")]
+        public async Task<IActionResult> GetAllHomeworkExport([FromBody] GetAllHomeworkExportRequest request)
+        {
+            try
+            {
+                // Call service method to generate export data
+                var result = await _homeworkService.GetAllHomeworkExport(request);
+
+                // Check if the result is valid (i.e., exportData is not null)
+                if (result != null && result.Data != null && result.Data.Length > 0)
+                {
+                    // Return the generated file as a downloadable file
+                    return File(result.Data, result.StatusCode == 200 ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "text/csv", "HomeworkData" + (request.ExportType == 1 ? ".xlsx" : ".csv"));
+                }
+
+                // If no valid file is generated, return an error response
+                return BadRequest("Error while generating the report.");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest("Error: " + ex.Message);
+            }
+        }
+
     }
 }

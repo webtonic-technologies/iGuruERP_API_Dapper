@@ -94,5 +94,28 @@ namespace Lesson_API.Controllers
             }
             return NotFound(response);
         }
+
+        [HttpPost("GetAssignmentsExport")]
+        public async Task<IActionResult> GetAssignmentsExport([FromBody] GetAssignmentsExportRequest request)
+        {
+            var response = await _assignmentService.GetAssignmentsExport(request);
+            if (response.Success)
+            {
+                return File(response.Data, response.StatusCode == 200 ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "text/csv", "AssignmentsExport" + (request.ExportType == 1 ? ".xlsx" : ".csv"));
+            }
+
+            return BadRequest(response);
+        }
+
+        [HttpGet("GetTypeWise")]
+        public async Task<IActionResult> GetTypeWise()
+        {
+            var response = await _assignmentService.GetTypeWise();
+            if (response.Success)
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
+        }
     }
 }

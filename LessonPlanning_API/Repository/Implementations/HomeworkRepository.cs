@@ -45,8 +45,8 @@ namespace Lesson_API.Repository.Implementations
                 if (request.HomeworkID == 0)
                 {
                     var homeworkSql = @"
-                    INSERT INTO tblHomework (HomeworkName, SubjectID, HomeworkTypeID, Notes, InstituteID, IsActive, HomeWorkDate, CreatedBy) 
-                    VALUES (@HomeworkName, @SubjectID, @HomeworkTypeID, @Notes, @InstituteID, 1, @HomeWorkDate, @CreatedBy);
+                    INSERT INTO tblHomework (HomeworkName, SubjectID, HomeworkTypeID, Notes, InstituteID, IsActive, HomeWorkDate, CreatedBy, CreatedOn) 
+                    VALUES (@HomeworkName, @SubjectID, @HomeworkTypeID, @Notes, @InstituteID, 1, @HomeWorkDate, @CreatedBy, @CreatedOn);
                     SELECT CAST(SCOPE_IDENTITY() as int);";
 
                     request.HomeworkID = await _dbConnection.QuerySingleAsync<int>(homeworkSql, new
@@ -57,7 +57,8 @@ namespace Lesson_API.Repository.Implementations
                         request.Notes,
                         request.InstituteID,
                         HomeWorkDate = DateTime.ParseExact(request.HomeWorkDate, "dd-MM-yyyy", null), // Date in 'DD-MM-YYYY' format
-                        request.CreatedBy
+                        request.CreatedBy,
+                        request.CreatedOn
                     }, transaction);
 
                     // Insert Homework Class Sections
@@ -88,9 +89,9 @@ namespace Lesson_API.Repository.Implementations
                         Notes = @Notes, 
                         InstituteID = @InstituteID,
                         HomeWorkDate = @HomeWorkDate,
-                        CreatedBy = @CreatedBy,
                         IsActive = @IsActive
                     WHERE HomeworkID = @HomeworkID;";
+
 
                     await _dbConnection.ExecuteAsync(homeworkSql, new
                     {
@@ -100,8 +101,7 @@ namespace Lesson_API.Repository.Implementations
                         request.HomeworkTypeID,
                         request.Notes,
                         request.InstituteID,
-                        HomeWorkDate = DateTime.ParseExact(request.HomeWorkDate, "dd-MM-yyyy", null), // Date in 'DD-MM-YYYY' format
-                        request.CreatedBy,
+                        HomeWorkDate = DateTime.ParseExact(request.HomeWorkDate, "dd-MM-yyyy", null), // Date in 'DD-MM-YYYY' format 
                         request.IsActive
                     }, transaction);
 
@@ -199,48 +199,54 @@ namespace Lesson_API.Repository.Implementations
                 // Parse the startDate and endDate to ensure 'DD-MM-YYYY' format
                 DateTime startDate = DateTime.ParseExact(request.StartDate, "dd-MM-yyyy", null);
                 DateTime endDate = DateTime.ParseExact(request.EndDate, "dd-MM-yyyy", null);
-
                 var sql = @"
-        WITH HomeworkData AS (
-            SELECT 
-                hw.HomeworkID,
-                hw.HomeworkName,
-                s.SubjectName,
-                ht.HomeworkType,
-                hw.Notes,
-                hw.IsActive,
-                CONCAT(emp.First_Name, ' ', emp.Last_Name) AS CreatedBy,
-                ROW_NUMBER() OVER (ORDER BY hw.HomeworkID) AS RowNum
-            FROM tblHomework hw
-            INNER JOIN tbl_Subjects s ON hw.SubjectID = s.SubjectId
-            INNER JOIN tblHomeworkType ht ON hw.HomeworkTypeID = ht.HomeworkTypeID
-            INNER JOIN tbl_EmployeeProfileMaster emp ON hw.CreatedBy = emp.Employee_id
-            WHERE hw.InstituteID = @InstituteID
-            AND hw.HomeWorkDate BETWEEN @StartDate AND @EndDate -- Filter by date range
-            AND hw.IsActive = 1
-        ), ClassSectionData AS (
-            SELECT 
-                hcs.HomeworkID,
-                c.class_name AS ClassName,
-                sec.section_name AS SectionName
-            FROM tblHomeworkClassSection hcs
-            INNER JOIN tbl_Class c ON hcs.ClassID = c.class_id
-            INNER JOIN tbl_Section sec ON hcs.SectionID = sec.section_id
-            WHERE hcs.HomeworkID IN (SELECT HomeworkID FROM HomeworkData WHERE RowNum BETWEEN @Offset + 1 AND @Offset + @PageSize)
-        )
-        SELECT 
-            hd.HomeworkID,
-            hd.HomeworkName,
-            hd.SubjectName,
-            hd.HomeworkType,
-            hd.Notes,
-            hd.CreatedBy,
-            hd.IsActive,
-            cs.ClassName,
-            cs.SectionName
-        FROM HomeworkData hd
-        LEFT JOIN ClassSectionData cs ON hd.HomeworkID = cs.HomeworkID
-        WHERE hd.RowNum BETWEEN @Offset + 1 AND @Offset + @PageSize;";
+                WITH HomeworkData AS (
+                    SELECT 
+                        hw.HomeworkID,
+                        hw.HomeworkName,
+                        s.SubjectName,
+                        ht.HomeworkType,
+                        hw.Notes,
+                        hw.IsActive,
+                        CONCAT(emp.First_Name, ' ', emp.Last_Name) AS CreatedBy,
+                        FORMAT(hw.CreatedOn, 'dd-MM-yyyy \at\ hh:mm tt') AS CreatedOn,  -- Formatting CreatedOn
+                        ROW_NUMBER() OVER (ORDER BY hw.HomeworkID) AS RowNum
+                    FROM tblHomework hw
+                    INNER JOIN tbl_Subjects s ON hw.SubjectID = s.SubjectId
+                    INNER JOIN tblHomeworkType ht ON hw.HomeworkTypeID = ht.HomeworkTypeID
+                    INNER JOIN tbl_EmployeeProfileMaster emp ON hw.CreatedBy = emp.Employee_id
+                    WHERE hw.InstituteID = @InstituteID
+                    AND hw.HomeWorkDate BETWEEN @StartDate AND @EndDate -- Filter by date range
+                    AND hw.IsActive = 1
+                    AND (@SearchTerm IS NULL OR hw.HomeworkName LIKE '%' + @SearchTerm + '%' 
+                                                OR s.SubjectName LIKE '%' + @SearchTerm + '%'
+                                                OR ht.HomeworkType LIKE '%' + @SearchTerm + '%')
+                ),
+                ClassSectionData AS (
+                    SELECT 
+                        hcs.HomeworkID,
+                        c.class_name AS ClassName,
+                        sec.section_name AS SectionName
+                    FROM tblHomeworkClassSection hcs
+                    INNER JOIN tbl_Class c ON hcs.ClassID = c.class_id
+                    INNER JOIN tbl_Section sec ON hcs.SectionID = sec.section_id
+                    WHERE hcs.HomeworkID IN (SELECT HomeworkID FROM HomeworkData WHERE RowNum BETWEEN @Offset + 1 AND @Offset + @PageSize)
+                )
+                SELECT 
+                    hd.HomeworkID,
+                    hd.HomeworkName,
+                    hd.SubjectName,
+                    hd.HomeworkType,
+                    hd.Notes,
+                    hd.CreatedBy,
+                    hd.CreatedOn,
+                    hd.IsActive,
+                    cs.ClassName,
+                    cs.SectionName
+                FROM HomeworkData hd
+                LEFT JOIN ClassSectionData cs ON hd.HomeworkID = cs.HomeworkID
+                WHERE hd.RowNum BETWEEN @Offset + 1 AND @Offset + @PageSize;
+                ";
 
                 using var multi = await _dbConnection.QueryMultipleAsync(sql, new
                 {
@@ -248,8 +254,10 @@ namespace Lesson_API.Repository.Implementations
                     StartDate = startDate, // Use parsed dates
                     EndDate = endDate,     // Use parsed dates
                     Offset = (request.PageNumber - 1) * request.PageSize,
-                    PageSize = request.PageSize
+                    PageSize = request.PageSize,
+                    SearchTerm = request.SearchTerm  // Use SearchTerm for filtering
                 });
+
 
                 var homeworkList = new List<GetAllHomeworkResponse>();
 
@@ -262,7 +270,8 @@ namespace Lesson_API.Repository.Implementations
                     hd.HomeworkType,
                     hd.Notes,
                     hd.IsActive,
-                    hd.CreatedBy
+                    hd.CreatedBy,
+                    hd.CreatedOn
                 });
 
                 foreach (var group in groupedData)
@@ -276,6 +285,7 @@ namespace Lesson_API.Repository.Implementations
                         Notes = group.Key.Notes,
                         IsActive = group.Key.IsActive,
                         CreatedBy = group.Key.CreatedBy,
+                        CreatedOn = group.Key.CreatedOn,
                         ClassSections = group.Select(g => new ClassSectionHWResponse
                         {
                             HomeworkID = g.HomeworkID,
@@ -286,6 +296,7 @@ namespace Lesson_API.Repository.Implementations
 
                     homeworkList.Add(homeworkResponse);
                 }
+
 
                 foreach (var data in homeworkList)
                 {
@@ -549,7 +560,167 @@ namespace Lesson_API.Repository.Implementations
                 return new ServiceResponse<GetHomeworkHistoryResponse>(null, false, $"Operation failed: {ex.Message}", 500);
             }
         }
-         
+
+        //public async Task<IEnumerable<GetAllHomeworkExportResponse>> GetAllHomeworkForExport(GetAllHomeworkExportRequest request)
+        //{
+        //    // Parse the start and end date from string to DateTime
+        //    DateTime startDate = DateTime.ParseExact(request.StartDate, "dd-MM-yyyy", null);
+        //    DateTime endDate = DateTime.ParseExact(request.EndDate, "dd-MM-yyyy", null);
+
+        //    // SQL query to fetch the homework data
+        //    var sql = @"
+        //    WITH HomeworkData AS (
+        //        SELECT 
+        //            hw.HomeworkID,
+        //            hw.HomeworkName,
+        //            s.SubjectName,
+        //            ht.HomeworkType,
+        //            hw.Notes,
+        //            hw.IsActive,
+        //            CONCAT(emp.First_Name, ' ', emp.Last_Name) AS CreatedBy,
+        //            FORMAT(hw.CreatedOn, 'dd-MM-yyyy \at\ hh:mm tt') AS CreatedOn,  -- Formatting CreatedOn
+        //            ROW_NUMBER() OVER (ORDER BY hw.HomeworkID) AS RowNum
+        //        FROM tblHomework hw
+        //        INNER JOIN tbl_Subjects s ON hw.SubjectID = s.SubjectId
+        //        INNER JOIN tblHomeworkType ht ON hw.HomeworkTypeID = ht.HomeworkTypeID
+        //        INNER JOIN tbl_EmployeeProfileMaster emp ON hw.CreatedBy = emp.Employee_id
+        //        WHERE hw.InstituteID = @InstituteID
+        //        AND hw.HomeWorkDate BETWEEN @StartDate AND @EndDate
+        //        AND hw.IsActive = 1
+        //        AND (@SearchTerm IS NULL OR @SearchTerm = '' OR hw.HomeworkName LIKE '%' + @SearchTerm + '%' 
+        //                                    OR s.SubjectName LIKE '%' + @SearchTerm + '%'
+        //                                    OR ht.HomeworkType LIKE '%' + @SearchTerm + '%')
+        //    ),
+        //    ClassSectionData AS (
+        //        SELECT 
+        //            hcs.HomeworkID,
+        //            c.class_name AS ClassName,
+        //            sec.section_name AS SectionName
+        //        FROM tblHomeworkClassSection hcs
+        //        INNER JOIN tbl_Class c ON hcs.ClassID = c.class_id
+        //        INNER JOIN tbl_Section sec ON hcs.SectionID = sec.section_id
+        //        WHERE hcs.HomeworkID IN (SELECT HomeworkID FROM HomeworkData)
+        //    )
+        //    SELECT 
+        //        hd.HomeworkID,
+        //        hd.HomeworkName,
+        //        hd.SubjectName,
+        //        hd.HomeworkType,
+        //        hd.Notes,
+        //        hd.CreatedBy,
+        //        hd.CreatedOn,
+        //        hd.IsActive,
+        //        cs.ClassName,
+        //        cs.SectionName
+        //    FROM HomeworkData hd
+        //    LEFT JOIN ClassSectionData cs ON hd.HomeworkID = cs.HomeworkID";
+
+        //    // Execute the query and fetch results from database
+        //    var homeworkData = await _dbConnection.QueryAsync<GetAllHomeworkExportResponse>(sql, new
+        //    {
+        //        InstituteID = request.InstituteID,
+        //        StartDate = startDate,
+        //        EndDate = endDate,
+        //        SearchTerm = string.IsNullOrEmpty(request.SearchTerm) ? null : request.SearchTerm
+        //    });
+
+        //    return homeworkData;
+        //}
+
+
+        public async Task<IEnumerable<GetAllHomeworkExportResponse>> GetAllHomeworkForExport(GetAllHomeworkExportRequest request)
+        {
+            // Parse the start and end date from string to DateTime
+            DateTime startDate = DateTime.ParseExact(request.StartDate, "dd-MM-yyyy", null);
+            DateTime endDate = DateTime.ParseExact(request.EndDate, "dd-MM-yyyy", null);
+
+            // SQL query to fetch the homework data along with class and section information
+            var sql = @"
+WITH HomeworkData AS (
+    SELECT 
+        hw.HomeworkID,
+        hw.HomeworkName,
+        s.SubjectName,
+        ht.HomeworkType,
+        hw.Notes,
+        hw.IsActive,
+        CONCAT(emp.First_Name, ' ', emp.Last_Name) AS CreatedBy,
+        FORMAT(hw.CreatedOn, 'dd-MM-yyyy \at\ hh:mm tt') AS CreatedOn,  -- Formatting CreatedOn
+        ROW_NUMBER() OVER (ORDER BY hw.HomeworkID) AS RowNum
+    FROM tblHomework hw
+    INNER JOIN tbl_Subjects s ON hw.SubjectID = s.SubjectId
+    INNER JOIN tblHomeworkType ht ON hw.HomeworkTypeID = ht.HomeworkTypeID
+    INNER JOIN tbl_EmployeeProfileMaster emp ON hw.CreatedBy = emp.Employee_id
+    WHERE hw.InstituteID = @InstituteID
+    AND hw.HomeWorkDate BETWEEN @StartDate AND @EndDate
+    AND hw.IsActive = 1
+    AND (@SearchTerm IS NULL OR @SearchTerm = '' OR hw.HomeworkName LIKE '%' + @SearchTerm + '%' 
+                                            OR s.SubjectName LIKE '%' + @SearchTerm + '%'
+                                            OR ht.HomeworkType LIKE '%' + @SearchTerm + '%')
+),
+ClassSectionData AS (
+    SELECT 
+        hcs.HomeworkID,
+        c.class_name AS ClassName,
+        sec.section_name AS SectionName
+    FROM tblHomeworkClassSection hcs
+    INNER JOIN tbl_Class c ON hcs.ClassID = c.class_id
+    INNER JOIN tbl_Section sec ON hcs.SectionID = sec.section_id
+    WHERE hcs.HomeworkID IN (SELECT HomeworkID FROM HomeworkData)
+)
+SELECT 
+    hd.HomeworkID,
+    hd.HomeworkName,
+    hd.SubjectName,
+    hd.HomeworkType,
+    hd.Notes,
+    hd.CreatedBy,
+    hd.CreatedOn,
+    hd.IsActive,
+    cs.ClassName,
+    cs.SectionName
+FROM HomeworkData hd
+LEFT JOIN ClassSectionData cs ON hd.HomeworkID = cs.HomeworkID";
+
+            // Initialize the homeworkData list before using it
+            var homeworkData = new List<GetAllHomeworkExportResponse>();
+
+            // Execute the query and fetch results from the database
+            var result = await _dbConnection.QueryAsync<GetAllHomeworkExportResponse, ClassSectionResponse, GetAllHomeworkExportResponse>(
+                sql,
+                (homework, classSection) =>
+                {
+                    // Check if the homework already exists in the list
+                    var homeworkItem = homeworkData.FirstOrDefault(h => h.HomeworkID == homework.HomeworkID);
+
+                    if (homeworkItem == null)
+                    {
+                        // If homework does not exist, create a new one
+                        homeworkItem = homework;
+                        homeworkItem.ClassSections = new List<ClassSectionResponse>();
+                        homeworkData.Add(homeworkItem);
+                    }
+
+                    // Add the class section to the ClassSections list
+                    if (classSection != null)
+                    {
+                        homeworkItem.ClassSections.Add(classSection);
+                    }
+
+                    return homeworkItem;
+                },
+                new
+                {
+                    InstituteID = request.InstituteID,
+                    StartDate = startDate,
+                    EndDate = endDate,
+                    SearchTerm = string.IsNullOrEmpty(request.SearchTerm) ? null : request.SearchTerm
+                },
+                splitOn: "ClassName,SectionName"
+            );
+
+            return homeworkData;
+        }
 
     }
 }

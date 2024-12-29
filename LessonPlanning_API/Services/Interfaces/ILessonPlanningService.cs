@@ -16,5 +16,7 @@ namespace Lesson_API.Services.Interfaces
 
         Task<ServiceResponse<LessonPlanning>> GetLessonPlanningById(int id);
         Task<ServiceResponse<bool>> DeleteLessonPlanning(int id);
+        Task<ServiceResponse<List<GetLessonStatusResponse>>> GetLessonStatus();
+
     }
 }

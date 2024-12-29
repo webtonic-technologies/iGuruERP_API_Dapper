@@ -72,5 +72,16 @@ namespace Lesson_API.Controllers
             }
             return BadRequest(response);
         }
+
+        [HttpGet("GetLessonStatus")]
+        public async Task<IActionResult> GetLessonStatus()
+        {
+            var response = await _lessonPlanningService.GetLessonStatus();
+            if (response.Success)
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
+        }
     }
 }
