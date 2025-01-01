@@ -66,7 +66,7 @@ namespace Transport_API.Repository.Implementations
                 Employees = employees.ToList()
             };
 
-            return new ServiceResponse<GetEmployeeTransportationReportResponse>(true, "Records Found", response, StatusCodes.Status200OK);
+            return new ServiceResponse<GetEmployeeTransportationReportResponse>(true, "Records Found", response, StatusCodes.Status200OK, totalEmployeeCount);
         }
 
 
@@ -216,7 +216,7 @@ namespace Transport_API.Repository.Implementations
             }
 
             // Fetch total student count
-            int totalCount = await GetTotalStudentCount(request.RoutePlanID.Value, vehicleDetails.VehicleID);
+            int totalStudentCount = await GetTotalStudentCount(request.RoutePlanID.Value, vehicleDetails.VehicleID);
 
             // Fetch students for the route
             var students = await GetStudentsForRoute(request.RoutePlanID.Value, request.Search);
@@ -229,11 +229,11 @@ namespace Transport_API.Repository.Implementations
                 CoordinatorName = vehicleDetails.CoordinatorName,
                 DriverName = vehicleDetails.DriverName,
                 DriverNumber = vehicleDetails.DriverNumber,
-                TotalCount = totalCount,
+                TotalCount = totalStudentCount,
                 Students = students.ToList()
             };
 
-            return new ServiceResponse<GetStudentTransportReportResponse>(true, "Record Found", reportResponse, StatusCodes.Status200OK, totalCount);
+            return new ServiceResponse<GetStudentTransportReportResponse>(true, "Record Found", reportResponse, StatusCodes.Status200OK, totalStudentCount);
         }
 
 
@@ -327,8 +327,8 @@ namespace Transport_API.Repository.Implementations
                 sm.Admission_Number AS AdmissionNumber,
                 CONCAT(c.class_name, ' - ', sec.section_name) AS ClassSection,
                 sm.Roll_Number AS RollNumber,
-                '-' AS FatherName,
-                '-' AS MobileNumber,
+                COALESCE(CONCAT(spi.First_Name, ' ', spi.Last_Name), '-') AS FatherName,  -- Concatenate First and Last Name of Father
+                COALESCE(spi.Mobile_Number, '-') AS MobileNumber,  -- Use COALESCE to handle NULL values
                 rsm.StopName AS StopName,
                 -- Adding Transport Fee calculation
                 CASE 
@@ -353,6 +353,8 @@ namespace Transport_API.Repository.Implementations
                 tblRouteTermFeesPayment rtf ON rtf.StopID = rsm.StopID
             LEFT JOIN 
                 tblRouteMonthlyFeesPayment rmf ON rmf.StopID = rsm.StopID
+            LEFT JOIN 
+                tbl_StudentParentsInfo spi ON sm.student_id = spi.Student_id AND spi.Parent_Type_id = 1  -- Assuming Father is Parent_Type_id = 1
             WHERE 
                 rsm.RoutePlanID = @RoutePlanID";
 
@@ -387,38 +389,38 @@ namespace Transport_API.Repository.Implementations
 
             // Query to get student information
             var students = await _dbConnection.QueryAsync<GetTransportAttendanceResponse>(@"
-SELECT 
-    sm.student_id AS StudentID,
-    CONCAT(sm.First_Name, ' ', sm.Last_Name) AS StudentName,
-    sm.Admission_Number AS AdmissionNo,
-    CONCAT(c.class_name, ' - ', s.section_name) AS ClassSection
-FROM 
-    tbl_StudentMaster sm
-JOIN 
-    tbl_Class c ON sm.class_id = c.class_id
-JOIN 
-    tbl_Section s ON sm.section_id = s.section_id
-JOIN 
-    tblStudentStopMapping ssm ON sm.student_id = ssm.StudentID
-JOIN 
-    tblRouteStopMaster rsm ON ssm.StopID = rsm.StopID
-WHERE 
-    rsm.RoutePlanID = @RoutePlanID", new { request.RoutePlanID });
+                    SELECT 
+                        sm.student_id AS StudentID,
+                        CONCAT(sm.First_Name, ' ', sm.Last_Name) AS StudentName,
+                        sm.Admission_Number AS AdmissionNo,
+                        CONCAT(c.class_name, ' - ', s.section_name) AS ClassSection
+                    FROM 
+                        tbl_StudentMaster sm
+                    JOIN 
+                        tbl_Class c ON sm.class_id = c.class_id
+                    JOIN 
+                        tbl_Section s ON sm.section_id = s.section_id
+                    JOIN 
+                        tblStudentStopMapping ssm ON sm.student_id = ssm.StudentID
+                    JOIN 
+                        tblRouteStopMaster rsm ON ssm.StopID = rsm.StopID
+                    WHERE 
+                        rsm.RoutePlanID = @RoutePlanID", new { request.RoutePlanID });
 
-            foreach (var student in students)
-            {
-                // Get attendance data for each student
-                var attendance = await _dbConnection.QueryAsync(@"
-    SELECT 
-        AttendanceDate,
-        TransportAttendanceTypeID,
-        AttendanceStatus
-    FROM 
-        tblTransportAttendance
-    WHERE 
-        RoutePlanID = @RoutePlanID
-        AND StudentID = @StudentID
-        AND AttendanceDate BETWEEN @StartDate AND @EndDate",
+                                foreach (var student in students)
+                                {
+                                    // Get attendance data for each student
+                                    var attendance = await _dbConnection.QueryAsync(@"
+                        SELECT 
+                            AttendanceDate,
+                            TransportAttendanceTypeID,
+                            AttendanceStatus
+                        FROM 
+                            tblTransportAttendance
+                        WHERE 
+                            RoutePlanID = @RoutePlanID
+                            AND StudentID = @StudentID
+                            AND AttendanceDate BETWEEN @StartDate AND @EndDate",
                     new
                     {
                         RoutePlanID = request.RoutePlanID,
@@ -426,6 +428,10 @@ WHERE
                         StartDate = startDate,
                         EndDate = endDate
                     });
+
+
+             
+
 
                 // Group attendance by date
                 var attendanceByDate = attendance
@@ -443,7 +449,9 @@ WHERE
                 student.Days = dayAttendanceList;
             }
 
-            return new ServiceResponse<IEnumerable<GetTransportAttendanceResponse>>(true, "Records Found", students, StatusCodes.Status200OK);
+            int totalCount = students.Count();
+
+            return new ServiceResponse<IEnumerable<GetTransportAttendanceResponse>>(true, "Records Found", students, StatusCodes.Status200OK, totalCount);
         }
 
         private string FormatAttendance(IEnumerable<dynamic> attendanceGroup, int attendanceTypeID)
@@ -488,45 +496,48 @@ WHERE
         public async Task<ServiceResponse<IEnumerable<GetStudentsReportResponse>>> GetStudentsReport(StudentsReportRequest request)
         {
             string sql = @"
-        -- Allocated students
-        SELECT 
-            sm.student_id AS StudentID,
-            CONCAT(sm.First_Name, ' ', sm.Last_Name) AS StudentName,
-            sm.Admission_Number AS AdmissionNo,
-            sm.Roll_Number AS RollNo,
-            '' AS FatherName,
-            '' AS MobileNo,
-            'Allocated' AS Status
-        FROM 
-            tbl_StudentMaster sm
-        JOIN 
-            tblStudentStopMapping ssm ON sm.student_id = ssm.StudentID
-        WHERE 
-            sm.class_id = @ClassID
-            AND sm.section_id = @SectionID
-            AND sm.Institute_id = @InstituteID
+            -- Allocated students
+            SELECT 
+                sm.student_id AS StudentID,
+                CONCAT(sm.First_Name, ' ', sm.Last_Name) AS StudentName,
+                sm.Admission_Number AS AdmissionNo,
+                sm.Roll_Number AS RollNo,
+                COALESCE(CONCAT(spi.First_Name, ' ', spi.Last_Name), '-') AS FatherName,  -- Father’s Name (First and Last)
+                COALESCE(spi.Mobile_Number, '-') AS MobileNo,  -- Father’s Mobile Number
+                'Allocated' AS Status
+            FROM 
+                tbl_StudentMaster sm
+            JOIN 
+                tblStudentStopMapping ssm ON sm.student_id = ssm.StudentID
+            LEFT JOIN 
+                tbl_StudentParentsInfo spi ON sm.student_id = spi.Student_id AND spi.Parent_Type_id = 1  -- Assuming Parent_Type_id = 1 is for Father
+            WHERE 
+                sm.class_id = @ClassID
+                AND sm.section_id = @SectionID
+                AND sm.Institute_id = @InstituteID
 
-        UNION
+            UNION
 
-        -- Non-Allocated students
-        SELECT 
-            sm.student_id AS StudentID,
-            CONCAT(sm.First_Name, ' ', sm.Last_Name) AS StudentName,
-            sm.Admission_Number AS AdmissionNo,
-            sm.Roll_Number AS RollNo,
-            '' AS FatherName,
-            '' AS MobileNo,
-            'Non-Allocated' AS Status
-        FROM 
-            tbl_StudentMaster sm
-        LEFT JOIN 
-            tblStudentStopMapping ssm ON sm.student_id = ssm.StudentID
-        WHERE 
-            sm.class_id = @ClassID
-            AND sm.section_id = @SectionID
-            AND sm.Institute_ID = @InstituteID
-            AND ssm.StudentID IS NULL
-    ";
+            -- Non-Allocated students
+            SELECT 
+                sm.student_id AS StudentID,
+                CONCAT(sm.First_Name, ' ', sm.Last_Name) AS StudentName,
+                sm.Admission_Number AS AdmissionNo,
+                sm.Roll_Number AS RollNo,
+                '-' AS FatherName,  -- No father data for non-allocated students
+                '-' AS MobileNo,    -- No mobile number for non-allocated students
+                'Non-Allocated' AS Status
+            FROM 
+                tbl_StudentMaster sm
+            LEFT JOIN 
+                tblStudentStopMapping ssm ON sm.student_id = ssm.StudentID
+            LEFT JOIN 
+                tbl_StudentParentsInfo spi ON sm.student_id = spi.Student_id AND spi.Parent_Type_id = 1  -- Assuming Parent_Type_id = 1 is for Father
+            WHERE 
+                sm.class_id = @ClassID
+                AND sm.section_id = @SectionID
+                AND sm.Institute_ID = @InstituteID
+                AND ssm.StudentID IS NULL;";
 
             // Fetch all students (both Allocated and Non-Allocated)
             var students = await _dbConnection.QueryAsync<GetStudentsReportResponse>(sql, new
@@ -551,11 +562,11 @@ WHERE
 
             if (filteredStudents != null && filteredStudents.Any())
             {
-                return new ServiceResponse<IEnumerable<GetStudentsReportResponse>>(true, "Records Found", filteredStudents, StatusCodes.Status200OK);
+                return new ServiceResponse<IEnumerable<GetStudentsReportResponse>>(true, "Records Found", filteredStudents, StatusCodes.Status200OK, filteredStudents.Count());
             }
             else
             {
-                return new ServiceResponse<IEnumerable<GetStudentsReportResponse>>(false, "No Records Found", null, StatusCodes.Status204NoContent);
+                return new ServiceResponse<IEnumerable<GetStudentsReportResponse>>(false, "No Records Found", null, StatusCodes.Status204NoContent, filteredStudents.Count());
             }
         }
 
@@ -585,33 +596,38 @@ WHERE
                 var worksheet = package.Workbook.Worksheets.Add("EmployeeTransportation");
 
                 // Add headers
-                worksheet.Cells[1, 1].Value = "Vehicle ID";
-                worksheet.Cells[1, 2].Value = "Vehicle No";
-                worksheet.Cells[1, 3].Value = "Vehicle Type";
-                worksheet.Cells[1, 4].Value = "Coordinator Name";
-                worksheet.Cells[1, 5].Value = "Driver Name";
-                worksheet.Cells[1, 6].Value = "Driver Number";
-                worksheet.Cells[1, 7].Value = "Total Count";
+                worksheet.Cells[1, 1].Value = "Sr. No.";
+                worksheet.Cells[1, 2].Value = "Employee ID";
+                worksheet.Cells[1, 3].Value = "Employee Name";
+                worksheet.Cells[1, 4].Value = "Department";
+                worksheet.Cells[1, 5].Value = "Designation";
+                worksheet.Cells[1, 6].Value = "Mobile Number";
+                worksheet.Cells[1, 7].Value = "Stop Name";
+                worksheet.Cells[1, 8].Value = "Transport Fee";
 
-                int row = 2;
+                int row = 1;
                 foreach (var item in data)
                 {
-                    worksheet.Cells[row, 1].Value = item.VehicleID;
-                    worksheet.Cells[row, 2].Value = item.VehicleNo;
-                    worksheet.Cells[row, 3].Value = item.VehicleType;
-                    worksheet.Cells[row, 4].Value = item.CoordinatorName;
-                    worksheet.Cells[row, 5].Value = item.DriverName;
-                    worksheet.Cells[row, 6].Value = item.DriverNumber;
-                    worksheet.Cells[row, 7].Value = item.TotalCount;
+                    //worksheet.Cells[row, 1].Value = item.VehicleID;
+                    //worksheet.Cells[row, 2].Value = item.VehicleNo;
+                    //worksheet.Cells[row, 3].Value = item.VehicleType;
+                    //worksheet.Cells[row, 4].Value = item.CoordinatorName;
+                    //worksheet.Cells[row, 5].Value = item.DriverName;
+                    //worksheet.Cells[row, 6].Value = item.DriverNumber;
+                    //worksheet.Cells[row, 7].Value = item.TotalCount;
 
                     int employeeRow = row + 1;
                     foreach (var emp in item.Employees)
                     {
-                        worksheet.Cells[employeeRow, 2].Value = emp.EmployeeName;
-                        worksheet.Cells[employeeRow, 3].Value = emp.Department;
-                        worksheet.Cells[employeeRow, 4].Value = emp.Designation;
-                        worksheet.Cells[employeeRow, 5].Value = emp.MobileNumber;
-                        worksheet.Cells[employeeRow, 6].Value = emp.StopName;
+                        worksheet.Cells[employeeRow, 1].Value = employeeRow - 1;
+                        worksheet.Cells[employeeRow, 2].Value = emp.EmployeeID;
+                        worksheet.Cells[employeeRow, 3].Value = emp.EmployeeName;
+                        worksheet.Cells[employeeRow, 4].Value = emp.Department;
+                        worksheet.Cells[employeeRow, 5].Value = emp.Designation;
+                        worksheet.Cells[employeeRow, 6].Value = emp.MobileNumber;
+                        worksheet.Cells[employeeRow, 7].Value = emp.StopName;
+                        worksheet.Cells[employeeRow, 8].Value = emp.TransportFee;
+
                         employeeRow++;
                     }
 
@@ -643,33 +659,40 @@ WHERE
                 var worksheet = package.Workbook.Worksheets.Add("StudentTransport");
 
                 // Add headers
-                worksheet.Cells[1, 1].Value = "Vehicle ID";
-                worksheet.Cells[1, 2].Value = "Vehicle No";
-                worksheet.Cells[1, 3].Value = "Vehicle Type";
-                worksheet.Cells[1, 4].Value = "Coordinator Name";
-                worksheet.Cells[1, 5].Value = "Driver Name";
-                worksheet.Cells[1, 6].Value = "Driver Number";
-                worksheet.Cells[1, 7].Value = "Total Count";
+                worksheet.Cells[1, 1].Value = "Sr. No.";
+                worksheet.Cells[1, 2].Value = "Admission Number";
+                worksheet.Cells[1, 3].Value = "Student Name";
+                worksheet.Cells[1, 4].Value = "Class-Section"; 
+                worksheet.Cells[1, 5].Value = "Roll Number";
+                worksheet.Cells[1, 6].Value = "Father Name";
+                worksheet.Cells[1, 7].Value = "Mobile Number";
+                worksheet.Cells[1, 8].Value = "Stop Name";
+                worksheet.Cells[1, 9].Value = "Transport Fee";
 
-                int row = 2;
+                int row = 1;
                 foreach (var item in data)
                 {
-                    worksheet.Cells[row, 1].Value = item.VehicleID;
-                    worksheet.Cells[row, 2].Value = item.VehicleNo;
-                    worksheet.Cells[row, 3].Value = item.VehicleType;
-                    worksheet.Cells[row, 4].Value = item.CoordinatorName;
-                    worksheet.Cells[row, 5].Value = item.DriverName;
-                    worksheet.Cells[row, 6].Value = item.DriverNumber;
-                    worksheet.Cells[row, 7].Value = item.TotalCount;
+                    //worksheet.Cells[row, 1].Value = item.VehicleID;
+                    //worksheet.Cells[row, 2].Value = item.VehicleNo;
+                    //worksheet.Cells[row, 3].Value = item.VehicleType;
+                    //worksheet.Cells[row, 4].Value = item.CoordinatorName;
+                    //worksheet.Cells[row, 5].Value = item.DriverName;
+                    //worksheet.Cells[row, 6].Value = item.DriverNumber;
+                    //worksheet.Cells[row, 7].Value = item.TotalCount;
 
                     int studentRow = row + 1;
                     foreach (var student in item.Students)
                     {
-                        worksheet.Cells[studentRow, 2].Value = student.StudentName;
-                        worksheet.Cells[studentRow, 3].Value = student.AdmissionNumber;
-                        worksheet.Cells[studentRow, 4].Value = student.ClassSection;
+                        worksheet.Cells[studentRow, 1].Value = studentRow - 1;
+                        worksheet.Cells[studentRow, 2].Value = student.AdmissionNumber;
+                        worksheet.Cells[studentRow, 3].Value = student.StudentName;
+                        worksheet.Cells[studentRow, 4].Value = student.ClassSection; 
                         worksheet.Cells[studentRow, 5].Value = student.RollNumber;
-                        worksheet.Cells[studentRow, 6].Value = student.StopName;
+                        worksheet.Cells[studentRow, 6].Value = student.FatherName;
+                        worksheet.Cells[studentRow, 7].Value = student.MobileNumber; 
+                        worksheet.Cells[studentRow, 8].Value = student.StopName;
+                        worksheet.Cells[studentRow, 9].Value = student.TransportFee;
+
                         studentRow++;
                     }
 
@@ -695,23 +718,25 @@ WHERE
 
             // Query to get student information
             var students = await _dbConnection.QueryAsync<GetTransportAttendanceResponse>(@"
-        SELECT 
-            sm.student_id AS StudentID,
-            CONCAT(sm.First_Name, ' ', sm.Last_Name) AS StudentName,
-            sm.Admission_Number AS AdmissionNo,
-            CONCAT(c.class_name, ' - ', s.section_name) AS ClassSection,
-            '' AS MobileNo
-        FROM 
-            tbl_StudentMaster sm
-        JOIN 
-            tbl_Class c ON sm.class_id = c.class_id
-        JOIN 
-            tbl_Section s ON sm.section_id = s.section_id
-        JOIN 
-            tblStudentStopMapping ssm ON sm.student_id = ssm.StudentID
-        JOIN 
-            tblRouteStopMaster rsm ON ssm.StopID = rsm.StopID
-        WHERE 
+            SELECT 
+                sm.student_id AS StudentID,
+                CONCAT(sm.First_Name, ' ', sm.Last_Name) AS StudentName,
+                sm.Admission_Number AS AdmissionNo,
+                CONCAT(c.class_name, ' - ', s.section_name) AS ClassSection,
+                COALESCE(spi.Mobile_Number, '-') AS MobileNo -- Fetch Father's Mobile Number from tbl_StudentParentsInfo
+            FROM 
+                tbl_StudentMaster sm
+            JOIN 
+                tbl_Class c ON sm.class_id = c.class_id
+            JOIN 
+                tbl_Section s ON sm.section_id = s.section_id
+            JOIN 
+                tblStudentStopMapping ssm ON sm.student_id = ssm.StudentID
+            JOIN 
+                tblRouteStopMaster rsm ON ssm.StopID = rsm.StopID
+            LEFT JOIN 
+                tbl_StudentParentsInfo spi ON sm.student_id = spi.Student_id AND spi.Parent_Type_id = 1  -- Assuming Father is Parent_Type_id = 1
+            WHERE 
             rsm.RoutePlanID = @RoutePlanID
             AND sm.Institute_id = @InstituteID", new { request.RoutePlanID, request.InstituteID });
 
@@ -839,20 +864,20 @@ WHERE
                 var worksheet = package.Workbook.Worksheets.Add("StudentsReport");
 
                 // Add headers
-                worksheet.Cells[1, 1].Value = "Student ID";
-                worksheet.Cells[1, 2].Value = "Student Name";
-                worksheet.Cells[1, 3].Value = "Admission No";
-                worksheet.Cells[1, 4].Value = "Roll No";
+                worksheet.Cells[1, 1].Value = "Sr. No.";
+                worksheet.Cells[1, 2].Value = "Admission No.";
+                worksheet.Cells[1, 3].Value = "Student Name";
+                worksheet.Cells[1, 4].Value = "Roll Number";
                 worksheet.Cells[1, 5].Value = "Father Name";
-                worksheet.Cells[1, 6].Value = "Mobile No";
+                worksheet.Cells[1, 6].Value = "Mobile No.";
                 worksheet.Cells[1, 7].Value = "Status";
 
                 int row = 2;
                 foreach (var student in data)
                 {
-                    worksheet.Cells[row, 1].Value = student.StudentID;
-                    worksheet.Cells[row, 2].Value = student.StudentName;
-                    worksheet.Cells[row, 3].Value = student.AdmissionNo;
+                    worksheet.Cells[row, 1].Value = row - 1;
+                    worksheet.Cells[row, 2].Value = student.AdmissionNo;
+                    worksheet.Cells[row, 3].Value = student.StudentName;
                     worksheet.Cells[row, 4].Value = student.RollNo;
                     worksheet.Cells[row, 5].Value = student.FatherName;
                     worksheet.Cells[row, 6].Value = student.MobileNo;
@@ -865,7 +890,7 @@ WHERE
         }
 
 
-        // Employee Transportation Report CSV Export
+        //Employee Transportation Report CSV Export
         public async Task<byte[]> GetEmployeeTransportationReportExportCSV(GetReportsRequest request)
         {
             var reportData = await GetEmployeeTransportationReport(request); // Fetch data using existing method
@@ -879,23 +904,52 @@ WHERE
             return null;
         }
 
+
+
+
+        //private byte[] GenerateCSVForEmployeeTransportation(IEnumerable<GetEmployeeTransportationReportResponse> data)
+        //{
+        //    var csv = new StringBuilder();
+        //    csv.AppendLine("Vehicle ID, Vehicle No, Vehicle Type, Coordinator Name, Driver Name, Driver Number, Total Count");
+
+        //    foreach (var item in data)
+        //    {
+        //        csv.AppendLine($"{item.VehicleID}, {item.VehicleNo}, {item.VehicleType}, {item.CoordinatorName}, {item.DriverName}, {item.DriverNumber}, {item.TotalCount}");
+
+        //        foreach (var emp in item.Employees)
+        //        {
+        //            csv.AppendLine($", , , , Employee Name: {emp.EmployeeName}, Department: {emp.Department}, Designation: {emp.Designation}, Mobile: {emp.MobileNumber}, Stop: {emp.StopName}");
+        //        }
+        //    }
+
+        //    return Encoding.UTF8.GetBytes(csv.ToString());
+        //}
+
+
         private byte[] GenerateCSVForEmployeeTransportation(IEnumerable<GetEmployeeTransportationReportResponse> data)
         {
             var csv = new StringBuilder();
-            csv.AppendLine("Vehicle ID, Vehicle No, Vehicle Type, Coordinator Name, Driver Name, Driver Number, Total Count");
+            // Write the CSV header
+            //csv.AppendLine("Vehicle ID, Vehicle No, Vehicle Type, Coordinator Name, Driver Name, Driver Number, Total Count, Employee Name, Department, Designation, Mobile, Stop");
 
+            csv.AppendLine("Sr. No., Employee ID, Employee Name, Department, Designation, Mobile No., Stop, Transport Fee");
+
+            // Iterate over the vehicle data
             foreach (var item in data)
             {
-                csv.AppendLine($"{item.VehicleID}, {item.VehicleNo}, {item.VehicleType}, {item.CoordinatorName}, {item.DriverName}, {item.DriverNumber}, {item.TotalCount}");
-
+                int i = 1;
+                // Write the vehicle-level data
                 foreach (var emp in item.Employees)
                 {
-                    csv.AppendLine($", , , , Employee Name: {emp.EmployeeName}, Department: {emp.Department}, Designation: {emp.Designation}, Mobile: {emp.MobileNumber}, Stop: {emp.StopName}");
+                    csv.AppendLine($"{i.ToString() ?? "N/A"}, {emp.EmployeeID ?? "N/A"}, {emp.EmployeeName ?? "N/A"}, {emp.Department ?? "N/A"}, {emp.Designation ?? "N/A"}, {emp.MobileNumber ?? "N/A"}, {emp.StopName ?? "N/A"}, {emp.TransportFee ?? "N/A"}");
+                    i++;
                 }
             }
 
+            // Return the CSV as a byte array
             return Encoding.UTF8.GetBytes(csv.ToString());
         }
+
 
         // Student Transport Report CSV Export
         public async Task<byte[]> GetStudentTransportReportExportCSV(GetReportsRequest request)
@@ -914,15 +968,16 @@ WHERE
         private byte[] GenerateCSVForStudentTransport(IEnumerable<GetStudentTransportReportResponse> data)
         {
             var csv = new StringBuilder();
-            csv.AppendLine("Vehicle ID, Vehicle No, Vehicle Type, Coordinator Name, Driver Name, Driver Number, Total Count");
+            csv.AppendLine("Sr. No., Admission Number, Student Name, Class-Section, Roll Number, Father Name, Mobile Number, Stop Name, Transport Fee");
 
             foreach (var item in data)
             {
-                csv.AppendLine($"{item.VehicleID}, {item.VehicleNo}, {item.VehicleType}, {item.CoordinatorName}, {item.DriverName}, {item.DriverNumber}, {item.TotalCount}");
-
+                //csv.AppendLine($"{item.VehicleID}, {item.VehicleNo}, {item.VehicleType}, {item.CoordinatorName}, {item.DriverName}, {item.DriverNumber}, {item.TotalCount}");
+                int i = 1;
                 foreach (var student in item.Students)
                 {
-                    csv.AppendLine($", , , , Student Name: {student.StudentName}, Admission: {student.AdmissionNumber}, Class-Section: {student.ClassSection}, Roll: {student.RollNumber}, Stop: {student.StopName}");
+                    csv.AppendLine($"{i.ToString()}, {student.AdmissionNumber}, {student.StudentName}, {student.ClassSection}, {student.RollNumber}, {student.FatherName}, {student.MobileNumber}, {student.StopName}, {student.TransportFee}");
+                    i++;               
                 }
             }
 
@@ -937,25 +992,27 @@ WHERE
             var allDates = Enumerable.Range(0, 1 + endDate.Subtract(startDate).Days).Select(offset => startDate.AddDays(offset)).ToList();
 
             var students = await _dbConnection.QueryAsync<GetTransportAttendanceResponse>(@"
-        SELECT 
-            sm.student_id AS StudentID,
-            CONCAT(sm.First_Name, ' ', sm.Last_Name) AS StudentName,
-            sm.Admission_Number AS AdmissionNo,
-            CONCAT(c.class_name, ' - ', s.section_name) AS ClassSection,
-            '' AS MobileNo
-        FROM 
-            tbl_StudentMaster sm
-        JOIN 
-            tbl_Class c ON sm.class_id = c.class_id
-        JOIN 
-            tbl_Section s ON sm.section_id = s.section_id
-        JOIN 
-            tblStudentStopMapping ssm ON sm.student_id = ssm.StudentID
-        JOIN 
-            tblRouteStopMaster rsm ON ssm.StopID = rsm.StopID
-        WHERE 
-            rsm.RoutePlanID = @RoutePlanID
-            AND sm.Institute_id = @InstituteID", new { request.RoutePlanID, request.InstituteID });
+            SELECT 
+                sm.student_id AS StudentID,
+                CONCAT(sm.First_Name, ' ', sm.Last_Name) AS StudentName,
+                sm.Admission_Number AS AdmissionNo,
+                CONCAT(c.class_name, ' - ', s.section_name) AS ClassSection,
+                COALESCE(spi.Mobile_Number, '-') AS MobileNo -- Fetch Father's Mobile Number from tbl_StudentParentsInfo
+            FROM 
+                tbl_StudentMaster sm
+            JOIN 
+                tbl_Class c ON sm.class_id = c.class_id
+            JOIN 
+                tbl_Section s ON sm.section_id = s.section_id
+            JOIN 
+                tblStudentStopMapping ssm ON sm.student_id = ssm.StudentID
+            JOIN 
+                tblRouteStopMaster rsm ON ssm.StopID = rsm.StopID
+            LEFT JOIN 
+                tbl_StudentParentsInfo spi ON sm.student_id = spi.Student_id AND spi.Parent_Type_id = 1  -- Assuming Father is Parent_Type_id = 1
+            WHERE  
+                rsm.RoutePlanID = @RoutePlanID
+                AND sm.Institute_id = @InstituteID", new { request.RoutePlanID, request.InstituteID });
 
             // Pass routePlanID when generating the CSV
             return GenerateCSVForTransportAttendance(allDates, students, request.RoutePlanID);

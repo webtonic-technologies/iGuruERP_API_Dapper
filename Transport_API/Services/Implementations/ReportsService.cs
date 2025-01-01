@@ -28,20 +28,27 @@ namespace Transport_API.Services.Implementations
         }
 
 
-        public async Task<ServiceResponse<IEnumerable<GetStudentTransportReportResponse>>> GetStudentTransportReport(GetReportsRequest request)
+        public async Task<ServiceResponse<GetStudentTransportReportResponse>> GetStudentTransportReport(GetReportsRequest request)
         {
-            var reportResponse = await _reportsRepository.GetStudentTransportReport(request);
-
-            if (reportResponse.Data != null)
-            {
-                var reportData = new List<GetStudentTransportReportResponse> { reportResponse.Data };
-                return new ServiceResponse<IEnumerable<GetStudentTransportReportResponse>>(true, "Record Found", reportData, StatusCodes.Status200OK);
-            }
-            else
-            {
-                return new ServiceResponse<IEnumerable<GetStudentTransportReportResponse>>(false, "No Records Found", null, StatusCodes.Status204NoContent);
-            }
+            // Fetch the employee transportation report using repository
+            return await _reportsRepository.GetStudentTransportReport(request);
         }
+
+
+        //public async Task<ServiceResponse<IEnumerable<GetStudentTransportReportResponse>>> GetStudentTransportReport(GetReportsRequest request)
+        //{
+        //    var reportResponse = await _reportsRepository.GetStudentTransportReport(request);
+
+        //    if (reportResponse.Data != null)
+        //    {
+        //        var reportData = new List<GetStudentTransportReportResponse> { reportResponse.Data };
+        //        return new ServiceResponse<IEnumerable<GetStudentTransportReportResponse>>(true, "Record Found", reportData, StatusCodes.Status200OK);
+        //    }
+        //    else
+        //    {
+        //        return new ServiceResponse<IEnumerable<GetStudentTransportReportResponse>>(false, "No Records Found", null, StatusCodes.Status204NoContent);
+        //    }
+        //}
 
         public async Task<ServiceResponse<IEnumerable<GetTransportAttendanceResponse>>> GetTransportAttendanceReport(TransportAttendanceReportRequest request)
         {

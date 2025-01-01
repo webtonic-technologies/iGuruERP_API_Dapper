@@ -8,7 +8,9 @@ namespace Transport_API.Services.Interfaces
     {
         Task<ServiceResponse<IEnumerable<ReportResponse>>> GetTransportPendingFeeReport(GetReportsRequest request);
         Task<ServiceResponse<GetEmployeeTransportationReportResponse>> GetEmployeeTransportationReport(GetReportsRequest request);
-        Task<ServiceResponse<IEnumerable<GetStudentTransportReportResponse>>> GetStudentTransportReport(GetReportsRequest request);
+        Task<ServiceResponse<GetStudentTransportReportResponse>> GetStudentTransportReport(GetReportsRequest request);
+
+        //Task<ServiceResponse<IEnumerable<GetStudentTransportReportResponse>>> GetStudentTransportReport(GetReportsRequest request);
         Task<ServiceResponse<IEnumerable<GetTransportAttendanceResponse>>> GetTransportAttendanceReport(TransportAttendanceReportRequest request);
         Task<ServiceResponse<IEnumerable<ReportResponse>>> GetDeAllocationReport(GetReportsRequest request);
         Task<ServiceResponse<IEnumerable<GetStudentsReportResponse>>> GetStudentsReport(StudentsReportRequest request);
