@@ -8,8 +8,8 @@ namespace Student_API.Services.Interfaces
         Task<ServiceResponse<List<StudentCredentialsResponse>>> GetAllStudentLoginCred(StudentLoginRequest request);
         Task<ServiceResponse<List<StudentsNonAppUsersResponse>>> GetAllStudentNonAppUsers(StudentLoginRequest request);
         Task<ServiceResponse<List<StudentActivityResponse>>> GetAllStudentActivity(StudentLoginRequest request);
-        Task<ServiceResponse<byte[]>> DownloadExcelSheet(int InstituteId);
-        Task<ServiceResponse<byte[]>> DownloadExcelSheetNonAppUsers(int InstituteId);
-        Task<ServiceResponse<byte[]>> DownloadExcelSheetStudentActivity(int InstituteId);
+        Task<ServiceResponse<byte[]>> DownloadExcelSheet(int InstituteId, string format);
+        Task<ServiceResponse<byte[]>> DownloadExcelSheetNonAppUsers(int InstituteId, string fileType);
+        Task<ServiceResponse<byte[]>> DownloadExcelSheetStudentActivity(int InstituteId, string fileType);
     }
 }

@@ -77,9 +77,9 @@ namespace Student_API.Controllers
             }
         }
         [HttpGet("DownloadExcelSheet/{InstituteId}")]
-        public async Task<IActionResult> DownloadExcelSheet(int InstituteId)
+        public async Task<IActionResult> DownloadExcelSheet(int InstituteId, string format)
         {
-            var response = await _studentLoginsServices.DownloadExcelSheet(InstituteId);
+            var response = await _studentLoginsServices.DownloadExcelSheet(InstituteId, format);
             if (response.Success)
             {
                 return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "StudentCredentials.xlsx");
@@ -87,9 +87,9 @@ namespace Student_API.Controllers
             return StatusCode(response.StatusCode, response.Message);
         }
         [HttpGet("DownloadExcelSheetNonAppUsers/{InstituteId}")]
-        public async Task<IActionResult> DownloadExcelSheetNonAppUsers(int InstituteId)
+        public async Task<IActionResult> DownloadExcelSheetNonAppUsers(int InstituteId, string format)
         {
-            var response = await _studentLoginsServices.DownloadExcelSheetNonAppUsers(InstituteId);
+            var response = await _studentLoginsServices.DownloadExcelSheetNonAppUsers(InstituteId, format);
             if (response.Success)
             {
                 return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "StudentNonAppUsers.xlsx");
@@ -97,9 +97,9 @@ namespace Student_API.Controllers
             return StatusCode(response.StatusCode, response.Message);
         }
         [HttpGet("DownloadExcelSheetStudentActivity/{InstituteId}")]
-        public async Task<IActionResult> DownloadExcelSheetStudentActivity(int InstituteId)
+        public async Task<IActionResult> DownloadExcelSheetStudentActivity(int InstituteId, string format)
         {
-            var response = await _studentLoginsServices.DownloadExcelSheetStudentActivity(InstituteId);
+            var response = await _studentLoginsServices.DownloadExcelSheetStudentActivity(InstituteId, format);
             if (response.Success)
             {
                 return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "StudentActivity.xlsx");
