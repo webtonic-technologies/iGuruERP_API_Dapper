@@ -7,7 +7,10 @@ using System.Data;
 using Transport_API.DTOs.Response;
 using OfficeOpenXml;
 using System.Text;  // Required for StringBuilder and Encoding
-using System.Linq;  // For LINQ usage (if not already present)
+using System.Linq;
+using Transport_API.DTOs.Responses;
+using static Transport_API.DTOs.Responses.GetTransportationPendingFeeReportResponse;
+using System.Globalization;  // For LINQ usage (if not already present)
 
 
 namespace Transport_API.Repository.Implementations
@@ -1134,6 +1137,930 @@ namespace Transport_API.Repository.Implementations
 
             return Encoding.UTF8.GetBytes(csv.ToString());
         }
+        //public async Task<List<GetTransportationPendingFeeReportResponse>> GetTransportationPendingFeeReport(int instituteID, int routePlanID)
+        //{
+        //    string query = @"
+        //         SELECT 
+        //            sm.Student_ID as StudentID,
+        //            sm.First_Name + ' ' + sm.Middle_Name + ' ' + sm.Last_Name AS StudentName,
+        //            c.class_name + ' - ' + s.section_name AS ClassSection,
+        //            sm.Roll_Number AS RollNumber,
+        //            spi.First_Name + ' ' + spi.Middle_Name + ' ' + spi.Last_Name AS FatherName,  -- From tbl_StudentParentsInfo
+        //            spi.Mobile_Number AS Mobile,  -- From tbl_StudentParentsInfo
+        //            rs.StopName,
+        //            CASE
+        //                WHEN rp.FeeTenurityID = 1 THEN 'Single'
+        //                WHEN rp.FeeTenurityID = 2 THEN rtfp.TermName
+        //                WHEN rp.FeeTenurityID = 3 THEN rmfp.MonthName
+        //                ELSE 'N/A'
+        //            END AS TenureType,
+        //            COALESCE(rsfp.FeesAmount, rtfp.FeesAmount, rmfp.FeesAmount, 0) AS FeesAmount
+        //        FROM 
+        //            tbl_StudentMaster sm
+        //        LEFT JOIN 
+        //            tbl_Class c ON sm.class_id = c.class_id
+        //        LEFT JOIN 
+        //            tbl_Section s ON sm.section_id = s.section_id
+        //        LEFT JOIN 
+        //            tblStudentStopMapping ssm ON sm.student_id = ssm.StudentID
+        //        LEFT JOIN 
+        //            tblRouteStopMaster rs ON ssm.StopID = rs.StopID
+        //        LEFT JOIN 
+        //            tblRoutePlan rp ON rs.RoutePlanID = rp.RoutePlanID
+        //        LEFT JOIN 
+        //            tblRouteSingleFeesPayment rsfp ON rp.FeeTenurityID = 1 AND rsfp.StopID = rs.StopID
+        //        LEFT JOIN 
+        //            tblRouteTermFeesPayment rtfp ON rp.FeeTenurityID = 2 AND rtfp.StopID = rs.StopID
+        //        LEFT JOIN 
+        //            tblRouteMonthlyFeesPayment rmfp ON rp.FeeTenurityID = 3 AND rmfp.StopID = rs.StopID
+        //        LEFT JOIN 
+        //            tblVehicleMaster vm ON rp.VehicleID = vm.VehicleID
+        //        LEFT JOIN 
+        //            tbl_Vehicle_Type vt ON vm.VehicleTypeID = vt.Vehicle_type_id
+        //        LEFT JOIN 
+        //            tbl_StudentParentsInfo spi ON sm.Student_ID = spi.Student_id AND spi.Parent_Type_id = 1  -- Join with tbl_StudentParentsInfo 
+        //        WHERE rp.RoutePlanID = @RoutePlanID
+        //        AND rp.InstituteID = @InstituteID";
+
+        //    var result = await _dbConnection.QueryAsync<GetTransportationPendingFeeReportResponse>(
+        //        query,
+        //        new { InstituteID = instituteID, RoutePlanID = routePlanID }
+        //    );
+
+        //    return result.ToList();
+        //}
+
+        public async Task<List<GetTransportationPendingFeeReportResponse>> GetTransportationPendingFeeReport(int instituteID, int routePlanID)
+        {
+            var query = @"
+                SELECT 
+                    sm.Student_ID as StudentID,
+                    sm.First_Name + ' ' + sm.Middle_Name + ' ' + sm.Last_Name AS StudentName,
+                    c.class_name + ' - ' + s.section_name AS ClassSection,
+                    sm.Roll_Number AS RollNumber,
+                    spi.First_Name + ' ' + spi.Middle_Name + ' ' + spi.Last_Name AS FatherName, 
+                    spi.Mobile_Number AS Mobile, 
+                    rs.StopName,
+                    vt.Vehicle_type_name AS VehicleType,
+                    CASE
+                        WHEN rp.FeeTenurityID = 1 THEN 'Single'
+                        WHEN rp.FeeTenurityID = 2 THEN rtfp.TermName
+                        WHEN rp.FeeTenurityID = 3 THEN rmfp.MonthName
+                        ELSE 'N/A'
+                    END AS TenureType,
+                    COALESCE(rsfp.FeesAmount, rtfp.FeesAmount, rmfp.FeesAmount, 0) AS FeesAmount
+                FROM 
+                    tbl_StudentMaster sm
+                LEFT JOIN 
+                    tbl_Class c ON sm.class_id = c.class_id
+                LEFT JOIN 
+                    tbl_Section s ON sm.section_id = s.section_id
+                LEFT JOIN 
+                    tblStudentStopMapping ssm ON sm.student_id = ssm.StudentID
+                LEFT JOIN 
+                    tblRouteStopMaster rs ON ssm.StopID = rs.StopID
+                LEFT JOIN 
+                    tblRoutePlan rp ON rs.RoutePlanID = rp.RoutePlanID
+                LEFT JOIN 
+                    tblRouteSingleFeesPayment rsfp ON rp.FeeTenurityID = 1 AND rsfp.StopID = rs.StopID
+                LEFT JOIN 
+                    tblRouteTermFeesPayment rtfp ON rp.FeeTenurityID = 2 AND rtfp.StopID = rs.StopID
+                LEFT JOIN 
+                    tblRouteMonthlyFeesPayment rmfp ON rp.FeeTenurityID = 3 AND rmfp.StopID = rs.StopID
+                LEFT JOIN 
+                    tblVehicleMaster vm ON rp.VehicleID = vm.VehicleID
+                LEFT JOIN 
+                    tbl_Vehicle_Type vt ON vm.VehicleTypeID = vt.Vehicle_type_id
+                LEFT JOIN 
+                    tbl_StudentParentsInfo spi ON sm.Student_ID = spi.Student_id AND spi.Parent_Type_id = 1
+                WHERE 
+                    rp.RoutePlanID = @RoutePlanID
+                    AND rp.InstituteID = @InstituteID";
+
+            var result = await _dbConnection.QueryAsync<dynamic>(query, new { InstituteID = instituteID, RoutePlanID = routePlanID });
+
+            // Group the result by student information and map to response
+            var response = result.GroupBy(x => new
+            {
+                x.StudentID,
+                x.StudentName,
+                x.ClassSection,
+                x.RollNumber,
+                x.FatherName,
+                x.Mobile,
+                x.StopName
+            })
+            .Select(group => new GetTransportationPendingFeeReportResponse
+            {
+                StudentID = group.Key.StudentID,
+                StudentName = group.Key.StudentName,
+                ClassSection = group.Key.ClassSection,
+                RollNumber = group.Key.RollNumber,
+                FatherName = group.Key.FatherName,
+                Mobile = group.Key.Mobile,
+                StopName = group.Key.StopName,
+                Fees = group.Select(x => new FeeDetail
+                {
+                    Head = "Fee", // Example static value, you could adjust this based on your requirements
+                    VehicleType = x.VehicleType,
+                    TenureType = x.TenureType,
+                    FeesAmount = x.FeesAmount
+                }).ToList()
+            }).ToList();
+
+            return response;
+        }
+
+
+        public async Task<byte[]> GetTransportationPendingFeeReportExportExcel(TransportationFeeReportExExcelRequest request)
+        {
+            var sql = @"
+    SELECT 
+        sm.Student_ID as StudentID,
+        sm.First_Name + ' ' + sm.Middle_Name + ' ' + sm.Last_Name AS StudentName,
+        c.class_name + ' - ' + s.section_name AS ClassSection,
+        sm.Roll_Number AS RollNumber,
+        spi.First_Name + ' ' + spi.Middle_Name + ' ' + spi.Last_Name AS FatherName, 
+        spi.Mobile_Number AS Mobile, 
+        rs.StopName,
+        vt.Vehicle_type_name AS VehicleType,
+        CASE
+            WHEN rp.FeeTenurityID = 1 THEN 'Single'
+            WHEN rp.FeeTenurityID = 2 THEN rtfp.TermName
+            WHEN rp.FeeTenurityID = 3 THEN rmfp.MonthName
+            ELSE 'N/A'
+        END AS TenureType,
+        COALESCE(rsfp.FeesAmount, rtfp.FeesAmount, rmfp.FeesAmount, 0) AS FeesAmount
+    FROM 
+        tbl_StudentMaster sm
+    LEFT JOIN 
+        tbl_Class c ON sm.class_id = c.class_id
+    LEFT JOIN 
+        tbl_Section s ON sm.section_id = s.section_id
+    LEFT JOIN 
+        tblStudentStopMapping ssm ON sm.student_id = ssm.StudentID
+    LEFT JOIN 
+        tblRouteStopMaster rs ON ssm.StopID = rs.StopID
+    LEFT JOIN 
+        tblRoutePlan rp ON rs.RoutePlanID = rp.RoutePlanID
+    LEFT JOIN 
+        tblRouteSingleFeesPayment rsfp ON rp.FeeTenurityID = 1 AND rsfp.StopID = rs.StopID
+    LEFT JOIN 
+        tblRouteTermFeesPayment rtfp ON rp.FeeTenurityID = 2 AND rtfp.StopID = rs.StopID
+    LEFT JOIN 
+        tblRouteMonthlyFeesPayment rmfp ON rp.FeeTenurityID = 3 AND rmfp.StopID = rs.StopID
+    LEFT JOIN 
+        tblVehicleMaster vm ON rp.VehicleID = vm.VehicleID
+    LEFT JOIN 
+        tbl_Vehicle_Type vt ON vm.VehicleTypeID = vt.Vehicle_type_id
+    LEFT JOIN 
+        tbl_StudentParentsInfo spi ON sm.Student_ID = spi.Student_id AND spi.Parent_Type_id = 1
+    WHERE 
+        rp.RoutePlanID = @RoutePlanID
+        AND rp.InstituteID = @InstituteID";
+
+            var data = await _dbConnection.QueryAsync(sql, new { request.InstituteID, request.RoutePlanID });
+
+            // Extract unique TenureType values
+            var tenureTypes = data.Select(x => x.TenureType).Distinct().ToList();
+
+            // Generate Excel File
+            using (var package = new ExcelPackage())
+            {
+                var worksheet = package.Workbook.Worksheets.Add("TransportationPendingFeeReport");
+
+                worksheet.Cells[1, 1].Value = "StudentName";
+                worksheet.Cells[1, 2].Value = "ClassSection";
+                worksheet.Cells[1, 3].Value = "RollNumber";
+                worksheet.Cells[1, 4].Value = "FatherName";
+                worksheet.Cells[1, 5].Value = "Mobile";
+                worksheet.Cells[1, 6].Value = "StopName";
+
+                // Dynamically generate column headers based on TenureType
+                int column = 7; // Start from column 7 for tenure types
+                foreach (var tenureType in tenureTypes)
+                {
+                    worksheet.Cells[1, column].Value = $"Van Fees ({tenureType})";
+                    column++;
+                }
+
+                int row = 2;
+
+                // Group the data by StudentID and map each fee type to the corresponding column
+                var groupedData = data
+                    .GroupBy(x => new { x.StudentName, x.ClassSection, x.RollNumber, x.FatherName, x.Mobile, x.StopName })
+                    .Select(g => new
+                    {
+                        StudentName = g.Key.StudentName,
+                        ClassSection = g.Key.ClassSection,
+                        RollNumber = g.Key.RollNumber,
+                        FatherName = g.Key.FatherName,
+                        Mobile = g.Key.Mobile,
+                        StopName = g.Key.StopName,
+                        FeesByTenureType = tenureTypes.ToDictionary(
+                            tenureType => tenureType,
+                            tenureType => g.FirstOrDefault(x => x.TenureType == tenureType)?.FeesAmount ?? 0
+                        )
+                    });
+
+                foreach (var record in groupedData)
+                {
+                    worksheet.Cells[row, 1].Value = record.StudentName;
+                    worksheet.Cells[row, 2].Value = record.ClassSection;
+                    worksheet.Cells[row, 3].Value = record.RollNumber;
+                    worksheet.Cells[row, 4].Value = record.FatherName;
+                    worksheet.Cells[row, 5].Value = record.Mobile;
+                    worksheet.Cells[row, 6].Value = record.StopName;
+
+                    // Map fees to corresponding columns dynamically based on TenureType
+                    int column1 = 7;
+                    foreach (var tenureType in tenureTypes)
+                    {
+                        worksheet.Cells[row, column1].Value = record.FeesByTenureType[tenureType];
+                        column1++;
+                    }
+
+                    row++;
+                }
+
+                return package.GetAsByteArray();
+            }
+        }
+
+        public async Task<byte[]> GetTransportationPendingFeeReportExportCSV(TransportationFeeReportExExcelRequest request)
+        {
+            var sql = @"
+    SELECT 
+        sm.Student_ID as StudentID,
+        sm.First_Name + ' ' + sm.Middle_Name + ' ' + sm.Last_Name AS StudentName,
+        c.class_name + ' - ' + s.section_name AS ClassSection,
+        sm.Roll_Number AS RollNumber,
+        spi.First_Name + ' ' + spi.Middle_Name + ' ' + spi.Last_Name AS FatherName, 
+        spi.Mobile_Number AS Mobile, 
+        rs.StopName,
+        vt.Vehicle_type_name AS VehicleType,
+        CASE
+            WHEN rp.FeeTenurityID = 1 THEN 'Single'
+            WHEN rp.FeeTenurityID = 2 THEN rtfp.TermName
+            WHEN rp.FeeTenurityID = 3 THEN rmfp.MonthName
+            ELSE 'N/A'
+        END AS TenureType,
+        COALESCE(rsfp.FeesAmount, rtfp.FeesAmount, rmfp.FeesAmount, 0) AS FeesAmount
+    FROM 
+        tbl_StudentMaster sm
+    LEFT JOIN 
+        tbl_Class c ON sm.class_id = c.class_id
+    LEFT JOIN 
+        tbl_Section s ON sm.section_id = s.section_id
+    LEFT JOIN 
+        tblStudentStopMapping ssm ON sm.student_id = ssm.StudentID
+    LEFT JOIN 
+        tblRouteStopMaster rs ON ssm.StopID = rs.StopID
+    LEFT JOIN 
+        tblRoutePlan rp ON rs.RoutePlanID = rp.RoutePlanID
+    LEFT JOIN 
+        tblRouteSingleFeesPayment rsfp ON rp.FeeTenurityID = 1 AND rsfp.StopID = rs.StopID
+    LEFT JOIN 
+        tblRouteTermFeesPayment rtfp ON rp.FeeTenurityID = 2 AND rtfp.StopID = rs.StopID
+    LEFT JOIN 
+        tblRouteMonthlyFeesPayment rmfp ON rp.FeeTenurityID = 3 AND rmfp.StopID = rs.StopID
+    LEFT JOIN 
+        tblVehicleMaster vm ON rp.VehicleID = vm.VehicleID
+    LEFT JOIN 
+        tbl_Vehicle_Type vt ON vm.VehicleTypeID = vt.Vehicle_type_id
+    LEFT JOIN 
+        tbl_StudentParentsInfo spi ON sm.Student_ID = spi.Student_id AND spi.Parent_Type_id = 1
+    WHERE 
+        rp.RoutePlanID = @RoutePlanID
+        AND rp.InstituteID = @InstituteID";
+
+            var data = await _dbConnection.QueryAsync(sql, new { request.InstituteID, request.RoutePlanID });
+
+            // Extract unique TenureType values
+            var tenureTypes = data.Select(x => x.TenureType).Distinct().ToList();
+
+            // Process the data to generate CSV
+            var csv = new StringBuilder();
+            // Create CSV header dynamically based on TenureType values
+            csv.AppendLine("StudentName,ClassSection,RollNumber,FatherName,Mobile,StopName," +
+                            string.Join(",", tenureTypes.Select(t => $"Van Fees ({t})")));
+
+            // Group the data by Student and TenureType
+            var groupedData = data
+                .GroupBy(x => new { x.StudentName, x.ClassSection, x.RollNumber, x.FatherName, x.Mobile, x.StopName })
+                .Select(g => new
+                {
+                    g.Key.StudentName,
+                    g.Key.ClassSection,
+                    g.Key.RollNumber,
+                    g.Key.FatherName,
+                    g.Key.Mobile,
+                    g.Key.StopName,
+                    FeesByTenureType = tenureTypes.ToDictionary(
+                        tenureType => tenureType,
+                        tenureType => g.FirstOrDefault(x => x.TenureType == tenureType)?.FeesAmount ?? 0
+                    )
+                });
+
+            // Add rows to CSV
+            foreach (var record in groupedData)
+            {
+                csv.AppendLine($"{record.StudentName},{record.ClassSection},{record.RollNumber},{record.FatherName},{record.Mobile},{record.StopName}," +
+                                string.Join(",", tenureTypes.Select(t => record.FeesByTenureType[t])));
+            }
+
+            return Encoding.UTF8.GetBytes(csv.ToString());
+        }
+
+        //public async Task<IEnumerable<GetDeAllocationReportResponse>> GetDeAllocationReport(int instituteID, DateTime startDate, DateTime endDate, int userTypeID)
+        //{
+        //    string query = string.Empty;
+
+        //    if (userTypeID == 1)  // Employee Query
+        //    {
+        //        query = @"
+        //            SELECT
+        //                em.Employee_id as EmployeeID,
+        //                em.Employee_code_id as EmployeeCode, 
+        //                em.First_Name + ' ' + em.Middle_Name + ' ' + em.Last_Name AS EmployeeName,
+        //                dp.DepartmentName AS Department,  
+        //                dn.DesignationName AS Designation,  
+        //                em.Mobile_Number AS Mobile, 
+        //                rp.RouteName,
+        //                rs.StopName,
+        //                vm.VehicleNumber,
+        //                em.First_Name + ' ' + em.Last_Name as DeAllocatedBy,
+        //                da.Reason,
+        //                da.DeAllocationDate
+        //            FROM 
+        //                tblEmployeeDeAllocation da 
+        //            LEFT JOIN 
+        //                tbl_EmployeeProfileMaster em ON em.Employee_id = da.DeAllocatedBy 
+        //            LEFT JOIN 
+        //                tbl_Department dp ON em.Department_id = dp.Department_id    
+        //            LEFT JOIN 
+        //                tbl_Designation dn ON em.Designation_id = dn.Designation_id    
+        //            LEFT JOIN 
+        //                tblRouteStopMaster rs ON da.StopID = rs.StopID
+        //            LEFT JOIN 
+        //                tblRoutePlan rp ON rs.RoutePlanID = rp.RoutePlanID 
+        //            LEFT JOIN 
+        //                tblVehicleMaster vm ON rp.VehicleID = vm.VehicleID
+        //            LEFT JOIN 
+        //                tbl_Vehicle_Type vt ON vm.VehicleTypeID = vt.Vehicle_type_id 
+        //            WHERE
+        //                em.Institute_id = @InstituteID
+        //                AND da.DeAllocationDate BETWEEN @StartDate AND @EndDate;
+        //        ";
+        //    }
+        //    else if (userTypeID == 2)  // Student Query
+        //    {
+        //        query = @"
+        //            SELECT
+        //                sm.Student_ID as StudentID,
+        //                sm.Admission_Number as AdmissionNumber,
+        //                sm.First_Name + ' ' + sm.Middle_Name + ' ' + sm.Last_Name AS StudentName,
+        //                c.class_name + ' - ' + s.section_name AS ClassSection,  
+        //                spi.Mobile_Number AS Mobile, 
+        //                rp.RouteName,
+        //                rs.StopName,
+        //                vm.VehicleNumber,
+        //                em.First_Name + ' ' + em.Last_Name as DeAllocatedBy,
+        //                da.Reason,
+        //                da.DeAllocationDate
+        //            FROM 
+        //                tblStudentDeAllocation da
+        //            LEFT JOIN 
+        //                tbl_StudentMaster sm ON da.StudentID = sm.Student_ID
+        //            LEFT JOIN 
+        //                tbl_EmployeeProfileMaster em ON em.Employee_id = da.DeAllocatedBy 
+        //            LEFT JOIN 
+        //                tbl_Class c ON sm.class_id = c.class_id
+        //            LEFT JOIN 
+        //                tbl_Section s ON sm.section_id = s.section_id
+        //            LEFT JOIN 
+        //                tblRouteStopMaster rs ON da.StopID = rs.StopID
+        //            LEFT JOIN 
+        //                tblRoutePlan rp ON rs.RoutePlanID = rp.RoutePlanID 
+        //            LEFT JOIN 
+        //                tblVehicleMaster vm ON rp.VehicleID = vm.VehicleID
+        //            LEFT JOIN 
+        //                tbl_Vehicle_Type vt ON vm.VehicleTypeID = vt.Vehicle_type_id
+        //            LEFT JOIN 
+        //                tbl_StudentParentsInfo spi ON sm.Student_ID = spi.Student_id AND spi.Parent_Type_id = 1
+        //            WHERE
+        //                sm.Institute_id = @InstituteID
+        //                AND da.DeAllocationDate BETWEEN @StartDate AND @EndDate;
+        //        ";
+        //    }
+
+        //    return await _dbConnection.QueryAsync<GetDeAllocationReportResponse>(query, new { InstituteID = instituteID, StartDate = startDate, EndDate = endDate });
+        //}
+
+        public async Task<ServiceResponse<IEnumerable<GetDeAllocationReportResponse>>> GetDeAllocationReport(int instituteID, string startDate, string endDate, int userTypeID)
+        {
+            string query = string.Empty;
+
+            // Parse the string dates into DateTime using 'DD-MM-YYYY' format
+            DateTime parsedStartDate = DateTime.ParseExact(startDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+            DateTime parsedEndDate = DateTime.ParseExact(endDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+
+            if (userTypeID == 1)  // Employee Query
+            {
+                query = @"
+            SELECT
+                em.Employee_id as EmployeeID,
+                em.Employee_code_id as EmployeeCode, 
+                em.First_Name + ' ' + em.Middle_Name + ' ' + em.Last_Name AS EmployeeName,
+                dp.DepartmentName AS Department,  
+                dn.DesignationName AS Designation,  
+                em.Mobile_Number AS Mobile, 
+                rp.RouteName,
+                rs.StopName,
+                vm.VehicleNumber,
+                em.First_Name + ' ' + em.Last_Name as DeAllocatedBy,
+                da.Reason,
+                da.DeAllocationDate
+            FROM 
+                tblEmployeeDeAllocation da 
+            LEFT JOIN 
+                tbl_EmployeeProfileMaster em ON em.Employee_id = da.DeAllocatedBy 
+            LEFT JOIN 
+                tbl_Department dp ON em.Department_id = dp.Department_id    
+            LEFT JOIN 
+                tbl_Designation dn ON em.Designation_id = dn.Designation_id    
+            LEFT JOIN 
+                tblRouteStopMaster rs ON da.StopID = rs.StopID
+            LEFT JOIN 
+                tblRoutePlan rp ON rs.RoutePlanID = rp.RoutePlanID 
+            LEFT JOIN 
+                tblVehicleMaster vm ON rp.VehicleID = vm.VehicleID
+            LEFT JOIN 
+                tbl_Vehicle_Type vt ON vm.VehicleTypeID = vt.Vehicle_type_id 
+            WHERE
+                em.Institute_id = @InstituteID
+                AND da.DeAllocationDate BETWEEN @StartDate AND @EndDate;
+        ";
+            }
+            else if (userTypeID == 2)  // Student Query
+            {
+                query = @"
+            SELECT
+                sm.Student_ID as StudentID,
+                sm.Admission_Number as AdmissionNumber,
+                sm.First_Name + ' ' + sm.Middle_Name + ' ' + sm.Last_Name AS StudentName,
+                c.class_name + ' - ' + s.section_name AS ClassSection,  
+                spi.Mobile_Number AS Mobile, 
+                rp.RouteName,
+                rs.StopName,
+                vm.VehicleNumber,
+                em.First_Name + ' ' + em.Last_Name as DeAllocatedBy,
+                da.Reason,
+                da.DeAllocationDate
+            FROM 
+                tblStudentDeAllocation da
+            LEFT JOIN 
+                tbl_StudentMaster sm ON da.StudentID = sm.Student_ID
+            LEFT JOIN 
+                tbl_EmployeeProfileMaster em ON em.Employee_id = da.DeAllocatedBy 
+            LEFT JOIN 
+                tbl_Class c ON sm.class_id = c.class_id
+            LEFT JOIN 
+                tbl_Section s ON sm.section_id = s.section_id
+            LEFT JOIN 
+                tblRouteStopMaster rs ON da.StopID = rs.StopID
+            LEFT JOIN 
+                tblRoutePlan rp ON rs.RoutePlanID = rp.RoutePlanID 
+            LEFT JOIN 
+                tblVehicleMaster vm ON rp.VehicleID = vm.VehicleID
+            LEFT JOIN 
+                tbl_Vehicle_Type vt ON vm.VehicleTypeID = vt.Vehicle_type_id
+            LEFT JOIN 
+                tbl_StudentParentsInfo spi ON sm.Student_ID = spi.Student_id AND spi.Parent_Type_id = 1
+            WHERE
+                sm.Institute_id = @InstituteID
+                AND da.DeAllocationDate BETWEEN @StartDate AND @EndDate;
+        ";
+            }
+
+            // Fetch data from the database
+            var result = await _dbConnection.QueryAsync<GetDeAllocationReportResponse>(query, new { InstituteID = instituteID, StartDate = parsedStartDate, EndDate = parsedEndDate });
+
+
+            // Format the DeAllocationDate to '31st May 2024, 05:45 PM'
+            foreach (var record in result)
+            {
+                record.DeAllocationDate = DateTime.Parse(record.DeAllocationDate).ToString("dd MMM yyyy, hh:mm tt"); // record.DeAllocationDate.ToString("dd MMM yyyy, hh:mm tt"); // Formatting the date
+            } 
+
+
+            // Calculate total count of records
+            var totalCount = result.Count();
+
+            return new ServiceResponse<IEnumerable<GetDeAllocationReportResponse>>(
+                true,                   // Success
+                "Record Found",         // Message
+                result,                 // Data
+                StatusCodes.Status200OK, // Status code
+                totalCount              // Total count
+            );
+        }
+
+        //public async Task<byte[]> GetDeAllocationReportExportExcel(GetDeAllocationReportExportExcelRequest request)
+        //{
+        //    // Parse the string dates into DateTime using 'DD-MM-YYYY' format
+        //    DateTime parsedStartDate = DateTime.ParseExact(request.StartDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+        //    DateTime parsedEndDate = DateTime.ParseExact(request.EndDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+
+        //    string query = string.Empty;
+
+        //    if (request.UserTypeID == 1)  // Employee Query
+        //    {
+        //        query = @"
+        //SELECT
+        //    em.Employee_id as EmployeeID,
+        //    em.Employee_code_id as EmployeeCode, 
+        //    em.First_Name + ' ' + em.Middle_Name + ' ' + em.Last_Name AS EmployeeName,
+        //    dp.DepartmentName AS Department,  
+        //    dn.DesignationName AS Designation,  
+        //    em.Mobile_Number AS Mobile, 
+        //    rp.RouteName,
+        //    rs.StopName,
+        //    vm.VehicleNumber,
+        //    em.First_Name + ' ' + em.Last_Name as DeAllocatedBy,
+        //    da.Reason,
+        //    da.DeAllocationDate
+        //FROM 
+        //    tblEmployeeDeAllocation da 
+        //LEFT JOIN 
+        //    tbl_EmployeeProfileMaster em ON em.Employee_id = da.DeAllocatedBy 
+        //LEFT JOIN 
+        //    tbl_Department dp ON em.Department_id = dp.Department_id    
+        //LEFT JOIN 
+        //    tbl_Designation dn ON em.Designation_id = dn.Designation_id    
+        //LEFT JOIN 
+        //    tblRouteStopMaster rs ON da.StopID = rs.StopID
+        //LEFT JOIN 
+        //    tblRoutePlan rp ON rs.RoutePlanID = rp.RoutePlanID 
+        //LEFT JOIN 
+        //    tblVehicleMaster vm ON rp.VehicleID = vm.VehicleID
+        //LEFT JOIN 
+        //    tbl_Vehicle_Type vt ON vm.VehicleTypeID = vt.Vehicle_type_id 
+        //WHERE
+        //    em.Institute_id = @InstituteID
+        //    AND da.DeAllocationDate BETWEEN @StartDate AND @EndDate;
+        //";
+        //    }
+        //    else if (request.UserTypeID == 2)  // Student Query
+        //    {
+        //        query = @"
+        //SELECT
+        //    sm.Student_ID as StudentID,
+        //    sm.Admission_Number as AdmissionNumber,
+        //    sm.First_Name + ' ' + sm.Middle_Name + ' ' + sm.Last_Name AS StudentName,
+        //    c.class_name + ' - ' + s.section_name AS ClassSection,  
+        //    spi.Mobile_Number AS Mobile, 
+        //    rp.RouteName,
+        //    rs.StopName,
+        //    vm.VehicleNumber,
+        //    em.First_Name + ' ' + em.Last_Name as DeAllocatedBy,
+        //    da.Reason,
+        //    da.DeAllocationDate
+        //FROM 
+        //    tblStudentDeAllocation da
+        //LEFT JOIN 
+        //    tbl_StudentMaster sm ON da.StudentID = sm.Student_ID
+        //LEFT JOIN 
+        //    tbl_EmployeeProfileMaster em ON em.Employee_id = da.DeAllocatedBy 
+        //LEFT JOIN 
+        //    tbl_Class c ON sm.class_id = c.class_id
+        //LEFT JOIN 
+        //    tbl_Section s ON sm.section_id = s.section_id
+        //LEFT JOIN 
+        //    tblRouteStopMaster rs ON da.StopID = rs.StopID
+        //LEFT JOIN 
+        //    tblRoutePlan rp ON rs.RoutePlanID = rp.RoutePlanID 
+        //LEFT JOIN 
+        //    tblVehicleMaster vm ON rp.VehicleID = vm.VehicleID
+        //LEFT JOIN 
+        //    tbl_Vehicle_Type vt ON vm.VehicleTypeID = vt.Vehicle_type_id
+        //LEFT JOIN 
+        //    tbl_StudentParentsInfo spi ON sm.Student_ID = spi.Student_id AND spi.Parent_Type_id = 1
+        //WHERE
+        //    sm.Institute_id = @InstituteID
+        //    AND da.DeAllocationDate BETWEEN @StartDate AND @EndDate;
+        //";
+        //    }
+
+        //    // Execute the query
+        //    var result = await _dbConnection.QueryAsync<GetDeAllocationReportExportExcelResponse>(
+        //        query,
+        //        new { request.InstituteID, StartDate = parsedStartDate, EndDate = parsedEndDate }
+        //    );
+
+        //    // Generate the Excel file
+        //    using (var package = new ExcelPackage())
+        //    {
+        //        var worksheet = package.Workbook.Worksheets.Add("DeAllocationReport");
+
+        //        // Add headers
+        //        worksheet.Cells[1, 1].Value = "Student ID";
+        //        worksheet.Cells[1, 2].Value = "Admission Number";
+        //        worksheet.Cells[1, 3].Value = "Student Name";
+        //        worksheet.Cells[1, 4].Value = "Class Section";
+        //        worksheet.Cells[1, 5].Value = "Employee ID";
+        //        worksheet.Cells[1, 6].Value = "Employee Code";
+        //        worksheet.Cells[1, 7].Value = "Employee Name";
+        //        worksheet.Cells[1, 8].Value = "Department";
+        //        worksheet.Cells[1, 9].Value = "Designation";
+        //        worksheet.Cells[1, 10].Value = "Mobile";
+        //        worksheet.Cells[1, 11].Value = "Route Name";
+        //        worksheet.Cells[1, 12].Value = "Stop Name";
+        //        worksheet.Cells[1, 13].Value = "Vehicle Number";
+        //        worksheet.Cells[1, 14].Value = "DeAllocated By";
+        //        worksheet.Cells[1, 15].Value = "Reason";
+        //        worksheet.Cells[1, 16].Value = "DeAllocation Date";
+
+        //        // Fill in data
+        //        int row = 2;
+        //        foreach (var record in result)
+        //        {
+        //            worksheet.Cells[row, 1].Value = record.StudentID;
+        //            worksheet.Cells[row, 2].Value = record.AdmissionNumber;
+        //            worksheet.Cells[row, 3].Value = record.StudentName;
+        //            worksheet.Cells[row, 4].Value = record.ClassSection;
+        //            worksheet.Cells[row, 5].Value = record.EmployeeID;
+        //            worksheet.Cells[row, 6].Value = record.EmployeeCode;
+        //            worksheet.Cells[row, 7].Value = record.EmployeeName;
+        //            worksheet.Cells[row, 8].Value = record.Department;
+        //            worksheet.Cells[row, 9].Value = record.Designation;
+        //            worksheet.Cells[row, 10].Value = record.Mobile;
+        //            worksheet.Cells[row, 11].Value = record.RouteName;
+        //            worksheet.Cells[row, 12].Value = record.StopName;
+        //            worksheet.Cells[row, 13].Value = record.VehicleNumber;
+        //            worksheet.Cells[row, 14].Value = record.DeAllocatedBy;
+        //            worksheet.Cells[row, 15].Value = record.Reason;
+        //            worksheet.Cells[row, 16].Value = record.DeAllocationDate;
+
+        //            row++;
+        //        }
+
+        //        // Return Excel as byte array
+        //        return package.GetAsByteArray();
+        //    }
+        //}
+
+
+        public async Task<byte[]> GetDeAllocationReportExportExcel(GetDeAllocationReportExportExcelRequest request)
+        {
+            // Parse the string dates into DateTime using 'DD-MM-YYYY' format
+            DateTime parsedStartDate = DateTime.ParseExact(request.StartDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+            DateTime parsedEndDate = DateTime.ParseExact(request.EndDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+
+            string query = string.Empty;
+
+            if (request.UserTypeID == 1)  // Employee Query
+            {
+                query = @"
+SELECT
+    em.Employee_code_id as EmployeeCode, 
+    em.First_Name + ' ' + em.Middle_Name + ' ' + em.Last_Name AS EmployeeName,
+    dp.DepartmentName AS Department,  
+    dn.DesignationName AS Designation,  
+    em.Mobile_Number AS Mobile, 
+    rp.RouteName,
+    rs.StopName,
+    vm.VehicleNumber,
+    em.First_Name + ' ' + em.Last_Name as DeAllocatedBy,
+    da.Reason,
+    da.DeAllocationDate
+FROM 
+    tblEmployeeDeAllocation da 
+LEFT JOIN 
+    tbl_EmployeeProfileMaster em ON em.Employee_id = da.DeAllocatedBy 
+LEFT JOIN 
+    tbl_Department dp ON em.Department_id = dp.Department_id    
+LEFT JOIN 
+    tbl_Designation dn ON em.Designation_id = dn.Designation_id    
+LEFT JOIN 
+    tblRouteStopMaster rs ON da.StopID = rs.StopID
+LEFT JOIN 
+    tblRoutePlan rp ON rs.RoutePlanID = rp.RoutePlanID 
+LEFT JOIN 
+    tblVehicleMaster vm ON rp.VehicleID = vm.VehicleID
+LEFT JOIN 
+    tbl_Vehicle_Type vt ON vm.VehicleTypeID = vt.Vehicle_type_id 
+WHERE
+    em.Institute_id = @InstituteID
+    AND da.DeAllocationDate BETWEEN @StartDate AND @EndDate;
+";
+            }
+            else if (request.UserTypeID == 2)  // Student Query
+            {
+                query = @"
+SELECT
+    sm.Admission_Number as AdmissionNumber,
+    sm.First_Name + ' ' + sm.Middle_Name + ' ' + sm.Last_Name AS StudentName,
+    c.class_name + ' - ' + s.section_name AS ClassSection,  
+    spi.Mobile_Number AS Mobile, 
+    rp.RouteName,
+    rs.StopName,
+    vm.VehicleNumber,
+    em.First_Name + ' ' + em.Last_Name as DeAllocatedBy,
+    da.Reason,
+    da.DeAllocationDate
+FROM 
+    tblStudentDeAllocation da
+LEFT JOIN 
+    tbl_StudentMaster sm ON da.StudentID = sm.Student_ID
+LEFT JOIN 
+    tbl_EmployeeProfileMaster em ON em.Employee_id = da.DeAllocatedBy 
+LEFT JOIN 
+    tbl_Class c ON sm.class_id = c.class_id
+LEFT JOIN 
+    tbl_Section s ON sm.section_id = s.section_id
+LEFT JOIN 
+    tblRouteStopMaster rs ON da.StopID = rs.StopID
+LEFT JOIN 
+    tblRoutePlan rp ON rs.RoutePlanID = rp.RoutePlanID 
+LEFT JOIN 
+    tblVehicleMaster vm ON rp.VehicleID = vm.VehicleID
+LEFT JOIN 
+    tbl_Vehicle_Type vt ON vm.VehicleTypeID = vt.Vehicle_type_id
+LEFT JOIN 
+    tbl_StudentParentsInfo spi ON sm.Student_ID = spi.Student_id AND spi.Parent_Type_id = 1
+WHERE
+    sm.Institute_id = @InstituteID
+    AND da.DeAllocationDate BETWEEN @StartDate AND @EndDate;
+";
+            }
+
+            // Execute the query
+            var result = await _dbConnection.QueryAsync<GetDeAllocationReportExportExcelResponse>(
+                query,
+                new { request.InstituteID, StartDate = parsedStartDate, EndDate = parsedEndDate }
+            );
+
+            // Generate the Excel file
+            using (var package = new ExcelPackage())
+            {
+                var worksheet = package.Workbook.Worksheets.Add("DeAllocationReport");
+
+                // Add headers, starting with Sr. No.
+                worksheet.Cells[1, 1].Value = "Sr. No.";
+                worksheet.Cells[1, 2].Value = "Admission Number";
+                worksheet.Cells[1, 3].Value = "Student Name";
+                worksheet.Cells[1, 4].Value = "Class Section";
+                worksheet.Cells[1, 5].Value = "Employee Code";
+                worksheet.Cells[1, 6].Value = "Employee Name";
+                worksheet.Cells[1, 7].Value = "Department";
+                worksheet.Cells[1, 8].Value = "Designation";
+                worksheet.Cells[1, 9].Value = "Mobile";
+                worksheet.Cells[1, 10].Value = "Route Name";
+                worksheet.Cells[1, 11].Value = "Stop Name";
+                worksheet.Cells[1, 12].Value = "Vehicle Number";
+                worksheet.Cells[1, 13].Value = "DeAllocated By";
+                worksheet.Cells[1, 14].Value = "Reason";
+                worksheet.Cells[1, 15].Value = "DeAllocation Date";
+
+                // Fill in data, starting from row 2
+                int row = 2;
+                int srNo = 1; // Initialize Sr. No.
+                foreach (var record in result)
+                {
+                    worksheet.Cells[row, 1].Value = srNo++; // Set the Sr. No.
+                    worksheet.Cells[row, 2].Value = record.AdmissionNumber;
+                    worksheet.Cells[row, 3].Value = record.StudentName;
+                    worksheet.Cells[row, 4].Value = record.ClassSection;
+                    worksheet.Cells[row, 5].Value = record.EmployeeCode;
+                    worksheet.Cells[row, 6].Value = record.EmployeeName;
+                    worksheet.Cells[row, 7].Value = record.Department;
+                    worksheet.Cells[row, 8].Value = record.Designation;
+                    worksheet.Cells[row, 9].Value = record.Mobile;
+                    worksheet.Cells[row, 10].Value = record.RouteName;
+                    worksheet.Cells[row, 11].Value = record.StopName;
+                    worksheet.Cells[row, 12].Value = record.VehicleNumber;
+                    worksheet.Cells[row, 13].Value = record.DeAllocatedBy;
+                    worksheet.Cells[row, 14].Value = record.Reason;
+                    worksheet.Cells[row, 15].Value = DateTime.Parse(record.DeAllocationDate).ToString("dd MMM yyyy, hh:mm tt");
+                     
+
+                    row++;
+                }
+
+                // Return Excel as byte array
+                return package.GetAsByteArray();
+            }
+        }
+
+        public async Task<byte[]> GetDeAllocationReportExportCSV(GetDeAllocationReportExportExcelRequest request)
+        {
+            // Parse the string dates into DateTime using 'DD-MM-YYYY' format
+            DateTime parsedStartDate = DateTime.ParseExact(request.StartDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+            DateTime parsedEndDate = DateTime.ParseExact(request.EndDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+
+            string query = string.Empty;
+
+            // Check UserTypeID for Employee or Student query
+            if (request.UserTypeID == 1)  // Employee Query
+            {
+                query = @"
+        SELECT
+            em.Employee_code_id as EmployeeCode, 
+            em.First_Name + ' ' + em.Middle_Name + ' ' + em.Last_Name AS EmployeeName,
+            dp.DepartmentName AS Department,  
+            dn.DesignationName AS Designation,  
+            em.Mobile_Number AS Mobile, 
+            rp.RouteName,
+            rs.StopName,
+            vm.VehicleNumber,
+            em.First_Name + ' ' + em.Last_Name as DeAllocatedBy,
+            da.Reason,
+            da.DeAllocationDate
+        FROM 
+            tblEmployeeDeAllocation da 
+        LEFT JOIN 
+            tbl_EmployeeProfileMaster em ON em.Employee_id = da.DeAllocatedBy 
+        LEFT JOIN 
+            tbl_Department dp ON em.Department_id = dp.Department_id    
+        LEFT JOIN 
+            tbl_Designation dn ON em.Designation_id = dn.Designation_id    
+        LEFT JOIN 
+            tblRouteStopMaster rs ON da.StopID = rs.StopID
+        LEFT JOIN 
+            tblRoutePlan rp ON rs.RoutePlanID = rp.RoutePlanID 
+        LEFT JOIN 
+            tblVehicleMaster vm ON rp.VehicleID = vm.VehicleID
+        LEFT JOIN 
+            tbl_Vehicle_Type vt ON vm.VehicleTypeID = vt.Vehicle_type_id 
+        WHERE
+            em.Institute_id = @InstituteID
+            AND da.DeAllocationDate BETWEEN @StartDate AND @EndDate;
+        ";
+            }
+            else if (request.UserTypeID == 2)  // Student Query
+            {
+                query = @"
+        SELECT
+            sm.Admission_Number as AdmissionNumber,
+            sm.First_Name + ' ' + sm.Middle_Name + ' ' + sm.Last_Name AS StudentName,
+            c.class_name + ' - ' + s.section_name AS ClassSection,  
+            spi.Mobile_Number AS Mobile, 
+            rp.RouteName,
+            rs.StopName,
+            vm.VehicleNumber,
+            em.First_Name + ' ' + em.Last_Name as DeAllocatedBy,
+            da.Reason,
+            da.DeAllocationDate
+        FROM 
+            tblStudentDeAllocation da
+        LEFT JOIN 
+            tbl_StudentMaster sm ON da.StudentID = sm.Student_ID
+        LEFT JOIN 
+            tbl_EmployeeProfileMaster em ON em.Employee_id = da.DeAllocatedBy 
+        LEFT JOIN 
+            tbl_Class c ON sm.class_id = c.class_id
+        LEFT JOIN 
+            tbl_Section s ON sm.section_id = s.section_id
+        LEFT JOIN 
+            tblRouteStopMaster rs ON da.StopID = rs.StopID
+        LEFT JOIN 
+            tblRoutePlan rp ON rs.RoutePlanID = rp.RoutePlanID 
+        LEFT JOIN 
+            tblVehicleMaster vm ON rp.VehicleID = vm.VehicleID
+        LEFT JOIN 
+            tbl_Vehicle_Type vt ON vm.VehicleTypeID = vt.Vehicle_type_id
+        LEFT JOIN 
+            tbl_StudentParentsInfo spi ON sm.Student_ID = spi.Student_id AND spi.Parent_Type_id = 1
+        WHERE
+            sm.Institute_id = @InstituteID
+            AND da.DeAllocationDate BETWEEN @StartDate AND @EndDate;
+        ";
+            }
+
+            // Execute the query and fetch results
+            var result = await _dbConnection.QueryAsync<GetDeAllocationReportExportExcelResponse>(
+                query,
+                new { request.InstituteID, StartDate = parsedStartDate, EndDate = parsedEndDate }
+            );
+
+            // Generate the CSV
+            var csv = new StringBuilder();
+
+            // Add header row
+            csv.AppendLine("Sr. No.,Admission Number,Student Name,Class Section,Employee Code,Employee Name,Department,Designation,Mobile,Route Name,Stop Name,Vehicle Number,DeAllocated By,Reason,DeAllocation Date");
+
+            int srNo = 1;  // Initialize Sr. No.
+            foreach (var record in result)
+            {
+                // Add rows with dynamic values
+                csv.AppendLine($"{srNo++},{record.AdmissionNumber},{record.StudentName},{record.ClassSection},{record.EmployeeCode},{record.EmployeeName},{record.Department},{record.Designation},{record.Mobile},{record.RouteName},{record.StopName},{record.VehicleNumber},{record.DeAllocatedBy},{record.Reason},{DateTime.Parse(record.DeAllocationDate).ToString("dd MMM yyyy | hh:mm tt")}");
+            }
+
+            // Return CSV as byte array
+            return Encoding.UTF8.GetBytes(csv.ToString());
+        }
+
 
     }
 }

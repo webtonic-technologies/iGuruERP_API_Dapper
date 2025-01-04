@@ -24,31 +24,55 @@ namespace Transport_API.Repository.Implementations
             string sql;
 
             // Convert DueDate to DateTime for each TermPaymentDTO item
-            foreach (var termPayment in routePlan.RouteStops.SelectMany(rs => rs.TermPayment))
+            foreach (var termPayment in routePlan.RouteStops.SelectMany(rs => rs.TermPayment ?? Enumerable.Empty<TermPaymentDTO>()))
             {
-                if (DateTime.TryParseExact(termPayment.DueDate, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dueDate))
+                // Ensure DueDate exists in TermPayment before processing
+                if (!string.IsNullOrEmpty(termPayment.DueDate))
                 {
-                    termPayment.DueDate = dueDate.ToString("yyyy-MM-dd"); // Save it in the standard SQL format
-                }
-                else
-                {
-                    return new ServiceResponse<string>(false, "Invalid Date Format", "Due date must be in DD-MM-YYYY format", StatusCodes.Status400BadRequest);
+                    if (DateTime.TryParseExact(termPayment.DueDate, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dueDate))
+                    {
+                        termPayment.DueDate = dueDate.ToString("yyyy-MM-dd"); // Save it in the standard SQL format
+                    }
+                    else
+                    {
+                        return new ServiceResponse<string>(false, "Invalid Date Format", "Due date must be in DD-MM-YYYY format", StatusCodes.Status400BadRequest);
+                    }
                 }
             }
+
+
+            //// Convert DueDate to DateTime for each TermPaymentDTO item
+            //foreach (var termPayment in routePlan.RouteStops.SelectMany(rs => rs.TermPayment))
+            //{
+            //    if (DateTime.TryParseExact(termPayment.DueDate, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dueDate))
+            //    {
+            //        termPayment.DueDate = dueDate.ToString("yyyy-MM-dd"); // Save it in the standard SQL format
+            //    }
+            //    else
+            //    {
+            //        return new ServiceResponse<string>(false, "Invalid Date Format", "Due date must be in DD-MM-YYYY format", StatusCodes.Status400BadRequest);
+            //    }
+            //}
 
             // If RoutePlanID is 0, Insert a new route plan, else Update the existing route plan
             if (routePlan.RoutePlanID == 0)
             {
-                sql = @"INSERT INTO tblRoutePlan (RouteName, VehicleID, InstituteID, IsActive) 
-                VALUES (@RouteName, @VehicleID, @InstituteID, @IsActive);
+                sql = @"INSERT INTO tblRoutePlan (RouteName, VehicleID, InstituteID, IsActive, FeeTenurityID) 
+                VALUES (@RouteName, @VehicleID, @InstituteID, @IsActive, @FeeTenurityID);
                 SELECT CAST(SCOPE_IDENTITY() as int);";
 
                 routePlan.RoutePlanID = await _dbConnection.QuerySingleAsync<int>(sql, routePlan);
             }
             else
             {
-                sql = @"UPDATE tblRoutePlan SET RouteName = @RouteName, VehicleID = @VehicleID, InstituteID = @InstituteID, IsActive = @IsActive 
+                sql = @"UPDATE tblRoutePlan 
+                SET RouteName = @RouteName, 
+                    VehicleID = @VehicleID, 
+                    InstituteID = @InstituteID, 
+                    IsActive = @IsActive, 
+                    FeeTenurityID = @FeeTenurityID
                 WHERE RoutePlanID = @RoutePlanID";
+
                 await _dbConnection.ExecuteAsync(sql, routePlan);
             }
 

@@ -1,5 +1,6 @@
 ﻿using Transport_API.DTOs.Requests;
 using Transport_API.DTOs.Response;
+using Transport_API.DTOs.Responses;
 using Transport_API.DTOs.ServiceResponse;
 
 namespace Transport_API.Repository.Interfaces
@@ -31,8 +32,11 @@ namespace Transport_API.Repository.Interfaces
 
         Task<ServiceResponse<IEnumerable<GetTransportAttendanceResponse>>> GetTransportAttendanceReport(TransportAttendanceReportRequest request); // New method for Transport Attendance Report
 
-        Task<ServiceResponse<IEnumerable<ReportResponse>>> GetDeAllocationReport(GetReportsRequest request);
+       
         Task<ServiceResponse<IEnumerable<GetStudentsReportResponse>>> GetStudentsReport(StudentsReportRequest request);
+        Task<List<GetTransportationPendingFeeReportResponse>> GetTransportationPendingFeeReport(int instituteID, int routePlanID);
+        Task<ServiceResponse<IEnumerable<GetDeAllocationReportResponse>>> GetDeAllocationReport(int instituteID, string startDate, string endDate, int userTypeID);
+
 
 
         //Excel Export
@@ -41,11 +45,18 @@ namespace Transport_API.Repository.Interfaces
         Task<byte[]> GetStudentTransportReportExportExcel(GetReportsRequest request);
         Task<byte[]> GetTransportAttendanceReportExportExcel(TransportAttendanceReportRequest request);
         Task<byte[]> GetStudentsReportExportExcel(StudentsReportRequest request);
+        Task<byte[]> GetTransportationPendingFeeReportExportExcel(TransportationFeeReportExExcelRequest request);
+        Task<byte[]> GetDeAllocationReportExportExcel(GetDeAllocationReportExportExcelRequest request);
+
 
         // CSV Export Methods
         Task<byte[]> GetEmployeeTransportationReportExportCSV(GetReportsRequest request);
         Task<byte[]> GetStudentTransportReportExportCSV(GetReportsRequest request);
         Task<byte[]> GetTransportAttendanceReportExportCSV(TransportAttendanceReportRequest request);
-        Task<byte[]> GetStudentsReportExportCSV(StudentsReportRequest request);
+        Task<byte[]> GetStudentsReportExportCSV(StudentsReportRequest request); 
+        Task<byte[]> GetTransportationPendingFeeReportExportCSV(TransportationFeeReportExExcelRequest request);
+        Task<byte[]> GetDeAllocationReportExportCSV(GetDeAllocationReportExportExcelRequest request);
+
+
     }
 }

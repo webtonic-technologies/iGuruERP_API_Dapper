@@ -7,6 +7,7 @@
         public int VehicleID { get; set; }
         public int InstituteID { get; set; }
         public bool IsActive { get; set; }
+        public int FeeTenurityID { get; set; }
         public List<RouteStop>? RouteStops { get; set; }
     }
 

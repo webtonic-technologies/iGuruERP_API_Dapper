@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.VisualBasic;
 using System;
 using System.Data;
+using System.Globalization;
 using System.Numerics;
 using Transport_API.DTOs.Requests;
 using Transport_API.DTOs.Response;
@@ -469,20 +470,40 @@ namespace Transport_API.Repository.Implementations
                     return new ServiceResponse<string>(false, "No records provided", "No mappings to remove", StatusCodes.Status400BadRequest);
                 }
 
+                // Prepare the delete SQL query for the EmployeeStopMapping table
                 string deleteSql = "DELETE FROM tblEmployeeStopMapping WHERE EmployeeStopID = @EmployeeStopID";
+
+                // Prepare the insert SQL query for the tblEmployeeDeAllocation table with the new columns
+                string insertSql = "INSERT INTO tblEmployeeDeAllocation (StopID, EmployeeID, DeAllocationDate, DeAllocatedBy, Reason) " +
+                                   "VALUES (@StopID, @EmployeeID, @DeAllocationDate, @DeAllocatedBy, @Reason)";
 
                 foreach (var mapping in request)
                 {
+                    // Convert DeAllocationDate to DateTime format for SQL (we will convert from string 'DD-MM-YYYY' format to DateTime)
+                    DateTime deAllocationDate = DateTime.ParseExact(mapping.DeAllocationDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+
+                    // Insert data into tblEmployeeDeAllocation with DeAllocatedBy and Reason
+                    await _dbConnection.ExecuteAsync(insertSql, new
+                    {
+                        mapping.StopID,
+                        mapping.EmployeeID,
+                        DeAllocationDate = deAllocationDate.ToString("yyyy-MM-dd"), // Format to SQL standard 'YYYY-MM-DD'
+                        mapping.DeAllocatedBy, // Added DeAllocatedBy from the request
+                        mapping.Reason // Added Reason from the request
+                    });
+
+                    // Delete the record from tblEmployeeStopMapping
                     await _dbConnection.ExecuteAsync(deleteSql, new { mapping.EmployeeStopID });
                 }
 
-                return new ServiceResponse<string>(true, "Operation Successful", "Employee stop mappings removed successfully", StatusCodes.Status200OK);
+                return new ServiceResponse<string>(true, "Operation Successful", "Employee stop mappings removed and deallocation recorded", StatusCodes.Status200OK);
             }
             catch (Exception ex)
             {
                 return new ServiceResponse<string>(false, ex.Message, "Error removing employee stop mappings", StatusCodes.Status500InternalServerError);
             }
         }
+
         public async Task<ServiceResponse<string>> RemoveStudentStopMapping(List<StudentStopMapping> request)
         {
             try
@@ -492,20 +513,42 @@ namespace Transport_API.Repository.Implementations
                     return new ServiceResponse<string>(false, "No records provided", "No mappings to remove", StatusCodes.Status400BadRequest);
                 }
 
+                // Prepare the delete SQL query for the StudentStopMapping table
                 string deleteSql = "DELETE FROM tblStudentStopMapping WHERE StudentStopID = @StudentStopID";
+
+                // Prepare the insert SQL query for the tblStudentDeAllocation table with the new columns
+                string insertSql = "INSERT INTO tblStudentDeAllocation (StopID, StudentID, DeAllocationDate, DeAllocatedBy, Reason) " +
+                                   "VALUES (@StopID, @StudentID, @DeAllocationDate, @DeAllocatedBy, @Reason)";
 
                 foreach (var mapping in request)
                 {
+                    // Convert DeAllocationDate to DateTime format for SQL (we will convert from string 'DD-MM-YYYY' format to DateTime)
+                    DateTime deAllocationDate = DateTime.ParseExact(mapping.DeAllocationDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+
+                    // Insert data into tblStudentDeAllocation with DeAllocatedBy and Reason
+                    await _dbConnection.ExecuteAsync(insertSql, new
+                    {
+                        mapping.StopID,
+                        mapping.StudentID,
+                        DeAllocationDate = deAllocationDate.ToString("yyyy-MM-dd"), // Format to SQL standard 'YYYY-MM-DD'
+                        mapping.DeAllocatedBy, // Added DeAllocatedBy from the request
+                        mapping.Reason // Added Reason from the request
+                    });
+
+                    // Delete from tblStudentStopMapping
                     await _dbConnection.ExecuteAsync(deleteSql, new { mapping.StudentStopID });
                 }
 
-                return new ServiceResponse<string>(true, "Operation Successful", "Student stop mappings removed successfully", StatusCodes.Status200OK);
+                return new ServiceResponse<string>(true, "Operation Successful", "Student stop mappings removed and deallocation recorded", StatusCodes.Status200OK);
             }
             catch (Exception ex)
             {
                 return new ServiceResponse<string>(false, ex.Message, "Error removing student stop mappings", StatusCodes.Status500InternalServerError);
             }
         }
+
+
+
         public async Task<ServiceResponse<List<StudentStopMappingResponse>>> GetStudentStopMappings(int RoutePlanId)
         {
             try

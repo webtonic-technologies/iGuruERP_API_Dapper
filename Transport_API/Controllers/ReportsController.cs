@@ -70,21 +70,7 @@ namespace Transport_API.Controllers
                 return BadRequest(ex.Message);
             }
         }
-
-
-        //[HttpPost("GetDeAllocationReport")]
-        //public async Task<IActionResult> GetDeAllocationReport([FromBody] GetReportsRequest request)
-        //{
-        //    try
-        //    {
-        //        var response = await _reportsService.GetDeAllocationReport(request);
-        //        return StatusCode(response.StatusCode, response);
-        //    }
-        //    catch (Exception e)
-        //    {
-        //        return BadRequest(e.Message);
-        //    }
-        //}
+         
 
         [HttpPost("GetStudentsReport")]
         public async Task<IActionResult> GetStudentsReport(StudentsReportRequest request)
@@ -100,6 +86,32 @@ namespace Transport_API.Controllers
             }
         }
 
+        [HttpPost("GetTransportationPendingFeeReport")]
+        public async Task<IActionResult> GetTransportationPendingFeeReport([FromBody] GetTransportationPendingFeeReportRequest request)
+        {
+            if (request == null || request.InstituteID == 0 || request.RoutePlanID == 0)
+                return BadRequest("Invalid request data.");
+
+            var response = await _reportsService.GetTransportationPendingFeeReport(request.InstituteID, request.RoutePlanID);
+
+            if (response.Data == null || !response.Data.Any())
+                return NotFound("No data found.");
+
+            return Ok(response);
+        }
+
+        [HttpPost("GetDeAllocationReport")]
+        public async Task<IActionResult> GetDeAllocationReport([FromBody] GetDeAllocationReportRequest request)
+        {
+            var result = await _reportsService.GetDeAllocationReport(request);
+
+            if (!result.Success)
+            {
+                return NotFound(result);
+            }
+
+            return Ok(result);
+        }
 
         //Excel Export
 
@@ -158,6 +170,39 @@ namespace Transport_API.Controllers
         }
 
 
+        [HttpPost("GetTransportationPendingFeeReportExportExcel")]
+        public async Task<IActionResult> GetTransportationPendingFeeReportExportExcel([FromBody] TransportationFeeReportExExcelRequest request)
+        {
+            try
+            {
+                var excelData = await _reportsService.GetTransportationPendingFeeReportExportExcel(request);
+
+                if (excelData != null)
+                {
+                    return File(excelData, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "TransportationPendingFeeReport.xlsx");
+                }
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPost("GetDeAllocationReportExportExcel")]
+        public async Task<IActionResult> GetDeAllocationReportExportExcel([FromBody] GetDeAllocationReportExportExcelRequest request)
+        {
+            var excelData = await _reportsService.GetDeAllocationReportExportExcel(request);
+
+            if (excelData != null)
+            {
+                return File(excelData, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "DeAllocationReport.xlsx");
+            }
+
+            return NoContent();
+        }
+
         // CSV Export Services
 
         [HttpPost("GetEmployeeTransportationReportExportCSV")]
@@ -211,5 +256,46 @@ namespace Transport_API.Controllers
 
             return File(csvData, "text/csv", "StudentsReport.csv");
         }
+
+        [HttpPost("GetTransportationPendingFeeReportExportCSV")]
+        public async Task<IActionResult> GetTransportationPendingFeeReportExportCSV([FromBody] TransportationFeeReportExExcelRequest request)
+        {
+            try
+            {
+                var csvData = await _reportsService.GetTransportationPendingFeeReportExportCSV(request);
+
+                if (csvData == null)
+                {
+                    return NoContent();
+                }
+
+                return File(csvData, "text/csv", "TransportationPendingFeeReport.csv");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPost("GetDeAllocationReportExportCSV")]
+        public async Task<IActionResult> GetDeAllocationReportExportCSV([FromBody] GetDeAllocationReportExportExcelRequest request)
+        {
+            try
+            {
+                var csvData = await _reportsService.GetDeAllocationReportExportCSV(request);
+
+                if (csvData != null)
+                {
+                    return File(csvData, "text/csv", "DeAllocationReport.csv");
+                }
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
     }
 }
