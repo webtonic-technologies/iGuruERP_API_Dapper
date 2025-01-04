@@ -13,7 +13,10 @@
         public string ExpiryDate { get; set; }  // Changed to string
         public string EntryDate { get; set; }   // Changed to string
         public string DosageDetails { get; set; }
+        public string Reason { get; set; }
+        public int StockManagerID { get; set; }  
         public int InstituteID { get; set; }
         public bool IsActive { get; set; }
+        public int InfirmaryID { get; set; }
     }
 }

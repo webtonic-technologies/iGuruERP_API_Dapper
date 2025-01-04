@@ -3,6 +3,8 @@ using Infirmary_API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
+using Infirmary_API.DTOs.ServiceResponse;
+using Infirmary_API.DTOs.Responses;
 
 namespace Infirmary_API.Controllers
 {
@@ -115,6 +117,47 @@ namespace Infirmary_API.Controllers
             }
 
             return BadRequest(response.Message);
+        }
+
+        [HttpPost("EnterInfirmaryStockAdjustment")]
+        public async Task<ActionResult<ServiceResponse<string>>> EnterInfirmaryStockAdjustment(EnterInfirmaryStockAdjustmentRequest request)
+        {
+            var response = await _stockEntryService.EnterInfirmaryStockAdjustment(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("StockHistory")]
+        public async Task<ActionResult<ServiceResponse<List<StockHistoryResponse>>>> GetStockHistory(StockHistoryRequest request)
+        {
+            var response = await _stockEntryService.GetStockHistory(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("GetStockInfo")]
+        public async Task<ActionResult<ServiceResponse<GetStockInfoResponse>>> GetStockInfo(GetStockInfoRequest request)
+        {
+            var response = await _stockEntryService.GetStockInfo(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+
+        [HttpPost("GetStockHistoryExport")]
+        public async Task<IActionResult> GetStockHistoryExport(GetStockHistoryExportRequest request)
+        {
+            var response = await _stockEntryService.GetStockHistoryExport(request);
+
+            if (response.Success)
+            {
+                var fileBytes = response.Data;
+                var fileName = request.ExportType == 1 ? "StockHistoryReport.xlsx" : "StockHistoryReport.csv";
+                var contentType = request.ExportType == 1 ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "text/csv";
+
+                return File(fileBytes, contentType, fileName);
+            }
+            else
+            {
+                return BadRequest(response.Message);
+            }
         }
     }
 }

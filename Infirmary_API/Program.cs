@@ -59,6 +59,9 @@ builder.Services.AddScoped<IStudentVaccinationFetchRepository, StudentVaccinatio
 builder.Services.AddScoped<IInfirmaryVisitFetchRepository, InfirmaryVisitFetchRepository>();
 builder.Services.AddScoped<IInfirmaryVisitFetchService, InfirmaryVisitFetchService>();
 
+builder.Services.AddScoped<IStockSummaryReportService, StockSummaryReportService>();
+builder.Services.AddScoped<IStockSummaryReportRepository, StockSummaryReportRepository>();
+
 
 
 var app = builder.Build();

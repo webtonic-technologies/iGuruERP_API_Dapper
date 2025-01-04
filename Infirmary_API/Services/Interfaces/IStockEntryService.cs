@@ -1,5 +1,6 @@
 ﻿using Infirmary_API.DTOs.Requests;
 using Infirmary_API.DTOs.Response;
+using Infirmary_API.DTOs.Responses;
 using Infirmary_API.DTOs.ServiceResponse;
 using Infirmary_API.Models;
 using System.Collections.Generic;
@@ -14,6 +15,10 @@ namespace Infirmary_API.Services.Interfaces
         Task<ServiceResponse<StockEntry>> GetStockEntryById(int id);
         Task<ServiceResponse<bool>> DeleteStockEntry(int id);
         Task<ServiceResponse<byte[]>> ExportStockEntriesData(GetStockEntriesExportRequest request);
+        Task<ServiceResponse<string>> EnterInfirmaryStockAdjustment(EnterInfirmaryStockAdjustmentRequest request);
+        Task<ServiceResponse<List<StockHistoryResponse>>> GetStockHistory(StockHistoryRequest request);
+        Task<ServiceResponse<GetStockInfoResponse>> GetStockInfo(GetStockInfoRequest request);
+        Task<ServiceResponse<byte[]>> GetStockHistoryExport(GetStockHistoryExportRequest request);
 
     }
 }
