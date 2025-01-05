@@ -116,5 +116,45 @@ namespace Attendance_SE_API.Controllers
             var attendanceModes = await _employeeAttendanceReportService.GetAttendanceMode();
             return Ok(new { Success = true, Message = "Attendance modes fetched successfully.", Data = attendanceModes });
         }
+
+        [HttpPost("GetAttendanceBioMericReport")]
+        public async Task<ActionResult<ServiceResponse<IEnumerable<GetAttendanceBioMericReportResponse>>>> GetAttendanceBioMericReport([FromBody] GetAttendanceBioMericReportRequest request)
+        {
+            var response = await _employeeAttendanceReportService.GetAttendanceBioMericReport(request);
+            return Ok(response);
+        }
+
+        [HttpPost("GetAttendanceBioMetricReportExportExcel")]
+        public async Task<IActionResult> GetAttendanceBioMetricReportExportExcel([FromBody] GetAttendanceBioMericReportRequest request)
+        {
+            // Fetch the Excel report data
+            var stream = await _employeeAttendanceReportService.GenerateBioMetricExcelReport(request);
+
+            // Check if the stream is null
+            if (stream == null)
+            {
+                return BadRequest("Failed to generate the report.");
+            }
+
+            // Return the Excel file as a response
+            return File(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "BioMericAttendanceReport.xlsx");
+        }
+
+
+        [HttpPost("GetAttendanceBioMetricReportExportCSV")]
+        public async Task<IActionResult> GetAttendanceBioMetricReportExportCSV([FromBody] GetAttendanceBioMericReportRequest request)
+        {
+            // Generate the CSV report
+            var stream = await _employeeAttendanceReportService.GenerateBioMetricCSVReport(request);
+
+            // Check if the stream is null
+            if (stream == null)
+            {
+                return BadRequest("Failed to generate the report.");
+            }
+
+            // Return the CSV file as a response
+            return File(stream, "text/csv", "BioMericAttendanceReport.csv");
+        }
     }
 }

@@ -6,6 +6,7 @@ using System.Data.SqlClient;
 using Attendance_SE_API.DTOs.Response;
 using Dapper;
 using Microsoft.Extensions.Configuration;
+using System.Globalization;
 
 namespace Attendance_SE_API.Repository.Implementations
 {
@@ -81,8 +82,79 @@ namespace Attendance_SE_API.Repository.Implementations
         }
 
 
-        public async Task<ServiceResponse<List<GetStudentAttendanceDashboardResponse>>> GetStudentAttendanceDashboard(int instituteId, string AcademicYearCode)
+        //public async Task<ServiceResponse<List<GetStudentAttendanceDashboardResponse>>> GetStudentAttendanceDashboard(int instituteId, string AcademicYearCode)
+        //{
+        //    string query = @"
+        //    SELECT 
+        //        c.class_id AS ClassID,
+        //        c.class_name AS ClassName,
+
+        //        (SELECT COUNT(DISTINCT sa.StudentID) 
+        //         FROM tblStudentAttendance sa 
+        //         WHERE sa.StatusID = 1 
+        //         AND sa.AttendanceTypeID = 1
+        //         AND sa.AttendanceDate = CAST(GETDATE() AS DATE)
+        //         AND sa.ClassID = c.class_id
+        //         AND sa.InstituteID = @InstituteID AND sa.AcademicYearCode = @AcademicYearCode) AS Present,
+
+        //        (SELECT COUNT(DISTINCT sa.StudentID) 
+        //         FROM tblStudentAttendance sa 
+        //         WHERE sa.StatusID = 2 
+        //         AND sa.AttendanceTypeID = 1
+        //         AND sa.AttendanceDate = CAST(GETDATE() AS DATE)
+        //         AND sa.ClassID = c.class_id
+        //         AND sa.InstituteID = @InstituteID AND sa.AcademicYearCode = @AcademicYearCode) AS Absent,
+
+        //        (SELECT COUNT(DISTINCT sm.student_id) 
+        //         FROM tbl_StudentMaster sm
+        //         WHERE sm.class_id = c.class_id
+        //         AND NOT EXISTS (
+        //             SELECT 1
+        //             FROM tblStudentAttendance sa
+        //             WHERE sa.StudentID = sm.student_id
+        //             AND sa.AttendanceDate = CAST(GETDATE() AS DATE)
+        //             AND sa.InstituteID = @InstituteID AND sa.AcademicYearCode = @AcademicYearCode
+        //         )) AS NotMarked
+        //    FROM 
+        //        tbl_Class c
+        //    WHERE 
+        //        c.institute_id = @InstituteID
+        //    ORDER BY 
+        //        c.class_id";
+
+        //    try
+        //    {
+        //        using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
+        //        {
+        //            // QueryAsync returns an IEnumerable<T> collection, so we convert it to a List
+        //            var result = await connection.QueryAsync<GetStudentAttendanceDashboardResponse>(query, new { InstituteID = instituteId, AcademicYearCode = AcademicYearCode });
+
+        //            // Return the result as a list in the ServiceResponse
+        //            return new ServiceResponse<List<GetStudentAttendanceDashboardResponse>>(
+        //                true,
+        //                "Successfully fetched student attendance dashboard data.",
+        //                result.ToList(),
+        //                200
+        //            );
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return new ServiceResponse<List<GetStudentAttendanceDashboardResponse>>(
+        //            false,
+        //            "An error occurred while fetching attendance dashboard data: " + ex.Message,
+        //            null,
+        //            500
+        //        );
+        //    }
+        //}
+
+        public async Task<ServiceResponse<List<GetStudentAttendanceDashboardResponse>>> GetStudentAttendanceDashboard(int instituteId, string academicYearCode, string startDate, string endDate)
         {
+            // Convert startDate and endDate from string to DateTime
+            DateTime startDateTime = DateTime.ParseExact(startDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+            DateTime endDateTime = DateTime.ParseExact(endDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+
             string query = @"
     SELECT 
         c.class_id AS ClassID,
@@ -92,7 +164,7 @@ namespace Attendance_SE_API.Repository.Implementations
          FROM tblStudentAttendance sa 
          WHERE sa.StatusID = 1 
          AND sa.AttendanceTypeID = 1
-         AND sa.AttendanceDate = CAST(GETDATE() AS DATE)
+         AND sa.AttendanceDate BETWEEN @StartDate AND @EndDate
          AND sa.ClassID = c.class_id
          AND sa.InstituteID = @InstituteID AND sa.AcademicYearCode = @AcademicYearCode) AS Present,
 
@@ -100,7 +172,7 @@ namespace Attendance_SE_API.Repository.Implementations
          FROM tblStudentAttendance sa 
          WHERE sa.StatusID = 2 
          AND sa.AttendanceTypeID = 1
-         AND sa.AttendanceDate = CAST(GETDATE() AS DATE)
+         AND sa.AttendanceDate BETWEEN @StartDate AND @EndDate
          AND sa.ClassID = c.class_id
          AND sa.InstituteID = @InstituteID AND sa.AcademicYearCode = @AcademicYearCode) AS Absent,
 
@@ -111,7 +183,7 @@ namespace Attendance_SE_API.Repository.Implementations
              SELECT 1
              FROM tblStudentAttendance sa
              WHERE sa.StudentID = sm.student_id
-             AND sa.AttendanceDate = CAST(GETDATE() AS DATE)
+             AND sa.AttendanceDate BETWEEN @StartDate AND @EndDate
              AND sa.InstituteID = @InstituteID AND sa.AcademicYearCode = @AcademicYearCode
          )) AS NotMarked
     FROM 
@@ -125,10 +197,14 @@ namespace Attendance_SE_API.Repository.Implementations
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
                 {
-                    // QueryAsync returns an IEnumerable<T> collection, so we convert it to a List
-                    var result = await connection.QueryAsync<GetStudentAttendanceDashboardResponse>(query, new { InstituteID = instituteId, AcademicYearCode = AcademicYearCode });
+                    var result = await connection.QueryAsync<GetStudentAttendanceDashboardResponse>(query, new
+                    {
+                        InstituteID = instituteId,
+                        AcademicYearCode = academicYearCode,
+                        StartDate = startDateTime,
+                        EndDate = endDateTime
+                    });
 
-                    // Return the result as a list in the ServiceResponse
                     return new ServiceResponse<List<GetStudentAttendanceDashboardResponse>>(
                         true,
                         "Successfully fetched student attendance dashboard data.",
@@ -147,6 +223,7 @@ namespace Attendance_SE_API.Repository.Implementations
                 );
             }
         }
+
 
 
         public async Task<ServiceResponse<GetEmployeeAttendanceStatisticsResponse>> GetEmployeeAttendanceStatistics(int instituteId)
@@ -251,5 +328,117 @@ namespace Attendance_SE_API.Repository.Implementations
             }
         }
 
+
+        public async Task<List<GetAttendanceNotMarkedResponse>> GetAttendanceNotMarked(int instituteId)
+        {
+            string query = @"
+            SELECT  c.class_name AS Class, 
+                    s.section_name AS Section,
+                    COUNT(sm.student_id) AS SectionStrength,
+                    esc.EmployeeId,
+                    epm.First_Name + ' ' + epm.Last_Name AS ClassTeacher
+            FROM tbl_Class c
+            LEFT OUTER JOIN tbl_Section s ON c.class_id = s.class_id
+            LEFT OUTER JOIN tbl_StudentMaster sm ON sm.class_id = c.class_id AND sm.section_id = s.section_id
+            LEFT OUTER JOIN tblStudentAttendance sa ON sm.student_id = sa.StudentID AND sa.AttendanceDate = CAST(GETDATE() AS DATE)
+            LEFT OUTER JOIN tblStudentAttendanceStatus sas ON sa.StatusID = sas.StatusID AND sa.StatusID IS NULL
+            LEFT JOIN tbl_EmployeeStaffMapClassTeacher esc ON esc.ClassId = c.class_id AND esc.SectionId = s.section_id
+            LEFT JOIN tbl_EmployeeProfileMaster epm ON epm.Employee_id = esc.EmployeeId
+            WHERE c.institute_id = @InstituteID
+            GROUP BY c.class_name, s.section_name, esc.EmployeeId, epm.First_Name, epm.Last_Name
+            HAVING COUNT(sa.StatusID) = 0
+            ORDER BY c.class_name";
+
+            try
+            {
+                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
+                {
+                    var result = await connection.QueryAsync<GetAttendanceNotMarkedResponse>(query, new { InstituteID = instituteId });
+                    return result.AsList();
+                }
+            }
+            catch (Exception ex)
+            {
+                return null; // Handle the exception accordingly
+            }
+        }
+
+        public async Task<List<GetAbsentStudentsResponse>> GetAbsentStudents(int instituteId)
+        {
+            string query = @"
+                SELECT sm.First_Name + ' ' + sm.Last_Name AS StudentName,
+                       c.class_name AS ClassName,
+                       s.section_name AS SectionName,
+                       sm.Admission_Number AS AdmissionNumber
+                FROM tblStudentAttendance sa
+                JOIN tblStudentAttendanceStatus sas ON sa.StatusID = sas.StatusID
+                JOIN tbl_StudentMaster sm ON sa.StudentID = sm.student_id
+                JOIN tbl_Class c ON sm.class_id = c.class_id
+                JOIN tbl_Section s ON sm.section_id = s.section_id
+                WHERE sas.ShortName = 'A'  -- 'A' stands for Absent
+                AND sa.AttendanceDate = CAST(GETDATE() AS DATE)  -- Today's date
+                AND sa.InstituteID = @InstituteID";
+
+            try
+            {
+                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
+                {
+                    var result = await connection.QueryAsync<GetAbsentStudentsResponse>(query, new { InstituteID = instituteId });
+                    return result.AsList();
+                }
+            }
+            catch (Exception ex)
+            {
+                return null; // Handle the exception accordingly
+            }
+        }
+
+        public async Task<GetStudentsMLCountResponse> GetStudentsMLCount(int instituteId)
+        {
+            string query = @"
+                SELECT COUNT(DISTINCT sa.StudentID) AS MedicalLeaveCount
+                FROM tblStudentAttendance sa
+                JOIN tblStudentAttendanceStatus sas ON sa.StatusID = sas.StatusID
+                WHERE sas.ShortName = 'ML'  -- 'ML' stands for Medical Leave
+                AND sa.AttendanceDate = CAST(GETDATE() AS DATE)  -- Today's date
+                AND sa.InstituteID = @InstituteID";
+
+            try
+            {
+                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
+                {
+                    var result = await connection.QueryFirstOrDefaultAsync<GetStudentsMLCountResponse>(query, new { InstituteID = instituteId });
+                    return result;
+                }
+            }
+            catch (Exception ex)
+            {
+                return null; // Handle the exception accordingly
+            }
+        }
+
+        public async Task<GetHalfDayLeaveCountResponse> GetHalfDayLeaveCount(int instituteId)
+        {
+            string query = @"
+                SELECT COUNT(DISTINCT sa.StudentID) AS HalfDayLeaveCount
+                FROM tblStudentAttendance sa
+                JOIN tblStudentAttendanceStatus sas ON sa.StatusID = sas.StatusID
+                WHERE sas.ShortName = 'HD'  -- 'HD' stands for Half Day Leave
+                AND sa.AttendanceDate = CAST(GETDATE() AS DATE)  -- Today's date
+                AND sa.InstituteID = @InstituteID";
+
+            try
+            {
+                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
+                {
+                    var result = await connection.QueryFirstOrDefaultAsync<GetHalfDayLeaveCountResponse>(query, new { InstituteID = instituteId });
+                    return result;
+                }
+            }
+            catch (Exception ex)
+            {
+                return null; // Handle the exception accordingly
+            }
+        }
     }
 }

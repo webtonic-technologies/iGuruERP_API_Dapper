@@ -14,6 +14,10 @@ namespace Attendance_SE_API.Services.Interfaces
         Task<MemoryStream> GenerateExcelReport(GetAttendanceGeoFencingReportRequest request);
         Task<MemoryStream> GenerateCSVReport(GetAttendanceGeoFencingReportRequest request);
         Task<List<AttendanceMode>> GetAttendanceMode();
+        Task<ServiceResponse<IEnumerable<GetAttendanceBioMericReportResponse>>> GetAttendanceBioMericReport(GetAttendanceBioMericReportRequest request);
+        Task<MemoryStream> GenerateBioMetricExcelReport(GetAttendanceBioMericReportRequest request);
+        Task<MemoryStream> GenerateBioMetricCSVReport(GetAttendanceBioMericReportRequest request);
+
 
     }
 }
