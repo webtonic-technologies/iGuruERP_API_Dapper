@@ -7,6 +7,7 @@ using Attendance_SE_API.DTOs.Response;
 using Dapper;
 using Microsoft.Extensions.Configuration;
 using System.Globalization;
+using Attendance_SE_API.DTOs.Requests;
 
 namespace Attendance_SE_API.Repository.Implementations
 {
@@ -440,5 +441,61 @@ namespace Attendance_SE_API.Repository.Implementations
                 return null; // Handle the exception accordingly
             }
         }
+
+        public async Task<IEnumerable<GetAttendanceNotMarkedExportResponse>> GetAttendanceNotMarkedExport(GetAttendanceNotMarkedExportRequest request)
+        {
+            string query = @"
+                SELECT c.class_name AS Class, 
+                       s.section_name AS Section,
+                       COUNT(sm.student_id) AS SectionStrength,
+                       esc.EmployeeId,
+                       epm.First_Name + ' ' + epm.Last_Name AS ClassTeacher
+                FROM tbl_Class c
+                LEFT OUTER JOIN tbl_Section s ON c.class_id = s.class_id
+                LEFT OUTER JOIN tbl_StudentMaster sm ON sm.class_id = c.class_id AND sm.section_id = s.section_id
+                LEFT OUTER JOIN tblStudentAttendance sa ON sm.student_id = sa.StudentID AND sa.AttendanceDate = CAST(GETDATE() AS DATE)
+                LEFT OUTER JOIN tblStudentAttendanceStatus sas ON sa.StatusID = sas.StatusID AND sa.StatusID IS NULL
+                LEFT JOIN tbl_EmployeeStaffMapClassTeacher esc ON esc.ClassId = c.class_id AND esc.SectionId = s.section_id
+                LEFT JOIN tbl_EmployeeProfileMaster epm ON epm.Employee_id = esc.EmployeeId
+                WHERE c.institute_id = @InstituteID
+                GROUP BY c.class_name, s.section_name, esc.EmployeeId, epm.First_Name, epm.Last_Name
+                HAVING COUNT(sa.StatusID) = 0
+                ORDER BY c.class_name";
+
+            var parameters = new { InstituteID = request.InstituteID };
+
+            // Initialize the connection
+            using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
+            {
+                var results = await connection.QueryAsync<GetAttendanceNotMarkedExportResponse>(query, parameters);
+                return results;
+            }
+        }
+
+        public async Task<IEnumerable<GetAbsentStudentsExportResponse>> GetAbsentStudentsExport(GetAbsentStudentsExportRequest request)
+        {
+            string query = @"
+                SELECT sm.First_Name + ' ' + sm.Last_Name AS StudentName,
+                       c.class_name AS ClassName,
+                       s.section_name AS SectionName,
+                       sm.Admission_Number AS AdmissionNumber
+                FROM tblStudentAttendance sa
+                JOIN tblStudentAttendanceStatus sas ON sa.StatusID = sas.StatusID
+                JOIN tbl_StudentMaster sm ON sa.StudentID = sm.student_id
+                JOIN tbl_Class c ON sm.class_id = c.class_id
+                JOIN tbl_Section s ON sm.section_id = s.section_id
+                WHERE sas.ShortName = 'A'  -- 'A' stands for Absent
+                AND sa.AttendanceDate = CAST(GETDATE() AS DATE)  -- Today's date
+                AND sa.InstituteID = @InstituteID";
+
+            var parameters = new { InstituteID = request.InstituteID };
+
+            using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
+            {
+                var results = await connection.QueryAsync<GetAbsentStudentsExportResponse>(query, parameters);
+                return results;
+            }
+        }
+
     }
-}
+} 

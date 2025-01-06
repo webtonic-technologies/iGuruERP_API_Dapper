@@ -123,5 +123,32 @@ namespace Attendance_SE_API.Controllers
 
             return BadRequest(response.Message);
         }
+
+        [HttpPost("GetAttendanceNotMarkedExport")]
+        public async Task<IActionResult> GetAttendanceNotMarkedExport([FromBody] GetAttendanceNotMarkedExportRequest request)
+        {
+            var response = await _attendanceDashboardService.GetAttendanceNotMarkedExport(request);
+
+            if (response.Success)
+            {
+                return File(response.Data, response.StatusCode == 200 ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "text/csv", "AttendanceNotMarkedExport" + (request.ExportType == 1 ? ".xlsx" : ".csv"));
+            }
+
+            return BadRequest(response);
+        }
+
+        [HttpPost("GetAbsentStudentsExport")]
+        public async Task<IActionResult> GetAbsentStudentsExport([FromBody] GetAbsentStudentsExportRequest request)
+        {
+            var response = await _attendanceDashboardService.GetAbsentStudentsExport(request);
+
+            if (response.Success)
+            {
+                return File(response.Data, response.StatusCode == 200 ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "text/csv",
+                            "AbsentStudentsExport" + (request.ExportType == 1 ? ".xlsx" : ".csv"));
+            }
+
+            return BadRequest(response);
+        }
     }
 }

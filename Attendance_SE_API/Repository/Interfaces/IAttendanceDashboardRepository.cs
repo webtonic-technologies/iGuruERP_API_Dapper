@@ -1,4 +1,5 @@
 ﻿
+using Attendance_SE_API.DTOs.Requests;
 using Attendance_SE_API.DTOs.Response;
 using Attendance_SE_API.DTOs.Responses;
 using Attendance_SE_API.ServiceResponse;
@@ -14,6 +15,8 @@ namespace Attendance_SE_API.Repository.Interfaces
         Task<List<GetAbsentStudentsResponse>> GetAbsentStudents(int instituteId);
         Task<GetStudentsMLCountResponse> GetStudentsMLCount(int instituteId);
         Task<GetHalfDayLeaveCountResponse> GetHalfDayLeaveCount(int instituteId);
+        Task<IEnumerable<GetAttendanceNotMarkedExportResponse>> GetAttendanceNotMarkedExport(GetAttendanceNotMarkedExportRequest request);
+        Task<IEnumerable<GetAbsentStudentsExportResponse>> GetAbsentStudentsExport(GetAbsentStudentsExportRequest request);
 
     }
 }
