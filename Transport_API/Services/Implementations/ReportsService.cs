@@ -108,6 +108,34 @@ namespace Transport_API.Services.Implementations
             return await _reportsRepository.GetDeAllocationReport(request.InstituteID, request.StartDate, request.EndDate, request.UserTypeID);
         }
 
+        public async Task<ServiceResponse<List<GetTransportReportResponse>>> GetTransportReport(int instituteID, int classID, int sectionID)
+        {
+            // Fetch the report from the repository
+            var report = await _reportsRepository.GetTransportReport(instituteID, classID, sectionID);
+
+            // Check if the report is null or empty and handle accordingly
+            if (report == null || !report.Any())
+            {
+                // Return a failure response if no data found
+                return new ServiceResponse<List<GetTransportReportResponse>>(
+                    false,
+                    "No data found.",
+                    null,
+                    StatusCodes.Status404NotFound,
+                    0 // No records found
+                );
+            }
+
+            // Return the successful response with data
+            return new ServiceResponse<List<GetTransportReportResponse>>(
+                true,
+                "Operation Successful",
+                report,
+                StatusCodes.Status200OK,
+                report.Count() // Provide the total count of records
+            );
+        }
+
 
         //Excel Export
 
@@ -142,6 +170,10 @@ namespace Transport_API.Services.Implementations
             return await _reportsRepository.GetDeAllocationReportExportExcel(request);
         }
 
+        public async Task<byte[]> GetTransportReportExportExcel(GetTransportReportRequest request)
+        {
+            return await _reportsRepository.GetTransportReportExportExcel(request);
+        }
 
         // CSV Export Services
         public async Task<byte[]> GetEmployeeTransportationReportExportCSV(GetReportsRequest request)
@@ -173,6 +205,9 @@ namespace Transport_API.Services.Implementations
         {
             return await _reportsRepository.GetDeAllocationReportExportCSV(request);
         }
-
+        public async Task<byte[]> GetTransportReportExportCSV(GetTransportReportRequest request)
+        {
+            return await _reportsRepository.GetTransportReportExportCSV(request);
+        }
     }
 }

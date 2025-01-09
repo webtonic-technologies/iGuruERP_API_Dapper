@@ -10,7 +10,8 @@ using System.Text;  // Required for StringBuilder and Encoding
 using System.Linq;
 using Transport_API.DTOs.Responses;
 using static Transport_API.DTOs.Responses.GetTransportationPendingFeeReportResponse;
-using System.Globalization;  // For LINQ usage (if not already present)
+using System.Globalization;
+using static Transport_API.DTOs.Response.GetTransportReportResponse;  // For LINQ usage (if not already present)
 
 
 namespace Transport_API.Repository.Implementations
@@ -2058,6 +2059,213 @@ WHERE
             }
 
             // Return CSV as byte array
+            return Encoding.UTF8.GetBytes(csv.ToString());
+        }
+
+
+
+        public async Task<List<GetTransportReportResponse>> GetTransportReport(int instituteID, int classID, int sectionID)
+        {
+            var query = @"
+        SELECT 
+            sm.Student_ID as StudentID,
+            sm.First_Name + ' ' + sm.Middle_Name + ' ' + sm.Last_Name AS StudentName,
+            c.class_name + ' - ' + s.section_name AS ClassSection,
+            sm.Roll_Number AS RollNumber,
+            spi.First_Name + ' ' + spi.Middle_Name + ' ' + spi.Last_Name AS FatherName, 
+            spi.Mobile_Number AS Mobile, 
+            rs.StopName
+        FROM 
+            tbl_StudentMaster sm
+        LEFT JOIN 
+            tbl_Class c ON sm.class_id = c.class_id
+        LEFT JOIN 
+            tbl_Section s ON sm.section_id = s.section_id
+        LEFT JOIN 
+            tblStudentStopMapping ssm ON sm.student_id = ssm.StudentID
+        LEFT JOIN 
+            tblRouteStopMaster rs ON ssm.StopID = rs.StopID
+        LEFT JOIN 
+            tblRoutePlan rp ON rs.RoutePlanID = rp.RoutePlanID 
+        LEFT JOIN 
+            tbl_StudentParentsInfo spi ON sm.Student_ID = spi.Student_id AND spi.Parent_Type_id = 1
+        WHERE  
+            sm.class_id = @ClassID 
+            AND sm.section_id = @SectionID
+            AND rp.InstituteID = @InstituteID";
+
+            var result = await _dbConnection.QueryAsync<dynamic>(query, new { InstituteID = instituteID, ClassID = classID, SectionID = sectionID });
+
+            // Group the result by student information and map to response
+            var response = result.GroupBy(x => new
+            {
+                x.StudentID,
+                x.StudentName,
+                x.ClassSection,
+                x.RollNumber,
+                x.FatherName,
+                x.Mobile,
+                x.StopName
+            })
+            .Select(group => new GetTransportReportResponse
+            {
+                StudentID = group.Key.StudentID,
+                StudentName = group.Key.StudentName,
+                ClassSection = group.Key.ClassSection,
+                RollNumber = group.Key.RollNumber,
+                FatherName = group.Key.FatherName,
+                Mobile = group.Key.Mobile,
+                StopName = group.Key.StopName
+            }).ToList();
+
+            return response;
+        }
+
+
+
+        public async Task<byte[]> GetTransportReportExportExcel(GetTransportReportRequest request)
+        {
+            var sql = @"
+            SELECT 
+                    sm.Student_ID as StudentID,
+                    sm.First_Name + ' ' + sm.Middle_Name + ' ' + sm.Last_Name AS StudentName,
+                    c.class_name + ' - ' + s.section_name AS ClassSection,
+                    sm.Roll_Number AS RollNumber,
+                    spi.First_Name + ' ' + spi.Middle_Name + ' ' + spi.Last_Name AS FatherName, 
+                    spi.Mobile_Number AS Mobile, 
+                    rs.StopName
+                FROM 
+                    tbl_StudentMaster sm
+                LEFT JOIN 
+                    tbl_Class c ON sm.class_id = c.class_id
+                LEFT JOIN 
+                    tbl_Section s ON sm.section_id = s.section_id
+                LEFT JOIN 
+                    tblStudentStopMapping ssm ON sm.student_id = ssm.StudentID
+                LEFT JOIN 
+                    tblRouteStopMaster rs ON ssm.StopID = rs.StopID
+                LEFT JOIN 
+                    tblRoutePlan rp ON rs.RoutePlanID = rp.RoutePlanID 
+                LEFT JOIN 
+                    tbl_StudentParentsInfo spi ON sm.Student_ID = spi.Student_id AND spi.Parent_Type_id = 1
+                WHERE  
+                    sm.class_id = @ClassID 
+                    AND sm.section_id = @SectionID
+                    AND rp.InstituteID = @InstituteID";
+
+            var data = await _dbConnection.QueryAsync(sql, new { request.InstituteID, request.ClassID, request.SectionID });
+
+            // Extract unique TenureType values
+            var tenureTypes = data.Select(x => x.TenureType).Distinct().ToList();
+
+            // Generate Excel File
+            using (var package = new ExcelPackage())
+            {
+                var worksheet = package.Workbook.Worksheets.Add("TransportReport");
+
+                worksheet.Cells[1, 1].Value = "StudentName";
+                worksheet.Cells[1, 2].Value = "ClassSection";
+                worksheet.Cells[1, 3].Value = "RollNumber";
+                worksheet.Cells[1, 4].Value = "FatherName";
+                worksheet.Cells[1, 5].Value = "Mobile";
+                worksheet.Cells[1, 6].Value = "StopName";
+                  
+
+                int row = 2;
+
+                // Group the data by StudentID and map each fee type to the corresponding column
+                var groupedData = data
+                    .GroupBy(x => new { x.StudentName, x.ClassSection, x.RollNumber, x.FatherName, x.Mobile, x.StopName })
+                    .Select(g => new
+                    {
+                        StudentName = g.Key.StudentName,
+                        ClassSection = g.Key.ClassSection,
+                        RollNumber = g.Key.RollNumber,
+                        FatherName = g.Key.FatherName,
+                        Mobile = g.Key.Mobile,
+                        StopName = g.Key.StopName
+                    });
+
+                foreach (var record in groupedData)
+                {
+                    worksheet.Cells[row, 1].Value = record.StudentName;
+                    worksheet.Cells[row, 2].Value = record.ClassSection;
+                    worksheet.Cells[row, 3].Value = record.RollNumber;
+                    worksheet.Cells[row, 4].Value = record.FatherName;
+                    worksheet.Cells[row, 5].Value = record.Mobile;
+                    worksheet.Cells[row, 6].Value = record.StopName; 
+
+                    row++;
+                }
+
+                return package.GetAsByteArray();
+            }
+        }
+
+        public async Task<byte[]> GetTransportReportExportCSV(GetTransportReportRequest request)
+        {
+            var sql = @"
+            SELECT 
+                sm.Student_ID as StudentID,
+                sm.First_Name + ' ' + sm.Middle_Name + ' ' + sm.Last_Name AS StudentName,
+                c.class_name + ' - ' + s.section_name AS ClassSection,
+                sm.Roll_Number AS RollNumber,
+                spi.First_Name + ' ' + spi.Middle_Name + ' ' + spi.Last_Name AS FatherName, 
+                spi.Mobile_Number AS Mobile, 
+                rs.StopName
+            FROM 
+                tbl_StudentMaster sm
+            LEFT JOIN 
+                tbl_Class c ON sm.class_id = c.class_id
+            LEFT JOIN 
+                tbl_Section s ON sm.section_id = s.section_id
+            LEFT JOIN 
+                tblStudentStopMapping ssm ON sm.student_id = ssm.StudentID
+            LEFT JOIN 
+                tblRouteStopMaster rs ON ssm.StopID = rs.StopID
+            LEFT JOIN 
+                tblRoutePlan rp ON rs.RoutePlanID = rp.RoutePlanID 
+            LEFT JOIN 
+                tbl_StudentParentsInfo spi ON sm.Student_ID = spi.Student_id AND spi.Parent_Type_id = 1
+            WHERE  
+                sm.class_id = @ClassID 
+                AND sm.section_id = @SectionID
+                AND rp.InstituteID = @InstituteID";
+
+            var data = await _dbConnection.QueryAsync(sql, new { request.InstituteID, request.ClassID, request.SectionID });
+
+            // Group the data by Student information
+            var groupedData = data
+                .GroupBy(x => new
+                {
+                    x.StudentID,
+                    x.StudentName,
+                    x.ClassSection,
+                    x.RollNumber,
+                    x.FatherName,
+                    x.Mobile,
+                    x.StopName
+                })
+                .Select(group => new GetTransportReportResponse
+                {
+                    StudentID = group.Key.StudentID,
+                    StudentName = group.Key.StudentName,
+                    ClassSection = group.Key.ClassSection,
+                    RollNumber = group.Key.RollNumber,
+                    FatherName = group.Key.FatherName,
+                    Mobile = group.Key.Mobile,
+                    StopName = group.Key.StopName
+                }).ToList();
+
+            // Prepare CSV data
+            var csv = new StringBuilder();
+            csv.AppendLine("StudentName,ClassSection,RollNumber,FatherName,Mobile,StopName");
+
+            foreach (var record in groupedData)
+            {
+                csv.AppendLine($"{record.StudentName},{record.ClassSection},{record.RollNumber},{record.FatherName},{record.Mobile},{record.StopName}");
+            }
+
             return Encoding.UTF8.GetBytes(csv.ToString());
         }
 

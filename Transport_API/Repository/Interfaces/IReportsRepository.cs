@@ -36,6 +36,7 @@ namespace Transport_API.Repository.Interfaces
         Task<ServiceResponse<IEnumerable<GetStudentsReportResponse>>> GetStudentsReport(StudentsReportRequest request);
         Task<List<GetTransportationPendingFeeReportResponse>> GetTransportationPendingFeeReport(int instituteID, int routePlanID);
         Task<ServiceResponse<IEnumerable<GetDeAllocationReportResponse>>> GetDeAllocationReport(int instituteID, string startDate, string endDate, int userTypeID);
+        Task<List<GetTransportReportResponse>> GetTransportReport(int instituteID, int classID, int sectionID);
 
 
 
@@ -47,6 +48,7 @@ namespace Transport_API.Repository.Interfaces
         Task<byte[]> GetStudentsReportExportExcel(StudentsReportRequest request);
         Task<byte[]> GetTransportationPendingFeeReportExportExcel(TransportationFeeReportExExcelRequest request);
         Task<byte[]> GetDeAllocationReportExportExcel(GetDeAllocationReportExportExcelRequest request);
+        Task<byte[]> GetTransportReportExportExcel(GetTransportReportRequest request);
 
 
         // CSV Export Methods
@@ -56,6 +58,7 @@ namespace Transport_API.Repository.Interfaces
         Task<byte[]> GetStudentsReportExportCSV(StudentsReportRequest request); 
         Task<byte[]> GetTransportationPendingFeeReportExportCSV(TransportationFeeReportExExcelRequest request);
         Task<byte[]> GetDeAllocationReportExportCSV(GetDeAllocationReportExportExcelRequest request);
+        Task<byte[]> GetTransportReportExportCSV(GetTransportReportRequest request);
 
 
     }

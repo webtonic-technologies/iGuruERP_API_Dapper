@@ -100,6 +100,20 @@ namespace Transport_API.Controllers
             return Ok(response);
         }
 
+        [HttpPost("GetTransportReport")]
+        public async Task<IActionResult> GetTransportReport([FromBody] GetTransportReportRequest request)
+        {
+            if (request == null || request.InstituteID == 0 || request.ClassID == 0 || request.SectionID == 0)
+                return BadRequest("Invalid request data.");
+
+            var response = await _reportsService.GetTransportReport(request.InstituteID, request.ClassID, request.SectionID);
+
+            if (response.Data == null || !response.Data.Any())
+                return NotFound("No data found.");
+
+            return Ok(response);
+        }
+
         [HttpPost("GetDeAllocationReport")]
         public async Task<IActionResult> GetDeAllocationReport([FromBody] GetDeAllocationReportRequest request)
         {
@@ -203,6 +217,26 @@ namespace Transport_API.Controllers
             return NoContent();
         }
 
+        [HttpPost("GetTransportReportExportExcel")]
+        public async Task<IActionResult> GetTransportReportExportExcel([FromBody] GetTransportReportRequest request)
+        {
+            try
+            {
+                var excelData = await _reportsService.GetTransportReportExportExcel(request);
+
+                if (excelData != null)
+                {
+                    return File(excelData, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "TransportReport.xlsx");
+                }
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
         // CSV Export Services
 
         [HttpPost("GetEmployeeTransportationReportExportCSV")]
@@ -290,6 +324,26 @@ namespace Transport_API.Controllers
                 }
 
                 return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPost("GetTransportReportExportCSV")]
+        public async Task<IActionResult> GetTransportReportExportCSV([FromBody] GetTransportReportRequest request)
+        {
+            try
+            {
+                var csvData = await _reportsService.GetTransportReportExportCSV(request);
+
+                if (csvData == null)
+                {
+                    return NoContent();
+                }
+
+                return File(csvData, "text/csv", "TransportReport.csv");
             }
             catch (Exception ex)
             {
