@@ -14,7 +14,9 @@ namespace Transport_API.Repository.Interfaces
         Task<ServiceResponse<GetAllExpenseResponse>> GetVehicleExpenseById(int VehicleId);
         Task<ServiceResponse<bool>> DeleteVehicleExpense(int vehicleExpenseId);
         Task<IEnumerable<GetVehicleExpenseTypeResponse>> GetVehicleExpenseTypes();
-        Task<List<GetAllExpenseExportResponse>> GetAllExpenseExport(GetAllExpenseExportRequest request); 
-
+        Task<List<GetAllExpenseExportResponse>> GetAllExpenseExport(GetAllExpenseExportRequest request);
+        Task<ServiceResponse<string>> AddFuelExpense(AddFuelExpenseRequest request);
+        Task<ServiceResponse<IEnumerable<GetFuelExpenseResponse>>> GetFuelExpense(GetFuelExpenseRequest request);
+        Task<ServiceResponse<byte[]>> GetFuelExpenseExport(GetFuelExpenseExportRequest request);
     }
 }

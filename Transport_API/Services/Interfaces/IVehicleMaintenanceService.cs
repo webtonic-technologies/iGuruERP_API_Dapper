@@ -1,6 +1,7 @@
 ﻿using Transport_API.DTOs.Requests;
 using Transport_API.DTOs.Requests.Transport_API.DTOs.Requests;
 using Transport_API.DTOs.Response;
+using Transport_API.DTOs.Responses;
 using Transport_API.DTOs.ServiceResponse;
 using Transport_API.Models;
 
@@ -14,6 +15,10 @@ namespace Transport_API.Services.Interfaces
         Task<ServiceResponse<bool>> DeleteVehicleExpense(int vehicleExpenseId);
         Task<ServiceResponse<IEnumerable<GetVehicleExpenseTypeResponse>>> GetVehicleExpenseType();
         Task<ServiceResponse<byte[]>> GetAllExpenseExport(GetAllExpenseExportRequest request);
+        Task<ServiceResponse<string>> AddFuelExpense(AddFuelExpenseRequest request);
+        Task<ServiceResponse<IEnumerable<GetFuelExpenseResponse>>> GetFuelExpense(GetFuelExpenseRequest request);
+        Task<ServiceResponse<byte[]>> GetFuelExpenseExport(GetFuelExpenseExportRequest request); 
+
 
     }
 }

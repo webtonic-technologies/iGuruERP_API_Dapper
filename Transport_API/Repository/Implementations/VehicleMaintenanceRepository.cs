@@ -11,6 +11,7 @@ using Microsoft.Extensions.Hosting.Internal;
 using Transport_API.DTOs.Requests.Transport_API.DTOs.Requests;
 using System.Globalization;
 using Transport_API.DTOs.Responses;
+using System.Text;
 
 namespace Transport_API.Repository.Implementations
 {
@@ -28,108 +29,229 @@ namespace Transport_API.Repository.Implementations
         }
 
 
+        //public async Task<ServiceResponse<string>> AddUpdateVehicleExpense(VehicleExpenseRequest vehicleExpense)
+        //{
+        //    string sql;
+
+        //    // Convert ExpenseDate to DateTime
+        //    DateTime expenseDate;
+        //    if (!DateTime.TryParseExact(vehicleExpense.ExpenseDate, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out expenseDate))
+        //    {
+        //        return new ServiceResponse<string>(false, "Invalid date format. Please use dd-MM-yyyy.", null, StatusCodes.Status400BadRequest);
+        //    }
+
+        //    if (vehicleExpense.VehicleExpenseID == 0)
+        //    {
+        //        // Insert operation
+        //        sql = @"INSERT INTO tblVehicleExpense (VehicleID, VehicleExpenseTypeID, ExpenseDate, Cost, Remarks, InstituteID, IsActive)
+        //        VALUES (@VehicleID, @VehicleExpenseTypeID, @ExpenseDate, @Cost, @Remarks, @InstituteID, @IsActive);
+        //        SELECT CAST(SCOPE_IDENTITY() AS INT);";
+
+        //        int result = await _dbConnection.QueryFirstOrDefaultAsync<int>(sql, new
+        //        {
+        //            vehicleExpense.VehicleID,
+        //            vehicleExpense.VehicleExpenseTypeID,
+        //            ExpenseDate = expenseDate, // use the converted DateTime here
+        //            vehicleExpense.Cost,
+        //            vehicleExpense.Remarks,
+        //            vehicleExpense.InstituteID,
+        //            vehicleExpense.IsActive
+        //        });
+
+        //        if (result > 0)
+        //        {
+        //            // Insert attachments if there are any
+        //            if (vehicleExpense.Attachments != null && vehicleExpense.Attachments.Any())
+        //            {
+        //                foreach (var doc in vehicleExpense.Attachments)
+        //                {
+        //                    await AddVehicleExpenseDocument(result, doc.Attachment);
+        //                }
+        //            }
+
+        //            return new ServiceResponse<string>(true, "Vehicle expense added successfully", null, StatusCodes.Status200OK);
+        //        }
+        //        else
+        //        {
+        //            return new ServiceResponse<string>(false, "Failed to add vehicle expense", null, StatusCodes.Status400BadRequest);
+        //        }
+        //    }
+        //    else
+        //    {
+        //        // Update operation
+        //        sql = @"UPDATE tblVehicleExpense 
+        //        SET VehicleID = @VehicleID, 
+        //            VehicleExpenseTypeID = @VehicleExpenseTypeID, 
+        //            ExpenseDate = @ExpenseDate, 
+        //            Cost = @Cost, 
+        //            Remarks = @Remarks, 
+        //            InstituteID = @InstituteID, 
+        //            IsActive = @IsActive
+        //        WHERE VehicleExpenseID = @VehicleExpenseID";
+
+        //        int result = await _dbConnection.ExecuteAsync(sql, new
+        //        {
+        //            vehicleExpense.VehicleID,
+        //            vehicleExpense.VehicleExpenseTypeID,
+        //            ExpenseDate = expenseDate, // use the converted DateTime here
+        //            vehicleExpense.Cost,
+        //            vehicleExpense.Remarks,
+        //            vehicleExpense.InstituteID,
+        //            vehicleExpense.IsActive,
+        //            vehicleExpense.VehicleExpenseID
+        //        });
+
+        //        if (result > 0)
+        //        {
+        //            // Update attachments if there are any
+        //            if (vehicleExpense.Attachments != null && vehicleExpense.Attachments.Any())
+        //            {
+        //                foreach (var doc in vehicleExpense.Attachments)
+        //                {
+        //                    await AddVehicleExpenseDocument(vehicleExpense.VehicleExpenseID, doc.Attachment);
+        //                }
+        //            }
+
+        //            return new ServiceResponse<string>(true, "Vehicle expense updated successfully", null, StatusCodes.Status200OK);
+        //        }
+        //        else
+        //        {
+        //            return new ServiceResponse<string>(false, "Failed to update vehicle expense", null, StatusCodes.Status400BadRequest);
+        //        }
+        //    }
+        //}
+
+        //// Helper method to handle attachments
+        //private async Task AddVehicleExpenseDocument(int vehicleExpenseID, string base64Document)
+        //{
+        //    string filePath = SaveDocumentToDisk(base64Document); // You can implement your method to save the base64 to disk
+
+        //    string sql = @"INSERT INTO tblVehicleExpenseDocument (VehicleExpenseID, VehicleExpenseDocument)
+        //           VALUES (@VehicleExpenseID, @VehicleExpenseDocument);";
+
+        //    await _dbConnection.ExecuteAsync(sql, new { VehicleExpenseID = vehicleExpenseID, VehicleExpenseDocument = filePath });
+        //}
+
+
+
         public async Task<ServiceResponse<string>> AddUpdateVehicleExpense(VehicleExpenseRequest vehicleExpense)
         {
-            string sql;
-
-            // Convert ExpenseDate to DateTime
-            DateTime expenseDate;
-            if (!DateTime.TryParseExact(vehicleExpense.ExpenseDate, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out expenseDate))
+            try
             {
-                return new ServiceResponse<string>(false, "Invalid date format. Please use dd-MM-yyyy.", null, StatusCodes.Status400BadRequest);
-            }
-
-            if (vehicleExpense.VehicleExpenseID == 0)
-            {
-                // Insert operation
-                sql = @"INSERT INTO tblVehicleExpense (VehicleID, VehicleExpenseTypeID, ExpenseDate, Cost, Remarks, InstituteID, IsActive)
-                VALUES (@VehicleID, @VehicleExpenseTypeID, @ExpenseDate, @Cost, @Remarks, @InstituteID, @IsActive);
-                SELECT CAST(SCOPE_IDENTITY() AS INT);";
-
-                int result = await _dbConnection.QueryFirstOrDefaultAsync<int>(sql, new
+                // Convert ExpenseDate to DateTime
+                DateTime expenseDate;
+                if (!DateTime.TryParseExact(vehicleExpense.ExpenseDate, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out expenseDate))
                 {
-                    vehicleExpense.VehicleID,
-                    vehicleExpense.VehicleExpenseTypeID,
-                    ExpenseDate = expenseDate, // use the converted DateTime here
-                    vehicleExpense.Cost,
-                    vehicleExpense.Remarks,
-                    vehicleExpense.InstituteID,
-                    vehicleExpense.IsActive
-                });
+                    return new ServiceResponse<string>(false, "Invalid date format. Please use DD-MM-YYYY.", null, 400);
+                }
 
-                if (result > 0)
+                string sql;
+                int result;
+
+                if (vehicleExpense.VehicleExpenseID == 0) // Insert operation
                 {
-                    // Insert attachments if there are any
-                    if (vehicleExpense.Attachments != null && vehicleExpense.Attachments.Any())
+                    sql = @"INSERT INTO tblVehicleExpense (VehicleID, VehicleExpenseTypeID, ExpenseDate, Cost, Remarks, InstituteID, IsActive)
+                    VALUES (@VehicleID, @VehicleExpenseTypeID, @ExpenseDate, @Cost, @Remarks, @InstituteID, @IsActive);
+                    SELECT CAST(SCOPE_IDENTITY() AS INT);";
+
+                    result = await _dbConnection.ExecuteScalarAsync<int>(sql, new
                     {
-                        foreach (var doc in vehicleExpense.Attachments)
-                        {
-                            await AddVehicleExpenseDocument(result, doc.Attachment);
-                        }
-                    }
+                        vehicleExpense.VehicleID,
+                        vehicleExpense.VehicleExpenseTypeID,
+                        ExpenseDate = expenseDate, // Convert the date
+                        vehicleExpense.Cost,
+                        vehicleExpense.Remarks,
+                        vehicleExpense.InstituteID,
+                        vehicleExpense.IsActive
+                    });
 
-                    return new ServiceResponse<string>(true, "Vehicle expense added successfully", null, StatusCodes.Status200OK);
+                    if (result > 0)
+                    {
+                        // Insert attachments if there are any
+                        if (vehicleExpense.Attachments != null && vehicleExpense.Attachments.Any())
+                        {
+                            foreach (var doc in vehicleExpense.Attachments)
+                            {
+                                await AddVehicleExpenseDocument(result, doc.Attachment);
+                            }
+                        }
+
+                        return new ServiceResponse<string>(true, "Vehicle expense added successfully", null, 200);
+                    }
+                    else
+                    {
+                        return new ServiceResponse<string>(false, "Failed to add vehicle expense", null, 400);
+                    }
                 }
-                else
+                else // Update operation
                 {
-                    return new ServiceResponse<string>(false, "Failed to add vehicle expense", null, StatusCodes.Status400BadRequest);
+                    sql = @"UPDATE tblVehicleExpense 
+                    SET VehicleID = @VehicleID, 
+                        VehicleExpenseTypeID = @VehicleExpenseTypeID, 
+                        ExpenseDate = @ExpenseDate, 
+                        Cost = @Cost, 
+                        Remarks = @Remarks, 
+                        InstituteID = @InstituteID, 
+                        IsActive = @IsActive
+                    WHERE VehicleExpenseID = @VehicleExpenseID";
+
+                    result = await _dbConnection.ExecuteAsync(sql, new
+                    {
+                        vehicleExpense.VehicleID,
+                        vehicleExpense.VehicleExpenseTypeID,
+                        ExpenseDate = expenseDate, // Convert the date
+                        vehicleExpense.Cost,
+                        vehicleExpense.Remarks,
+                        vehicleExpense.InstituteID,
+                        vehicleExpense.IsActive,
+                        vehicleExpense.VehicleExpenseID
+                    });
+
+                    if (result > 0)
+                    {
+                        // Update attachments if there are any
+                        if (vehicleExpense.Attachments != null && vehicleExpense.Attachments.Any())
+                        {
+                            foreach (var doc in vehicleExpense.Attachments)
+                            {
+                                await AddVehicleExpenseDocument(vehicleExpense.VehicleExpenseID, doc.Attachment);
+                            }
+                        }
+
+                        return new ServiceResponse<string>(true, "Vehicle expense updated successfully", null, 200);
+                    }
+                    else
+                    {
+                        return new ServiceResponse<string>(false, "Failed to update vehicle expense", null, 400);
+                    }
                 }
             }
-            else
+            catch (Exception ex)
             {
-                // Update operation
-                sql = @"UPDATE tblVehicleExpense 
-                SET VehicleID = @VehicleID, 
-                    VehicleExpenseTypeID = @VehicleExpenseTypeID, 
-                    ExpenseDate = @ExpenseDate, 
-                    Cost = @Cost, 
-                    Remarks = @Remarks, 
-                    InstituteID = @InstituteID, 
-                    IsActive = @IsActive
-                WHERE VehicleExpenseID = @VehicleExpenseID";
-
-                int result = await _dbConnection.ExecuteAsync(sql, new
-                {
-                    vehicleExpense.VehicleID,
-                    vehicleExpense.VehicleExpenseTypeID,
-                    ExpenseDate = expenseDate, // use the converted DateTime here
-                    vehicleExpense.Cost,
-                    vehicleExpense.Remarks,
-                    vehicleExpense.InstituteID,
-                    vehicleExpense.IsActive,
-                    vehicleExpense.VehicleExpenseID
-                });
-
-                if (result > 0)
-                {
-                    // Update attachments if there are any
-                    if (vehicleExpense.Attachments != null && vehicleExpense.Attachments.Any())
-                    {
-                        foreach (var doc in vehicleExpense.Attachments)
-                        {
-                            await AddVehicleExpenseDocument(vehicleExpense.VehicleExpenseID, doc.Attachment);
-                        }
-                    }
-
-                    return new ServiceResponse<string>(true, "Vehicle expense updated successfully", null, StatusCodes.Status200OK);
-                }
-                else
-                {
-                    return new ServiceResponse<string>(false, "Failed to update vehicle expense", null, StatusCodes.Status400BadRequest);
-                }
+                return new ServiceResponse<string>(false, $"Error processing request: {ex.Message}", null, 500);
             }
         }
 
         // Helper method to handle attachments
         private async Task AddVehicleExpenseDocument(int vehicleExpenseID, string base64Document)
         {
-            string filePath = SaveDocumentToDisk(base64Document); // You can implement your method to save the base64 to disk
-
-            string sql = @"INSERT INTO tblVehicleExpenseDocument (VehicleExpenseID, VehicleExpenseDocument)
-                   VALUES (@VehicleExpenseID, @VehicleExpenseDocument);";
-
-            await _dbConnection.ExecuteAsync(sql, new { VehicleExpenseID = vehicleExpenseID, VehicleExpenseDocument = filePath });
+            try
+            {
+                byte[] documentData = Convert.FromBase64String(base64Document); // Convert base64 string to byte array
+                string sql = @"INSERT INTO tblVehicleExpenseDocument (VehicleExpenseID, VehicleExpenseDocument)
+                       VALUES (@VehicleExpenseID, @VehicleExpenseDocument)";
+                await _dbConnection.ExecuteAsync(sql, new
+                {
+                    VehicleExpenseID = vehicleExpenseID,
+                    VehicleExpenseDocument = documentData // Insert the byte array into the VARBINARY column
+                });
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error saving document: {ex.Message}");
+            }
         }
+
 
         // Simulate saving document to disk using ContentRootPath
         private string SaveDocumentToDisk(string base64Document)
@@ -159,6 +281,81 @@ namespace Transport_API.Repository.Implementations
 
 
 
+        //    public async Task<ServiceResponse<IEnumerable<GetAllExpenseResponse>>> GetAllVehicleExpenses(GetAllExpenseRequest request)
+        //    {
+        //        // Parse StartDate and EndDate from DD-MM-YYYY string format to DateTime
+        //        DateTime startDate;
+        //        DateTime endDate;
+
+        //        if (!DateTime.TryParseExact(request.StartDate, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out startDate) ||
+        //            !DateTime.TryParseExact(request.EndDate, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out endDate))
+        //        {
+        //            return new ServiceResponse<IEnumerable<GetAllExpenseResponse>>(false, "Invalid date format. Please use DD-MM-YYYY.", null, StatusCodes.Status400BadRequest);
+        //        }
+
+        //        // SQL to retrieve expense records with filters and pagination, including the IsActive condition
+        //        string sql = @"
+        //    SELECT 
+        //        ve.VehicleExpenseID, -- Include VehicleExpenseID to fetch documents correctly
+        //        ve.VehicleID, 
+        //        vm.VehicleNumber, 
+        //        vet.VehicleExpenseType AS ExpenseType, 
+        //        ve.ExpenseDate, 
+        //        ve.Remarks, 
+        //        ve.Cost AS Amount
+        //    FROM 
+        //        tblVehicleExpense ve
+        //    JOIN 
+        //        tblVehicleMaster vm ON ve.VehicleID = vm.VehicleID
+        //    JOIN 
+        //        tblVehicleExpenseType vet ON ve.VehicleExpenseTypeID = vet.VehicleExpenseTypeID
+        //    WHERE 
+        //        ve.InstituteID = @InstituteID
+        //        AND ve.ExpenseDate BETWEEN @StartDate AND @EndDate
+        //        AND ve.IsActive = 1 -- Ensure only active records are returned
+        //        AND (@VehicleID IS NULL OR ve.VehicleID = @VehicleID)
+        //        AND (@ExpenseTypeID IS NULL OR ve.VehicleExpenseTypeID = @ExpenseTypeID)
+        //    ORDER BY 
+        //        ve.ExpenseDate
+        //    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;
+        //";
+
+        //        var expenses = await _dbConnection.QueryAsync<GetAllExpenseResponse>(sql, new
+        //        {
+        //            InstituteID = request.InstituteID,
+        //            StartDate = startDate, // Parsed DateTime
+        //            EndDate = endDate,     // Parsed DateTime
+        //            VehicleID = request.VehicleID,
+        //            ExpenseTypeID = request.ExpenseTypeID,
+        //            Offset = (request.PageNumber - 1) * request.PageSize,
+        //            PageSize = request.PageSize
+        //        });
+
+        //        // Process each expense to retrieve associated documents and format the date
+        //        foreach (var expense in expenses)
+        //        {
+        //            // Fetch associated documents for each expense using the VehicleExpenseID
+        //            string documentSql = @"SELECT VehicleExpenseDocument FROM tblVehicleExpenseDocument WHERE VehicleExpenseID = @VehicleExpenseID";
+        //            var documents = await _dbConnection.QueryAsync<string>(documentSql, new { VehicleExpenseID = expense.VehicleExpenseID });
+        //            expense.Documents = documents.ToList();
+
+        //            // Convert ExpenseDate to string format 'DD-MM-YYYY'
+        //            expense.ExpenseDate = DateTime.Parse(expense.ExpenseDate).ToString("dd-MM-yyyy");
+        //        }
+
+        //        // Check if any expenses were retrieved and return the appropriate response
+        //        if (expenses.Any())
+        //        {
+        //            return new ServiceResponse<IEnumerable<GetAllExpenseResponse>>(true, "Records Found", expenses, StatusCodes.Status200OK, expenses.Count());
+        //        }
+        //        else
+        //        {
+        //            // Custom message when no records are found
+        //            return new ServiceResponse<IEnumerable<GetAllExpenseResponse>>(false, "No vehicle expenses found for the given filters.", null, StatusCodes.Status404NotFound);
+        //        }
+        //    }
+
+
         public async Task<ServiceResponse<IEnumerable<GetAllExpenseResponse>>> GetAllVehicleExpenses(GetAllExpenseRequest request)
         {
             // Parse StartDate and EndDate from DD-MM-YYYY string format to DateTime
@@ -173,29 +370,29 @@ namespace Transport_API.Repository.Implementations
 
             // SQL to retrieve expense records with filters and pagination, including the IsActive condition
             string sql = @"
-        SELECT 
-            ve.VehicleExpenseID, -- Include VehicleExpenseID to fetch documents correctly
-            ve.VehicleID, 
-            vm.VehicleNumber, 
-            vet.VehicleExpenseType AS ExpenseType, 
-            ve.ExpenseDate, 
-            ve.Remarks, 
-            ve.Cost AS Amount
-        FROM 
-            tblVehicleExpense ve
-        JOIN 
-            tblVehicleMaster vm ON ve.VehicleID = vm.VehicleID
-        JOIN 
-            tblVehicleExpenseType vet ON ve.VehicleExpenseTypeID = vet.VehicleExpenseTypeID
-        WHERE 
-            ve.InstituteID = @InstituteID
-            AND ve.ExpenseDate BETWEEN @StartDate AND @EndDate
-            AND ve.IsActive = 1 -- Ensure only active records are returned
-            AND (@VehicleID IS NULL OR ve.VehicleID = @VehicleID)
-            AND (@ExpenseTypeID IS NULL OR ve.VehicleExpenseTypeID = @ExpenseTypeID)
-        ORDER BY 
-            ve.ExpenseDate
-        OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;
+    SELECT 
+        ve.VehicleExpenseID, -- Include VehicleExpenseID to fetch documents correctly
+        ve.VehicleID, 
+        vm.VehicleNumber, 
+        vet.VehicleExpenseType AS ExpenseType, 
+        ve.ExpenseDate, 
+        ve.Remarks, 
+        ve.Cost AS Amount
+    FROM 
+        tblVehicleExpense ve
+    JOIN 
+        tblVehicleMaster vm ON ve.VehicleID = vm.VehicleID
+    JOIN 
+        tblVehicleExpenseType vet ON ve.VehicleExpenseTypeID = vet.VehicleExpenseTypeID
+    WHERE 
+        ve.InstituteID = @InstituteID
+        AND ve.ExpenseDate BETWEEN @StartDate AND @EndDate
+        AND ve.IsActive = 1 -- Ensure only active records are returned
+        AND (@VehicleID IS NULL OR ve.VehicleID = @VehicleID)
+        AND (@ExpenseTypeID IS NULL OR ve.VehicleExpenseTypeID = @ExpenseTypeID)
+    ORDER BY 
+        ve.ExpenseDate
+    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;
     ";
 
             var expenses = await _dbConnection.QueryAsync<GetAllExpenseResponse>(sql, new
@@ -214,8 +411,10 @@ namespace Transport_API.Repository.Implementations
             {
                 // Fetch associated documents for each expense using the VehicleExpenseID
                 string documentSql = @"SELECT VehicleExpenseDocument FROM tblVehicleExpenseDocument WHERE VehicleExpenseID = @VehicleExpenseID";
-                var documents = await _dbConnection.QueryAsync<string>(documentSql, new { VehicleExpenseID = expense.VehicleExpenseID });
-                expense.Documents = documents.ToList();
+                var documents = await _dbConnection.QueryAsync<byte[]>(documentSql, new { VehicleExpenseID = expense.VehicleExpenseID });
+
+                // Convert the binary data to base64 string and add it to Documents
+                expense.Documents = documents.Select(doc => Convert.ToBase64String(doc)).ToList();
 
                 // Convert ExpenseDate to string format 'DD-MM-YYYY'
                 expense.ExpenseDate = DateTime.Parse(expense.ExpenseDate).ToString("dd-MM-yyyy");
@@ -232,8 +431,6 @@ namespace Transport_API.Repository.Implementations
                 return new ServiceResponse<IEnumerable<GetAllExpenseResponse>>(false, "No vehicle expenses found for the given filters.", null, StatusCodes.Status404NotFound);
             }
         }
-
-
 
 
 
@@ -598,6 +795,275 @@ namespace Transport_API.Repository.Implementations
                 VehicleID = request.VehicleID,
                 ExpenseTypeID = request.ExpenseTypeID
             })).AsList();
+        }
+
+
+
+        public async Task<ServiceResponse<string>> AddFuelExpense(AddFuelExpenseRequest request)
+        {
+            try
+            {
+                // Convert the ExpenseDate string to DateTime
+                DateTime expenseDate;
+                if (!DateTime.TryParseExact(request.ExpenseDate, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out expenseDate))
+                {
+                    return new ServiceResponse<string>(false, "Invalid date format. Please use DD-MM-YYYY.", null, 400);
+                }
+
+                string sql = @"INSERT INTO tblVehicleFuelExpense
+                        (VehicleID, CurrentReadingInKM, PreviousReading, DistanceTravelledInKM, 
+                         PreviousFuelAddedInLitre, FuelAddedInLitre, UnitPrice, TotalAmount, 
+                         ExpenseDate, Remarks, InstituteID, IsActive)
+                       VALUES 
+                        (@VehicleID, @CurrentReadingInKM, @PreviousReading, @DistanceTravelledInKM,
+                         @PreviousFuelAddedInLitre, @FuelAddedInLitre, @UnitPrice, @TotalAmount, 
+                         @ExpenseDate, @Remarks, @InstituteID, @IsActive);
+                       SELECT CAST(SCOPE_IDENTITY() as int);";
+
+                int result = await _dbConnection.ExecuteScalarAsync<int>(sql, new
+                {
+                    request.VehicleID,
+                    request.CurrentReadingInKM,
+                    request.PreviousReading,
+                    request.DistanceTravelledInKM,
+                    request.PreviousFuelAddedInLitre,
+                    request.FuelAddedInLitre,
+                    request.UnitPrice,
+                    request.TotalAmount,
+                    ExpenseDate = expenseDate, // Use the DateTime object here
+                    request.Remarks,
+                    request.InstituteID,
+                    request.IsActive
+                });
+
+                // Insert attachments if present
+                if (request.Attachments != null && request.Attachments.Count > 0)
+                {
+                    foreach (var attachment in request.Attachments)
+                    {
+                        await AddAttachment(result, attachment);
+                    }
+                }
+
+                return new ServiceResponse<string>(true, "Fuel expense added successfully", "Success", 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<string>(false, $"Error adding fuel expense: {ex.Message}", null, 500);
+            }
+        }
+
+
+        private async Task AddAttachment(int vehicleFuelExpenseID, AttachmentRequest attachment)
+        {
+            // Convert the base64 string to a byte array
+            byte[] attachmentData = Convert.FromBase64String(attachment.Attachment);
+
+            string sql = @"INSERT INTO tblVehicleExpenseDocument (VehicleExpenseID, VehicleExpenseDocument)
+                   VALUES (@VehicleExpenseID, @VehicleExpenseDocument)";
+
+            await _dbConnection.ExecuteAsync(sql, new
+            {
+                VehicleExpenseID = vehicleFuelExpenseID,
+                VehicleExpenseDocument = attachmentData // Insert the byte array into the VARBINARY column
+            });
+        }
+
+        public async Task<ServiceResponse<IEnumerable<GetFuelExpenseResponse>>> GetFuelExpense(GetFuelExpenseRequest request)
+        {
+            try
+            {
+                // Convert the StartDate and EndDate to DateTime
+                DateTime startDate;
+                DateTime endDate;
+
+                if (!DateTime.TryParseExact(request.StartDate, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out startDate) ||
+                    !DateTime.TryParseExact(request.EndDate, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out endDate))
+                {
+                    return new ServiceResponse<IEnumerable<GetFuelExpenseResponse>>(false, "Invalid date format. Please use DD-MM-YYYY.", null, StatusCodes.Status400BadRequest);
+                }
+
+                // SQL to retrieve fuel expenses with pagination and filters
+                string sql = @"
+            SELECT 
+                vfe.VehicleFuelExpenseID,
+                vfe.VehicleID,
+                vfe.CurrentReadingInKM,
+                vfe.PreviousReading,
+                vfe.DistanceTravelledInKM,
+                vfe.PreviousFuelAddedInLitre,
+                vfe.FuelAddedInLitre,
+                vfe.UnitPrice,
+                vfe.TotalAmount,
+                vfe.ExpenseDate,
+                vfe.Remarks,
+                vfe.InstituteID
+            FROM 
+                tblVehicleFuelExpense vfe
+            WHERE 
+                vfe.InstituteID = @InstituteID
+                AND vfe.VehicleID = @VehicleID
+                AND vfe.ExpenseDate BETWEEN @StartDate AND @EndDate
+                AND vfe.IsActive = 1
+            ORDER BY 
+                vfe.ExpenseDate
+            OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+
+                var expenses = await _dbConnection.QueryAsync<GetFuelExpenseResponse>(sql, new
+                {
+                    InstituteID = request.InstituteID,
+                    VehicleID = request.VehicleID,
+                    StartDate = startDate,
+                    EndDate = endDate,
+                    Offset = (request.PageNumber - 1) * request.PageSize,
+                    PageSize = request.PageSize
+                });
+
+                foreach (var expense in expenses)
+                {
+                    // Fetch associated documents for each expense using the VehicleFuelExpenseID
+                    string documentSql = @"SELECT VehicleExpenseDocument FROM tblVehicleExpenseDocument WHERE VehicleExpenseID = @VehicleFuelExpenseID";
+                    var documents = await _dbConnection.QueryAsync<byte[]>(documentSql, new { VehicleFuelExpenseID = expense.VehicleFuelExpenseID });
+
+                    // Convert the binary data to base64 string and add it to Documents
+                    expense.Documents = documents.Select(doc => Convert.ToBase64String(doc)).ToList();
+
+                    // Convert ExpenseDate to string format 'DD-MM-YYYY'
+                    expense.ExpenseDate = DateTime.Parse(expense.ExpenseDate).ToString("dd-MM-yyyy");
+                }
+
+                if (expenses.Any())
+                {
+                    return new ServiceResponse<IEnumerable<GetFuelExpenseResponse>>(true, "Fuel expenses retrieved successfully", expenses, StatusCodes.Status200OK, expenses.Count());
+                }
+                else
+                {
+                    return new ServiceResponse<IEnumerable<GetFuelExpenseResponse>>(false, "No fuel expenses found for the given filters", null, StatusCodes.Status404NotFound);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<IEnumerable<GetFuelExpenseResponse>>(false, $"Error retrieving fuel expenses: {ex.Message}", null, StatusCodes.Status500InternalServerError);
+            }
+        }
+
+
+        public async Task<ServiceResponse<byte[]>> GetFuelExpenseExport(GetFuelExpenseExportRequest request)
+        {
+            try
+            {
+                // Parse StartDate and EndDate
+                DateTime startDate;
+                DateTime endDate;
+
+                if (!DateTime.TryParseExact(request.StartDate, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out startDate) ||
+                    !DateTime.TryParseExact(request.EndDate, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out endDate))
+                {
+                    return new ServiceResponse<byte[]>(false, "Invalid date format. Please use DD-MM-YYYY.", null, 400);
+                }
+
+                // SQL query to fetch fuel expenses along with VehicleNumber
+                string sql = @"
+            SELECT 
+                vfe.VehicleFuelExpenseID,
+                vfe.VehicleID,
+                vm.VehicleNumber, -- Include VehicleNumber
+                vfe.CurrentReadingInKM,
+                vfe.PreviousReading,
+                vfe.DistanceTravelledInKM,
+                vfe.PreviousFuelAddedInLitre,
+                vfe.FuelAddedInLitre,
+                vfe.UnitPrice,
+                vfe.TotalAmount,
+                vfe.ExpenseDate,
+                vfe.Remarks
+            FROM 
+                tblVehicleFuelExpense vfe
+            JOIN
+                tblVehicleMaster vm ON vfe.VehicleID = vm.VehicleID -- Join with VehicleMaster table to get VehicleNumber
+            WHERE 
+                vfe.InstituteID = @InstituteID
+                AND vfe.VehicleID = @VehicleID
+                AND vfe.ExpenseDate BETWEEN @StartDate AND @EndDate
+                AND vfe.IsActive = 1
+            ORDER BY 
+                vfe.ExpenseDate
+            OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+
+                var expenses = await _dbConnection.QueryAsync<GetFuelExpenseExportResponse>(sql, new
+                {
+                    InstituteID = request.InstituteID,
+                    VehicleID = request.VehicleID,
+                    StartDate = startDate,
+                    EndDate = endDate,
+                    Offset = (request.PageNumber - 1) * request.PageSize,
+                    PageSize = request.PageSize
+                });
+
+                if (!expenses.Any())
+                {
+                    return new ServiceResponse<byte[]>(false, "No fuel expenses found.", null, 404);
+                }
+
+                // Process the data to export to Excel or CSV
+                if (request.ExportType == 1) // Excel Export
+                {
+                    using (var package = new OfficeOpenXml.ExcelPackage())
+                    {
+                        var worksheet = package.Workbook.Worksheets.Add("Fuel Expenses");
+                        worksheet.Cells[1, 1].Value = "Sr. No.";  // Add Sr. No. column as the first column
+                        worksheet.Cells[1, 2].Value = "Vehicle Number";
+                        worksheet.Cells[1, 3].Value = "Current Reading (KM)";
+                        worksheet.Cells[1, 4].Value = "Previous Reading (KM)";
+                        worksheet.Cells[1, 5].Value = "Distance Travelled (KM)";
+                        worksheet.Cells[1, 6].Value = "Previous Fuel Added (Litre)";
+                        worksheet.Cells[1, 7].Value = "Fuel Added (Litre)";
+                        worksheet.Cells[1, 8].Value = "Unit Price";
+                        worksheet.Cells[1, 9].Value = "Total Amount";
+                        worksheet.Cells[1, 10].Value = "Remarks";
+
+                        var row = 2;
+                        int srNo = 1;
+                        foreach (var expense in expenses)
+                        {
+                            worksheet.Cells[row, 1].Value = srNo++; // Fill Sr. No.
+                            worksheet.Cells[row, 2].Value = expense.VehicleNumber;  // Fill Vehicle Number
+                            worksheet.Cells[row, 3].Value = expense.CurrentReadingInKM;
+                            worksheet.Cells[row, 4].Value = expense.PreviousReading;
+                            worksheet.Cells[row, 5].Value = expense.DistanceTravelledInKM;
+                            worksheet.Cells[row, 6].Value = expense.PreviousFuelAddedInLitre;
+                            worksheet.Cells[row, 7].Value = expense.FuelAddedInLitre;
+                            worksheet.Cells[row, 8].Value = expense.UnitPrice;
+                            worksheet.Cells[row, 9].Value = expense.TotalAmount;
+                            worksheet.Cells[row, 10].Value = expense.Remarks;
+                            row++;
+                        }
+
+                        return new ServiceResponse<byte[]>(true, "Excel file generated successfully", package.GetAsByteArray(), 200);
+                    }
+                }
+                else if (request.ExportType == 2) // CSV Export
+                {
+                    var csv = new StringBuilder();
+                    csv.AppendLine("Sr. No.,Vehicle Number,Current Reading (KM),Previous Reading (KM),Distance Travelled (KM),Previous Fuel Added (Litre),Fuel Added (Litre),Unit Price,Total Amount,Remarks");
+
+                    int srNo = 1;
+                    foreach (var expense in expenses)
+                    {
+                        csv.AppendLine($"{srNo++},{expense.VehicleNumber},{expense.CurrentReadingInKM},{expense.PreviousReading},{expense.DistanceTravelledInKM},{expense.PreviousFuelAddedInLitre},{expense.FuelAddedInLitre},{expense.UnitPrice},{expense.TotalAmount},{expense.Remarks}");
+                    }
+
+                    return new ServiceResponse<byte[]>(true, "CSV file generated successfully", Encoding.UTF8.GetBytes(csv.ToString()), 200);
+                }
+                else
+                {
+                    return new ServiceResponse<byte[]>(false, "Invalid export type", null, 400);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<byte[]>(false, $"Error exporting data: {ex.Message}", null, 500);
+            }
         }
 
 

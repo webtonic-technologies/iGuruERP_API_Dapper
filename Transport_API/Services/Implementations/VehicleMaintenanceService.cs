@@ -3,6 +3,7 @@ using System.Text;
 using Transport_API.DTOs.Requests;
 using Transport_API.DTOs.Requests.Transport_API.DTOs.Requests;
 using Transport_API.DTOs.Response;
+using Transport_API.DTOs.Responses;
 using Transport_API.DTOs.ServiceResponse;
 using Transport_API.Models;
 using Transport_API.Repository.Interfaces;
@@ -171,5 +172,31 @@ namespace Transport_API.Services.Implementations
             }
         }
 
+
+        public async Task<ServiceResponse<string>> AddFuelExpense(AddFuelExpenseRequest request)
+        {
+            return await _vehicleMaintenanceRepository.AddFuelExpense(request);
+        }
+
+        public async Task<ServiceResponse<IEnumerable<GetFuelExpenseResponse>>> GetFuelExpense(GetFuelExpenseRequest request)
+        {
+            try
+            {
+                // Call the repository method to fetch the fuel expenses
+                var response = await _vehicleMaintenanceRepository.GetFuelExpense(request);
+
+                // Return the repository response back to the controller
+                return response;
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<IEnumerable<GetFuelExpenseResponse>>(false, $"Error retrieving fuel expenses: {ex.Message}", null, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<byte[]>> GetFuelExpenseExport(GetFuelExpenseExportRequest request)
+        { 
+            return await _vehicleMaintenanceRepository.GetFuelExpenseExport(request);
+        }
     }
 }

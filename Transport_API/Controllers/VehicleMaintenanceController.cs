@@ -134,5 +134,68 @@ namespace Transport_API.Controllers
             }
         }
 
+        [HttpPost("AddFuelExpense")]
+        public async Task<IActionResult> AddFuelExpense(AddFuelExpenseRequest request)
+        {
+            try
+            {
+                var response = await _vehicleMaintenanceService.AddFuelExpense(request);
+                return StatusCode(response.StatusCode, response);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+        [HttpPost("GetFuelExpense")]
+        public async Task<IActionResult> GetFuelExpense(GetFuelExpenseRequest request)
+        {
+            try
+            {
+                var response = await _vehicleMaintenanceService.GetFuelExpense(request);
+                return StatusCode(response.StatusCode, response);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+
+        [HttpPost("GetFuelExpenseExport")]
+        public async Task<IActionResult> GetFuelExpenseExport([FromBody] GetFuelExpenseExportRequest request)
+        {
+            try
+            {
+                var response = await _vehicleMaintenanceService.GetFuelExpenseExport(request);
+
+                if (response.Success)
+                {
+                    // If export type is 1 (Excel)
+                    if (request.ExportType == 1)
+                    {
+                        return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "FuelExpenses.xlsx");
+                    }
+                    // If export type is 2 (CSV)
+                    else if (request.ExportType == 2)
+                    {
+                        return File(response.Data, "text/csv", "FuelExpenses.csv");
+                    }
+                    else
+                    {
+                        return BadRequest("Invalid Export Type");
+                    }
+                }
+                else
+                {
+                    return StatusCode(response.StatusCode, response.Message);
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
     }
 }
