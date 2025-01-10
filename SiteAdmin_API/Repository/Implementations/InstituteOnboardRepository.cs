@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using SiteAdmin_API.DTOs.Requests;
+using SiteAdmin_API.DTOs.Responses;
 using SiteAdmin_API.DTOs.ServiceResponse;
 using SiteAdmin_API.Models;
 using SiteAdmin_API.Repository.Interfaces;
@@ -360,6 +361,156 @@ namespace SiteAdmin_API.Repository.Implementations
                 return new ServiceResponse<InstituteOnboard>(false, ex.Message, null, 500);
             }
         }
+
+
+        public async Task<ServiceResponse<string>> UpgradePackage(UpgradePackageRequest request)
+        {
+            _connection.Open();
+            using (var transaction = _connection.BeginTransaction())
+            {
+                try
+                {
+                    // Set the previous package to inactive
+                    string updatePackageSql = @"UPDATE tblInstitutePackage 
+                                                SET IsActive = 0 
+                                                WHERE InstituteOnboardID = @InstituteOnboardID AND IsActive = 1";
+
+                    await _connection.ExecuteAsync(updatePackageSql, new { request.InstituteOnboardID }, transaction);
+
+                    // Insert the new package
+                    string insertPackageSql = @"INSERT INTO tblInstitutePackage 
+                                                (InstituteOnboardID, PackageID, MSG, PSPA, GST, TotalDealValue, SignUpDate, ValidUpto, Comment, IsActive) 
+                                                VALUES 
+                                                (@InstituteOnboardID, @PackageID, @MSG, @PSPA, @GST, @TotalDealValue, @SignUpDate, @ValidUpto, @Comment, 1)";
+
+                    DateTime signUpDate = DateTime.ParseExact(request.SignUpDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+                    DateTime validUpto = DateTime.ParseExact(request.ValidUpto, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+
+                    await _connection.ExecuteAsync(insertPackageSql, new
+                    {
+                        request.InstituteOnboardID,
+                        request.PackageID,
+                        request.MSG,
+                        request.PSPA,
+                        request.GST,
+                        request.TotalDealValue,
+                        SignUpDate = signUpDate,
+                        ValidUpto = validUpto,
+                        request.Comment
+                    }, transaction);
+
+                    transaction.Commit();
+
+                    return new ServiceResponse<string>(true, "Package upgraded successfully", "Success", 200);
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    return new ServiceResponse<string>(false, ex.Message, null, 500);
+                }
+                finally
+                {
+                    _connection.Close();
+                }
+            }
+        }
+
+        public async Task<ServiceResponse<List<GetPackageDDLResponse>>> GetPackageDDL()
+        {
+            try
+            {
+                string sql = "SELECT PackageID, PackageName FROM tblPackage WHERE IsActive = 1";
+
+                var packages = await _connection.QueryAsync<GetPackageDDLResponse>(sql);
+
+                return new ServiceResponse<List<GetPackageDDLResponse>>(true, "Packages retrieved successfully", packages.ToList(), 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<GetPackageDDLResponse>>(false, ex.Message, null, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<GetAllInstituteInfoResponse>> GetAllInstituteInfo(int instituteOnboardId)
+        {
+            try
+            {
+                string sql = @"
+                    SELECT InstituteOnboardName, AliasName, CountryID, StateID, City, Pincode 
+                    FROM tblInstituteOnboard
+                    WHERE InstituteOnboardID = @InstituteOnboardID";
+
+                var result = await _connection.QuerySingleOrDefaultAsync<GetAllInstituteInfoResponse>(sql, new { InstituteOnboardID = instituteOnboardId });
+
+                if (result == null)
+                {
+                    return new ServiceResponse<GetAllInstituteInfoResponse>(false, "Institute not found", null, 404);
+                }
+
+                return new ServiceResponse<GetAllInstituteInfoResponse>(true, "Institute information retrieved successfully", result, 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<GetAllInstituteInfoResponse>(false, ex.Message, null, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<int>> AddAdmissionURL(AddAdmissionURLRequest request)
+        {
+            _connection.Open();
+
+            try
+            {
+                string sqlQuery = @"INSERT INTO tblInstituteAdmissionURL 
+                                    (InstituteOnboardID, URL) 
+                                    VALUES 
+                                    (@InstituteOnboardID, @URL);
+                                    SELECT CAST(SCOPE_IDENTITY() as INT);";
+
+                var admissionURLID = await _connection.ExecuteScalarAsync<int>(sqlQuery, new
+                { 
+                    request.InstituteOnboardID,
+                    request.URL
+                });
+
+                return new ServiceResponse<int>(true, "Admission URL added successfully.", admissionURLID, 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(false, ex.Message, 0, 500);
+            }
+            finally
+            {
+                _connection.Close();
+            }
+        }
+
+        public async Task<ServiceResponse<IEnumerable<ActivityLogsResponse>>> GetActivityLogs(int instituteOnboardId)
+        {
+            try
+            {
+                string sql = @"SELECT URL, FORMAT(CreationDate, 'dd MMM yyyy, hh:mm tt') AS CreationDate 
+                       FROM tblInstituteAdmissionURL
+                       WHERE InstituteOnboardID = @InstituteOnboardID AND IsActive = 1";
+
+                // Get all matching activity logs
+                var activityLogs = await _connection.QueryAsync<ActivityLogsResponse>(sql, new { InstituteOnboardID = instituteOnboardId });
+
+                // Check if there are any results
+                if (!activityLogs.Any())
+                {
+                    return new ServiceResponse<IEnumerable<ActivityLogsResponse>>(false, "No activity logs found", null, 404);
+                }
+
+                return new ServiceResponse<IEnumerable<ActivityLogsResponse>>(true, "Activity logs fetched successfully", activityLogs, 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<IEnumerable<ActivityLogsResponse>>(false, ex.Message, null, 500);
+            }
+        }
+
+
 
     }
 }

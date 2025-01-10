@@ -47,5 +47,12 @@ namespace SiteAdmin_API.Controllers
             }
             return BadRequest(response);
         }
+
+        [HttpGet("GetInstitutesDDL")]
+        public async Task<IActionResult> GetInstitutesDDL()
+        {
+            var response = await _chairmanService.GetInstitutesDDL();
+            return StatusCode(response.StatusCode, response);
+        }
     }
 }

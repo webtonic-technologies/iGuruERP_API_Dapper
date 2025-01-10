@@ -10,6 +10,7 @@ namespace SiteAdmin_API.Services.Interfaces
         Task<ServiceResponse<string>> AddUpdateChairman(AddUpdateChairmanRequest request);
         Task<ServiceResponse<IEnumerable<GetAllChairmanResponse>>> GetAllChairman();
         Task<ServiceResponse<string>> DeleteChairman(DeleteChairmanRequest request);
+        Task<ServiceResponse<List<GetInstitutesDDLResponse>>> GetInstitutesDDL();
 
     }
 }

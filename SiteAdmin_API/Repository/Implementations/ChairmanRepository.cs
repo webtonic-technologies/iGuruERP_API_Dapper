@@ -7,6 +7,7 @@ using SiteAdmin_API.Repository.Interfaces;
 using Microsoft.Extensions.Configuration;
 using System.Data;
 using SiteAdmin_API.DTOs.Responses;
+using System.Data.Common;
 
 namespace SiteAdmin_API.Repository.Implementations
 {
@@ -134,6 +135,22 @@ namespace SiteAdmin_API.Repository.Implementations
             catch (Exception ex)
             {
                 return new ServiceResponse<string>(false, ex.Message, "Error", 500);
+            }
+        }
+         
+        public async Task<ServiceResponse<List<GetInstitutesDDLResponse>>> GetInstitutesDDL()
+        {
+            try
+            {
+                string sql = "SELECT InstituteOnboardID, InstituteOnboardName FROM tblInstituteOnboard";
+
+                var institutes = await _dbConnection.QueryAsync<GetInstitutesDDLResponse>(sql);
+
+                return new ServiceResponse<List<GetInstitutesDDLResponse>>(true, "Institutes retrieved successfully", institutes.ToList(), 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<List<GetInstitutesDDLResponse>>(false, ex.Message, null, 500);
             }
         }
     }

@@ -1,6 +1,7 @@
 ﻿using SiteAdmin_API.DTOs.Requests;
 using SiteAdmin_API.DTOs.Responses;
 using SiteAdmin_API.DTOs.ServiceResponse;
+using SiteAdmin_API.Repository.Implementations;
 using SiteAdmin_API.Repository.Interfaces;
 using SiteAdmin_API.Services.Interfaces;
 using System.Threading.Tasks;
@@ -31,6 +32,11 @@ namespace SiteAdmin_API.Services.Implementations
         {
             var response = await _chairmanRepository.DeleteChairman(request.ChairmanID);
             return response;
+        }
+
+        public async Task<ServiceResponse<List<GetInstitutesDDLResponse>>> GetInstitutesDDL()
+        {
+            return await _chairmanRepository.GetInstitutesDDL();
         }
     }
 }

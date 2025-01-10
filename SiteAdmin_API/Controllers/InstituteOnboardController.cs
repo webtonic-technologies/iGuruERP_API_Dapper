@@ -36,5 +36,40 @@ namespace SiteAdmin_API.Controllers
             var response = await _instituteOnboardService.GetInstituteOnboardById(instituteOnboardId);
             return StatusCode(response.StatusCode, response);
         }
+
+        [HttpPost("UpgradePackage")]
+        public async Task<IActionResult> UpgradePackage([FromBody] UpgradePackageRequest request)
+        {
+            var response = await _instituteOnboardService.UpgradePackage(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("GetPackageDDL")]
+        public async Task<IActionResult> GetPackageDDL()
+        {
+            var response = await _instituteOnboardService.GetPackageDDL();
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("GetAllInstituteInfo")]
+        public async Task<IActionResult> GetAllInstituteInfo([FromBody] GetAllInstituteInfoRequest request)
+        {
+            var response = await _instituteOnboardService.GetAllInstituteInfo(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("AddAdmissionURL")]
+        public async Task<IActionResult> AddAdmissionURL([FromBody] AddAdmissionURLRequest request)
+        {
+            var response = await _instituteOnboardService.AddAdmissionURL(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("ActivityLogs")]
+        public async Task<IActionResult> GetActivityLogs([FromBody] ActivityLogsRequest request)
+        {
+            var response = await _instituteOnboardService.GetActivityLogs(request);
+            return StatusCode(response.StatusCode, response);
+        }
     }
 }
