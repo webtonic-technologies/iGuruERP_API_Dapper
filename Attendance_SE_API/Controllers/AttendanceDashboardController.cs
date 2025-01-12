@@ -150,5 +150,34 @@ namespace Attendance_SE_API.Controllers
 
             return BadRequest(response);
         }
+
+
+        [HttpPost("GetEmployeeAttendance")]
+        public async Task<IActionResult> GetEmployeeAttendance([FromBody] GetEmployeeAttendanceDashboardRequest request)
+        {
+            var response = await _attendanceDashboardService.GetEmployeeAttendance(
+                request.InstituteID, request.StartDate, request.EndDate);
+
+            if (response.Success)
+            {
+                return Ok(response);
+            }
+
+            return BadRequest(response.Message);
+        }
+
+
+        [HttpPost("GetEmployeesArrivalStats")]
+        public async Task<IActionResult> GetEmployeesArrivalStats([FromBody] GetEmployeesArrivalStatsRequest request)
+        {
+            var response = await _attendanceDashboardService.GetEmployeesArrivalStats(request.InstituteID, request.StartDate, request.EndDate);
+
+            if (response.Success)
+            {
+                return Ok(response);
+            }
+
+            return BadRequest(response.Message);
+        }
     }
 }

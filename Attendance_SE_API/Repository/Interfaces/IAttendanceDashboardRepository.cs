@@ -17,6 +17,8 @@ namespace Attendance_SE_API.Repository.Interfaces
         Task<GetHalfDayLeaveCountResponse> GetHalfDayLeaveCount(int instituteId);
         Task<IEnumerable<GetAttendanceNotMarkedExportResponse>> GetAttendanceNotMarkedExport(GetAttendanceNotMarkedExportRequest request);
         Task<IEnumerable<GetAbsentStudentsExportResponse>> GetAbsentStudentsExport(GetAbsentStudentsExportRequest request);
+        Task<GetEmployeeAttendanceDashboardResponse> GetEmployeeAttendanceStatistics(int instituteId, string startDate, string endDate);
+        Task<List<GetEmployeesArrivalStatsResponse>> GetEmployeesArrivalStats(int instituteId, string startDate, string endDate);
 
     }
 }

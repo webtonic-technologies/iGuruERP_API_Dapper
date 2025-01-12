@@ -17,6 +17,8 @@ namespace Attendance_SE_API.Services.Interfaces
         Task<ServiceResponse<GetHalfDayLeaveCountResponse>> GetHalfDayLeaveCount(int instituteId);
         Task<ServiceResponse<byte[]>> GetAttendanceNotMarkedExport(GetAttendanceNotMarkedExportRequest request);
         Task<ServiceResponse<byte[]>> GetAbsentStudentsExport(GetAbsentStudentsExportRequest request);
+        Task<ServiceResponse<GetEmployeeAttendanceDashboardResponse>> GetEmployeeAttendance(int instituteId, string startDate, string endDate);
+        Task<ServiceResponse<List<GetEmployeesArrivalStatsResponse>>> GetEmployeesArrivalStats(int instituteId, string startDate, string endDate);
 
     }
 }

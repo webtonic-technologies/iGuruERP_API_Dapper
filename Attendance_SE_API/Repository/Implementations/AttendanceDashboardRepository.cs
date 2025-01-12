@@ -497,5 +497,115 @@ namespace Attendance_SE_API.Repository.Implementations
             }
         }
 
+
+        public async Task<GetEmployeeAttendanceDashboardResponse> GetEmployeeAttendanceStatistics(int instituteId, string startDate, string endDate)
+        {
+            // Convert the startDate and endDate to DateTime format (DD-MM-YYYY)
+            DateTime startDateTime = DateTime.ParseExact(startDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+            DateTime endDateTime = DateTime.ParseExact(endDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+
+            string query = @"
+        WITH AttendanceStats AS (
+            SELECT
+                COUNT(DISTINCT CASE WHEN a.ClockIn <= s.LateComing THEN 1 ELSE NULL END) AS OnTimeArrivals,
+                COUNT(DISTINCT CASE WHEN a.ClockIn > s.LateComing THEN 1 ELSE NULL END) AS LateLogins,
+                COUNT(DISTINCT a.AttendanceDate) AS TotalAttendanceDays,
+                COUNT(DISTINCT CASE WHEN a.ClockIn IS NOT NULL THEN 1 ELSE NULL END) AS PresentDays
+            FROM tblBioMericAttendance a
+            JOIN tbl_EmployeeProfileMaster e ON a.EmployeeID = e.Employee_id
+            JOIN tblShiftMasterMapping smm ON e.Designation_id = smm.DesignationID
+            LEFT JOIN tblShiftMaster s ON smm.ShiftID = s.ShiftID
+            WHERE a.AttendanceDate BETWEEN @StartDate AND @EndDate
+                AND a.InstituteID = @InstituteID
+            GROUP BY a.EmployeeID
+        )
+        SELECT
+            (SUM(PresentDays) * 100.0 / SUM(TotalAttendanceDays)) AS EmployeePresent,
+            (SUM(LateLogins) * 100.0 / SUM(TotalAttendanceDays)) AS AvgLateLogins,
+            (SUM(OnTimeArrivals) * 100.0 / SUM(TotalAttendanceDays)) AS AvgOnTimeArrival
+        FROM AttendanceStats";
+
+            try
+            {
+                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
+                {
+                    var results = await connection.QueryFirstOrDefaultAsync<GetEmployeeAttendanceDashboardResponse>(
+                        query,
+                        new { InstituteID = instituteId, StartDate = startDateTime, EndDate = endDateTime });
+
+                    return results;
+                }
+            }
+            catch (System.Exception ex)
+            {
+                return null; // Handle exception accordingly
+            }
+        }
+
+        public async Task<List<GetEmployeesArrivalStatsResponse>> GetEmployeesArrivalStats(int instituteId, string startDate, string endDate)
+        {
+            // Convert the startDate and endDate to DateTime format (DD-MM-YYYY)
+            DateTime startDateTime = DateTime.ParseExact(startDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+            DateTime endDateTime = DateTime.ParseExact(endDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+
+            string query = @"
+        SELECT 
+            a.AttendanceDate,
+            COUNT(DISTINCT CASE 
+                    WHEN a.ClockIn IS NOT NULL AND a.ClockIn <= s.LateComing THEN a.EmployeeID
+                    ELSE NULL
+                END) AS EarlyOnTimeArrivals, -- Employees who arrived on time
+            COUNT(DISTINCT CASE 
+                    WHEN a.ClockIn IS NOT NULL AND a.ClockIn > s.LateComing THEN a.EmployeeID
+                    ELSE NULL
+                END) AS LateArrivals, -- Employees who arrived late
+            (
+                SELECT COUNT(e.Employee_id)
+                FROM tbl_EmployeeProfileMaster e
+                LEFT JOIN tblBioMericAttendance a2 ON e.Employee_id = a2.EmployeeID AND a2.AttendanceDate = a.AttendanceDate
+                INNER JOIN tblShiftMasterMapping smm ON e.Designation_id = smm.DesignationID
+                LEFT JOIN tblShiftMaster s2 ON smm.ShiftID = s2.ShiftID  
+                WHERE a2.EmployeeID IS NULL
+            ) AS NoLogs -- Employees who did not log in
+        FROM 
+            tbl_EmployeeProfileMaster e
+        LEFT JOIN 
+            tblBioMericAttendance a ON e.Employee_id = a.EmployeeID AND a.AttendanceDate BETWEEN @StartDate AND @EndDate
+        LEFT JOIN 
+            tblShiftMasterMapping smm ON e.Designation_id = smm.DesignationID
+        LEFT JOIN 
+            tblShiftMaster s ON smm.ShiftID = s.ShiftID
+        WHERE 
+            a.AttendanceDate IS NOT NULL
+            AND a.InstituteID = @InstituteID
+        GROUP BY 
+            a.AttendanceDate
+        ORDER BY 
+            a.AttendanceDate";
+
+            try
+            {
+                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
+                {
+                    var result = await connection.QueryAsync<GetEmployeesArrivalStatsResponse>(
+                        query,
+                        new { InstituteID = instituteId, StartDate = startDateTime, EndDate = endDateTime });
+
+                    // Format AttendanceDate as 'DD-MM-YYYY'
+                    foreach (var stat in result)
+                    {
+                        stat.AttendanceDate = DateTime.Parse(stat.AttendanceDate).ToString("dd-MM-yyyy");
+                    }
+
+                    return result.AsList();
+                }
+            }
+            catch (Exception ex)
+            {
+                // Handle exception
+                return null;
+            }
+        }
+
     }
 } 

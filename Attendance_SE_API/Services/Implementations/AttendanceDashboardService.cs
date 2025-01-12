@@ -247,5 +247,29 @@ namespace Attendance_SE_API.Services.Implementations
                 return memoryStream.ToArray();
             }
         }
+
+        public async Task<ServiceResponse<GetEmployeeAttendanceDashboardResponse>> GetEmployeeAttendance(int instituteId, string startDate, string endDate)
+        {
+            var data = await _repository.GetEmployeeAttendanceStatistics(instituteId, startDate, endDate);
+
+            if (data != null)
+            {
+                return new ServiceResponse<GetEmployeeAttendanceDashboardResponse>(true, "Employee attendance fetched successfully.", data, 200);
+            }
+
+            return new ServiceResponse<GetEmployeeAttendanceDashboardResponse>(false, "No data found for the provided criteria.", null, 404);
+        }
+
+        public async Task<ServiceResponse<List<GetEmployeesArrivalStatsResponse>>> GetEmployeesArrivalStats(int instituteId, string startDate, string endDate)
+        {
+            var data = await _repository.GetEmployeesArrivalStats(instituteId, startDate, endDate);
+
+            if (data != null)
+            {
+                return new ServiceResponse<List<GetEmployeesArrivalStatsResponse>>(true, "Employee arrival statistics fetched successfully.", data, 200);
+            }
+
+            return new ServiceResponse<List<GetEmployeesArrivalStatsResponse>>(false, "No data found.", null, 404);
+        }
     }
 }
