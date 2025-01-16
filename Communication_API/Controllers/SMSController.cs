@@ -1,6 +1,7 @@
 ﻿using Communication_API.DTOs.Requests.SMS;
 using Communication_API.Services.Interfaces.SMS;
 using Microsoft.AspNetCore.Mvc;
+using OfficeOpenXml;
 
 namespace Communication_API.Controllers
 {
@@ -42,6 +43,51 @@ namespace Communication_API.Controllers
             var response = await _smsService.GetAllSMSTemplate(request);
             return StatusCode(response.StatusCode, response);
         }
+        [HttpPost("GetAllSMSTemplateExport")]
+        public async Task<IActionResult> GetAllSMSTemplateExport([FromBody] SMSTemplateExportRequest request)
+        {
+            var response = await _smsService.GetAllSMSTemplateExport(request);
+            if (response.Success)
+            {
+                // Return file based on ExportType
+                var memoryStream = new MemoryStream();
+                if (request.ExportType == 1)
+                {
+                    // Generate Excel
+                    using (var package = new ExcelPackage(memoryStream))
+                    {
+                        var worksheet = package.Workbook.Worksheets.Add("SMSTemplates");
+                        worksheet.Cells.LoadFromCollection(response.Data, true);
+                        package.Save();
+                    }
+
+                    memoryStream.Position = 0;
+                    return File(memoryStream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "SMSTemplates.xlsx");
+                }
+                else if (request.ExportType == 2)
+                {
+                    // Generate CSV
+                    var csv = string.Join(",", new[] { "TemplateCode", "TemplateName", "TemplateMessage" }) + "\n";
+                    foreach (var template in response.Data)
+                    {
+                        csv += $"{template.TemplateCode},{template.TemplateName},{template.TemplateMessage}\n";
+                    }
+
+                    var csvBytes = System.Text.Encoding.UTF8.GetBytes(csv);
+                    memoryStream.Write(csvBytes, 0, csvBytes.Length);
+                    memoryStream.Position = 0;
+                    return File(memoryStream, "text/csv", "SMSTemplates.csv");
+                }
+                else
+                {
+                    return BadRequest("Invalid ExportType");
+                }
+            }
+            else
+            {
+                return BadRequest(response.Message);
+            }
+        }
 
         [HttpPost("SendNewSMS")]
         public async Task<IActionResult> SendNewSMS([FromBody] SendNewSMSRequest request)
@@ -50,12 +96,77 @@ namespace Communication_API.Controllers
             return StatusCode(response.StatusCode, response);
         }
 
-        [HttpPost("GetSMSReport")]
-        public async Task<IActionResult> GetSMSReport([FromBody] GetSMSReportRequest request)
+        [HttpPost("GetSMSStudentReport")]
+        public async Task<IActionResult> GetSMSStudentReport([FromBody] GetSMSStudentReportRequest request)
         {
-            var response = await _smsService.GetSMSReport(request);
+            var response = await _smsService.GetSMSStudentReport(request);
             return StatusCode(response.StatusCode, response);
         }
+
+        [HttpPost("GetSMSStudentReportExport")]
+        public async Task<IActionResult> GetSMSStudentReportExport([FromBody] SMSStudentReportExportRequest request)
+        {
+            // Get the export file content
+            var response = await _smsService.GetSMSStudentReportExport(request);
+
+            // Check if the export was successful
+            if (response.Success)
+            {
+                // Get the file path
+                string filePath = response.Data;
+
+                // Check if the file exists
+                if (System.IO.File.Exists(filePath))
+                {
+                    // Get the file bytes
+                    byte[] fileBytes = System.IO.File.ReadAllBytes(filePath);
+
+                    // Return the file as a downloadable response
+                    return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "SMSReport.xlsx");
+                }
+                else
+                {
+                    return BadRequest("File not found.");
+                }
+            }
+            else
+            {
+                return BadRequest(response.Message);
+            }
+        }
+
+        [HttpPost("GetSMSEmployeeReport")]
+        public async Task<IActionResult> GetSMSEmployeeReport([FromBody] GetSMSEmployeeReportRequest request)
+        {
+            var response = await _smsService.GetSMSEmployeeReport(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("GetSMSEmployeeReportExport")]
+        public async Task<IActionResult> GetSMSEmployeeReportExport([FromBody] SMSEmployeeReportExportRequest request)
+        {
+            var response = await _smsService.GetSMSEmployeeReportExport(request);
+
+            if (response.Success)
+            {
+                string filePath = response.Data;
+                if (System.IO.File.Exists(filePath))
+                {
+                    byte[] fileBytes = System.IO.File.ReadAllBytes(filePath);
+                    return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "SMSReport.xlsx");
+                }
+                else
+                {
+                    return BadRequest("File not found.");
+                }
+            }
+            else
+            {
+                return BadRequest(response.Message);
+            }
+        }
+
+
 
         [HttpPost("SendSMSStudent")]
         public async Task<IActionResult> SendSMSStudent(SendSMSStudentRequest request)
@@ -111,6 +222,13 @@ namespace Communication_API.Controllers
             }
 
             return BadRequest(response); // 400 Bad Request response
+        }
+
+        [HttpPost("GetSMSTemplateDDL")]
+        public async Task<IActionResult> GetSMSTemplateDDL([FromBody] SMSTemplateDDLRequest request)
+        {
+            var response = await _smsService.GetSMSTemplateDDL(request);
+            return StatusCode(response.StatusCode, response);
         }
     }
 }

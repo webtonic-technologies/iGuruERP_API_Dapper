@@ -7,13 +7,13 @@
         public string Title { get; set; }
         public string Description { get; set; }
         public string Attachments { get; set; }
-        public DateTime StartDate { get; set; }
-        public DateTime EndDate { get; set; }
+        public string StartDate { get; set; }  // Change to string
+        public string EndDate { get; set; }    // Change to string
         public bool IsStudent { get; set; }
         public bool IsEmployee { get; set; }
         public bool ScheduleNow { get; set; }
-        public DateTime ScheduleDate { get; set; }
-        public DateTime ScheduleTime { get; set; }
+        public string ScheduleDate { get; set; }  // Change to string
+        public string ScheduleTime { get; set; }  // Change to string
 
         // Add these properties to support mappings
         public List<StudentMapping>? StudentMappings { get; set; }

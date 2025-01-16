@@ -118,7 +118,7 @@ namespace Communication_API.Repository.Implementations.Configuration
                     }
                 }
 
-                return new ServiceResponse<string>(true, "Operation Successful", "Group Added/Updated Successfully", 201);
+                return new ServiceResponse<string>(true, "Operation Successful", "Group Added/Updated Successfully", 200);
             }
             return new ServiceResponse<string>(false, "Operation Failed", null, 400);
         }
@@ -213,7 +213,7 @@ namespace Communication_API.Repository.Implementations.Configuration
 
             if (groupUserTypes.Count > 0)
             {
-                return new ServiceResponse<List<GetGroupUserTypeResponse>>(true, "Records Found", groupUserTypes, 302, groupUserTypes.Count);
+                return new ServiceResponse<List<GetGroupUserTypeResponse>>(true, "Records Found", groupUserTypes, 200, groupUserTypes.Count);
             }
             else
             {
@@ -243,19 +243,21 @@ namespace Communication_API.Repository.Implementations.Configuration
             response.Members = new List<MemberDetails>();
 
             if (groupType == "Student")
-            {
-                // Query to get student members along with class-section and mobile number
+            {  
                 string studentQuery = @"
-                SELECT
+                SELECT 
                     s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name AS Name,
-                    STRING_AGG(CONCAT(c.class_name, '-', sec.section_name), ', ') AS ClassSection,  -- Aggregate sections into one column
-                    '' as MobileNumber
+                    STRING_AGG(CONCAT(c.class_name, '-', sec.section_name), ', ') AS ClassSection,
+                    spi.Mobile_Number AS MobileNumber
                 FROM StudentCommGroup scg
                 INNER JOIN tbl_StudentMaster s ON scg.StudentID = s.student_id
                 INNER JOIN tblGroupClassSectionMapping gcsm ON gcsm.GroupID = scg.GroupID
                 INNER JOIN tbl_Class c ON gcsm.ClassID = c.class_id
                 INNER JOIN tbl_Section sec ON gcsm.SectionID = sec.section_id
-                WHERE scg.GroupID = @GroupID GROUP BY s.First_Name, s.Middle_Name, s.Last_Name";
+                INNER JOIN tbl_StudentParentsInfo spi ON spi.Student_ID = s.student_id AND spi.Parent_Type_id = 1
+                WHERE scg.GroupID = @GroupID
+                GROUP BY s.First_Name, s.Middle_Name, s.Last_Name, spi.Mobile_Number;
+";
 
                 var students = await _connection.QueryAsync<MemberDetails>(studentQuery, new { GroupID = request.GroupID });
 

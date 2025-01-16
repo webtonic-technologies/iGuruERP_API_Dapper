@@ -36,9 +36,13 @@ using Communication_API.Services.Interfaces.Survey;
 using Communication_API.Services.Interfaces.WhatsApp;
 using System.Data.SqlClient;
 using System.Data;
+using OfficeOpenXml;
 
 var builder = WebApplication.CreateBuilder(args);
 string connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
+
+// Set the license context for EPPlus to NonCommercial
+ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
 builder.Services.AddTransient<IDbConnection>(c => new SqlConnection(connectionString));
 

@@ -74,7 +74,7 @@ namespace Communication_API.Repository.Implementations.WhatsApp
             };
 
             var templates = await _connection.QueryAsync<WhatsAppTemplate>(sql, parameters);
-            return new ServiceResponse<List<WhatsAppTemplate>>(true, "Records Found", templates.ToList(), 302, totalCount);
+            return new ServiceResponse<List<WhatsAppTemplate>>(true, "Records Found", templates.ToList(), 200, totalCount);
         }
 
         //public async Task<ServiceResponse<string>> Send(SendWhatsAppRequest request)

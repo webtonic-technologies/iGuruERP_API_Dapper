@@ -5,5 +5,6 @@
         public int TemplateID { get; set; }
         public string TemplateName { get; set; }
         public string TemplateMessage { get; set; }
+        public string TemplateCode { get; set; }
     }
 }

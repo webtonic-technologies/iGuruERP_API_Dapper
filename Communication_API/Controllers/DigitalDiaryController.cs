@@ -35,5 +35,21 @@ namespace Communication_API.Controllers
             var response = await _digitalDiaryService.DeleteDiary(DiaryID);
             return StatusCode(response.StatusCode, response);
         }
+
+        [HttpPost("GetAllDiaryExport")]
+        public async Task<IActionResult> GetAllDiaryExport([FromBody] GetAllDiaryExportRequest request)
+        {
+            var response = await _digitalDiaryService.GetAllDiaryExport(request);
+
+            if (response.Success)
+            {
+                var fileName = $"DigitalDiaryExport{(request.ExportType == 1 ? ".xlsx" : ".csv")}";
+                return File(response.Data, response.StatusCode == 200 ?
+                    (request.ExportType == 1 ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "text/csv") :
+                    "application/octet-stream", fileName);
+            }
+
+            return BadRequest(response.Message);
+        }
     }
 }

@@ -10,5 +10,7 @@ namespace Communication_API.Services.Interfaces.DigitalDiary
         Task<ServiceResponse<string>> AddUpdateDiary(AddUpdateDiaryRequest request);
         Task<ServiceResponse<List<DiaryResponse>>> GetAllDiary(GetAllDiaryRequest request);
         Task<ServiceResponse<string>> DeleteDiary(int DiaryID);
+        Task<ServiceResponse<byte[]>> GetAllDiaryExport(GetAllDiaryExportRequest request);
+
     }
 }

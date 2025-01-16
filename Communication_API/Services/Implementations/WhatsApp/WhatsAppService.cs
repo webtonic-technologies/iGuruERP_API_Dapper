@@ -59,7 +59,7 @@ namespace Communication_API.Services.Implementations.WhatsApp
                     await _whatsAppRepository.InsertWhatsAppForStudent(request.GroupID, request.InstituteID, studentID, request.WhatsAppMessage, whatsAppDate, 0); // Assuming WhatsAppStatusID is 0 (Pending)
                 }
 
-                return new ServiceResponse<string>(true, "WhatsApp message sent successfully to students.", "WhatsApp message added/updated successfully", 201);
+                return new ServiceResponse<string>(true, "WhatsApp message sent successfully to students.", "WhatsApp message added/updated successfully", 200);
             }
             catch (Exception ex)
             {
@@ -80,7 +80,7 @@ namespace Communication_API.Services.Implementations.WhatsApp
                     await _whatsAppRepository.InsertWhatsAppForEmployee(request.GroupID, request.InstituteID, employeeID, request.WhatsAppMessage, whatsAppDate, 0); // Assuming WhatsAppStatusID is 0 (Pending)
                 }
 
-                return new ServiceResponse<string>(true, "WhatsApp message sent successfully to employees.", "WhatsApp message added/updated successfully", 201);
+                return new ServiceResponse<string>(true, "WhatsApp message sent successfully to employees.", "WhatsApp message added/updated successfully", 200);
             }
             catch (Exception ex)
             {
