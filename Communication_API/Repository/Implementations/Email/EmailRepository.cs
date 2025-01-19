@@ -1,9 +1,12 @@
 ﻿using Communication_API.DTOs.Requests.Email;
+using Communication_API.DTOs.Requests.SMS;
 using Communication_API.DTOs.Responses.Email;
+using Communication_API.DTOs.Responses.SMS;
 using Communication_API.DTOs.ServiceResponse;
 using Communication_API.Models.Email;
 using Communication_API.Repository.Interfaces.Email;
 using Dapper;
+using OfficeOpenXml;
 using System.Data;
 using System.Data.SqlClient;
 using System.Globalization;
@@ -259,6 +262,329 @@ namespace Communication_API.Repository.Implementations.Email
                 EmailStatusID = emailStatusID
             });
         }
+
+
+        public async Task<ServiceResponse<List<EmailStudentReportsResponse>>> GetEmailStudentReport(GetEmailStudentReportRequest request)
+        {
+            string sql = string.Empty;
+
+            // Parse StartDate and EndDate from string to DateTime
+            DateTime startDate = DateTime.ParseExact(request.StartDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+            DateTime endDate = DateTime.ParseExact(request.EndDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+
+            // SQL query to get the total count of records based on the search, date filters, and InstituteID
+            string countSql = @"
+            SELECT COUNT(*) 
+            FROM tblEmailStudent ss
+            INNER JOIN tbl_StudentMaster s ON ss.StudentID = s.student_id
+            --INNER JOIN tblGroupClassSectionMapping gcsm ON gcsm.GroupID = ss.GroupID
+            INNER JOIN tbl_Class c ON s.class_id = c.class_id
+            INNER JOIN tbl_Section sec ON s.section_id = sec.section_id
+            INNER JOIN tblEmailStatus sts ON ss.EmailStatusID = sts.EmailStatusID
+            WHERE ss.EmailDate BETWEEN @StartDate AND @EndDate
+            AND (s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name) LIKE '%' + @Search + '%'
+            AND s.Institute_id = @InstituteID;";  // Added InstituteID filter
+
+            // Get the total count
+            int totalCount = await _connection.ExecuteScalarAsync<int>(countSql, new { StartDate = startDate, EndDate = endDate, Search = request.Search ?? "", InstituteID = request.InstituteID });
+
+            // Modify the SQL query to get the actual records, including InstituteID filter
+            sql = @"
+            SELECT 
+                s.student_id AS StudentID,
+                s.Admission_Number AS AdmissionNumber,
+                s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name AS StudentName,
+                CONCAT(c.class_name, '-', sec.section_name) AS ClassSection,
+                --ss.SMSDate AS DateTime,  -- SMSDate is the equivalent of ScheduleDate
+                FORMAT(ss.EmailDate, 'dd MMMM yyyy, hh:mm tt', 'en-US') AS DateTime, 
+                ss.EmailSubject AS EmailSubject,  -- SMSMessage is the equivalent of Message
+                sts.EmailStatusName AS Status  -- Join with tblSMSStatus to get the status name
+            FROM tblEmailStudent ss
+            INNER JOIN tbl_StudentMaster s ON ss.StudentID = s.student_id
+            --INNER JOIN tblGroupClassSectionMapping gcsm ON gcsm.GroupID = ss.GroupID
+            INNER JOIN tbl_Class c ON s.class_id = c.class_id
+            INNER JOIN tbl_Section sec ON s.section_id = sec.section_id
+            INNER JOIN tblEmailStatus sts ON ss.EmailStatusID = sts.EmailStatusID
+            WHERE ss.EmailDate BETWEEN @StartDate AND @EndDate
+            AND (s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name) LIKE '%' + @Search + '%'
+            AND s.Institute_id = @InstituteID
+            ORDER BY ss.EmailDate
+            OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";  // Added InstituteID filter
+
+            // Calculate the offset for pagination
+            int offset = (request.PageNumber - 1) * request.PageSize;
+
+            // Execute the query and map results to SMSReportsResponse class
+            var result = await _connection.QueryAsync<EmailStudentReportsResponse>(sql, new { StartDate = startDate, EndDate = endDate, Search = request.Search ?? "", InstituteID = request.InstituteID, Offset = offset, PageSize = request.PageSize });
+
+            // Map the result from SMSReport to SMSReportsResponse
+            var mappedResult = result.Select(report => new EmailStudentReportsResponse
+            {
+                StudentID = report.StudentID,
+                AdmissionNumber = report.AdmissionNumber,
+                StudentName = report.StudentName,
+                ClassSection = report.ClassSection,
+                DateTime = report.DateTime,
+                EmailSubject = report.EmailSubject,
+                Status = report.Status // Assuming you want a string for status
+            }).ToList();
+
+            // Return the response with totalCount
+            if (mappedResult.Any())
+            {
+                return new ServiceResponse<List<EmailStudentReportsResponse>>(true, "Email Student Report Found", mappedResult, 200, totalCount);
+            }
+            else
+            {
+                return new ServiceResponse<List<EmailStudentReportsResponse>>(false, "No records found", null, 404);
+            }
+        }
+
+
+        public async Task<List<EmailStudentReportExportResponse>> GetEmailStudentReportData(EmailStudentReportExportRequest request)
+        {
+            // Parse StartDate and EndDate from string to DateTime
+            DateTime startDate = DateTime.ParseExact(request.StartDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+            DateTime endDate = DateTime.ParseExact(request.EndDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+
+            string sql = @"
+            SELECT 
+                s.Admission_Number AS AdmissionNumber,
+                s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name AS StudentName,
+                CONCAT(c.class_name, '-', sec.section_name) AS ClassSection,
+                --ss.SMSDate AS DateTime,  -- SMSDate is the equivalent of ScheduleDate
+                FORMAT(ss.EmailDate, 'dd MMMM yyyy, hh:mm tt', 'en-US') AS DateTime,  
+                ss.EmailSubject AS EmailSubject,  -- SMSMessage is the equivalent of Message
+                sts.EmailStatusName AS Status  -- Join with tblSMSStatus to get the status name
+            FROM tblEmailStudent ss
+            INNER JOIN tbl_StudentMaster s ON ss.StudentID = s.student_id
+            --INNER JOIN tblGroupClassSectionMapping gcsm ON gcsm.GroupID = ss.GroupID
+            INNER JOIN tbl_Class c ON s.class_id = c.class_id
+            INNER JOIN tbl_Section sec ON s.section_id = sec.section_id
+            INNER JOIN tblEmailStatus sts ON ss.EmailStatusID = sts.EmailStatusID
+            WHERE ss.EmailDate BETWEEN @StartDate AND @EndDate
+            AND (s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name) LIKE '%' + @Search + '%'
+            AND s.Institute_id = @InstituteID
+            ORDER BY ss.EmailDate;";
+
+            return (await _connection.QueryAsync<EmailStudentReportExportResponse>(sql, new
+            {
+                StartDate = startDate,
+                EndDate = endDate,
+                Search = request.Search,
+                InstituteID = request.InstituteID
+            })).AsList();
+        }
+
+
+        public async Task<ServiceResponse<List<EmailEmployeeReportsResponse>>> GetEmailEmployeeReport(GetEmailEmployeeReportRequest request)
+        {
+            // Parse StartDate and EndDate from string to DateTime
+            DateTime startDate = DateTime.ParseExact(request.StartDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+            DateTime endDate = DateTime.ParseExact(request.EndDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+
+            // SQL query to get the total count of records based on the search, date filters, and InstituteID
+            string countSql = @"
+             SELECT COUNT(*) 
+            FROM tblEmailEmployee se
+            INNER JOIN tbl_EmployeeProfileMaster e ON se.EmployeeID = e.Employee_id
+            --INNER JOIN tblGroupEmployeeMapping gem ON gem.GroupID = se.GroupID
+            INNER JOIN tbl_Department d ON e.Department_id = d.Department_id
+            INNER JOIN tbl_Designation de ON e.Designation_id = de.Designation_id
+            INNER JOIN tblEmailStatus sts ON se.EmailStatusID = sts.EmailStatusID
+             WHERE se.EmailDate BETWEEN @StartDate AND @EndDate
+             AND (e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name) LIKE '%' + @Search + '%'
+             AND e.Institute_id = @InstituteID;";  // Added InstituteID filter
+
+            // Get the total count
+            int totalCount = await _connection.ExecuteScalarAsync<int>(countSql, new { StartDate = startDate, EndDate = endDate, Search = request.Search ?? "", InstituteID = request.InstituteID });
+
+            // Modify the SQL query to get the actual records, including InstituteID filter
+            string sql = @"
+            SELECT
+                e.Employee_id AS EmployeeID, 
+                e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name AS EmployeeName,
+                CONCAT(d.DepartmentName, '-', de.DesignationName) AS DepartmentDesignation,
+                --se.SMSDate AS DateTime,  -- SMSDate is the equivalent of ScheduleDate
+                FORMAT(se.EmailDate, 'dd MMMM yyyy, hh:mm tt', 'en-US') AS DateTime,  
+                se.EmailSubject AS EmailSubject,  -- SMSMessage is the equivalent of Message
+                e.EmailID AS EmailID,
+                sts.EmailStatusName AS Status  -- Join with tblSMSStatus to get the status name
+            FROM tblEmailEmployee se
+            INNER JOIN tbl_EmployeeProfileMaster e ON se.EmployeeID = e.Employee_id
+            --INNER JOIN tblGroupEmployeeMapping gem ON gem.GroupID = se.GroupID
+            INNER JOIN tbl_Department d ON e.Department_id = d.Department_id
+            INNER JOIN tbl_Designation de ON e.Designation_id = de.Designation_id
+            INNER JOIN tblEmailStatus sts ON se.EmailStatusID = sts.EmailStatusID
+             WHERE se.EmailDate BETWEEN @StartDate AND @EndDate
+             AND (e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name) LIKE '%' + @Search + '%'
+             AND e.Institute_id = @InstituteID
+             ORDER BY se.EmailDate
+             OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";  // Added InstituteID filter
+
+            // Calculate the offset for pagination
+            int offset = (request.PageNumber - 1) * request.PageSize;
+
+            // Execute the query and map results to SMSEmployeeReportsResponse class
+            var result = await _connection.QueryAsync<EmailEmployeeReportsResponse>(sql, new
+            {
+                StartDate = startDate,
+                EndDate = endDate,
+                Search = request.Search ?? "",
+                InstituteID = request.InstituteID,
+                Offset = offset,
+                PageSize = request.PageSize
+            });
+
+            // Map the result from SMSEmployeeReportsResponse to SMSEmployeeReportsResponse with formatted DateTime
+            var mappedResult = result.Select(report => new EmailEmployeeReportsResponse
+            {
+                EmployeeID = report.EmployeeID,
+                EmployeeName = report.EmployeeName,
+                DepartmentDesignation = report.DepartmentDesignation,
+                DateTime = report.DateTime.ToString(),  // Format the DateTime as '15 Dec 2024, 05:00 PM'
+                EmailSubject = report.EmailSubject,
+                EmailID = report.EmailID,
+                Status = report.Status
+            }).ToList();
+
+            // Return the response with totalCount
+            if (mappedResult.Any())
+            {
+                return new ServiceResponse<List<EmailEmployeeReportsResponse>>(true, "Email Employee Report Found", mappedResult, 200, totalCount);
+            }
+            else
+            {
+                return new ServiceResponse<List<EmailEmployeeReportsResponse>>(false, "No records found", null, 404);
+            }
+        }
+         
+        //public async Task<string> GetEmailEmployeeReportExport(EmailEmployeeReportExportRequest request)
+        //{
+        //    DateTime startDate = DateTime.ParseExact(request.StartDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+        //    DateTime endDate = DateTime.ParseExact(request.EndDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+
+        //    string sql = @"
+        //    SELECT
+        //        e.Employee_id AS EmployeeID, 
+        //        e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name AS EmployeeName,
+        //        CONCAT(d.DepartmentName, '-', de.DesignationName) AS DepartmentDesignation,
+        //        --se.SMSDate AS DateTime,  
+        //        FORMAT(se.EmailDate, 'dd MMMM yyyy, hh:mm tt', 'en-US') AS DateTime,  
+        //        se.EmailSubject AS EmailSubject,  
+	       //     e.EmailID AS EmailID,   
+        //        sts.EmailStatusName AS Status  
+        //    FROM tblEmailEmployee se
+        //    INNER JOIN tbl_EmployeeProfileMaster e ON se.EmployeeID = e.Employee_id
+        //    --INNER JOIN tblGroupEmployeeMapping gem ON gem.GroupID = se.GroupID
+        //    INNER JOIN tbl_Department d ON e.Department_id = d.Department_id
+        //    INNER JOIN tbl_Designation de ON e.Designation_id = de.Designation_id
+        //    INNER JOIN tblEmailStatus sts ON se.EmailStatusID = sts.EmailStatusID
+        //    WHERE se.EmailDate BETWEEN @StartDate AND @EndDate
+        //    AND (e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name) LIKE '%' + @Search + '%'
+        //    AND e.Institute_id = @InstituteID
+        //    ORDER BY se.EmailDate;";
+
+        //    // Execute the query and get the result
+        //    var result = await _connection.QueryAsync<EmailEmployeeReportExportResponse>(
+        //        sql, new { StartDate = startDate, EndDate = endDate, Search = request.Search, InstituteID = request.InstituteID });
+
+        //    // Generate the file based on ExportType
+        //    string filePath = "";
+        //    if (request.ExportType == 1)
+        //    {
+        //        filePath = await GenerateExcelReport(result);
+        //    }
+        //    else if (request.ExportType == 2)
+        //    {
+        //        filePath = await GenerateCsvReport(result);
+        //    }
+
+        //    return filePath;
+        //}
+
+        //private async Task<string> GenerateExcelReport(IEnumerable<EmailEmployeeReportExportResponse> data)
+        //{
+        //    // Use the current directory of the application for saving the file
+        //    string directory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EmailReports");
+
+        //    // Ensure the directory exists
+        //    if (!Directory.Exists(directory))
+        //    {
+        //        Directory.CreateDirectory(directory);
+        //    }
+
+        //    // Create a dynamic file name based on the current date and time
+        //    string fileName = $"EmailEmployeeReport_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";  // e.g., SMSEmployeeReport_20241215_123000.xlsx
+
+        //    // Combine the directory and file name to form the complete file path
+        //    string filePath = Path.Combine(directory, fileName);
+
+        //    // Generate the Excel file using EPPlus
+        //    using (var package = new ExcelPackage(new FileInfo(filePath)))
+        //    {
+        //        var worksheet = package.Workbook.Worksheets.Add("Email Employee Report");
+
+        //        // Add headers
+        //        worksheet.Cells[1, 1].Value = "Employee Name";
+        //        worksheet.Cells[1, 2].Value = "Department Designation";
+        //        worksheet.Cells[1, 3].Value = "DateTime";
+        //        worksheet.Cells[1, 4].Value = "Email Subject";
+        //        worksheet.Cells[1, 5].Value = "Email ID";
+        //        worksheet.Cells[1, 6].Value = "Status";
+
+        //        // Add data rows
+        //        int row = 2;
+        //        foreach (var record in data)
+        //        {
+        //            worksheet.Cells[row, 1].Value = record.EmployeeName;
+        //            worksheet.Cells[row, 2].Value = record.DepartmentDesignation;
+        //            worksheet.Cells[row, 3].Value = record.DateTime;
+        //            worksheet.Cells[row, 4].Value = record.EmailSubject;
+        //            worksheet.Cells[row, 5].Value = record.EmailID;
+        //            worksheet.Cells[row, 6].Value = record.Status;
+        //            row++;
+        //        }
+
+        //        // Save the file
+        //        await package.SaveAsync();
+        //    }
+
+        //    return filePath;
+        //}
+
+        //private async Task<string> GenerateCsvReport(IEnumerable<EmailEmployeeReportExportResponse> data)
+        //{
+        //    // Use the current directory of the application for saving the file
+        //    string directory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EmailReports");
+
+        //    // Ensure the directory exists
+        //    if (!Directory.Exists(directory))
+        //    {
+        //        Directory.CreateDirectory(directory);
+        //    }
+
+        //    // Create a dynamic file name based on the current date and time
+        //    string fileName = $"EmailEmployeeReport_{DateTime.Now:yyyyMMdd_HHmmss}.csv";  // e.g., SMSEmployeeReport_20241215_123000.csv
+
+        //    // Combine the directory and file name to form the complete file path
+        //    string filePath = Path.Combine(directory, fileName);
+
+        //    // Generate the CSV file
+        //    using (var writer = new StreamWriter(filePath))
+        //    {
+        //        // Write headers
+        //        writer.WriteLine("Employee Name,Department Designation,DateTime,Email Subject, Email ID,Status");
+
+        //        // Write data rows
+        //        foreach (var record in data)
+        //        {
+        //            writer.WriteLine($"{record.EmployeeName},{record.DepartmentDesignation},{record.DateTime},{record.EmailSubject}, {record.EmailID},{record.Status}");
+        //        }
+        //    }
+
+        //    return filePath;
+        //}
 
     }
 }

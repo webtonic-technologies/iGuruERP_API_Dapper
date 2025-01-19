@@ -107,7 +107,7 @@ namespace Communication_API.Repository.Implementations.DigitalDiary
                 INNER JOIN tbl_Section sec ON d.SectionID = sec.section_id
                 INNER JOIN tbl_InstituteSubjects subj ON d.SubjectID = subj.institute_subject_id
                 LEFT JOIN tbl_EmployeeProfileMaster e ON e.Employee_id = d.CreatedBy
-                WHERE d.InstituteID = @InstituteID
+                WHERE d.InstituteID = @InstituteID AND d.IsActive = 1
                   AND (@StartDate IS NULL OR d.EnDate >= @StartDate)   -- Use parsed StartDate parameter
                   AND (@EndDate IS NULL OR d.EnDate <= @EndDate)       -- Use parsed EndDate parameter
                   AND s.class_id = @ClassID AND s.section_id = @SectionID 
@@ -175,7 +175,7 @@ namespace Communication_API.Repository.Implementations.DigitalDiary
                 INNER JOIN tbl_Section sec ON d.SectionID = sec.section_id
                 INNER JOIN tbl_InstituteSubjects subj ON d.SubjectID = subj.institute_subject_id
                 LEFT JOIN tbl_EmployeeProfileMaster e ON e.Employee_id = d.CreatedBy
-                WHERE d.InstituteID = @InstituteID
+                WHERE d.InstituteID = @InstituteID AND d.IsActive = 1
                   AND (@StartDate IS NULL OR d.EnDate >= @StartDate)
                   AND (@EndDate IS NULL OR d.EnDate <= @EndDate)
                   AND s.class_id = @ClassID 

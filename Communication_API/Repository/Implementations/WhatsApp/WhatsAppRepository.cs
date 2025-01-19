@@ -1,9 +1,12 @@
-﻿using Communication_API.DTOs.Requests.WhatsApp;
+﻿using Communication_API.DTOs.Requests.SMS;
+using Communication_API.DTOs.Requests.WhatsApp;
+using Communication_API.DTOs.Responses.SMS;
 using Communication_API.DTOs.Responses.WhatsApp;
 using Communication_API.DTOs.ServiceResponse;
 using Communication_API.Models.WhatsApp;
 using Communication_API.Repository.Interfaces.WhatsApp;
 using Dapper;
+using OfficeOpenXml;
 using System.Data;
 using System.Data.SqlClient;
 using System.Globalization;
@@ -41,34 +44,39 @@ namespace Communication_API.Repository.Implementations.WhatsApp
             return new ServiceResponse<WhatsAppConfiguration>(config != null, config != null ? "Operation Successful" : "No Record Found", config, config != null ? 200 : 404);
         }
 
-        public async Task<ServiceResponse<string>> AddUpdateTemplate(AddUpdateTemplateRequest request)
+        public async Task<ServiceResponse<string>> AddUpdateTemplate(AddUpdateWhatsAppTemplateRequest request)
         {
-            var query = request.TemplateID == 0
-                ? "INSERT INTO [tblWhatsAppTemplate] (TemplateTypeID, TemplateName, TemplateMessage) VALUES (@TemplateTypeID, @TemplateName, @TemplateMessage)"
-                : "UPDATE [tblWhatsAppTemplate] SET TemplateTypeID = @TemplateTypeID, TemplateName = @TemplateName, TemplateMessage = @TemplateMessage WHERE TemplateID = @TemplateID";
+            var query = request.WhatsAppTemplateID == 0
+                ? "INSERT INTO [tblWhatsAppTemplate] (TemplateCode, TemplateName, TemplateMessage, InstituteID) VALUES (@TemplateCode, @TemplateName, @TemplateMessage, @InstituteID)"
+                : "UPDATE [tblWhatsAppTemplate] SET TemplateCode = @TemplateCode, TemplateName = @TemplateName, TemplateMessage = @TemplateMessage, InstituteID = @InstituteID WHERE WhatsAppTemplateID = @WhatsAppTemplateID";
 
             var parameters = new
             {
-                request.TemplateID,
-                request.TemplateTypeID,
+                request.WhatsAppTemplateID,
+                request.TemplateCode,
                 request.TemplateName,
-                request.TemplateMessage
+                request.TemplateMessage,
+                request.InstituteID  // Passing InstituteID to the query
             };
 
             var result = await _connection.ExecuteAsync(query, parameters);
-            return new ServiceResponse<string>(true, "Operation Successful", result > 0 ? "Success" : "Failure", result > 0 ? 201 : 400);
+            return new ServiceResponse<string>(true, "Operation Successful", result > 0 ? "Success" : "Failure", result > 0 ? 200 : 400);
         }
+
 
         public async Task<ServiceResponse<List<WhatsAppTemplate>>> GetWhatsAppTemplate(GetWhatsAppTemplateRequest request)
         {
-            var countSql = "SELECT COUNT(*) FROM [tblWhatsAppTemplate]";
-            var totalCount = await _connection.ExecuteScalarAsync<int>(countSql);
+            var countSql = "SELECT COUNT(*) FROM [tblWhatsAppTemplate] WHERE InstituteID = @InstituteID";
+            var totalCount = await _connection.ExecuteScalarAsync<int>(countSql, new { request.InstituteID });
 
             var sql = @"SELECT * FROM [tblWhatsAppTemplate]
-                        ORDER BY WhatsAppTemplateID OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+                WHERE InstituteID = @InstituteID
+                ORDER BY WhatsAppTemplateID 
+                OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 
             var parameters = new
             {
+                InstituteID = request.InstituteID,
                 Offset = (request.PageNumber - 1) * request.PageSize,
                 PageSize = request.PageSize
             };
@@ -76,6 +84,18 @@ namespace Communication_API.Repository.Implementations.WhatsApp
             var templates = await _connection.QueryAsync<WhatsAppTemplate>(sql, parameters);
             return new ServiceResponse<List<WhatsAppTemplate>>(true, "Records Found", templates.ToList(), 200, totalCount);
         }
+
+        public async Task<List<GetWhatsAppTemplateExportResponse>> GetWhatsAppTemplateExport(int instituteID)
+        {
+            var query = @"SELECT TemplateCode, TemplateName, TemplateMessage
+                          FROM [tblWhatsAppTemplate]
+                          WHERE (@InstituteID IS NULL OR InstituteID = @InstituteID)
+                          ORDER BY WhatsAppTemplateID";
+
+            var templates = await _connection.QueryAsync<GetWhatsAppTemplateExportResponse>(query, new { InstituteID = instituteID });
+            return templates.AsList();
+        }
+
 
         //public async Task<ServiceResponse<string>> Send(SendWhatsAppRequest request)
         //{
@@ -142,10 +162,10 @@ namespace Communication_API.Repository.Implementations.WhatsApp
 
             // Step 1: Insert the WhatsApp message into tblWhatsAppMessage
             string sql = @"
-        INSERT INTO [tblWhatsAppMessage] 
-        (PredefinedTemplateID, WhatsAppMessage, UserTypeID, GroupID, ScheduleNow, ScheduleDate, ScheduleTime, AcademicYearCode, InstituteID) 
-        VALUES (@PredefinedTemplateID, @WhatsAppMessage, @UserTypeID, @GroupID, @ScheduleNow, @ScheduleDate, @ScheduleTime, @AcademicYearCode, @InstituteID);
-        SELECT CAST(SCOPE_IDENTITY() as int);"; // Get the newly inserted ID
+            INSERT INTO [tblWhatsAppMessage] 
+            (PredefinedTemplateID, WhatsAppMessage, UserTypeID, GroupID, Status, ScheduleNow, ScheduleDate, ScheduleTime, AcademicYearCode, InstituteID) 
+            VALUES (@PredefinedTemplateID, @WhatsAppMessage, @UserTypeID, @GroupID, @Status, @ScheduleNow, @ScheduleDate, @ScheduleTime, @AcademicYearCode, @InstituteID);
+            SELECT CAST(SCOPE_IDENTITY() as int);"; // Get the newly inserted ID
 
             // Execute the query and get the WhatsAppMessageID
             var whatsAppMessageID = await _connection.ExecuteScalarAsync<int>(sql, new
@@ -154,6 +174,7 @@ namespace Communication_API.Repository.Implementations.WhatsApp
                 request.WhatsAppMessage,
                 request.UserTypeID,
                 request.GroupID,
+                request.Status,
                 request.ScheduleNow,
                 ScheduleDate = scheduleDate,
                 ScheduleTime = scheduleTime,
@@ -185,7 +206,7 @@ namespace Communication_API.Repository.Implementations.WhatsApp
                     }
                 }
 
-                return new ServiceResponse<string>(true, "WhatsApp message sent successfully", "WhatsApp message added/updated successfully", 201);
+                return new ServiceResponse<string>(true, "WhatsApp message sent successfully", "WhatsApp message added/updated successfully", 200);
             }
             else
             {
@@ -325,6 +346,338 @@ namespace Communication_API.Repository.Implementations.WhatsApp
                 EmployeeID = employeeID,
                 WhatsAppStatusID = whatsAppStatusID
             });
+        }
+
+        public async Task<ServiceResponse<List<WhatsAppTemplateDDLResponse>>> GetWhatsAppTemplateDDL(int instituteID)
+        {
+            string sql = @"
+                SELECT WhatsAppTemplateID, TemplateName
+                FROM tblWhatsAppTemplate
+                WHERE InstituteID = @InstituteID";
+
+            var templates = await _connection.QueryAsync<WhatsAppTemplateDDLResponse>(sql, new { InstituteID = instituteID });
+
+            return new ServiceResponse<List<WhatsAppTemplateDDLResponse>>(true, "Templates fetched successfully.", templates.ToList(), 200);
+        }
+
+
+
+
+        public async Task<ServiceResponse<List<WhatsAppStudentReportsResponse>>> GetWhatsAppStudentReport(GetWhatsAppStudentReportRequest request)
+        {
+            string sql = string.Empty;
+
+            // Parse StartDate and EndDate from string to DateTime
+            DateTime startDate = DateTime.ParseExact(request.StartDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+            DateTime endDate = DateTime.ParseExact(request.EndDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+
+            // SQL query to get the total count of records based on the search, date filters, and InstituteID
+            string countSql = @"
+            SELECT COUNT(*) 
+            FROM tblWhatsAppStudent ss
+            INNER JOIN tbl_StudentMaster s ON ss.StudentID = s.student_id
+            --INNER JOIN tblGroupClassSectionMapping gcsm ON gcsm.GroupID = ss.GroupID
+            INNER JOIN tbl_Class c ON s.class_id = c.class_id
+            INNER JOIN tbl_Section sec ON s.section_id = sec.section_id
+            INNER JOIN tblSMSStatus sts ON ss.WhatsAppStatusID = sts.SMSStatusID
+            WHERE ss.WhatsAppDate BETWEEN @StartDate AND @EndDate
+            AND (s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name) LIKE '%' + @Search + '%'
+            AND s.Institute_id = @InstituteID;";  // Added InstituteID filter
+
+            // Get the total count
+            int totalCount = await _connection.ExecuteScalarAsync<int>(countSql, new { StartDate = startDate, EndDate = endDate, Search = request.Search ?? "", InstituteID = request.InstituteID });
+
+            // Modify the SQL query to get the actual records, including InstituteID filter
+            sql = @"
+            SELECT 
+                s.student_id AS StudentID,
+                s.Admission_Number AS AdmissionNumber,
+                s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name AS StudentName,
+                CONCAT(c.class_name, '-', sec.section_name) AS ClassSection,
+                --ss.SMSDate AS DateTime,  -- SMSDate is the equivalent of ScheduleDate
+                FORMAT(ss.WhatsAppDate, 'dd MMMM yyyy, hh:mm tt', 'en-US') AS DateTime, 
+                ss.WhatsAppMessage AS Message,  -- SMSMessage is the equivalent of Message
+                sts.SMSStatusName AS Status  -- Join with tblSMSStatus to get the status name
+            FROM tblWhatsAppStudent ss
+            INNER JOIN tbl_StudentMaster s ON ss.StudentID = s.student_id
+            --INNER JOIN tblGroupClassSectionMapping gcsm ON gcsm.GroupID = ss.GroupID
+            INNER JOIN tbl_Class c ON s.class_id = c.class_id
+            INNER JOIN tbl_Section sec ON s.section_id = sec.section_id
+            INNER JOIN tblSMSStatus sts ON ss.WhatsAppStatusID = sts.SMSStatusID
+            WHERE ss.WhatsAppDate BETWEEN @StartDate AND @EndDate
+            AND (s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name) LIKE '%' + @Search + '%'
+            AND s.Institute_id = @InstituteID
+            ORDER BY ss.WhatsAppDate
+            OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";  // Added InstituteID filter
+
+            // Calculate the offset for pagination
+            int offset = (request.PageNumber - 1) * request.PageSize;
+
+            // Execute the query and map results to SMSReportsResponse class
+            var result = await _connection.QueryAsync<WhatsAppStudentReportsResponse>(sql, new { StartDate = startDate, EndDate = endDate, Search = request.Search ?? "", InstituteID = request.InstituteID, Offset = offset, PageSize = request.PageSize });
+
+            // Map the result from SMSReport to SMSReportsResponse
+            var mappedResult = result.Select(report => new WhatsAppStudentReportsResponse
+            {
+                StudentID = report.StudentID,
+                AdmissionNumber = report.AdmissionNumber,
+                StudentName = report.StudentName,
+                ClassSection = report.ClassSection,
+                DateTime = report.DateTime,
+                Message = report.Message,
+                Status = report.Status // Assuming you want a string for status
+            }).ToList();
+
+            // Return the response with totalCount
+            if (mappedResult.Any())
+            {
+                return new ServiceResponse<List<WhatsAppStudentReportsResponse>>(true, "SMS Student Report Found", mappedResult, 200, totalCount);
+            }
+            else
+            {
+                return new ServiceResponse<List<WhatsAppStudentReportsResponse>>(false, "No records found", null, 404);
+            }
+        }
+
+        public async Task<List<WhatsAppStudentReportExportResponse>> GetWhatsAppStudentReportData(WhatsAppStudentReportExportRequest request)
+        {
+            // Parse StartDate and EndDate from string to DateTime
+            DateTime startDate = DateTime.ParseExact(request.StartDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+            DateTime endDate = DateTime.ParseExact(request.EndDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+
+            string sql = @"
+             SELECT 
+                s.Admission_Number AS AdmissionNumber,
+                s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name AS StudentName,
+                CONCAT(c.class_name, '-', sec.section_name) AS ClassSection,
+                --ss.SMSDate AS DateTime,  -- SMSDate is the equivalent of ScheduleDate
+                FORMAT(ss.WhatsAppDate, 'dd MMMM yyyy, hh:mm tt', 'en-US') AS DateTime,  
+                ss.WhatsAppMessage AS Message,  -- SMSMessage is the equivalent of Message
+                sts.WhatsAppStatusName AS Status  -- Join with tblSMSStatus to get the status name
+            FROM tblWhatsAppStudent ss
+            INNER JOIN tbl_StudentMaster s ON ss.StudentID = s.student_id
+            --INNER JOIN tblGroupClassSectionMapping gcsm ON gcsm.GroupID = ss.GroupID
+            INNER JOIN tbl_Class c ON s.class_id = c.class_id
+            INNER JOIN tbl_Section sec ON s.section_id = sec.section_id
+            INNER JOIN tblWhatsAppStatus sts ON ss.WhatsAppStatusID = sts.WhatsAppStatusID
+                WHERE ss.WhatsAppDate BETWEEN @StartDate AND @EndDate
+                AND (s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name) LIKE '%' + @Search + '%'
+                AND s.Institute_id = @InstituteID
+                ORDER BY ss.WhatsAppDate;";
+
+            return (await _connection.QueryAsync<WhatsAppStudentReportExportResponse>(sql, new
+            {
+                StartDate = startDate,
+                EndDate = endDate,
+                Search = request.Search,
+                InstituteID = request.InstituteID
+            })).AsList();
+        }
+
+        public async Task<ServiceResponse<List<WhatsAppEmployeeReportsResponse>>> GetWhatsAppEmployeeReport(GetWhatsAppEmployeeReportRequest request)
+        {
+            // Parse StartDate and EndDate from string to DateTime
+            DateTime startDate = DateTime.ParseExact(request.StartDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+            DateTime endDate = DateTime.ParseExact(request.EndDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+
+            // SQL query to get the total count of records based on the search, date filters, and InstituteID
+            string countSql = @"
+                   SELECT COUNT(*) 
+            FROM tblWhatsAppEmployee se
+            INNER JOIN tbl_EmployeeProfileMaster e ON se.EmployeeID = e.Employee_id
+            --INNER JOIN tblGroupEmployeeMapping gem ON gem.GroupID = se.GroupID
+            INNER JOIN tbl_Department d ON e.Department_id = d.Department_id
+            INNER JOIN tbl_Designation de ON e.Designation_id = de.Designation_id
+            INNER JOIN tblWhatsAppStatus sts ON se.WhatsAppStatusID = sts.WhatsAppStatusID
+            WHERE se.WhatsAppDate BETWEEN @StartDate AND @EndDate
+            AND (e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name) LIKE '%' + @Search + '%'
+            AND e.Institute_id = @InstituteID;";  // Added InstituteID filter
+
+            // Get the total count
+            int totalCount = await _connection.ExecuteScalarAsync<int>(countSql, new { StartDate = startDate, EndDate = endDate, Search = request.Search ?? "", InstituteID = request.InstituteID });
+
+            // Modify the SQL query to get the actual records, including InstituteID filter
+            string sql = @"
+            SELECT
+                e.Employee_id AS EmployeeID, 
+                e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name AS EmployeeName,
+                CONCAT(d.DepartmentName, '-', de.DesignationName) AS DepartmentDesignation,
+                --se.SMSDate AS DateTime,  -- SMSDate is the equivalent of ScheduleDate
+                FORMAT(se.WhatsAppDate, 'dd MMMM yyyy, hh:mm tt', 'en-US') AS DateTime,  
+                se.WhatsAppMessage AS Message,  -- SMSMessage is the equivalent of Message
+                sts.WhatsAppStatusName AS Status  -- Join with tblSMSStatus to get the status name
+            FROM tblWhatsAppEmployee se
+            INNER JOIN tbl_EmployeeProfileMaster e ON se.EmployeeID = e.Employee_id
+            --INNER JOIN tblGroupEmployeeMapping gem ON gem.GroupID = se.GroupID
+            INNER JOIN tbl_Department d ON e.Department_id = d.Department_id
+            INNER JOIN tbl_Designation de ON e.Designation_id = de.Designation_id
+            INNER JOIN tblWhatsAppStatus sts ON se.WhatsAppStatusID = sts.WhatsAppStatusID
+           WHERE se.WhatsAppDate BETWEEN @StartDate AND @EndDate
+           AND (e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name) LIKE '%' + @Search + '%'
+           AND e.Institute_id = @InstituteID
+           ORDER BY se.WhatsAppDate
+           OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";  // Added InstituteID filter
+
+            // Calculate the offset for pagination
+            int offset = (request.PageNumber - 1) * request.PageSize;
+
+            // Execute the query and map results to SMSEmployeeReportsResponse class
+            var result = await _connection.QueryAsync<WhatsAppEmployeeReportsResponse>(sql, new
+            {
+                StartDate = startDate,
+                EndDate = endDate,
+                Search = request.Search ?? "",
+                InstituteID = request.InstituteID,
+                Offset = offset,
+                PageSize = request.PageSize
+            });
+
+            // Map the result from SMSEmployeeReportsResponse to SMSEmployeeReportsResponse with formatted DateTime
+            var mappedResult = result.Select(report => new WhatsAppEmployeeReportsResponse
+            {
+                EmployeeID = report.EmployeeID,
+                EmployeeName = report.EmployeeName,
+                DepartmentDesignation = report.DepartmentDesignation,
+                DateTime = report.DateTime.ToString(),  // Format the DateTime as '15 Dec 2024, 05:00 PM'
+                Message = report.Message,
+                Status = report.Status
+            }).ToList();
+
+            // Return the response with totalCount
+            if (mappedResult.Any())
+            {
+                return new ServiceResponse<List<WhatsAppEmployeeReportsResponse>>(true, "WhatsApp Employee Report Found", mappedResult, 200, totalCount);
+            }
+            else
+            {
+                return new ServiceResponse<List<WhatsAppEmployeeReportsResponse>>(false, "No records found", null, 404);
+            }
+        }
+
+
+        public async Task<string> GetWhatsAppEmployeeReportExport(WhatsAppEmployeeReportExportRequest request)
+        {
+            DateTime startDate = DateTime.ParseExact(request.StartDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+            DateTime endDate = DateTime.ParseExact(request.EndDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+
+            string sql = @"
+        SELECT
+        e.Employee_id AS EmployeeID, 
+        e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name AS EmployeeName,
+        CONCAT(d.DepartmentName, '-', de.DesignationName) AS DepartmentDesignation,
+        --se.SMSDate AS DateTime,  
+        FORMAT(se.WhatsAppDate, 'dd MMMM yyyy, hh:mm tt', 'en-US') AS DateTime,  
+        se.WhatsAppMessage AS Message,  
+        sts.WhatsAppStatusName AS Status  
+    FROM tblWhatsAppEmployee se
+    INNER JOIN tbl_EmployeeProfileMaster e ON se.EmployeeID = e.Employee_id
+    --INNER JOIN tblGroupEmployeeMapping gem ON gem.GroupID = se.GroupID
+    INNER JOIN tbl_Department d ON e.Department_id = d.Department_id
+    INNER JOIN tbl_Designation de ON e.Designation_id = de.Designation_id
+    INNER JOIN tblWhatsAppStatus sts ON se.WhatsAppStatusID = sts.WhatsAppStatusID
+    WHERE se.WhatsAppDate BETWEEN @StartDate AND @EndDate
+    AND (e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name) LIKE '%' + @Search + '%'
+    AND e.Institute_id = @InstituteID
+    ORDER BY se.WhatsAppDate;";
+
+            // Execute the query and get the result
+            var result = await _connection.QueryAsync<WhatsAppEmployeeReportExportResponse>(
+                sql, new { StartDate = startDate, EndDate = endDate, Search = request.Search, InstituteID = request.InstituteID });
+
+            // Generate the file based on ExportType
+            string filePath = "";
+            if (request.ExportType == 1)
+            {
+                filePath = await GenerateExcelReport(result);
+            }
+            else if (request.ExportType == 2)
+            {
+                filePath = await GenerateCsvReport(result);
+            }
+
+            return filePath;
+        }
+
+
+        private async Task<string> GenerateExcelReport(IEnumerable<WhatsAppEmployeeReportExportResponse> data)
+        {
+            // Use the current directory of the application for saving the file
+            string directory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WhatsAppReports");
+
+            // Ensure the directory exists
+            if (!Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            // Create a dynamic file name based on the current date and time
+            string fileName = $"WhatsAppEmployeeReport_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";  // e.g., SMSEmployeeReport_20241215_123000.xlsx
+
+            // Combine the directory and file name to form the complete file path
+            string filePath = Path.Combine(directory, fileName);
+
+            // Generate the Excel file using EPPlus
+            using (var package = new ExcelPackage(new FileInfo(filePath)))
+            {
+                var worksheet = package.Workbook.Worksheets.Add("WhatsApp Employee Report");
+
+                // Add headers
+                worksheet.Cells[1, 1].Value = "Employee Name";
+                worksheet.Cells[1, 2].Value = "Department Designation";
+                worksheet.Cells[1, 3].Value = "DateTime";
+                worksheet.Cells[1, 4].Value = "Message";
+                worksheet.Cells[1, 5].Value = "Status";
+
+                // Add data rows
+                int row = 2;
+                foreach (var record in data)
+                {
+                    worksheet.Cells[row, 1].Value = record.EmployeeName;
+                    worksheet.Cells[row, 2].Value = record.DepartmentDesignation;
+                    worksheet.Cells[row, 3].Value = record.DateTime;
+                    worksheet.Cells[row, 4].Value = record.Message;
+                    worksheet.Cells[row, 5].Value = record.Status;
+                    row++;
+                }
+
+                // Save the file
+                await package.SaveAsync();
+            }
+
+            return filePath;
+        }
+
+        private async Task<string> GenerateCsvReport(IEnumerable<WhatsAppEmployeeReportExportResponse> data)
+        {
+            // Use the current directory of the application for saving the file
+            string directory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WhatsAppReports");
+
+            // Ensure the directory exists
+            if (!Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            // Create a dynamic file name based on the current date and time
+            string fileName = $"WhatsAppEmployeeReport_{DateTime.Now:yyyyMMdd_HHmmss}.csv";  // e.g., SMSEmployeeReport_20241215_123000.csv
+
+            // Combine the directory and file name to form the complete file path
+            string filePath = Path.Combine(directory, fileName);
+
+            // Generate the CSV file
+            using (var writer = new StreamWriter(filePath))
+            {
+                // Write headers
+                writer.WriteLine("Employee Name,Department Designation,DateTime,Message,Status");
+
+                // Write data rows
+                foreach (var record in data)
+                {
+                    writer.WriteLine($"{record.EmployeeName},{record.DepartmentDesignation},{record.DateTime},{record.Message},{record.Status}");
+                }
+            }
+
+            return filePath;
         }
     }
 }

@@ -1,6 +1,8 @@
-﻿using Communication_API.DTOs.Requests.WhatsApp;
+﻿using Communication_API.DTOs.Requests.SMS;
+using Communication_API.DTOs.Requests.WhatsApp;
 using Communication_API.Services.Interfaces.WhatsApp;
 using Microsoft.AspNetCore.Mvc;
+using OfficeOpenXml;
 
 namespace Communication_API.Controllers
 {
@@ -30,7 +32,7 @@ namespace Communication_API.Controllers
         }
 
         [HttpPost("AddUpdateTemplate")]
-        public async Task<IActionResult> AddUpdateTemplate([FromBody] AddUpdateTemplateRequest request)
+        public async Task<IActionResult> AddUpdateTemplate([FromBody] AddUpdateWhatsAppTemplateRequest request)
         {
             var response = await _whatsAppService.AddUpdateTemplate(request);
             return StatusCode(response.StatusCode, response);
@@ -43,6 +45,52 @@ namespace Communication_API.Controllers
             return StatusCode(response.StatusCode, response);
         }
 
+        [HttpPost("GetWhatsAppTemplateExport")]
+        public async Task<IActionResult> GetWhatsAppTemplateExport([FromBody] GetWhatsAppTemplateExportRequest request)
+        {
+            var response = await _whatsAppService.GetWhatsAppTemplateExport(request);
+            if (response.Success)
+            {
+                // Return file based on ExportType
+                var memoryStream = new MemoryStream();
+                if (request.ExportType == 1)
+                {
+                    // Generate Excel
+                    using (var package = new ExcelPackage(memoryStream))
+                    {
+                        var worksheet = package.Workbook.Worksheets.Add("WhatsAppTemplates");
+                        worksheet.Cells.LoadFromCollection(response.Data, true);
+                        package.Save();
+                    }
+
+                    memoryStream.Position = 0;
+                    return File(memoryStream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "WhatsAppTemplates.xlsx");
+                }
+                else if (request.ExportType == 2)
+                {
+                    // Generate CSV
+                    var csv = string.Join(",", new[] { "TemplateCode", "TemplateName", "TemplateMessage" }) + "\n";
+                    foreach (var template in response.Data)
+                    {
+                        csv += $"{template.TemplateCode},{template.TemplateName},{template.TemplateMessage}\n";
+                    }
+
+                    var csvBytes = System.Text.Encoding.UTF8.GetBytes(csv);
+                    memoryStream.Write(csvBytes, 0, csvBytes.Length);
+                    memoryStream.Position = 0;
+                    return File(memoryStream, "text/csv", "WhatsAppTemplates.csv");
+                }
+                else
+                {
+                    return BadRequest("Invalid ExportType");
+                }
+            }
+            else
+            {
+                return BadRequest(response.Message);
+            }
+        }
+
         [HttpPost("Send")]
         public async Task<IActionResult> Send([FromBody] SendWhatsAppRequest request)
         {
@@ -50,12 +98,12 @@ namespace Communication_API.Controllers
             return StatusCode(response.StatusCode, response);
         }
 
-        [HttpPost("GetWhatsAppReport")]
-        public async Task<IActionResult> GetWhatsAppReport([FromBody] GetWhatsAppReportRequest request)
-        {
-            var response = await _whatsAppService.GetWhatsAppReport(request);
-            return StatusCode(response.StatusCode, response);
-        }
+        //[HttpPost("GetWhatsAppReport")]
+        //public async Task<IActionResult> GetWhatsAppReport([FromBody] GetWhatsAppReportRequest request)
+        //{
+        //    var response = await _whatsAppService.GetWhatsAppReport(request);
+        //    return StatusCode(response.StatusCode, response);
+        //}
 
         [HttpPost("SendWhatsAppStudent")]
         public async Task<IActionResult> SendWhatsAppStudent(SendWhatsAppStudentRequest request)
@@ -108,5 +156,84 @@ namespace Communication_API.Controllers
 
             return BadRequest(response); // 400 Bad Request response
         }
+
+        [HttpPost("GetWhatsAppTemplateDDL")]
+        public async Task<IActionResult> GetWhatsAppTemplateDDL([FromBody] WhatsAppTemplateDDLRequest request)
+        {
+            var response = await _whatsAppService.GetWhatsAppTemplateDDL(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+
+        [HttpPost("GetWhatsAppStudentReport")]
+        public async Task<IActionResult> GetWhatsAppStudentReport([FromBody] GetWhatsAppStudentReportRequest request)
+        {
+            var response = await _whatsAppService.GetWhatsAppStudentReport(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("GetWhatsAppStudentReportExport")]
+        public async Task<IActionResult> GetWhatsAppStudentReportExport([FromBody] WhatsAppStudentReportExportRequest request)
+        {
+            // Get the export file content
+            var response = await _whatsAppService.GetWhatsAppStudentReportExport(request);
+
+            // Check if the export was successful
+            if (response.Success)
+            {
+                // Get the file path
+                string filePath = response.Data;
+
+                // Check if the file exists
+                if (System.IO.File.Exists(filePath))
+                {
+                    // Get the file bytes
+                    byte[] fileBytes = System.IO.File.ReadAllBytes(filePath);
+
+                    // Return the file as a downloadable response
+                    return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "WhatsAppReport.xlsx");
+                }
+                else
+                {
+                    return BadRequest("File not found.");
+                }
+            }
+            else
+            {
+                return BadRequest(response.Message);
+            }
+        }
+
+        [HttpPost("GetWhatsAppEmployeeReport")]
+        public async Task<IActionResult> GetWhatsAppEmployeeReport([FromBody] GetWhatsAppEmployeeReportRequest request)
+        {
+            var response = await _whatsAppService.GetWhatsAppEmployeeReport(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("GetWhatsAppEmployeeReportExport")]
+        public async Task<IActionResult> GetWhatsAppEmployeeReportExport([FromBody] WhatsAppEmployeeReportExportRequest request)
+        {
+            var response = await _whatsAppService.GetWhatsAppEmployeeReportExport(request);
+
+            if (response.Success)
+            {
+                string filePath = response.Data;
+                if (System.IO.File.Exists(filePath))
+                {
+                    byte[] fileBytes = System.IO.File.ReadAllBytes(filePath);
+                    return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "WhatsAppReport.xlsx");
+                }
+                else
+                {
+                    return BadRequest("File not found.");
+                }
+            }
+            else
+            {
+                return BadRequest(response.Message);
+            }
+        }
+
     }
 }

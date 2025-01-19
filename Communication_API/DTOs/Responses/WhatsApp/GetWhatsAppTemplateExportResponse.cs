@@ -1,8 +1,7 @@
-﻿namespace Communication_API.Models.WhatsApp
+﻿namespace Communication_API.DTOs.Responses.WhatsApp
 {
-    public class WhatsAppTemplate
+    public class GetWhatsAppTemplateExportResponse
     {
-        public int WhatsAppTemplateID { get; set; }
         public string TemplateCode { get; set; }
         public string TemplateName { get; set; }
         public string TemplateMessage { get; set; }

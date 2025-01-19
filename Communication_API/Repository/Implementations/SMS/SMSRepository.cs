@@ -272,41 +272,42 @@ namespace Communication_API.Repository.Implementations.SMS
 
             // SQL query to get the total count of records based on the search, date filters, and InstituteID
             string countSql = @"
-    SELECT COUNT(*) 
-    FROM tblSMSStudent ss
-    INNER JOIN tbl_StudentMaster s ON ss.StudentID = s.student_id
-    INNER JOIN tblGroupClassSectionMapping gcsm ON gcsm.GroupID = ss.GroupID
-    INNER JOIN tbl_Class c ON gcsm.ClassID = c.class_id
-    INNER JOIN tbl_Section sec ON gcsm.SectionID = sec.section_id
-    INNER JOIN tblSMSStatus sts ON ss.SMSStatusID = sts.SMSStatusID
-    WHERE ss.SMSDate BETWEEN @StartDate AND @EndDate
-    AND (s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name) LIKE '%' + @Search + '%'
-    AND s.Institute_id = @InstituteID;";  // Added InstituteID filter
+            SELECT COUNT(*) 
+            FROM tblSMSStudent ss
+            INNER JOIN tbl_StudentMaster s ON ss.StudentID = s.student_id
+            --INNER JOIN tblGroupClassSectionMapping gcsm ON gcsm.GroupID = ss.GroupID
+            INNER JOIN tbl_Class c ON s.class_id = c.class_id
+            INNER JOIN tbl_Section sec ON s.section_id = sec.section_id
+            INNER JOIN tblSMSStatus sts ON ss.SMSStatusID = sts.SMSStatusID
+            WHERE ss.SMSDate BETWEEN @StartDate AND @EndDate
+            AND (s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name) LIKE '%' + @Search + '%'
+            AND s.Institute_id = @InstituteID;";  // Added InstituteID filter
 
             // Get the total count
             int totalCount = await _connection.ExecuteScalarAsync<int>(countSql, new { StartDate = startDate, EndDate = endDate, Search = request.Search ?? "", InstituteID = request.InstituteID });
 
             // Modify the SQL query to get the actual records, including InstituteID filter
             sql = @"
-    SELECT 
-        s.student_id AS StudentID,
-        s.Admission_Number AS AdmissionNumber,
-        s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name AS StudentName,
-        CONCAT(c.class_name, '-', sec.section_name) AS ClassSection,
-        ss.SMSDate AS DateTime,  -- SMSDate is the equivalent of ScheduleDate
-        ss.SMSMessage AS Message,  -- SMSMessage is the equivalent of Message
-        sts.SMSStatusName AS Status  -- Join with tblSMSStatus to get the status name
-    FROM tblSMSStudent ss
-    INNER JOIN tbl_StudentMaster s ON ss.StudentID = s.student_id
-    INNER JOIN tblGroupClassSectionMapping gcsm ON gcsm.GroupID = ss.GroupID
-    INNER JOIN tbl_Class c ON gcsm.ClassID = c.class_id
-    INNER JOIN tbl_Section sec ON gcsm.SectionID = sec.section_id
-    INNER JOIN tblSMSStatus sts ON ss.SMSStatusID = sts.SMSStatusID
-    WHERE ss.SMSDate BETWEEN @StartDate AND @EndDate
-    AND (s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name) LIKE '%' + @Search + '%'
-    AND s.Institute_id = @InstituteID
-    ORDER BY ss.SMSDate
-    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";  // Added InstituteID filter
+            SELECT 
+                s.student_id AS StudentID,
+                s.Admission_Number AS AdmissionNumber,
+                s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name AS StudentName,
+                CONCAT(c.class_name, '-', sec.section_name) AS ClassSection,
+                --ss.SMSDate AS DateTime,  -- SMSDate is the equivalent of ScheduleDate
+                FORMAT(ss.SMSDate, 'dd MMMM yyyy, hh:mm tt', 'en-US') AS DateTime, 
+                ss.SMSMessage AS Message,  -- SMSMessage is the equivalent of Message
+                sts.SMSStatusName AS Status  -- Join with tblSMSStatus to get the status name
+            FROM tblSMSStudent ss
+            INNER JOIN tbl_StudentMaster s ON ss.StudentID = s.student_id
+            --INNER JOIN tblGroupClassSectionMapping gcsm ON gcsm.GroupID = ss.GroupID
+            INNER JOIN tbl_Class c ON s.class_id = c.class_id
+            INNER JOIN tbl_Section sec ON s.section_id = sec.section_id
+            INNER JOIN tblSMSStatus sts ON ss.SMSStatusID = sts.SMSStatusID
+            WHERE ss.SMSDate BETWEEN @StartDate AND @EndDate
+            AND (s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name) LIKE '%' + @Search + '%'
+            AND s.Institute_id = @InstituteID
+            ORDER BY ss.SMSDate
+            OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";  // Added InstituteID filter
 
             // Calculate the offset for pagination
             int offset = (request.PageNumber - 1) * request.PageSize;
@@ -321,7 +322,7 @@ namespace Communication_API.Repository.Implementations.SMS
                 AdmissionNumber = report.AdmissionNumber,
                 StudentName = report.StudentName,
                 ClassSection = report.ClassSection,
-                DateTime = report.DateTime.ToString(),  // Format the DateTime
+                DateTime = report.DateTime,
                 Message = report.Message,
                 Status = report.Status // Assuming you want a string for status
             }).ToList();
@@ -348,14 +349,15 @@ namespace Communication_API.Repository.Implementations.SMS
                 s.Admission_Number AS AdmissionNumber,
                 s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name AS StudentName,
                 CONCAT(c.class_name, '-', sec.section_name) AS ClassSection,
-                ss.SMSDate AS DateTime,  -- SMSDate is the equivalent of ScheduleDate
+                --ss.SMSDate AS DateTime,  -- SMSDate is the equivalent of ScheduleDate
+                FORMAT(ss.SMSDate, 'dd MMMM yyyy, hh:mm tt', 'en-US') AS DateTime,  
                 ss.SMSMessage AS Message,  -- SMSMessage is the equivalent of Message
                 sts.SMSStatusName AS Status  -- Join with tblSMSStatus to get the status name
             FROM tblSMSStudent ss
             INNER JOIN tbl_StudentMaster s ON ss.StudentID = s.student_id
-            INNER JOIN tblGroupClassSectionMapping gcsm ON gcsm.GroupID = ss.GroupID
-            INNER JOIN tbl_Class c ON gcsm.ClassID = c.class_id
-            INNER JOIN tbl_Section sec ON gcsm.SectionID = sec.section_id
+            --INNER JOIN tblGroupClassSectionMapping gcsm ON gcsm.GroupID = ss.GroupID
+            INNER JOIN tbl_Class c ON s.class_id = c.class_id
+            INNER JOIN tbl_Section sec ON s.section_id = sec.section_id
             INNER JOIN tblSMSStatus sts ON ss.SMSStatusID = sts.SMSStatusID
             WHERE ss.SMSDate BETWEEN @StartDate AND @EndDate
             AND (s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name) LIKE '%' + @Search + '%'
@@ -382,9 +384,9 @@ namespace Communication_API.Repository.Implementations.SMS
             SELECT COUNT(*) 
             FROM tblSMSEmployee se
             INNER JOIN tbl_EmployeeProfileMaster e ON se.EmployeeID = e.Employee_id
-            INNER JOIN tblGroupEmployeeMapping gem ON gem.GroupID = se.GroupID
-            INNER JOIN tbl_Department d ON gem.DepartmentID = d.Department_id
-            INNER JOIN tbl_Designation de ON gem.DesignationID = de.Designation_id
+            --INNER JOIN tblGroupEmployeeMapping gem ON gem.GroupID = se.GroupID
+            INNER JOIN tbl_Department d ON e.Department_id = d.Department_id
+            INNER JOIN tbl_Designation de ON e.Designation_id = de.Designation_id
             INNER JOIN tblSMSStatus sts ON se.SMSStatusID = sts.SMSStatusID
             WHERE se.SMSDate BETWEEN @StartDate AND @EndDate
             AND (e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name) LIKE '%' + @Search + '%'
@@ -399,14 +401,15 @@ namespace Communication_API.Repository.Implementations.SMS
                 e.Employee_id AS EmployeeID, 
                 e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name AS EmployeeName,
                 CONCAT(d.DepartmentName, '-', de.DesignationName) AS DepartmentDesignation,
-                se.SMSDate AS DateTime,  -- SMSDate is the equivalent of ScheduleDate
+                --se.SMSDate AS DateTime,  -- SMSDate is the equivalent of ScheduleDate
+                FORMAT(se.SMSDate, 'dd MMMM yyyy, hh:mm tt', 'en-US') AS DateTime,  
                 se.SMSMessage AS Message,  -- SMSMessage is the equivalent of Message
                 sts.SMSStatusName AS Status  -- Join with tblSMSStatus to get the status name
             FROM tblSMSEmployee se
             INNER JOIN tbl_EmployeeProfileMaster e ON se.EmployeeID = e.Employee_id
-            INNER JOIN tblGroupEmployeeMapping gem ON gem.GroupID = se.GroupID
-            INNER JOIN tbl_Department d ON gem.DepartmentID = d.Department_id
-            INNER JOIN tbl_Designation de ON gem.DesignationID = de.Designation_id
+            --INNER JOIN tblGroupEmployeeMapping gem ON gem.GroupID = se.GroupID
+            INNER JOIN tbl_Department d ON e.Department_id = d.Department_id
+            INNER JOIN tbl_Designation de ON e.Designation_id = de.Designation_id
             INNER JOIN tblSMSStatus sts ON se.SMSStatusID = sts.SMSStatusID
             WHERE se.SMSDate BETWEEN @StartDate AND @EndDate
             AND (e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name) LIKE '%' + @Search + '%'
@@ -456,23 +459,24 @@ namespace Communication_API.Repository.Implementations.SMS
             DateTime endDate = DateTime.ParseExact(request.EndDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
 
             string sql = @"
-    SELECT
-        e.Employee_id AS EmployeeID, 
-        e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name AS EmployeeName,
-        CONCAT(d.DepartmentName, '-', de.DesignationName) AS DepartmentDesignation,
-        se.SMSDate AS DateTime,  
-        se.SMSMessage AS Message,  
-        sts.SMSStatusName AS Status  
-    FROM tblSMSEmployee se
-    INNER JOIN tbl_EmployeeProfileMaster e ON se.EmployeeID = e.Employee_id
-    INNER JOIN tblGroupEmployeeMapping gem ON gem.GroupID = se.GroupID
-    INNER JOIN tbl_Department d ON gem.DepartmentID = d.Department_id
-    INNER JOIN tbl_Designation de ON gem.DesignationID = de.Designation_id
-    INNER JOIN tblSMSStatus sts ON se.SMSStatusID = sts.SMSStatusID
-    WHERE se.SMSDate BETWEEN @StartDate AND @EndDate
-    AND (e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name) LIKE '%' + @Search + '%'
-    AND e.Institute_id = @InstituteID
-    ORDER BY se.SMSDate;";
+            SELECT
+                e.Employee_id AS EmployeeID, 
+                e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name AS EmployeeName,
+                CONCAT(d.DepartmentName, '-', de.DesignationName) AS DepartmentDesignation,
+                --se.SMSDate AS DateTime,  
+                FORMAT(se.SMSDate, 'dd MMMM yyyy, hh:mm tt', 'en-US') AS DateTime,  
+                se.SMSMessage AS Message,  
+                sts.SMSStatusName AS Status  
+            FROM tblSMSEmployee se
+            INNER JOIN tbl_EmployeeProfileMaster e ON se.EmployeeID = e.Employee_id
+            --INNER JOIN tblGroupEmployeeMapping gem ON gem.GroupID = se.GroupID
+            INNER JOIN tbl_Department d ON e.Department_id = d.Department_id
+            INNER JOIN tbl_Designation de ON e.Designation_id = de.Designation_id
+            INNER JOIN tblSMSStatus sts ON se.SMSStatusID = sts.SMSStatusID
+            WHERE se.SMSDate BETWEEN @StartDate AND @EndDate
+            AND (e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name) LIKE '%' + @Search + '%'
+            AND e.Institute_id = @InstituteID
+            ORDER BY se.SMSDate;";
 
             // Execute the query and get the result
             var result = await _connection.QueryAsync<SMSEmployeeReportExportResponse>(

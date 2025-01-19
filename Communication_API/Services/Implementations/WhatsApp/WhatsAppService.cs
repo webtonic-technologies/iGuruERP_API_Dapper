@@ -1,9 +1,13 @@
-﻿using Communication_API.DTOs.Requests.WhatsApp;
+﻿using Communication_API.DTOs.Requests.SMS;
+using Communication_API.DTOs.Requests.WhatsApp;
+using Communication_API.DTOs.Responses.SMS;
 using Communication_API.DTOs.Responses.WhatsApp;
 using Communication_API.DTOs.ServiceResponse;
 using Communication_API.Models.WhatsApp;
 using Communication_API.Repository.Interfaces.WhatsApp;
 using Communication_API.Services.Interfaces.WhatsApp;
+using OfficeOpenXml;
+using System.Text;
 
 namespace Communication_API.Services.Implementations.WhatsApp
 {
@@ -26,7 +30,7 @@ namespace Communication_API.Services.Implementations.WhatsApp
             return await _whatsAppRepository.GetBalance(VendorID);
         }
 
-        public async Task<ServiceResponse<string>> AddUpdateTemplate(AddUpdateTemplateRequest request)
+        public async Task<ServiceResponse<string>> AddUpdateTemplate(AddUpdateWhatsAppTemplateRequest request)
         {
             return await _whatsAppRepository.AddUpdateTemplate(request);
         }
@@ -34,6 +38,15 @@ namespace Communication_API.Services.Implementations.WhatsApp
         public async Task<ServiceResponse<List<WhatsAppTemplate>>> GetWhatsAppTemplate(GetWhatsAppTemplateRequest request)
         {
             return await _whatsAppRepository.GetWhatsAppTemplate(request);
+        }
+
+        public async Task<ServiceResponse<List<GetWhatsAppTemplateExportResponse>>> GetWhatsAppTemplateExport(GetWhatsAppTemplateExportRequest request)
+        {
+            // Fetch data from repository
+            var templates = await _whatsAppRepository.GetWhatsAppTemplateExport(request.InstituteID);
+
+            var response = new ServiceResponse<List<GetWhatsAppTemplateExportResponse>>(true, "Export Data Retrieved", templates, 200);
+            return response;
         }
 
         public async Task<ServiceResponse<string>> Send(SendWhatsAppRequest request)
@@ -50,16 +63,28 @@ namespace Communication_API.Services.Implementations.WhatsApp
         {
             try
             {
-                // Parse WhatsAppDate from string to DateTime
+                //// Parse WhatsAppDate from string to DateTime
+                //DateTime whatsAppDate = DateTime.ParseExact(request.WhatsAppDate, "dd-MM-yyyy", null);
+
+                //// Step 1: Insert the WhatsApp message into tblWhatsAppStudent
+                //foreach (var studentID in request.StudentIDs)
+                //{
+                //    await _whatsAppRepository.InsertWhatsAppForStudent(request.GroupID, request.InstituteID, studentID, request.WhatsAppMessage, whatsAppDate, 0); // Assuming WhatsAppStatusID is 0 (Pending)
+                //}
+
+                //return new ServiceResponse<string>(true, "WhatsApp message sent successfully to students.", "WhatsApp message added/updated successfully", 200);
+
+                // Convert SMSDate from string to DateTime
                 DateTime whatsAppDate = DateTime.ParseExact(request.WhatsAppDate, "dd-MM-yyyy", null);
 
-                // Step 1: Insert the WhatsApp message into tblWhatsAppStudent
-                foreach (var studentID in request.StudentIDs)
+                // Iterate over each studentMessage and insert SMS data into the table
+                foreach (var student in request.StudentMessages)
                 {
-                    await _whatsAppRepository.InsertWhatsAppForStudent(request.GroupID, request.InstituteID, studentID, request.WhatsAppMessage, whatsAppDate, 0); // Assuming WhatsAppStatusID is 0 (Pending)
+                    await _whatsAppRepository.InsertWhatsAppForStudent(request.GroupID, request.InstituteID, student.StudentID, student.WhatsAppMessage, whatsAppDate, 1); // Assuming SMSStatusID is 1
                 }
 
-                return new ServiceResponse<string>(true, "WhatsApp message sent successfully to students.", "WhatsApp message added/updated successfully", 200);
+                return new ServiceResponse<string>(true, "WhatsApp sent successfully to students.", "WhatsApp sent successfully", 200);
+
             }
             catch (Exception ex)
             {
@@ -71,16 +96,27 @@ namespace Communication_API.Services.Implementations.WhatsApp
         {
             try
             {
-                // Parse WhatsAppDate from string to DateTime
-                DateTime whatsAppDate = DateTime.ParseExact(request.WhatsAppDate, "dd-MM-yyyy", null);
+                // Convert SMSDate from string to DateTime
+                DateTime WhatsAppDate = DateTime.ParseExact(request.WhatsAppDate, "dd-MM-yyyy", null);
 
-                // Step 1: Insert the WhatsApp message into tblWhatsAppEmployee
-                foreach (var employeeID in request.EmployeeIDs)
+                // Iterate over each employeeMessage and insert SMS data into the table
+                foreach (var employee in request.EmployeeMessages)
                 {
-                    await _whatsAppRepository.InsertWhatsAppForEmployee(request.GroupID, request.InstituteID, employeeID, request.WhatsAppMessage, whatsAppDate, 0); // Assuming WhatsAppStatusID is 0 (Pending)
+                    await _whatsAppRepository.InsertWhatsAppForEmployee(request.GroupID, request.InstituteID, employee.EmployeeID, employee.Message, WhatsAppDate, 1); // Assuming SMSStatusID is 1
                 }
 
-                return new ServiceResponse<string>(true, "WhatsApp message sent successfully to employees.", "WhatsApp message added/updated successfully", 200);
+                return new ServiceResponse<string>(true, "WhatsApp sent successfully to employees.", "WhatsApp sent successfully", 200);
+
+                //// Parse WhatsAppDate from string to DateTime
+                //DateTime whatsAppDate = DateTime.ParseExact(request.WhatsAppDate, "dd-MM-yyyy", null);
+
+                //// Step 1: Insert the WhatsApp message into tblWhatsAppEmployee
+                //foreach (var employeeID in request.EmployeeIDs)
+                //{
+                //    await _whatsAppRepository.InsertWhatsAppForEmployee(request.GroupID, request.InstituteID, employeeID, request.WhatsAppMessage, whatsAppDate, 0); // Assuming WhatsAppStatusID is 0 (Pending)
+                //}
+
+                //return new ServiceResponse<string>(true, "WhatsApp message sent successfully to employees.", "WhatsApp message added/updated successfully", 200);
             }
             catch (Exception ex)
             {
@@ -117,5 +153,109 @@ namespace Communication_API.Services.Implementations.WhatsApp
                 return new ServiceResponse<string>(false, "Failed to update WhatsApp status", ex.Message, 500);
             }
         }
+
+        public async Task<ServiceResponse<List<WhatsAppTemplateDDLResponse>>> GetWhatsAppTemplateDDL(WhatsAppTemplateDDLRequest request)
+        {
+            return await _whatsAppRepository.GetWhatsAppTemplateDDL(request.InstituteID);
+        }
+
+        public async Task<ServiceResponse<List<WhatsAppStudentReportsResponse>>> GetWhatsAppStudentReport(GetWhatsAppStudentReportRequest request)
+        {
+            return await _whatsAppRepository.GetWhatsAppStudentReport(request);
+        }
+
+
+        public async Task<ServiceResponse<string>> GetWhatsAppStudentReportExport(WhatsAppStudentReportExportRequest request)
+        {
+            // Fetch the SMS Student report data
+            var reportData = await _whatsAppRepository.GetWhatsAppStudentReportData(request);
+
+            if (reportData == null || !reportData.Any())
+            {
+                return new ServiceResponse<string>(false, "No records found", null, 404);
+            }
+
+            // Check the ExportType and return the corresponding file
+            if (request.ExportType == 1)
+            {
+                // Generate Excel file
+                var file = GenerateExcelFile(reportData);
+                return new ServiceResponse<string>(true, "Excel file generated", file, 200);
+            }
+            else if (request.ExportType == 2)
+            {
+                // Generate CSV file
+                var file = GenerateCsvFile(reportData);
+                return new ServiceResponse<string>(true, "CSV file generated", file, 200);
+            }
+            else
+            {
+                return new ServiceResponse<string>(false, "Invalid ExportType", null, 400);
+            }
+        }
+
+        private string GenerateExcelFile(List<WhatsAppStudentReportExportResponse> data)
+        {
+            using (var package = new ExcelPackage())
+            {
+                var worksheet = package.Workbook.Worksheets.Add("WhatsApp Report");
+                worksheet.Cells[1, 1].Value = "Admission Number";
+                worksheet.Cells[1, 2].Value = "Student Name";
+                worksheet.Cells[1, 3].Value = "Class Section";
+                worksheet.Cells[1, 4].Value = "Date Time";
+                worksheet.Cells[1, 5].Value = "Message";
+                worksheet.Cells[1, 6].Value = "Status";
+
+                int row = 2;
+                foreach (var item in data)
+                {
+                    worksheet.Cells[row, 1].Value = item.AdmissionNumber;
+                    worksheet.Cells[row, 2].Value = item.StudentName;
+                    worksheet.Cells[row, 3].Value = item.ClassSection;
+                    worksheet.Cells[row, 4].Value = item.DateTime;
+                    worksheet.Cells[row, 5].Value = item.Message;
+                    worksheet.Cells[row, 6].Value = item.Status;
+                    row++;
+                }
+
+                var fileBytes = package.GetAsByteArray();
+                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "WhatsAppReport.xlsx");
+                File.WriteAllBytes(filePath, fileBytes);
+                return filePath;
+            }
+        }
+
+        private string GenerateCsvFile(List<WhatsAppStudentReportExportResponse> data)
+        {
+            var csvBuilder = new StringBuilder();
+            csvBuilder.AppendLine("Admission Number, Student Name, Class Section, Date Time, Message, Status");
+
+            foreach (var item in data)
+            {
+                csvBuilder.AppendLine($"{item.AdmissionNumber}, {item.StudentName}, {item.ClassSection}, {item.DateTime}, {item.Message}, {item.Status}");
+            }
+
+            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "WhatsAppReport.csv");
+            File.WriteAllText(filePath, csvBuilder.ToString());
+            return filePath;
+        }
+
+        public async Task<ServiceResponse<List<WhatsAppEmployeeReportsResponse>>> GetWhatsAppEmployeeReport(GetWhatsAppEmployeeReportRequest request)
+        {
+            return await _whatsAppRepository.GetWhatsAppEmployeeReport(request);
+        }
+
+        public async Task<ServiceResponse<string>> GetWhatsAppEmployeeReportExport(WhatsAppEmployeeReportExportRequest request)
+        {
+            string filePath = await _whatsAppRepository.GetWhatsAppEmployeeReportExport(request);
+
+            if (string.IsNullOrEmpty(filePath))
+            {
+                return new ServiceResponse<string>(false, "Failed to generate report", null, 400);
+            }
+
+            return new ServiceResponse<string>(true, "Excel file generated", filePath, 200);
+        }
+
     }
 }
