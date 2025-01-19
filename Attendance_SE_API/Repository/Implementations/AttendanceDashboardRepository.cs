@@ -498,6 +498,51 @@ namespace Attendance_SE_API.Repository.Implementations
         }
 
 
+        //public async Task<GetEmployeeAttendanceDashboardResponse> GetEmployeeAttendanceStatistics(int instituteId, string startDate, string endDate)
+        //{
+        //    // Convert the startDate and endDate to DateTime format (DD-MM-YYYY)
+        //    DateTime startDateTime = DateTime.ParseExact(startDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+        //    DateTime endDateTime = DateTime.ParseExact(endDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+
+        //    string query = @"
+        //WITH AttendanceStats AS (
+        //    SELECT
+        //        COUNT(DISTINCT CASE WHEN a.ClockIn <= s.LateComing THEN 1 ELSE NULL END) AS OnTimeArrivals,
+        //        COUNT(DISTINCT CASE WHEN a.ClockIn > s.LateComing THEN 1 ELSE NULL END) AS LateLogins,
+        //        COUNT(DISTINCT a.AttendanceDate) AS TotalAttendanceDays,
+        //        COUNT(DISTINCT CASE WHEN a.ClockIn IS NOT NULL THEN 1 ELSE NULL END) AS PresentDays
+        //    FROM tblBioMericAttendance a
+        //    JOIN tbl_EmployeeProfileMaster e ON a.EmployeeID = e.Employee_id
+        //    JOIN tblShiftMasterMapping smm ON e.Designation_id = smm.DesignationID
+        //    LEFT JOIN tblShiftMaster s ON smm.ShiftID = s.ShiftID
+        //    WHERE a.AttendanceDate BETWEEN @StartDate AND @EndDate
+        //        AND a.InstituteID = @InstituteID
+        //    GROUP BY a.EmployeeID
+        //)
+        //SELECT
+        //    (SUM(PresentDays) * 100.0 / SUM(TotalAttendanceDays)) AS EmployeePresent,
+        //    (SUM(LateLogins) * 100.0 / SUM(TotalAttendanceDays)) AS AvgLateLogins,
+        //    (SUM(OnTimeArrivals) * 100.0 / SUM(TotalAttendanceDays)) AS AvgOnTimeArrival
+        //FROM AttendanceStats";
+
+        //    try
+        //    {
+        //        using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection")))
+        //        {
+        //            var results = await connection.QueryFirstOrDefaultAsync<GetEmployeeAttendanceDashboardResponse>(
+        //                query,
+        //                new { InstituteID = instituteId, StartDate = startDateTime, EndDate = endDateTime });
+
+        //            return results;
+        //        }
+        //    }
+        //    catch (System.Exception ex)
+        //    {
+        //        return null; // Handle exception accordingly
+        //    }
+        //}
+
+
         public async Task<GetEmployeeAttendanceDashboardResponse> GetEmployeeAttendanceStatistics(int instituteId, string startDate, string endDate)
         {
             // Convert the startDate and endDate to DateTime format (DD-MM-YYYY)
@@ -505,25 +550,45 @@ namespace Attendance_SE_API.Repository.Implementations
             DateTime endDateTime = DateTime.ParseExact(endDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
 
             string query = @"
-        WITH AttendanceStats AS (
+            WITH AttendanceStats AS (
+                SELECT
+                    COUNT(DISTINCT CASE WHEN a.ClockIn <= s.LateComing THEN 1 ELSE NULL END) AS OnTimeArrivals,
+                    COUNT(DISTINCT CASE WHEN a.ClockIn > s.LateComing THEN 1 ELSE NULL END) AS LateLogins,
+                    COUNT(DISTINCT a.AttendanceDate) AS TotalAttendanceDays,
+                    COUNT(DISTINCT CASE WHEN a.ClockIn IS NOT NULL THEN 1 ELSE NULL END) AS PresentDays
+                FROM tblBioMericAttendance a
+                JOIN tbl_EmployeeProfileMaster e ON a.EmployeeID = e.Employee_id
+                JOIN tblShiftMasterMapping smm ON e.Designation_id = smm.DesignationID
+                LEFT JOIN tblShiftMaster s ON smm.ShiftID = s.ShiftID
+                WHERE a.AttendanceDate BETWEEN @StartDate AND @EndDate
+                    AND a.InstituteID = @InstituteID
+                GROUP BY a.EmployeeID
+            ),
+            AttendanceStats1 AS (
+                SELECT
+                    COUNT(DISTINCT CASE WHEN a.ClockIn <= s.LateComing THEN 1 ELSE NULL END) AS OnTimeArrivals,
+                    COUNT(DISTINCT CASE WHEN a.ClockIn > s.LateComing THEN 1 ELSE NULL END) AS LateLogins,
+                    COUNT(DISTINCT a.GeoFencingDate) AS TotalAttendanceDays,
+                    COUNT(DISTINCT CASE WHEN a.ClockIn IS NOT NULL THEN 1 ELSE NULL END) AS PresentDays
+                FROM tblGeoFencingEntry a
+                JOIN tbl_EmployeeProfileMaster e ON a.EmployeeID = e.Employee_id
+                JOIN tblShiftMasterMapping smm ON e.Designation_id = smm.DesignationID
+                LEFT JOIN tblShiftMaster s ON smm.ShiftID = s.ShiftID
+                WHERE a.GeoFencingDate BETWEEN @StartDate AND @EndDate
+                    AND a.InstituteID = @InstituteID
+                GROUP BY a.EmployeeID
+            )
             SELECT
-                COUNT(DISTINCT CASE WHEN a.ClockIn <= s.LateComing THEN 1 ELSE NULL END) AS OnTimeArrivals,
-                COUNT(DISTINCT CASE WHEN a.ClockIn > s.LateComing THEN 1 ELSE NULL END) AS LateLogins,
-                COUNT(DISTINCT a.AttendanceDate) AS TotalAttendanceDays,
-                COUNT(DISTINCT CASE WHEN a.ClockIn IS NOT NULL THEN 1 ELSE NULL END) AS PresentDays
-            FROM tblBioMericAttendance a
-            JOIN tbl_EmployeeProfileMaster e ON a.EmployeeID = e.Employee_id
-            JOIN tblShiftMasterMapping smm ON e.Designation_id = smm.DesignationID
-            LEFT JOIN tblShiftMaster s ON smm.ShiftID = s.ShiftID
-            WHERE a.AttendanceDate BETWEEN @StartDate AND @EndDate
-                AND a.InstituteID = @InstituteID
-            GROUP BY a.EmployeeID
-        )
-        SELECT
-            (SUM(PresentDays) * 100.0 / SUM(TotalAttendanceDays)) AS EmployeePresent,
-            (SUM(LateLogins) * 100.0 / SUM(TotalAttendanceDays)) AS AvgLateLogins,
-            (SUM(OnTimeArrivals) * 100.0 / SUM(TotalAttendanceDays)) AS AvgOnTimeArrival
-        FROM AttendanceStats";
+                (SUM(PresentDays) * 100.0 / SUM(TotalAttendanceDays)) AS EmployeePresent,
+                (SUM(LateLogins) * 100.0 / SUM(TotalAttendanceDays)) AS AvgLateLogins,
+                (SUM(OnTimeArrivals) * 100.0 / SUM(TotalAttendanceDays)) AS AvgOnTimeArrival
+            FROM (
+                SELECT PresentDays, TotalAttendanceDays, LateLogins, OnTimeArrivals
+                FROM AttendanceStats
+                UNION ALL
+                SELECT PresentDays, TotalAttendanceDays, LateLogins, OnTimeArrivals
+                FROM AttendanceStats1
+            ) AS CombinedStats;";
 
             try
             {
@@ -538,9 +603,11 @@ namespace Attendance_SE_API.Repository.Implementations
             }
             catch (System.Exception ex)
             {
-                return null; // Handle exception accordingly
+                // Handle exception accordingly, e.g., logging
+                return null;
             }
         }
+
 
         public async Task<List<GetEmployeesArrivalStatsResponse>> GetEmployeesArrivalStats(int instituteId, string startDate, string endDate)
         {
