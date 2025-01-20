@@ -138,5 +138,34 @@ namespace Transport_API.Controllers
             }
         }
 
+
+
+        [HttpPost("GetVehicleSetting")]
+        public async Task<IActionResult> GetVehicleSetting([FromBody] GetVehicleSettingRequest request)
+        {
+            try
+            {
+                var response = await _vehiclesService.GetVehicleSetting(request);
+                return StatusCode(response.StatusCode, response);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+        [HttpPost("AddRemoveVehicleSetting")]
+        public async Task<IActionResult> AddRemoveVehicleSetting([FromBody] AddRemoveVehicleSettingRequest request)
+        {
+            try
+            {
+                var response = await _vehiclesService.AddRemoveVehicleSetting(request);
+                return StatusCode(response.StatusCode, response);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Transport_API.DTOs.Requests;
+using Transport_API.DTOs.Response;
 using Transport_API.DTOs.Responses;
 using Transport_API.DTOs.ServiceResponse;
 
@@ -15,6 +16,8 @@ namespace Transport_API.Services.Interfaces
         Task<ServiceResponse<IEnumerable<GetVehicleTypeResponse>>> GetVehicleTypes();
         Task<ServiceResponse<IEnumerable<GetFuelTypeResponse>>> GetFuelTypes();
         Task<ServiceResponse<IEnumerable<GetDriverResponse>>> GetDriver(GetDriverRequest request);
+        Task<ServiceResponse<IEnumerable<GetVehicleSettingResponse>>> GetVehicleSetting(GetVehicleSettingRequest request);
+        Task<ServiceResponse<string>> AddRemoveVehicleSetting(AddRemoveVehicleSettingRequest request);
 
     }
 }

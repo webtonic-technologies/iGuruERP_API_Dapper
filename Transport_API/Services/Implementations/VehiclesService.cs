@@ -1,4 +1,5 @@
 ﻿using Transport_API.DTOs.Requests;
+using Transport_API.DTOs.Response;
 using Transport_API.DTOs.Responses;
 using Transport_API.DTOs.ServiceResponse;
 using Transport_API.Repository.Interfaces;
@@ -58,6 +59,14 @@ namespace Transport_API.Services.Implementations
         {
             return await _vehiclesRepository.GetDriver(request);
         }
+        public async Task<ServiceResponse<IEnumerable<GetVehicleSettingResponse>>> GetVehicleSetting(GetVehicleSettingRequest request)
+        {
+            return await _vehiclesRepository.GetVehicleSetting(request);
+        }
 
+        public async Task<ServiceResponse<string>> AddRemoveVehicleSetting(AddRemoveVehicleSettingRequest request)
+        {
+            return await _vehiclesRepository.AddRemoveVehicleSetting(request);
+        }
     }
 }

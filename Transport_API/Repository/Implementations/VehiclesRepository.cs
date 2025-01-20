@@ -10,6 +10,7 @@ using System.Text;
 using OfficeOpenXml;
 using System.Globalization;
 using Transport_API.DTOs.Responses;
+using Transport_API.DTOs.Response;
 
 
 namespace Transport_API.Repository.Implementations
@@ -96,10 +97,19 @@ namespace Transport_API.Repository.Implementations
             int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql, new { request.InstituteID });
 
             // Step 2: Fetch the list of active columns from tblVehicleColumnSetting
-            string columnListSql = @"SELECT STRING_AGG(DatabaseFieldName, ', ') 
-                             FROM tblVehicleColumnSetting
-                             WHERE IsActive = 1";
-            string columnList = await _dbConnection.ExecuteScalarAsync<string>(columnListSql);
+            //string columnListSql = @"SELECT STRING_AGG(DatabaseFieldName, ', ') 
+            //                 FROM tblVehicleColumnSetting
+            //                 WHERE IsActive = 1";
+
+            string columnListSql = @"SELECT STRING_AGG(VC.DatabaseFieldName, ', ') 
+                                    FROM tblVehicleColumnSetting VC
+                                    INNER JOIN tblVehicleSettingMapping VSM ON VC.VehicleColumnID = VSM.VehicleColumnID 
+                                        AND VSM.InstituteID = @InstituteID
+                                    WHERE VC.IsActive = 1 ";
+            string columnList = await _dbConnection.ExecuteScalarAsync<string>(columnListSql, new { request.InstituteID });
+
+
+            //string columnList = await _dbConnection.ExecuteScalarAsync<string>(columnListSql);
 
             // Step 3: Build the dynamic SQL query
             string sql = $@"
@@ -325,10 +335,17 @@ namespace Transport_API.Repository.Implementations
             Console.WriteLine($"InstituteID: {request.InstituteID}");
 
             // Step 1: Fetch the active column names from tblVehicleColumnSetting
-            string columnListSql = @"SELECT STRING_AGG(DatabaseFieldName, ', ') 
-                             FROM tblVehicleColumnSetting
-                             WHERE IsActive = 1";
-            string columnList = await _dbConnection.ExecuteScalarAsync<string>(columnListSql);
+            //string columnListSql = @"SELECT STRING_AGG(DatabaseFieldName, ', ') 
+            //                 FROM tblVehicleColumnSetting
+            //                 WHERE IsActive = 1";
+            //string columnList = await _dbConnection.ExecuteScalarAsync<string>(columnListSql);
+
+            string columnListSql = @"SELECT STRING_AGG(VC.DatabaseFieldName, ', ') 
+                                    FROM tblVehicleColumnSetting VC
+                                    INNER JOIN tblVehicleSettingMapping VSM ON VC.VehicleColumnID = VSM.VehicleColumnID 
+                                        AND VSM.InstituteID = @InstituteID
+                                    WHERE VC.IsActive = 1 ";
+            string columnList = await _dbConnection.ExecuteScalarAsync<string>(columnListSql, new { request.InstituteID });
 
             if (string.IsNullOrEmpty(columnList))
             {
@@ -440,10 +457,17 @@ namespace Transport_API.Repository.Implementations
             Console.WriteLine($"InstituteID: {request.InstituteID}");
 
             // Step 1: Fetch the active column names from tblVehicleColumnSetting
-            string columnListSql = @"SELECT STRING_AGG(DatabaseFieldName, ', ') 
-                             FROM tblVehicleColumnSetting
-                             WHERE IsActive = 1";
-            string columnList = await _dbConnection.ExecuteScalarAsync<string>(columnListSql);
+            //string columnListSql = @"SELECT STRING_AGG(DatabaseFieldName, ', ') 
+            //                 FROM tblVehicleColumnSetting
+            //                 WHERE IsActive = 1";
+            //string columnList = await _dbConnection.ExecuteScalarAsync<string>(columnListSql);
+
+            string columnListSql = @"SELECT STRING_AGG(VC.DatabaseFieldName, ', ') 
+                                    FROM tblVehicleColumnSetting VC
+                                    INNER JOIN tblVehicleSettingMapping VSM ON VC.VehicleColumnID = VSM.VehicleColumnID 
+                                        AND VSM.InstituteID = @InstituteID
+                                    WHERE VC.IsActive = 1 ";
+            string columnList = await _dbConnection.ExecuteScalarAsync<string>(columnListSql, new { request.InstituteID });
 
             if (string.IsNullOrEmpty(columnList))
             {
@@ -582,6 +606,48 @@ namespace Transport_API.Repository.Implementations
             }
 
             return new ServiceResponse<IEnumerable<GetDriverResponse>>(true, "Drivers fetched successfully", drivers, StatusCodes.Status200OK);
+        }
+
+
+        public async Task<ServiceResponse<IEnumerable<GetVehicleSettingResponse>>> GetVehicleSetting(GetVehicleSettingRequest request)
+        {
+            string sqlQuery = @"
+            SELECT VC.VehicleColumnID, VC.ScreenFieldName, 
+                CASE WHEN VM.VehicleColumnID IS NOT NULL THEN '1' ELSE '0' END AS Status
+            FROM tblVehicleColumnSetting VC
+            LEFT OUTER JOIN tblVehicleSettingMapping VM ON VM.VehicleColumnID = VC.VehicleColumnID
+            AND VM.InstituteID = @InstituteID";
+
+            var result = await _dbConnection.QueryAsync<GetVehicleSettingResponse>(sqlQuery, new { request.InstituteID });
+
+            return new ServiceResponse<IEnumerable<GetVehicleSettingResponse>>(
+                true, "Vehicle settings fetched successfully", result, 200);
+        }
+
+        public async Task<ServiceResponse<string>> AddRemoveVehicleSetting(AddRemoveVehicleSettingRequest request)
+        {
+            // Check if the entry already exists
+            string checkSql = @"SELECT COUNT(*) 
+                            FROM tblVehicleSettingMapping 
+                            WHERE InstituteID = @InstituteID AND VehicleColumnID = @VehicleColumnID";
+            int count = await _dbConnection.ExecuteScalarAsync<int>(checkSql, new { request.InstituteID, request.VehicleColumnID });
+
+            if (count > 0)
+            {
+                // Delete if exists
+                string deleteSql = @"DELETE FROM tblVehicleSettingMapping 
+                                 WHERE InstituteID = @InstituteID AND VehicleColumnID = @VehicleColumnID";
+                await _dbConnection.ExecuteAsync(deleteSql, new { request.InstituteID, request.VehicleColumnID });
+                return new ServiceResponse<string>(true, "Vehicle setting removed successfully", "Success", 200);
+            }
+            else
+            {
+                // Add if does not exist
+                string insertSql = @"INSERT INTO tblVehicleSettingMapping (InstituteID, VehicleColumnID)
+                                 VALUES (@InstituteID, @VehicleColumnID)";
+                await _dbConnection.ExecuteAsync(insertSql, new { request.InstituteID, request.VehicleColumnID });
+                return new ServiceResponse<string>(true, "Vehicle setting added successfully", "Success", 200);
+            }
         }
 
     }
