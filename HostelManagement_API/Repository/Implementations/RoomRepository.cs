@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using HostelManagement_API.DTOs.Requests;
 using HostelManagement_API.DTOs.Responses;
+using HostelManagement_API.DTOs.ServiceResponse; 
 using HostelManagement_API.Repository.Interfaces;
 using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
@@ -72,7 +73,7 @@ namespace HostelManagement_API.Repository.Implementations
             }
         }
 
-        public async Task<PagedResponse<RoomResponse>> GetAllRooms(GetAllRoomsRequest request)
+        public async Task<ServiceResponse<IEnumerable<RoomResponse>>> GetAllRooms(GetAllRoomsRequest request)
         {
             using (IDbConnection db = new SqlConnection(_connectionString))
             {
@@ -80,16 +81,16 @@ namespace HostelManagement_API.Repository.Implementations
                 int totalCount = await db.ExecuteScalarAsync<int>(countQuery, new { request.InstituteID });
 
                 string sqlQuery = @"
-                    SELECT 
-                        r.RoomID, r.RoomName, r.RoomTypeID, rt.RoomType AS RoomTypeName, 
-                        r.HostelID, h.HostelName, r.FloorID, f.FloorName, r.IsActive
-                    FROM tblRoom r
-                    LEFT JOIN tblRoomType rt ON r.RoomTypeID = rt.RoomTypeID
-                    LEFT JOIN tblHostel h ON r.HostelID = h.HostelID
-                    LEFT JOIN tblBuildingFloors f ON r.FloorID = f.FloorID
-                    WHERE r.InstituteID = @InstituteID and r.IsActive = 1
-                    ORDER BY r.RoomName
-                    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+            SELECT 
+                r.RoomID, r.RoomName, r.RoomTypeID, rt.RoomType AS RoomTypeName, 
+                r.HostelID, h.HostelName, r.FloorID, f.FloorName, r.IsActive
+            FROM tblRoom r
+            LEFT JOIN tblRoomType rt ON r.RoomTypeID = rt.RoomTypeID
+            LEFT JOIN tblHostel h ON r.HostelID = h.HostelID
+            LEFT JOIN tblBuildingFloors f ON r.FloorID = f.FloorID
+            WHERE r.InstituteID = @InstituteID and r.IsActive = 1
+            ORDER BY r.RoomName
+            OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
                 var rooms = await db.QueryAsync<RoomResponse>(sqlQuery, new
                 {
@@ -98,9 +99,55 @@ namespace HostelManagement_API.Repository.Implementations
                     PageSize = request.PageSize
                 });
 
-                return new PagedResponse<RoomResponse>(rooms, request.PageNumber, request.PageSize, totalCount);
+                // Create the paginated response
+                var pagedResponse = new PagedResponse<RoomResponse>(rooms, request.PageNumber, request.PageSize, totalCount);
+
+                // Return the response wrapped in ServiceResponse
+                return new ServiceResponse<IEnumerable<RoomResponse>>(true, "Rooms retrieved successfully", rooms, 200, totalCount);
             }
         }
+
+
+        //public async Task<ServiceResponse<IEnumerable<RoomResponse>>> GetAllRooms(GetAllRoomsRequest request)
+        //{
+        //    using (IDbConnection db = new SqlConnection(_connectionString))
+        //    {
+        //        string countQuery = @"SELECT COUNT(*) FROM tblRoom WHERE IsActive = 1 and InstituteID = @InstituteID";
+        //        int totalCount = await db.ExecuteScalarAsync<int>(countQuery, new { request.InstituteID });
+
+        //        string sqlQuery = @"
+        //            SELECT 
+        //                r.RoomID, r.RoomName, r.RoomTypeID, rt.RoomType AS RoomTypeName, 
+        //                r.HostelID, h.HostelName, r.FloorID, f.FloorName, r.IsActive
+        //            FROM tblRoom r
+        //            LEFT JOIN tblRoomType rt ON r.RoomTypeID = rt.RoomTypeID
+        //            LEFT JOIN tblHostel h ON r.HostelID = h.HostelID
+        //            LEFT JOIN tblBuildingFloors f ON r.FloorID = f.FloorID
+        //            WHERE r.InstituteID = @InstituteID and r.IsActive = 1
+        //            ORDER BY r.RoomName
+        //            OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+
+        //        var rooms = await db.QueryAsync<RoomResponse>(sqlQuery, new
+        //        {
+        //            request.InstituteID,
+        //            Offset = (request.PageNumber - 1) * request.PageSize,
+        //            PageSize = request.PageSize
+        //        });
+
+        //        //return new PagedResponse<RoomResponse>(rooms, request.PageNumber, request.PageSize, totalCount);
+
+        //        return new Task<ServiceResponse<IEnumerable<RoomResponse>>>(
+        //            true,
+        //            "Blocks Retrieved Successfully",
+        //            rooms,
+        //            200,
+        //            totalCount
+        //        );
+        //    }
+        //}
+
+
+
 
         public async Task<RoomResponse> GetRoomById(int roomId)
         {

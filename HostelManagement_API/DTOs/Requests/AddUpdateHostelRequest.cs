@@ -11,19 +11,18 @@ namespace HostelManagement_API.DTOs.Requests
         public string HostelName { get; set; }
         public int HostelTypeID { get; set; }
         public string HostelPhoneNo { get; set; }
-        public string HostelWarden { get; set; }
+        public int HostelWardenID { get; set; }
         public string Address { get; set; } // Added Address field
         public List<int> BlockIDs { get; set; }
         public List<int> BuildingIDs { get; set; }
-        public List<int> FloorIDs { get; set; }
-        public string Attachments { get; set; } // Path to the uploaded file
+        public List<int> FloorIDs { get; set; } 
         public int InstituteID { get; set; }
         public bool IsActive { get; set; }
         public List<HostelDocs>? HostelDocs { get; set; }
     }
     public class HostelDocs
     {
-        public int DocumentsId { get; set; }
+        public int DocumentID { get; set; }
         public int HostelId { get; set; }
         public string DocFile { get; set; } = string.Empty;
     }

@@ -17,15 +17,16 @@ namespace HostelManagement_API.Services.Implementations
             _blockRepository = blockRepository;
         }
 
-        public async Task<int> AddUpdateBlocks(AddUpdateBlocksRequest request)
+        
+        public async Task<ServiceResponse<string>>  AddUpdateBlocks(AddUpdateBlocksRequest request)
         {
             return await _blockRepository.AddUpdateBlocks(request);
         }
-
-        public async Task<ServiceResponse<PagedResponse<BlockResponse>>> GetAllBlocks(GetAllBlocksRequest request)
+ 
+        public async Task<ServiceResponse<IEnumerable<BlockResponse>>> GetAllBlocks(GetAllBlocksRequest request)
         {
-            var blocks = await _blockRepository.GetAllBlocks(request);
-            return new ServiceResponse<PagedResponse<BlockResponse>>(true, "Blocks retrieved successfully", blocks, 200);
+            return await _blockRepository.GetAllBlocks(request);  
+
         }
         public async Task<IEnumerable<BlockResponse>> GetAllBlocksFetch()
         {

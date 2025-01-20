@@ -16,16 +16,16 @@ namespace HostelManagement_API.Services.Implementations
         {
             _buildingRepository = buildingRepository;
         }
+         
 
-        public async Task<int> AddUpdateBuildings(AddUpdateBuildingsRequest request)
+        public async Task<ServiceResponse<string>>  AddUpdateBuildings(AddUpdateBuildingsRequest request)
         {
             return await _buildingRepository.AddUpdateBuildings(request);
         }
-
-        public async Task<ServiceResponse<List<GetAllBuildingsResponse>>> GetAllBuildings(GetAllBuildingsRequest request)
-        {
-            var buildings = await _buildingRepository.GetAllBuildings(request);
-            return new ServiceResponse<List<GetAllBuildingsResponse>>(true, "Buildings retrieved successfully", buildings, 200);
+         
+        public async Task<ServiceResponse<IEnumerable<GetAllBuildingsResponse>>> GetAllBuildings(GetAllBuildingsRequest request)
+        { 
+            return await _buildingRepository.GetAllBuildings(request); 
         }
 
         public async Task<ServiceResponse<BuildingResponse>> GetBuildingById(int buildingId)

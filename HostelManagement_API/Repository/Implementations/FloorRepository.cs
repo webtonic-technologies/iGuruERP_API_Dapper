@@ -8,6 +8,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
+using HostelManagement_API.DTOs.ServiceResponse;
 
 namespace HostelManagement_API.Repository.Implementations
 {
@@ -18,9 +19,9 @@ namespace HostelManagement_API.Repository.Implementations
         public FloorRepository(IConfiguration configuration)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection");
-        }
+        } 
 
-        public async Task<int> AddUpdateFloors(AddUpdateFloorsRequest request)
+        public async Task<ServiceResponse<string>> AddUpdateFloors(AddUpdateFloorsRequest request)
         {
             using (IDbConnection db = new SqlConnection(_connectionString))
             {
@@ -33,22 +34,32 @@ namespace HostelManagement_API.Repository.Implementations
                         {
                             string sqlQuery = floor.FloorID == 0
                                 ? @"INSERT INTO tblBuildingFloors (FloorName, BuildingID, InstituteID, IsActive) 
-                                    VALUES (@FloorName, @BuildingID, @InstituteID, @IsActive); 
-                                    SELECT CAST(SCOPE_IDENTITY() as int)"
+                            VALUES (@FloorName, @BuildingID, @InstituteID, @IsActive); 
+                            SELECT CAST(SCOPE_IDENTITY() as int)"
                                 : @"UPDATE tblBuildingFloors 
-                                    SET FloorName = @FloorName, BuildingID = @BuildingID, InstituteID = @InstituteID, IsActive = @IsActive
-                                    WHERE FloorID = @FloorID";
+                            SET FloorName = @FloorName, BuildingID = @BuildingID, InstituteID = @InstituteID, IsActive = @IsActive
+                            WHERE FloorID = @FloorID";
 
                             var floorId = floor.FloorID == 0
                                 ? await db.ExecuteScalarAsync<int>(sqlQuery, new { floor.FloorName, floor.BuildingID, floor.InstituteID, floor.IsActive }, transaction)
                                 : await db.ExecuteAsync(sqlQuery, new { floor.FloorName, floor.BuildingID, floor.InstituteID, floor.IsActive, floor.FloorID }, transaction);
                         }
 
+                        // Commit the transaction if successful
                         transaction.Commit();
-                        return 1; // Success code, can be improved to return meaningful result
+
+                        // Return the success response in the required format
+                        return new ServiceResponse<string>(
+                            success: true,
+                            message: "Floor(s) Added/Updated Successfully",
+                            data: "Success",
+                            statusCode: 200,
+                            totalCount: null
+                        );
                     }
                     catch
                     {
+                        // Rollback transaction in case of error
                         transaction.Rollback();
                         throw;
                     }
@@ -56,7 +67,8 @@ namespace HostelManagement_API.Repository.Implementations
             }
         }
 
-        public async Task<List<GetAllFloorsResponse>> GetAllFloors(GetAllFloorsRequest request)
+
+        public async Task<ServiceResponse<IEnumerable<GetAllFloorsResponse>>> GetAllFloors(GetAllFloorsRequest request)
         {
             using (IDbConnection db = new SqlConnection(_connectionString))
             {
@@ -77,7 +89,14 @@ namespace HostelManagement_API.Repository.Implementations
                                           })
                                           .ToList();
 
-                return groupedFloors;
+                //return groupedFloors;
+                return new ServiceResponse<IEnumerable<GetAllFloorsResponse>>(
+                    success: true,
+                    message: "Floors Retrieved Successfully",
+                    data: groupedFloors,
+                    statusCode: 200,
+                    groupedFloors.Count()
+                );
             }
         }
 

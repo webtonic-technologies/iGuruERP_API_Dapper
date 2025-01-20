@@ -8,7 +8,7 @@ namespace HostelManagement_API.Services.Interfaces
     public interface IHostelService
     {
         Task<ServiceResponse<int>> AddUpdateHostel(AddUpdateHostelRequest request);
-        Task<ServiceResponse<PagedResponse<HostelResponse>>> GetAllHostels(GetAllHostelsRequest request);
+        Task<ServiceResponse<IEnumerable<HostelResponse>>> GetAllHostels(GetAllHostelsRequest request);
         Task<ServiceResponse<HostelResponse>> GetHostelById(int hostelId);
         Task<ServiceResponse<bool>> DeleteHostel(int hostelId);
     }

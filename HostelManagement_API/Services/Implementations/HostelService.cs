@@ -1,6 +1,7 @@
 ﻿using HostelManagement_API.DTOs.Requests;
 using HostelManagement_API.DTOs.Responses;
 using HostelManagement_API.DTOs.ServiceResponse;
+using HostelManagement_API.Repository.Implementations;
 using HostelManagement_API.Repository.Interfaces;
 using HostelManagement_API.Services.Interfaces;
 using System.IO;
@@ -19,31 +20,38 @@ namespace HostelManagement_API.Services.Implementations
 
         public async Task<ServiceResponse<int>> AddUpdateHostel(AddUpdateHostelRequest request)
         {
-            if (!string.IsNullOrEmpty(request.Attachments))
-            {
-                string uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "attachments");
-                string uniqueFileName = Guid.NewGuid().ToString() + "_" + request.Attachments;
-                string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+            //if (!string.IsNullOrEmpty(request.Attachments))
+            //{
+            //    string uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "attachments");
+            //    string uniqueFileName = Guid.NewGuid().ToString() + "_" + request.Attachments;
+            //    string filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
-                if (!Directory.Exists(uploadsFolder))
-                {
-                    Directory.CreateDirectory(uploadsFolder);
-                }
+            //    if (!Directory.Exists(uploadsFolder))
+            //    {
+            //        Directory.CreateDirectory(uploadsFolder);
+            //    }
 
-                await File.WriteAllBytesAsync(filePath, Convert.FromBase64String(request.Attachments));
+            //    await File.WriteAllBytesAsync(filePath, Convert.FromBase64String(request.Attachments));
 
-                request.Attachments = filePath;
-            }
+            //    request.Attachments = filePath;
+            //}
 
             var hostelId = await _hostelRepository.AddUpdateHostel(request);
             return new ServiceResponse<int>(true, "Hostel added/updated successfully", hostelId, 200);
         }
 
-        public async Task<ServiceResponse<PagedResponse<HostelResponse>>> GetAllHostels(GetAllHostelsRequest request)
+        public async Task<ServiceResponse<IEnumerable<HostelResponse>>> GetAllHostels(GetAllHostelsRequest request)
         {
-            var hostels = await _hostelRepository.GetAllHostels(request);
-            return new ServiceResponse<PagedResponse<HostelResponse>>(true, "Hostels retrieved successfully", hostels, 200);
+            //// Call the repository to get the hostels
+            //var hostels = await _hostelRepository.GetAllHostels(request);
+
+            //// Return the ServiceResponse with the correct return type
+            //return new ServiceResponse<IEnumerable<HostelResponse>>(true, "Hostels retrieved successfully", hostels, 200);
+
+            return await _hostelRepository.GetAllHostels(request);
+
         }
+
 
         public async Task<ServiceResponse<HostelResponse>> GetHostelById(int hostelId)
         {

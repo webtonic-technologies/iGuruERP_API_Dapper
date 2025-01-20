@@ -22,17 +22,24 @@ namespace HostelManagement_API.Repository.Implementations
         {
             using (IDbConnection db = new SqlConnection(_connectionString))
             {
+                //string sqlQuery = @"
+                //    SELECT 
+                //        HostelID, 
+                //        HostelName, 
+                //        HostelTypeID, 
+                //        Address, 
+                //        HostelPhoneNo, 
+                //        '' AS HostelWarden, 
+                //        Attachments, 
+                //        InstituteID, 
+                //        IsActive 
+                //    FROM tblHostel
+                //    WHERE InstituteID = @InstituteID";
+
                 string sqlQuery = @"
                     SELECT 
                         HostelID, 
-                        HostelName, 
-                        HostelTypeID, 
-                        Address, 
-                        HostelPhoneNo, 
-                        HostelWarden, 
-                        Attachments, 
-                        InstituteID, 
-                        IsActive 
+                        HostelName
                     FROM tblHostel
                     WHERE InstituteID = @InstituteID";
                 return await db.QueryAsync<HostelFetchResponse>(sqlQuery, new { InstituteID = instituteId });

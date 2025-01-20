@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using HostelManagement_API.DTOs.Requests;
 using HostelManagement_API.DTOs.Responses;
+using HostelManagement_API.DTOs.ServiceResponse;
 using HostelManagement_API.Repository.Interfaces;
 using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
@@ -90,7 +91,7 @@ namespace HostelManagement_API.Repository.Implementations
         }
 
 
-        public async Task<PagedResponse<RoomTypeResponse>> GetAllRoomTypes(GetAllRoomTypesRequest request)
+        public async Task<ServiceResponse<IEnumerable<RoomTypeResponse>>> GetAllRoomTypes(GetAllRoomTypesRequest request)
         {
             using (IDbConnection db = new SqlConnection(_connectionString))
             {
@@ -109,7 +110,15 @@ namespace HostelManagement_API.Repository.Implementations
                     PageSize = request.PageSize
                 });
 
-                return new PagedResponse<RoomTypeResponse>(roomTypes, request.PageNumber, request.PageSize, totalCount);
+                //return new ServiceResponse<RoomTypeResponse>(roomTypes, request.PageNumber, request.PageSize, totalCount);
+
+                return new ServiceResponse<IEnumerable<RoomTypeResponse>>(
+                   success: true,
+                   message: "Blocks Retrieved Successfully",
+                   data: roomTypes,
+                   statusCode: 200,
+                   roomTypes.Count()
+               );
             }
         }
 

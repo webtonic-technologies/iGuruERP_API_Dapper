@@ -1,6 +1,7 @@
 ﻿using HostelManagement_API.DTOs.Requests;
 using HostelManagement_API.DTOs.Responses;
 using HostelManagement_API.DTOs.ServiceResponse;
+using HostelManagement_API.Repository.Implementations;
 using HostelManagement_API.Repository.Interfaces;
 using HostelManagement_API.Services.Interfaces;
 using System.Threading.Tasks;
@@ -22,10 +23,10 @@ namespace HostelManagement_API.Services.Implementations
             return new ServiceResponse<int>(true, "Room added/updated successfully", roomId, 200);
         }
 
-        public async Task<ServiceResponse<PagedResponse<RoomResponse>>> GetAllRooms(GetAllRoomsRequest request)
-        {
-            var rooms = await _roomRepository.GetAllRooms(request);
-            return new ServiceResponse<PagedResponse<RoomResponse>>(true, "Rooms retrieved successfully", rooms, 200);
+        public async Task<ServiceResponse<IEnumerable<RoomResponse>>> GetAllRooms(GetAllRoomsRequest request)
+        { 
+            return await _roomRepository.GetAllRooms(request);
+
         }
 
         public async Task<ServiceResponse<RoomResponse>> GetRoomById(int roomId)

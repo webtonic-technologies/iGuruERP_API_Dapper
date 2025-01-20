@@ -8,7 +8,7 @@ namespace HostelManagement_API.Services.Interfaces
     public interface IRoomService
     {
         Task<ServiceResponse<int>> AddUpdateRoom(AddUpdateRoomRequest request);
-        Task<ServiceResponse<PagedResponse<RoomResponse>>> GetAllRooms(GetAllRoomsRequest request);
+        Task<ServiceResponse<IEnumerable<RoomResponse>>> GetAllRooms(GetAllRoomsRequest request);
         Task<ServiceResponse<RoomResponse>> GetRoomById(int roomId);
         Task<ServiceResponse<bool>> DeleteRoom(int roomId);
     }

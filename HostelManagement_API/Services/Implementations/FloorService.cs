@@ -15,17 +15,17 @@ namespace HostelManagement_API.Services.Implementations
         public FloorService(IFloorRepository floorRepository)
         {
             _floorRepository = floorRepository;
-        }
+        } 
 
-        public async Task<int> AddUpdateFloors(AddUpdateFloorsRequest request)
+        public async Task<ServiceResponse<string>> AddUpdateFloors(AddUpdateFloorsRequest request)
         {
             return await _floorRepository.AddUpdateFloors(request);
-        }
+        } 
 
-        public async Task<ServiceResponse<List<GetAllFloorsResponse>>> GetAllFloors(GetAllFloorsRequest request)
-        {
-            var floors = await _floorRepository.GetAllFloors(request);
-            return new ServiceResponse<List<GetAllFloorsResponse>>(true, "Floors retrieved successfully", floors, 200);
+        public async Task<ServiceResponse<IEnumerable<GetAllFloorsResponse>>> GetAllFloors(GetAllFloorsRequest request)
+        { 
+            return await _floorRepository.GetAllFloors(request);
+
         }
 
         public async Task<ServiceResponse<FloorResponse>> GetFloorById(int floorId)

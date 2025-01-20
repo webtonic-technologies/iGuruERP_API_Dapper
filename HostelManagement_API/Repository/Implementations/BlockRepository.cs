@@ -8,6 +8,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
+using HostelManagement_API.DTOs.ServiceResponse;
 
 namespace HostelManagement_API.Repository.Implementations
 {
@@ -20,7 +21,7 @@ namespace HostelManagement_API.Repository.Implementations
             _connectionString = configuration.GetConnectionString("DefaultConnection");
         }
 
-        public async Task<int> AddUpdateBlocks(AddUpdateBlocksRequest request)
+        public async Task<ServiceResponse<string>> AddUpdateBlocks(AddUpdateBlocksRequest request)
         {
             using (IDbConnection db = new SqlConnection(_connectionString))
             {
@@ -33,11 +34,11 @@ namespace HostelManagement_API.Repository.Implementations
                         {
                             string sqlQuery = block.BlockID == 0
                                 ? @"INSERT INTO tblBlock (BlockName, InstituteID, IsActive) 
-                                    VALUES (@BlockName, @InstituteID, @IsActive); 
-                                    SELECT CAST(SCOPE_IDENTITY() as int)"
+                            VALUES (@BlockName, @InstituteID, @IsActive); 
+                            SELECT CAST(SCOPE_IDENTITY() as int)"
                                 : @"UPDATE tblBlock 
-                                    SET BlockName = @BlockName, InstituteID = @InstituteID, IsActive = @IsActive
-                                    WHERE BlockID = @BlockID";
+                            SET BlockName = @BlockName, InstituteID = @InstituteID, IsActive = @IsActive
+                            WHERE BlockID = @BlockID";
 
                             var blockId = block.BlockID == 0
                                 ? await db.ExecuteScalarAsync<int>(sqlQuery, new { block.BlockName, block.InstituteID, block.IsActive }, transaction)
@@ -45,7 +46,14 @@ namespace HostelManagement_API.Repository.Implementations
                         }
 
                         transaction.Commit();
-                        return 1; // Success code, can be improved to return meaningful result
+
+                        return new ServiceResponse<string>(
+                            success: true,
+                            message: "Block(s) Added/Updated Successfully",
+                            data: "Success",
+                            statusCode: 200,
+                            totalCount: null
+                        );
                     }
                     catch
                     {
@@ -56,7 +64,8 @@ namespace HostelManagement_API.Repository.Implementations
             }
         }
 
-        public async Task<PagedResponse<BlockResponse>> GetAllBlocks(GetAllBlocksRequest request)
+
+        public async Task<ServiceResponse<IEnumerable<BlockResponse>>> GetAllBlocks(GetAllBlocksRequest request)
         {
             using (IDbConnection db = new SqlConnection(_connectionString))
             {
@@ -74,7 +83,8 @@ namespace HostelManagement_API.Repository.Implementations
                     PageSize = request.PageSize
                 });
 
-                return new PagedResponse<BlockResponse>(blocks, request.PageNumber, request.PageSize, totalCount);
+                return new ServiceResponse<IEnumerable<BlockResponse>>(true, "Blocks Retrieved Successfully", blocks, statusCode: 200, totalCount);
+                 
             }
         }
         public async Task<IEnumerable<BlockResponse>> GetAllBlocksFetch()
@@ -84,7 +94,7 @@ namespace HostelManagement_API.Repository.Implementations
                 string sqlQuery = @"
                     SELECT 
                         BlockID, BlockName, InstituteID, IsActive
-                    FROM tblBlock
+                    FROM tblBlock WHERE IsActive = 1
                     ORDER BY BlockName";
 
                 var blocks = await db.QueryAsync<BlockResponse>(sqlQuery);

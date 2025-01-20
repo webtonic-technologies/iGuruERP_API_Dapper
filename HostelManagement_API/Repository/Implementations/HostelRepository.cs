@@ -18,6 +18,8 @@ namespace HostelManagement_API.Repository.Implementations
             _connectionString = configuration.GetConnectionString("DefaultConnection");
             _hostingEnvironment = hostingEnvironment;
         }
+
+
         public async Task<int> AddUpdateHostel(AddUpdateHostelRequest request)
         {
             using (IDbConnection db = new SqlConnection(_connectionString))
@@ -28,17 +30,16 @@ namespace HostelManagement_API.Repository.Implementations
                     try
                     {
                         string sqlQuery = request.HostelID == 0
-                            ? @"INSERT INTO tblHostel (HostelName, HostelTypeID, HostelPhoneNo, HostelWarden, Address, InstituteID, IsActive, Attachments) 
-                                VALUES (@HostelName, @HostelTypeID, @HostelPhoneNo, @HostelWarden, @Address, @InstituteID, @IsActive, @Attachments); 
+                            ? @"INSERT INTO tblHostel (HostelName, HostelTypeID, HostelPhoneNo, HostelWardenID, Address, InstituteID, IsActive) 
+                                VALUES (@HostelName, @HostelTypeID, @HostelPhoneNo, @HostelWardenID, @Address, @InstituteID, @IsActive); 
                                 SELECT CAST(SCOPE_IDENTITY() as int)"
                             : @"UPDATE tblHostel 
                                 SET HostelName = @HostelName, HostelTypeID = @HostelTypeID, HostelPhoneNo = @HostelPhoneNo, 
-                                    HostelWarden = @HostelWarden, Address = @Address, InstituteID = @InstituteID, IsActive = @IsActive, Attachments = @Attachments 
-                                WHERE HostelID = @HostelID";
+                                    HostelWardenID = @HostelWardenID, Address = @Address, InstituteID = @InstituteID, IsActive = @IsActive WHERE HostelID = @HostelID";
 
                         var hostelId = request.HostelID == 0
-                            ? await db.ExecuteScalarAsync<int>(sqlQuery, new { request.HostelName, request.HostelTypeID, request.HostelPhoneNo, request.HostelWarden, request.Address, request.InstituteID, request.IsActive, request.Attachments }, transaction)
-                            : await db.ExecuteAsync(sqlQuery, new { request.HostelName, request.HostelTypeID, request.HostelPhoneNo, request.HostelWarden, request.Address, request.InstituteID, request.IsActive, request.Attachments, request.HostelID }, transaction);
+                            ? await db.ExecuteScalarAsync<int>(sqlQuery, new { request.HostelName, request.HostelTypeID, request.HostelPhoneNo, request.HostelWardenID, request.Address, request.InstituteID, request.IsActive }, transaction)
+                            : await db.ExecuteAsync(sqlQuery, new { request.HostelName, request.HostelTypeID, request.HostelPhoneNo, request.HostelWardenID, request.Address, request.InstituteID, request.IsActive, request.HostelID }, transaction);
 
                         if (request.HostelID == 0)
                         {
@@ -91,54 +92,134 @@ namespace HostelManagement_API.Repository.Implementations
                 }
             }
         }
-        public async Task<PagedResponse<HostelResponse>> GetAllHostels(GetAllHostelsRequest request)
+        public async Task<ServiceResponse<IEnumerable<HostelResponse>>> GetAllHostels(GetAllHostelsRequest request)
         {
             using (IDbConnection db = new SqlConnection(_connectionString))
             {
+                // Count the total number of records
                 string countQuery = @"SELECT COUNT(*) FROM tblHostel WHERE InstituteID = @InstituteID";
                 int totalCount = await db.ExecuteScalarAsync<int>(countQuery, new { request.InstituteID });
 
+                // Query to retrieve hostel details
                 string sqlQuery = @"
-                    SELECT 
-                        h.HostelID, h.HostelName, h.HostelTypeID, ht.HostelType, h.Address, h.HostelPhoneNo AS PhoneNo, 
-                        h.HostelWarden, e.First_Name, b.BlockName AS Block, 
-                        (SELECT STRING_AGG(bl.BuildingName, ', ') 
-                         FROM tblHostelBuildingMapping hbm2 
-                         JOIN tblBuilding bl ON hbm2.BuildingID = bl.BuildingID 
-                         WHERE hbm2.HostelID = h.HostelID) AS Building,
-                        (SELECT STRING_AGG(f.FloorName + ' – ' + bl.BuildingName, ', ') 
-                         FROM tblHostelFloorMapping hfm 
-                         JOIN tblBuildingFloors f ON hfm.FloorID = f.FloorID 
-                         JOIN tblBuilding bl ON f.BuildingID = bl.BuildingID
-                         WHERE hfm.HostelID = h.HostelID) AS Floors
-                    FROM tblHostel h
-                    LEFT JOIN tblHostelType ht ON h.HostelTypeID = ht.HostelTypeID
-                    LEFT JOIN tblHostelBlockMapping hbm ON h.HostelID = hbm.HostelID
-                    LEFT JOIN tblBlock b ON hbm.BlockID = b.BlockID
-                    LEFT JOIN tbl_EmployeeProfileMaster e ON h.HostelWarden = e.Employee_id
-                    WHERE h.InstituteID = 1
-                    GROUP BY h.HostelID, h.HostelName, h.HostelTypeID, ht.HostelType, h.Address, h.HostelPhoneNo, h.HostelWarden, e.First_Name, b.BlockName
-                    ORDER BY h.HostelName
-                    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+                SELECT h.HostelID, 
+                       h.HostelName, 
+                       h.HostelTypeID, 
+                       ht.HostelType, 
+                       h.Address, 
+                       h.HostelPhoneNo AS PhoneNo, 
+                       e.First_Name AS HostelWarden, 
+                       Blocks.Block AS Block, 
+                       Building.Building AS Building, 
+                       Floors.Floor AS Floors
+                FROM tblHostel h
+                LEFT JOIN tblHostelType ht ON h.HostelTypeID = ht.HostelTypeID
+                LEFT JOIN tbl_EmployeeProfileMaster e ON h.HostelWardenID = e.Employee_id
+                LEFT JOIN (
+                    SELECT hbm.HostelID, STRING_AGG(b.BlockName, ', ') AS Block
+                    FROM tblHostelBlockMapping hbm
+                    JOIN tblBlock b ON hbm.BlockID = b.BlockID
+                    GROUP BY hbm.HostelID
+                ) Blocks ON h.HostelID = Blocks.HostelID
+                LEFT JOIN (
+                    SELECT hbm.HostelID, STRING_AGG(bl.BuildingName, ', ') AS Building
+                    FROM tblHostelBuildingMapping hbm
+                    JOIN tblBuilding bl ON hbm.BuildingID = bl.BuildingID
+                    GROUP BY hbm.HostelID
+                ) Building ON h.HostelID = Building.HostelID
+                LEFT JOIN (
+                    SELECT hfm.HostelID, STRING_AGG(f.FloorName + ' – ' + bl.BuildingName, ', ') AS Floor
+                    FROM tblHostelFloorMapping hfm
+                    JOIN tblBuildingFloors f ON hfm.FloorID = f.FloorID
+                    JOIN tblBuilding bl ON f.BuildingID = bl.BuildingID
+                    GROUP BY hfm.HostelID
+                ) Floors ON h.HostelID = Floors.HostelID
+                WHERE h.InstituteID = @InstituteID
+                ORDER BY h.HostelName
+                OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+
+                // Fetch the list of hostels
                 var hostels = await db.QueryAsync<HostelResponse>(sqlQuery, new
                 {
                     request.InstituteID,
                     Offset = (request.PageNumber - 1) * request.PageSize,
                     PageSize = request.PageSize
                 });
+
+                // For each hostel, fetch its documents
                 foreach (var data in hostels)
                 {
                     data.HostelDocs = await GetHostelDocuments(data.HostelID);
                 }
-                return new PagedResponse<HostelResponse>(hostels, request.PageNumber, request.PageSize, totalCount);
+
+                // Return the paginated result wrapped in ServiceResponse
+                return new ServiceResponse<IEnumerable<HostelResponse>>(true, "Hostels Retrieved Successfully", hostels, 200, totalCount);
             }
         }
+
+        //public async Task<HostelResponse> GetHostelById(int hostelId)
+        //{
+        //    using (IDbConnection db = new SqlConnection(_connectionString))
+        //    {
+        //        string sqlQuery = @"SELECT * FROM tblHostel WHERE HostelID = @HostelID";
+        //        var data = await db.QueryFirstOrDefaultAsync<HostelResponse>(sqlQuery, new { HostelID = hostelId });
+        //        if (data != null)
+        //        {
+        //            data.HostelDocs = await GetHostelDocuments(hostelId);
+        //            return data;
+        //        }
+        //        else
+        //        {
+        //            return data;
+        //        }
+        //    }
+        //}
+
+
         public async Task<HostelResponse> GetHostelById(int hostelId)
         {
             using (IDbConnection db = new SqlConnection(_connectionString))
             {
-                string sqlQuery = @"SELECT * FROM tblHostel WHERE HostelID = @HostelID";
+                // SQL query to get hostel details along with blocks, buildings, and floors
+                string sqlQuery = @"
+                SELECT h.HostelID, 
+                       h.HostelName, 
+                       h.HostelTypeID, 
+                       ht.HostelType, 
+                       h.Address, 
+                       h.HostelPhoneNo AS PhoneNo, 
+                       e.First_Name AS HostelWarden, 
+                       Blocks.Block AS Block, 
+                       Building.Building AS Building, 
+                       Floors.Floor AS Floors
+                FROM tblHostel h
+                LEFT JOIN tblHostelType ht ON h.HostelTypeID = ht.HostelTypeID
+                LEFT JOIN tbl_EmployeeProfileMaster e ON h.HostelWardenID = e.Employee_id
+                LEFT JOIN (
+                    SELECT hbm.HostelID, STRING_AGG(b.BlockName, ', ') AS Block
+                    FROM tblHostelBlockMapping hbm
+                    JOIN tblBlock b ON hbm.BlockID = b.BlockID
+                    GROUP BY hbm.HostelID
+                ) Blocks ON h.HostelID = Blocks.HostelID
+                LEFT JOIN (
+                    SELECT hbm.HostelID, STRING_AGG(bl.BuildingName, ', ') AS Building
+                    FROM tblHostelBuildingMapping hbm
+                    JOIN tblBuilding bl ON hbm.BuildingID = bl.BuildingID
+                    GROUP BY hbm.HostelID
+                ) Building ON h.HostelID = Building.HostelID
+                LEFT JOIN (
+                    SELECT hfm.HostelID, STRING_AGG(f.FloorName + ' – ' + bl.BuildingName, ', ') AS Floor
+                    FROM tblHostelFloorMapping hfm
+                    JOIN tblBuildingFloors f ON hfm.FloorID = f.FloorID
+                    JOIN tblBuilding bl ON f.BuildingID = bl.BuildingID
+                    GROUP BY hfm.HostelID
+                ) Floors ON h.HostelID = Floors.HostelID
+                WHERE h.HostelID = @HostelID";
+
+                // Query the database for hostel details by HostelID
                 var data = await db.QueryFirstOrDefaultAsync<HostelResponse>(sqlQuery, new { HostelID = hostelId });
+
+                // If data is found, fetch the documents associated with the hostel
                 if (data != null)
                 {
                     data.HostelDocs = await GetHostelDocuments(hostelId);
@@ -146,10 +227,12 @@ namespace HostelManagement_API.Repository.Implementations
                 }
                 else
                 {
-                    return data;
+                    return null; // Return null if no data is found
                 }
             }
         }
+
+
         public async Task<int> DeleteHostel(int hostelId)
         {
             using (IDbConnection db = new SqlConnection(_connectionString))
@@ -250,7 +333,7 @@ namespace HostelManagement_API.Repository.Implementations
                 await connection.OpenAsync();
 
                 string sql = @"
-        SELECT DocumentsId, HostelId, DocFile
+        SELECT DocumentID, HostelId, DocFile
         FROM tblHostelDocuments
         WHERE HostelId = @HostelId";
 

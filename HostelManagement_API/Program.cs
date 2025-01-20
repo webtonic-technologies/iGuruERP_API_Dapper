@@ -58,6 +58,20 @@ builder.Services.AddTransient<IHostelTypeService, HostelTypeService>();
 builder.Services.AddTransient<IHostelFetchRepository, HostelFetchRepository>();
 builder.Services.AddTransient<IHostelFetchService, HostelFetchService>();
 
+builder.Services.AddTransient<IAllocationRepository, AllocationRepository>();
+builder.Services.AddTransient<IAllocationService, AllocationService>();
+
+builder.Services.AddTransient<IBedInformationRepository, BedInformationRepository>();
+builder.Services.AddTransient<IBedInformationService, BedInformationService>(); 
+
+builder.Services.AddTransient<IHostelAttendanceRepository, HostelAttendanceRepository>();
+builder.Services.AddTransient<IHostelAttendanceService, HostelAttendanceService>();
+
+builder.Services.AddTransient<IMealManagementRepository, MealManagementRepository>();
+builder.Services.AddTransient<IMealManagementService, MealManagementService>();
+
+builder.Services.AddTransient<IMealAttendanceRepository, MealAttendanceRepository>();
+builder.Services.AddTransient<IMealAttendanceService, MealAttendanceService>();
 
 var app = builder.Build();
 

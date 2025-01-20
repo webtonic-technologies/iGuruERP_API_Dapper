@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 namespace HostelManagement_API.Services.Interfaces
 {
     public interface IBuildingService
-    {
-        Task<int> AddUpdateBuildings(AddUpdateBuildingsRequest request);
-        Task<ServiceResponse<List<GetAllBuildingsResponse>>> GetAllBuildings(GetAllBuildingsRequest request);  // Corrected return type
+    { 
+        Task<ServiceResponse<string>> AddUpdateBuildings(AddUpdateBuildingsRequest request);
+        Task<ServiceResponse<IEnumerable<GetAllBuildingsResponse>>> GetAllBuildings(GetAllBuildingsRequest request);
         Task<IEnumerable<BuildingResponse>> GetAllBuildingsFetch();
         Task<ServiceResponse<BuildingResponse>> GetBuildingById(int buildingId);
         Task<ServiceResponse<int>> DeleteBuilding(int buildingId);
