@@ -266,9 +266,9 @@ namespace Employee_API.Controllers
             }
         }
         [HttpPost("DownloadExcelSheet")]
-        public async Task<IActionResult> DownloadExcelSheet(DownloadExcelRequest request, [FromQuery] string format = "excel")
+        public async Task<IActionResult> DownloadExcelSheet(ExcelDownloadRequest request, [FromQuery] string format = "excel")
         {
-            var response = await _employeeLoginsServices.DownloadEmployeeActivity(request, format);
+            var response = await _employeeLoginsServices.DownloadExcelSheet(request, format);
 
             if (response.Success)
             {
@@ -288,7 +288,7 @@ namespace Employee_API.Controllers
         [HttpPost("DownloadExcelSheetNonAppUsers")]
         public async Task<IActionResult> DownloadExcelSheetNonAppUsers(DownloadExcelRequest request, [FromQuery] string format = "excel")
         {
-            var response = await _employeeLoginsServices.DownloadEmployeeActivity(request, format);
+            var response = await _employeeLoginsServices.DownloadExcelSheetNonAppUsers(request, format);
 
             if (response.Success)
             {
