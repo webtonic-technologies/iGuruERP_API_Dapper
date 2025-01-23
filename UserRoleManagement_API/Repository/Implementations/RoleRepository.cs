@@ -550,7 +550,6 @@ namespace UserRoleManagement_API.Repository.Implementations
             }
         }
 
-
         public async Task<ServiceResponse<string>> AssignRole(AssignRoleRequest request)
         {
             if (_connection.State == ConnectionState.Closed)

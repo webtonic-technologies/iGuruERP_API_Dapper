@@ -108,11 +108,37 @@ namespace Employee_API.DTOs
     }
     public class LoginResposne
     {
-        public string Username { get; set; } = string.Empty;
-        public string UserType { get; set; } = string.Empty;
-        public int UserId {  get; set; }
+        public string Username { get; set; }
+        public int UserId { get; set; }
         public int InstituteId { get; set; }
+        public string UserType { get; set; }
+        public List<ModuleResponse> ModulesAndSubmodules { get; set; } = new List<ModuleResponse>();
     }
+
+    public class ModuleResponse
+    {
+        public int ModuleID { get; set; }
+        public string ModuleName { get; set; }
+        public bool IsActive { get; set; }
+       // public int IsApp { get; set; }
+        public List<SubModuleResponse> Submodules { get; set; } = new List<SubModuleResponse>();
+    }
+
+    public class SubModuleResponse
+    {
+        public int SubModuleID { get; set; }
+        public string SubModuleName { get; set; }
+        public bool IsActive { get; set; }
+        public List<FunctionalityResponse> Functionalities { get; set; } = new List<FunctionalityResponse>();
+    }
+
+    public class FunctionalityResponse
+    {
+        public int FunctionalityId { get; set; }
+        public string Functionality { get; set; }
+        public bool IsActive { get; set; }
+    }
+
     public class EmployeeStaffMappingResponse
     {
         public int EmployeeId { get; set; }

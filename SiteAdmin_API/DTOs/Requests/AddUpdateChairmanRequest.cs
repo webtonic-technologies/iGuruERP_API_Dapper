@@ -15,4 +15,11 @@
     {
         public int InstituteID { get; set; }  // InstituteID to be inserted into tblInstituteChairmanAssociation
     }
+    public class CreateUserRequest
+    {
+        public string Name { get; set; }
+        public string MobileNumber { get; set; }
+      //  public string EmailID { get; set; }
+    }
+
 }

@@ -36,7 +36,16 @@ namespace SiteAdmin_API.Controllers
             }
             return BadRequest(response);
         }
-
+        [HttpPost("Chairman/CreateUserLoginInfo")]
+        public async Task<IActionResult> CreateUserLoginInfo(CreateUserRequest request)
+        {
+            var response = await _chairmanService.CreateUserLoginInfo(request);
+            if (response.Success)
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
+        }
         [HttpDelete("Chairman/DeleteChairman")]
         public async Task<IActionResult> DeleteChairman([FromBody] DeleteChairmanRequest request)
         {
