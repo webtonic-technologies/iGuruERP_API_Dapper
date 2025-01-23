@@ -949,13 +949,12 @@ LEFT JOIN tblUserLogs us ON us.UserId = emp.Employee_id
             try
             {
                 var response = new LoginResposne();
-                // Ensure the connection is open
                 if (_connection.State == ConnectionState.Closed)
                 {
                     _connection.Open();
                 }
 
-                // Step 1: Check the login credentials
+                // Step 1: Validate login credentials
                 var loginInfoQuery = @"
             SELECT TOP 1 [UserId], [UserType], [UserName], [Password], [InstituteId]
             FROM tblLoginInformationMaster
@@ -1009,29 +1008,99 @@ LEFT JOIN tblUserLogs us ON us.UserId = emp.Employee_id
                         };
                     }
                 }
+                else if (loginInfo.UserType == 3) // Chairman
+                {
+                    var chairmanQuery = @"
+                SELECT TOP 1 [ChairmanID], [Name], [MobileNumber], [EmailID], [UserName], [InstituteId]
+                FROM [tblInstituteChairman]
+                WHERE [ChairmanID] = @UserId";
+
+                    var chairmanInfo = await _connection.QueryFirstOrDefaultAsync<dynamic>(chairmanQuery, new { UserId = loginInfo.UserId });
+
+                    if (chairmanInfo != null)
+                    {
+                        response = new LoginResposne
+                        {
+                            Username = chairmanInfo.Name,
+                            InstituteId = chairmanInfo.InstituteId,
+                            UserType = "Chairman",
+                            UserId = chairmanInfo.ChairmanID
+                        };
+                    }
+                }
                 else
                 {
-                    return new ServiceResponse<LoginResposne>(false, "Unknown user type.", new LoginResposne(), 500);
+                    return new ServiceResponse<LoginResposne>(false, "Unsupported user type.", new LoginResposne(), 500);
                 }
 
-                // Step 3: Log the login details in tblUserLogs
+                // Step 3: Fetch roles for the user
+                var roleQuery = @"
+            SELECT DISTINCT [RoleID]
+            FROM [tblUserRoleMapping]
+            WHERE [EmployeeID] = @UserId";
+
+                var roleIds = await _connection.QueryAsync<int>(roleQuery, new { UserId = response.UserId });
+
+                if (!roleIds.Any())
+                {
+                    return new ServiceResponse<LoginResposne>(false, "No roles assigned to this user.", new LoginResposne(), 500);
+                }
+
+                // Step 4: Fetch modules, submodules, and functionalities for all roles
+                var modulesQuery = @"
+            SELECT DISTINCT m.[ModuleID], m.[ModuleName], m.[IsActive],
+                            sm.[SubModuleID], sm.[SubModuleName], sm.[IsActive] AS SubModuleIsActive,
+                            f.[FunctionalityId], f.[Functionality], f.[IsActive] AS FunctionalityIsActive
+            FROM [tblUserRoleSettingMapping] rsm
+            INNER JOIN [tblModule] m ON rsm.[ModuleID] = m.[ModuleID]
+            INNER JOIN [tblSubModule] sm ON rsm.[SubModuleID] = sm.[SubModuleID]
+            INNER JOIN [tblFunctionality] f ON rsm.[FunctionalityID] = f.[FunctionalityId]
+            WHERE rsm.[RoleID] IN @RoleIds";
+
+                var moduleData = await _connection.QueryAsync<dynamic>(modulesQuery, new { RoleIds = roleIds.ToList() });
+
+                // Step 5: Map the data into the desired structure
+                var modules = moduleData.GroupBy(m => new { m.ModuleID, m.ModuleName, m.IsActive })
+                                        .Select(moduleGroup => new ModuleResponse
+                                        {
+                                            ModuleID = moduleGroup.Key.ModuleID,
+                                            ModuleName = moduleGroup.Key.ModuleName,
+                                            IsActive = moduleGroup.Key.IsActive,
+                                            Submodules = moduleGroup.GroupBy(sm => new { sm.SubModuleID, sm.SubModuleName, sm.SubModuleIsActive })
+                                                                    .Select(subModuleGroup => new SubModuleResponse
+                                                                    {
+                                                                        SubModuleID = subModuleGroup.Key.SubModuleID,
+                                                                        SubModuleName = subModuleGroup.Key.SubModuleName,
+                                                                        IsActive = subModuleGroup.Key.SubModuleIsActive,
+                                                                        Functionalities = subModuleGroup.Select(f => new FunctionalityResponse
+                                                                        {
+                                                                            FunctionalityId = f.FunctionalityId,
+                                                                            Functionality = f.Functionality,
+                                                                            IsActive = f.FunctionalityIsActive
+                                                                        }).ToList()
+                                                                    }).ToList()
+                                        }).ToList();
+
+                response.ModulesAndSubmodules = modules;
+
+                // Step 6: Log the login details in tblUserLogs
                 var insertLogQuery = @"
-    INSERT INTO tblUserLogs 
-    ([UserId], [UserTypeId], [LoginTime], [IsAppUser], [brand], [device], [fingerprint], [model], 
-     [serialNumber], [type], [version_sdkInt], [version_securityPatch], [build_id], [isPhysicalDevice], 
-     [systemName], [systemVersion], [utsname_version], [operSysName], [browserName], [appName], [appVersion], 
-     [deviceMemory], [platform], [kernelVersion], [computerName], [systemGUID])
-    VALUES (@UserId, @UserTypeId, @LoginTime, @IsAppUser, @Brand, @Device, @Fingerprint, @Model, 
-            @SerialNumber, @Type, @VersionSdkInt, @VersionSecurityPatch, @BuildId, @IsPhysicalDevice, 
-            @SystemName, @SystemVersion, @UtsnameVersion, @OperSysName, @BrowserName, @AppName, @AppVersion, 
-            @DeviceMemory, @Platform, @KernelVersion, @ComputerName, @SystemGUID)";
+            INSERT INTO tblUserLogs 
+            ([UserId], [UserTypeId], [LoginTime], [IsAppUser], [brand], [device], [fingerprint], [model], 
+             [serialNumber], [type], [version_sdkInt], [version_securityPatch], [build_id], [isPhysicalDevice], 
+             [systemName], [systemVersion], [utsname_version], [operSysName], [browserName], [appName], [appVersion], 
+             [deviceMemory], [platform], [kernelVersion], [computerName], [systemGUID])
+            VALUES (@UserId, @UserTypeId, @LoginTime, @IsAppUser, @Brand, @Device, @Fingerprint, @Model, 
+                    @SerialNumber, @Type, @VersionSdkInt, @VersionSecurityPatch, @BuildId, @IsPhysicalDevice, 
+                    @SystemName, @SystemVersion, @UtsnameVersion, @OperSysName, @BrowserName, @AppName, @AppVersion, 
+                    @DeviceMemory, @Platform, @KernelVersion, @ComputerName, @SystemGUID)";
 
                 var logParams = new
                 {
                     UserId = response.UserId,
-                    UserTypeId = response.UserType == "Student" ? 2 : 1,
+                    UserTypeId = response.UserType == "Student" ? 2 : response.UserType == "Chairman" ? 3 : 1,
                     LoginTime = DateTime.Now,
-                    request.IsAppUser, // Using IsAppUser from the request body
+                    request.IsAppUser,
                     request.Brand,
                     request.Device,
                     request.Fingerprint,
@@ -1062,13 +1131,10 @@ LEFT JOIN tblUserLogs us ON us.UserId = emp.Employee_id
             }
             catch (Exception ex)
             {
-                // Handle any exceptions and return failure response
-
                 return new ServiceResponse<LoginResposne>(false, ex.Message, new LoginResposne(), 500);
             }
             finally
             {
-                // Ensure the connection is closed
                 if (_connection.State == ConnectionState.Open)
                 {
                     _connection.Close();
