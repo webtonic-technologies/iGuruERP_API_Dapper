@@ -9,8 +9,8 @@ namespace Admission_API.Repository.Interfaces
     public interface INumberSchemeRepository
     {
         Task<ServiceResponse<string>> AddUpdateNumberScheme(NumberScheme request);
-        Task<ServiceResponse<List<NumberScheme>>> GetAllNumberSchemes(GetAllRequest request);
-        Task<ServiceResponse<NumberScheme>> GetNumberSchemeById(int schemeID);
+        Task<ServiceResponse<List<NumberSchemeResponse>>> GetAllNumberSchemes(GetAllRequest request);
+        Task<ServiceResponse<NumberSchemeResponse>> GetNumberSchemeById(int schemeID);
         Task<ServiceResponse<bool>> DeleteNumberScheme(int schemeID);
     }
 }

@@ -18,11 +18,12 @@ namespace Admission_API.Controllers
         }
 
         [HttpPost("AddUpdateLeadStages")]
-        public async Task<IActionResult> AddUpdateLeadStage(LeadStage request)
+        public async Task<IActionResult> AddUpdateLeadStages([FromBody] List<LeadStage> request)
         {
             var result = await _leadStageService.AddUpdateLeadStage(request);
             return StatusCode(result.StatusCode, result);
         }
+
 
         [HttpPost("GetAllLeadStages")]
         public async Task<IActionResult> GetAllLeadStages(GetAllRequest request)

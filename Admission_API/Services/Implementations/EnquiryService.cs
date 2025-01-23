@@ -1,4 +1,5 @@
 ﻿using Admission_API.DTOs.Requests;
+using Admission_API.DTOs.Response;
 using Admission_API.DTOs.ServiceResponse;
 using Admission_API.Models;
 using Admission_API.Repository.Interfaces;
@@ -17,14 +18,22 @@ namespace Admission_API.Services.Implementations
             _repository = repository;
         }
 
-        public async Task<ServiceResponse<string>> AddEnquiry(Enquiry request)
+        public async Task<ServiceResponse<string>> AddEnquiry(List<EnquiryRequest> requests, int leadStageID, int InstituteID)
         {
-            return await _repository.AddEnquiry(request);
+            return await _repository.AddEnquiry(requests, leadStageID, InstituteID);
         }
 
-        public async Task<ServiceResponse<List<Enquiry>>> GetAllEnquiries(GetAllRequest request)
+        public async Task<ServiceResponse<List<GetAllEnquiryResponse>>> GetAllEnquiries(GetAllRequest request)
         {
             return await _repository.GetAllEnquiries(request);
+        } 
+        public async Task<ServiceResponse<List<GetEnquiryListResponse>>> GetEnquiryList(GetEnqueryListRequest request)
+        {
+            return await _repository.GetEnquiryList(request);
+        }
+        public async Task<ServiceResponse<List<GetLeadInformationResponse>>> GetLeadInformation(GetLeadInformationRequest request)
+        {
+            return await _repository.GetLeadInformation(request);
         }
 
         public async Task<ServiceResponse<string>> SendEnquiryMessage(SendEnquiryMessageRequest request)
@@ -36,5 +45,11 @@ namespace Admission_API.Services.Implementations
         {
             return await _repository.GetSMSReport();
         }
+
+        public async Task<ServiceResponse<string>> AddLeadComment(AddLeadCommentRequest request)
+        {
+            return await _repository.AddLeadComment(request);
+        }
+
     }
 }

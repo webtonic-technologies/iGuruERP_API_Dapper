@@ -22,12 +22,12 @@ namespace Admission_API.Services.Implementations
             return await _repository.AddUpdateNumberScheme(request);
         }
 
-        public async Task<ServiceResponse<List<NumberScheme>>> GetAllNumberSchemes(GetAllRequest request)
+        public async Task<ServiceResponse<List<NumberSchemeResponse>>> GetAllNumberSchemes(GetAllRequest request)
         {
             return await _repository.GetAllNumberSchemes(request);
         }
 
-        public async Task<ServiceResponse<NumberScheme>> GetNumberSchemeById(int schemeID)
+        public async Task<ServiceResponse<NumberSchemeResponse>> GetNumberSchemeById(int schemeID)
         {
             return await _repository.GetNumberSchemeById(schemeID);
         }

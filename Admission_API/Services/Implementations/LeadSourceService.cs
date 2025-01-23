@@ -17,17 +17,18 @@ namespace Admission_API.Services.Implementations
             _repository = repository;
         }
 
-        public async Task<ServiceResponse<string>> AddUpdateLeadSource(LeadSource request)
+        public async Task<ServiceResponse<string>> AddUpdateLeadSource(List<LeadSource> request)
         {
             return await _repository.AddUpdateLeadSource(request);
         }
 
-        public async Task<ServiceResponse<List<LeadSource>>> GetAllLeadSources(GetAllRequest request)
+
+        public async Task<ServiceResponse<List<LeadSourceResponse>>> GetAllLeadSources(GetAllRequest request)
         {
             return await _repository.GetAllLeadSources(request);
         }
 
-        public async Task<ServiceResponse<LeadSource>> GetLeadSourceById(int leadSourceID)
+        public async Task<ServiceResponse<LeadSourceResponse>> GetLeadSourceById(int leadSourceID)
         {
             return await _repository.GetLeadSourceById(leadSourceID);
         }

@@ -8,9 +8,9 @@ namespace Admission_API.Repository.Interfaces
 {
     public interface ILeadSourceRepository
     {
-        Task<ServiceResponse<string>> AddUpdateLeadSource(LeadSource request);
-        Task<ServiceResponse<List<LeadSource>>> GetAllLeadSources(GetAllRequest request);
-        Task<ServiceResponse<LeadSource>> GetLeadSourceById(int leadSourceID);
+        Task<ServiceResponse<string>> AddUpdateLeadSource(List<LeadSource> request);  // Updated to accept List<LeadSource>
+        Task<ServiceResponse<List<LeadSourceResponse>>> GetAllLeadSources(GetAllRequest request);
+        Task<ServiceResponse<LeadSourceResponse>> GetLeadSourceById(int leadSourceID);
         Task<ServiceResponse<bool>> UpdateLeadSourceStatus(int leadSourceID);
     }
 }

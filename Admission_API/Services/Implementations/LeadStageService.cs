@@ -17,10 +17,16 @@ namespace Admission_API.Services.Implementations
             _repository = repository;
         }
 
-        public async Task<ServiceResponse<string>> AddUpdateLeadStage(LeadStage request)
+        //public async Task<ServiceResponse<string>> AddUpdateLeadStage(LeadStage request)
+        //{
+        //    return await _repository.AddUpdateLeadStage(request);
+        //}
+
+        public async Task<ServiceResponse<string>> AddUpdateLeadStage(List<LeadStage> request)
         {
             return await _repository.AddUpdateLeadStage(request);
         }
+
 
         public async Task<ServiceResponse<List<LeadStage>>> GetAllLeadStages(GetAllRequest request)
         {

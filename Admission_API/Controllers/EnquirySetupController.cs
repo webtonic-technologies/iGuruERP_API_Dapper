@@ -1,5 +1,6 @@
 ﻿using Admission_API.DTOs.Requests;
 using Admission_API.Models;
+using Admission_API.Services.Implementations;
 using Admission_API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
@@ -16,13 +17,14 @@ namespace Admission_API.Controllers
         {
             _enquirySetupService = enquirySetupService;
         }
-
+ 
         [HttpPost("AddUpdateEnquirySetup")]
-        public async Task<IActionResult> AddUpdateEnquirySetup(EnquirySetup request)
+        public async Task<IActionResult> AddUpdateEnquirySetup([FromBody] EnquirySetup request)
         {
-            var result = await _enquirySetupService.AddUpdateEnquirySetup(request);
+            var result = await _enquirySetupService.AddUpdateEnquirySetup(request, request.Options);
             return StatusCode(result.StatusCode, result);
         }
+         
 
         [HttpPost("GetAllEnquirySetup")]
         public async Task<IActionResult> GetAllEnquirySetups(GetAllRequest request)
@@ -35,6 +37,20 @@ namespace Admission_API.Controllers
         public async Task<IActionResult> DeleteEnquirySetup(int EnquirySetupID)
         {
             var result = await _enquirySetupService.DeleteEnquirySetup(EnquirySetupID);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpPut("FormStatus/{EnquirySetupID}")]
+        public async Task<IActionResult> FormStatus(int EnquirySetupID)
+        {
+            var result = await _enquirySetupService.FormStatus(EnquirySetupID);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpPut("MandatoryStatus/{EnquirySetupID}")]
+        public async Task<IActionResult> MandatoryStatus(int EnquirySetupID)
+        {
+            var result = await _enquirySetupService.MandatoryStatus(EnquirySetupID);
             return StatusCode(result.StatusCode, result);
         }
     }

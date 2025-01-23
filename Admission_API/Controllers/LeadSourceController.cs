@@ -17,12 +17,13 @@ namespace Admission_API.Controllers
             _leadSourceService = leadSourceService;
         }
 
-        [HttpPost("AddUpdateLeadSource")]
-        public async Task<IActionResult> AddUpdateLeadSource(LeadSource request)
+        [HttpPost("AddUpdateLeadSources")]
+        public async Task<IActionResult> AddUpdateLeadSources([FromBody] List<LeadSource> request)
         {
             var result = await _leadSourceService.AddUpdateLeadSource(request);
             return StatusCode(result.StatusCode, result);
         }
+
 
         [HttpPost("GetAllLeadSource")]
         public async Task<IActionResult> GetAllLeadSources(GetAllRequest request)

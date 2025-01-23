@@ -18,9 +18,9 @@ namespace Admission_API.Controllers
         }
 
         [HttpPost("AddEnquiry")]
-        public async Task<IActionResult> AddEnquiry(Enquiry request)
+        public async Task<IActionResult> AddEnquiry(List<EnquiryRequest> requests, int leadStageID, int InstituteID)
         {
-            var result = await _enquiryService.AddEnquiry(request);
+            var result = await _enquiryService.AddEnquiry(requests, leadStageID, InstituteID);
             return StatusCode(result.StatusCode, result);
         }
 
@@ -31,12 +31,34 @@ namespace Admission_API.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
+        [HttpPost("GetEnquiryList")]
+        public async Task<IActionResult> GetEnquiryList(GetEnqueryListRequest request)
+        {
+            var result = await _enquiryService.GetEnquiryList(request);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpPost("GetLeadInformation")]
+        public async Task<IActionResult> GetLeadInformation(GetLeadInformationRequest request)
+        {
+            var result = await _enquiryService.GetLeadInformation(request);
+            return StatusCode(result.StatusCode, result);
+        }
+
         [HttpPost("SendEnquiryMessage/{EnquiryID}")]
         public async Task<IActionResult> SendEnquiryMessage(SendEnquiryMessageRequest request)
         {
             var result = await _enquiryService.SendEnquiryMessage(request);
             return StatusCode(result.StatusCode, result);
         }
+
+        [HttpPost("AddLeadComment")]
+        public async Task<IActionResult> AddLeadComment(AddLeadCommentRequest request)
+        {
+            var result = await _enquiryService.AddLeadComment(request);
+            return StatusCode(result.StatusCode, result);
+        }
+
     }
 
     [Route("iGuru/Enquiry/SMSReport")]

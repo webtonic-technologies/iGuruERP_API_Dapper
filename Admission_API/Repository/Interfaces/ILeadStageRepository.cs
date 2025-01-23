@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 namespace Admission_API.Repository.Interfaces
 {
     public interface ILeadStageRepository
-    {
-        Task<ServiceResponse<string>> AddUpdateLeadStage(LeadStage request);
+    { 
+        Task<ServiceResponse<string>> AddUpdateLeadStage(List<LeadStage> request); 
         Task<ServiceResponse<List<LeadStage>>> GetAllLeadStages(GetAllRequest request);
         Task<ServiceResponse<LeadStage>> GetLeadStageById(int leadStageID);
         Task<ServiceResponse<bool>> UpdateLeadStageStatus(int leadStageID);
