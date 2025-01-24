@@ -56,18 +56,20 @@ namespace SiteAdmin_API.Repository.Implementations
 
             return response;
         }
-
         private string GenerateUsername(string name, string mobileNumber)
         {
+            // Extract the first 4 letters of the name, removing any spaces
+            string namePrefix = new string(name.Replace(" ", "").Take(2).ToArray()).ToUpper();
+
             // Extract the last 4 digits of the mobile number
             string mobileSuffix = mobileNumber.Length >= 4 ? mobileNumber[^4..] : mobileNumber;
 
-            // Combine name and mobile suffix
-            string username = $"{name.Replace(" ", "").ToLower()}{mobileSuffix}";
+            // Combine the two to form the username
+            string username = $"CH{namePrefix}{mobileSuffix}";
 
-            // Ensure username length is within limits
-            return username.Length > 10 ? username.Substring(0, 10) : username;
+            return username;
         }
+
         public async Task<ServiceResponse<string>> AddUpdateChairman(AddUpdateChairmanRequest request)
         {
             try
@@ -93,19 +95,16 @@ namespace SiteAdmin_API.Repository.Implementations
                     string insertLoginSql = @"
                     INSERT INTO [tblLoginInformationMaster] 
                     ([UserId], [UserType], [UserName], [Password], [InstituteId], [UserActivity])
-                    VALUES (@UserId, @UserType, @UserName, @Password, @InstituteId, NULL)";
-                    foreach (var data in request.Institutes)
+                    VALUES (@UserId, @UserType, @UserName, @Password, NULL, NULL)";
+
+                    // Insert login information into the database
+                    await _dbConnection.ExecuteAsync(insertLoginSql, new
                     {
-                        // Insert login information into the database
-                        await _dbConnection.ExecuteAsync(insertLoginSql, new
-                        {
-                            UserId = chairmanID,
-                            UserType = 3,
-                            UserName = request.UserName,
-                            Password = request.Password,
-                            InstituteId = data.InstituteID
-                        });
-                    }
+                        UserId = chairmanID,
+                        UserType = 3,
+                        UserName = request.UserName,
+                        Password = request.Password
+                    });
                 }
                 else
                 {
@@ -126,7 +125,7 @@ namespace SiteAdmin_API.Repository.Implementations
 
                     chairmanID = request.ChairmanID;  // Use the existing ChairmanID if updating
                 }
-
+         
                 // Check if chairman insert/update was successful
                 if (chairmanID > 0)
                 {

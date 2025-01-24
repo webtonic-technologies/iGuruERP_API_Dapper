@@ -5,6 +5,7 @@ using SiteAdmin_API.DTOs.ServiceResponse;
 using SiteAdmin_API.Models;
 using SiteAdmin_API.Repository.Interfaces;
 using System.Data;
+using System.Data.Common;
 using System.Globalization;
 
 namespace SiteAdmin_API.Repository.Implementations
@@ -57,6 +58,23 @@ namespace SiteAdmin_API.Repository.Implementations
                                               SELECT CAST(SCOPE_IDENTITY() as int)";
 
                         instituteOnboardId = await _connection.QuerySingleAsync<int>(insertInstituteSql, new { request.InstituteOnboardName, request.AliasName, request.CountryID, request.StateID, request.City, request.Pincode }, transaction);
+                        // SQL query to insert login information
+                        string insertLoginSql = @"
+                    INSERT INTO [tblLoginInformationMaster] 
+                    ([UserId], [UserType], [UserName], [Password], [InstituteId], [UserActivity])
+                    VALUES (@UserId, @UserType, @UserName, @Password, NULL, NULL)";
+
+                        foreach (var data in request.InstituteOnboardCredentials)
+                        {
+                            // Insert login information into the database
+                            await _connection.ExecuteAsync(insertLoginSql, new
+                            {
+                                UserId = instituteOnboardId,
+                                UserType = 4,
+                                UserName = data.UserName,
+                                Password = data.Password
+                            });
+                        }
                     }
 
                     // Insert into tblInstituteOnboardContact
@@ -147,7 +165,59 @@ namespace SiteAdmin_API.Repository.Implementations
             }
         }
 
+        public async Task<ServiceResponse<CreateUserResponse>> CreateUserLoginInfo(CreateUserRequest request)
+        {
+            var response = new ServiceResponse<CreateUserResponse>(true, string.Empty, null, 200);
+            try
+            {
+                // Validate the input
+                if (string.IsNullOrWhiteSpace(request.Name) || string.IsNullOrWhiteSpace(request.MobileNumber))
+                {
+                    response.Success = false;
+                    response.Message = "Invalid input. Name, MobileNumber are required.";
+                    return response;
+                }
 
+                // Generate username by combining Name and last 4 digits of MobileNumber
+                string username = GenerateUsername(request.Name, request.MobileNumber);
+
+                // Define a common password
+                string commonPassword = "123456";
+
+                // Prepare the response
+                response.Success = true;
+                response.Message = "User created successfully.";
+                response.Data = new CreateUserResponse
+                {
+                    UserName = username,
+                    Password = commonPassword
+                };
+            }
+            catch (Exception ex)
+            {
+                // Log the exception
+                Console.WriteLine($"Error creating user login info: {ex.Message}");
+
+                // Return failure response
+                response.Success = false;
+                response.Message = "An error occurred while creating the user.";
+            }
+
+            return response;
+        }
+        private string GenerateUsername(string name, string mobileNumber)
+        {
+            // Extract the first 4 letters of the name, removing any spaces
+            string namePrefix = new string(name.Replace(" ", "").Take(2).ToArray()).ToUpper();
+
+            // Extract the last 4 digits of the mobile number
+            string mobileSuffix = mobileNumber.Length >= 4 ? mobileNumber[^4..] : mobileNumber;
+
+            // Combine the two to form the username
+            string username = $"SA{namePrefix}{mobileSuffix}";
+
+            return username;
+        }
         public async Task<ServiceResponse<List<InstituteOnboard>>> GetAllInstituteOnboard(int pageNumber, int pageSize)
         {
             try
@@ -246,8 +316,6 @@ namespace SiteAdmin_API.Repository.Implementations
                 return new ServiceResponse<List<InstituteOnboard>>(false, ex.Message, null, 500);
             }
         }
-
-
 
         //public async Task<ServiceResponse<InstituteOnboard>> GetInstituteOnboardById(int instituteOnboardId)
         //{

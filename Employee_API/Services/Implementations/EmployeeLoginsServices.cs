@@ -2,6 +2,7 @@
 using Employee_API.DTOs.ServiceResponse;
 using Employee_API.Repository.Interfaces;
 using Employee_API.Services.Interfaces;
+using Microsoft.SqlServer.Server;
 
 namespace Employee_API.Services.Implementations
 {
@@ -128,6 +129,11 @@ namespace Employee_API.Services.Implementations
         public async Task<ServiceResponse<UserSwitchOverResponse>> UserSwitchOver(UserSwitchOverRequest request)
         {
             return await _employeeLoginsRepository.UserSwitchOver(request);
+        }
+
+        public async Task<ServiceResponse<string>> CaptureDeviceDetails(DeviceDetails request)
+        {
+            return await _employeeLoginsRepository.CaptureDeviceDetails(request);
         }
     }
 }

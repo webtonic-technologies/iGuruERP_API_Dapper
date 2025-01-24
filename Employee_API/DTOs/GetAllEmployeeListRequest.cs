@@ -29,6 +29,11 @@
     {
         public string Username { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
+    }
+    public class DeviceDetails
+    {
+        public int UserId {  get; set; }
+        public int UserTypeId {  set; get; }
         public bool IsAppUser { get; set; } // Added IsAppUser
         public string Brand { get; set; } = string.Empty;
         public string Device { get; set; } = string.Empty;

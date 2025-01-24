@@ -1082,23 +1082,58 @@ LEFT JOIN tblUserLogs us ON us.UserId = emp.Employee_id
                                         }).ToList();
 
                 response.ModulesAndSubmodules = modules;
-
-                // Step 6: Log the login details in tblUserLogs
-                var insertLogQuery = @"
-            INSERT INTO tblUserLogs 
-            ([UserId], [UserTypeId], [LoginTime], [IsAppUser], [brand], [device], [fingerprint], [model], 
-             [serialNumber], [type], [version_sdkInt], [version_securityPatch], [build_id], [isPhysicalDevice], 
-             [systemName], [systemVersion], [utsname_version], [operSysName], [browserName], [appName], [appVersion], 
-             [deviceMemory], [platform], [kernelVersion], [computerName], [systemGUID])
-            VALUES (@UserId, @UserTypeId, @LoginTime, @IsAppUser, @Brand, @Device, @Fingerprint, @Model, 
-                    @SerialNumber, @Type, @VersionSdkInt, @VersionSecurityPatch, @BuildId, @IsPhysicalDevice, 
-                    @SystemName, @SystemVersion, @UtsnameVersion, @OperSysName, @BrowserName, @AppName, @AppVersion, 
-                    @DeviceMemory, @Platform, @KernelVersion, @ComputerName, @SystemGUID)";
+                return new ServiceResponse<LoginResposne>(true, "Login successful.", response, 500);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<LoginResposne>(false, ex.Message, new LoginResposne(), 500);
+            }
+            finally
+            {
+                if (_connection.State == ConnectionState.Open)
+                {
+                    _connection.Close();
+                }
+            }
+        }
+        public async Task<ServiceResponse<string>> CaptureDeviceDetails(DeviceDetails request)
+        {
+            try
+            {
+                var updateLogQuery = @"
+UPDATE tblUserLogs
+SET 
+    [LoginTime] = @LoginTime,
+    [IsAppUser] = @IsAppUser,
+    [brand] = @Brand,
+    [device] = @Device,
+    [fingerprint] = @Fingerprint,
+    [model] = @Model,
+    [serialNumber] = @SerialNumber,
+    [type] = @Type,
+    [version_sdkInt] = @VersionSdkInt,
+    [version_securityPatch] = @VersionSecurityPatch,
+    [build_id] = @BuildId,
+    [isPhysicalDevice] = @IsPhysicalDevice,
+    [systemName] = @SystemName,
+    [systemVersion] = @SystemVersion,
+    [utsname_version] = @UtsnameVersion,
+    [operSysName] = @OperSysName,
+    [browserName] = @BrowserName,
+    [appName] = @AppName,
+    [appVersion] = @AppVersion,
+    [deviceMemory] = @DeviceMemory,
+    [platform] = @Platform,
+    [kernelVersion] = @KernelVersion,
+    [computerName] = @ComputerName,
+    [systemGUID] = @SystemGUID
+WHERE 
+    [UserId] = @UserId AND [UserTypeId] = @UserTypeId";
 
                 var logParams = new
                 {
-                    UserId = response.UserId,
-                    UserTypeId = response.UserType == "Student" ? 2 : response.UserType == "Chairman" ? 3 : 1,
+                    UserId = request.UserId,
+                    UserTypeId = request.UserTypeId,
                     LoginTime = DateTime.Now,
                     request.IsAppUser,
                     request.Brand,
@@ -1125,20 +1160,14 @@ LEFT JOIN tblUserLogs us ON us.UserId = emp.Employee_id
                     request.SystemGUID
                 };
 
-                await _connection.ExecuteAsync(insertLogQuery, logParams);
+                await _connection.ExecuteAsync(updateLogQuery, logParams);
 
-                return new ServiceResponse<LoginResposne>(true, "Login successful.", response, 500);
+
+                return new ServiceResponse<string>(true, "Operation successful", string.Empty, 500);
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<LoginResposne>(false, ex.Message, new LoginResposne(), 500);
-            }
-            finally
-            {
-                if (_connection.State == ConnectionState.Open)
-                {
-                    _connection.Close();
-                }
+                return new ServiceResponse<string>(false, ex.Message, string.Empty, 500);
             }
         }
         public async Task<ServiceResponse<string>> UserLogout(string username)

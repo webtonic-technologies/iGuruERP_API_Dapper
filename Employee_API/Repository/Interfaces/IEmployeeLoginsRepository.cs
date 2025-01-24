@@ -16,5 +16,6 @@ namespace Employee_API.Repository.Interfaces
         Task<ServiceResponse<UserSwitchOverResponse>> UserSwitchOver(UserSwitchOverRequest request);
         Task<ServiceResponse<ForgetPasswordResponse>> ForgetPassword(ForgotPassword request);
         Task<ServiceResponse<bool>> ResetPassword(ResetPassword request);
+        Task<ServiceResponse<string>> CaptureDeviceDetails(DeviceDetails request);
     }
 }

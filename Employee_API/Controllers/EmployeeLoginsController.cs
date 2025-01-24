@@ -324,5 +324,27 @@ namespace Employee_API.Controllers
 
             return StatusCode(response.StatusCode, response.Message);
         }
+
+        [HttpPost("CaptureDeviceDetails")]
+        public async Task<IActionResult> CaptureDeviceDetails(DeviceDetails request)
+        {
+            try
+            {
+                var data = await _employeeLoginsServices.CaptureDeviceDetails(request);
+                if (data != null)
+                {
+                    return Ok(data);
+                }
+                else
+                {
+                    return BadRequest("Bad Request");
+                }
+
+            }
+            catch (Exception e)
+            {
+                return this.BadRequest(e.Message);
+            }
+        }
     }
 }
