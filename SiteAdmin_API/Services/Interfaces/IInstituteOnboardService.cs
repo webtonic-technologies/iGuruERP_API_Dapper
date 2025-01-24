@@ -14,7 +14,7 @@ namespace SiteAdmin_API.Services.Interfaces
         Task<ServiceResponse<List<GetPackageDDLResponse>>> GetPackageDDL();
         Task<ServiceResponse<GetAllInstituteInfoResponse>> GetAllInstituteInfo(GetAllInstituteInfoRequest request);
         Task<ServiceResponse<int>> AddAdmissionURL(AddAdmissionURLRequest request);
-        Task<ServiceResponse<IEnumerable<ActivityLogsResponse>>> GetActivityLogs(ActivityLogsRequest request); 
-
+        Task<ServiceResponse<IEnumerable<ActivityLogsResponse>>> GetActivityLogs(ActivityLogsRequest request);
+        Task<ServiceResponse<CreateUserResponse>> CreateUserLoginInfo(CreateUserRequest request);
     }
 }

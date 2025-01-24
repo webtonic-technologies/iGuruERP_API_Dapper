@@ -55,5 +55,10 @@ namespace SiteAdmin_API.Services.Implementations
         {
             return await _instituteOnboardRepository.GetActivityLogs(request.InstituteOnboardID);
         }
+
+        public async Task<ServiceResponse<CreateUserResponse>> CreateUserLoginInfo(CreateUserRequest request)
+        {
+            return await _instituteOnboardRepository.CreateUserLoginInfo(request);
+        }
     }
 }

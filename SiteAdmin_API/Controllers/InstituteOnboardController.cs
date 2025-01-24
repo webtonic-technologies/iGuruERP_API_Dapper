@@ -71,5 +71,11 @@ namespace SiteAdmin_API.Controllers
             var response = await _instituteOnboardService.GetActivityLogs(request);
             return StatusCode(response.StatusCode, response);
         }
+        [HttpPost("CreateUserLoginInfo")]
+        public async Task<IActionResult> CreateUserLoginInfo(CreateUserRequest request)
+        {
+            var response = await _instituteOnboardService.CreateUserLoginInfo(request);
+            return StatusCode(response.StatusCode, response);
+        }
     }
 }
