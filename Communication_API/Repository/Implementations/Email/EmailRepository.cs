@@ -208,6 +208,10 @@ namespace Communication_API.Repository.Implementations.Email
                 EmailDate = emailDate,
                 EmailStatusID = emailStatusID
             });
+            string receiverEmailQuery = @"SELECT s.student_id, spi.Email_id FROM tbl_StudentMaster s LEFT JOIN tbl_StudentParentsInfo spi ON s.student_id = spi.student_id where s.student_id = @student_id";
+            string receiverEmail = await _connection.QueryFirstOrDefaultAsync<string>(receiverEmailQuery, new { student_id = studentID });
+            var email = new SendEmail();
+            email.SendEmailWithAttachmentAsync(receiverEmail, string.Empty, emailSubject, emailBody);
         }
         public async Task InsertEmailForEmployee(int groupID, int instituteID, int employeeID, string emailSubject, string emailBody, DateTime emailDate, int emailStatusID)
         {
@@ -225,6 +229,9 @@ namespace Communication_API.Repository.Implementations.Email
                 EmailDate = emailDate,
                 EmailStatusID = emailStatusID
             });
+            string receiverEmail = await _connection.QueryFirstOrDefaultAsync<string>(@"select EmailID from tbl_EmployeeProfileMaster where Employee_id = @Employee_id", new { Employee_id = employeeID });
+            var email = new SendEmail();
+            email.SendEmailWithAttachmentAsync(receiverEmail, string.Empty, emailSubject, emailBody);
         }
 
         public async Task UpdateEmailStatusForStudent(int groupID, int instituteID, int studentID, int emailStatusID)
