@@ -22,33 +22,78 @@ namespace LibraryManagement_API.Repository.Implementations
             _connection = new SqlConnection(configuration.GetConnectionString("DefaultConnection"));
         }
 
-        public async Task<ServiceResponse<string>> AddUpdateCategory(Category request)
+        public async Task<ServiceResponse<string>> AddUpdateCategories(List<Category> requests)
         {
-            try
+            using (var connection = _connection)
             {
-                string sql = request.CategoryID == 0 ?
-                    @"INSERT INTO tblLibraryCategory (InstituteID, LibraryCategoryName, Code, IsActive) 
-                      VALUES (@InstituteID, @LibraryCategoryName, @Code, @IsActive)" :
-                    @"UPDATE tblLibraryCategory SET InstituteID = @InstituteID, LibraryCategoryName = @LibraryCategoryName, 
-                      Code = @Code, IsActive = @IsActive WHERE LibraryCategoryID = @CategoryID";
-
-                int rowsAffected = await _connection.ExecuteAsync(sql, new
+                try
                 {
-                    request.InstituteID,
-                    LibraryCategoryName = request.CategoryName, // Map CategoryName to LibraryCategoryName
-                    request.Code,
-                    request.IsActive,
-                    request.CategoryID
-                });
+                    connection.Open();
+                    using (var transaction = connection.BeginTransaction())
+                    {
+                        foreach (var category in requests)
+                        {
+                            string sql = category.CategoryID == 0
+                                ? @"INSERT INTO tblLibraryCategory (InstituteID, LibraryCategoryName, Code, IsActive) 
+                              VALUES (@InstituteID, @LibraryCategoryName, @Code, @IsActive)"
+                                : @"UPDATE tblLibraryCategory 
+                              SET InstituteID = @InstituteID, 
+                                  LibraryCategoryName = @LibraryCategoryName, 
+                                  Code = @Code, 
+                                  IsActive = @IsActive 
+                              WHERE LibraryCategoryID = @CategoryID";
 
-                return new ServiceResponse<string>(rowsAffected > 0, rowsAffected > 0 ? "Success" : "Failure",
-                    rowsAffected > 0 ? "Category saved successfully" : "Failed to save category", rowsAffected > 0 ? 200 : 400);
-            }
-            catch (Exception ex)
-            {
-                return new ServiceResponse<string>(false, ex.Message, null, 500);
+                            await connection.ExecuteAsync(sql, new
+                            {
+                                category.InstituteID,
+                                LibraryCategoryName = category.CategoryName, // Map CategoryName to LibraryCategoryName
+                                category.Code,
+                                category.IsActive,
+                                category.CategoryID
+                            }, transaction);
+                        }
+
+                        // Commit the transaction if all operations succeed
+                        transaction.Commit();
+                        return new ServiceResponse<string>(true, "All categories saved successfully", null, 200);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Rollback the transaction in case of failure
+                    return new ServiceResponse<string>(false, ex.Message, null, 500);
+                }
             }
         }
+
+
+        //public async Task<ServiceResponse<string>> AddUpdateCategory(Category request)
+        //{
+        //    try
+        //    {
+        //        string sql = request.CategoryID == 0 ?
+        //            @"INSERT INTO tblLibraryCategory (InstituteID, LibraryCategoryName, Code, IsActive) 
+        //              VALUES (@InstituteID, @LibraryCategoryName, @Code, @IsActive)" :
+        //            @"UPDATE tblLibraryCategory SET InstituteID = @InstituteID, LibraryCategoryName = @LibraryCategoryName, 
+        //              Code = @Code, IsActive = @IsActive WHERE LibraryCategoryID = @CategoryID";
+
+        //        int rowsAffected = await _connection.ExecuteAsync(sql, new
+        //        {
+        //            request.InstituteID,
+        //            LibraryCategoryName = request.CategoryName, // Map CategoryName to LibraryCategoryName
+        //            request.Code,
+        //            request.IsActive,
+        //            request.CategoryID
+        //        });
+
+        //        return new ServiceResponse<string>(rowsAffected > 0, rowsAffected > 0 ? "Success" : "Failure",
+        //            rowsAffected > 0 ? "Category saved successfully" : "Failed to save category", rowsAffected > 0 ? 200 : 400);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return new ServiceResponse<string>(false, ex.Message, null, 500);
+        //    }
+        //}
 
         public async Task<ServiceResponse<List<CategoryResponse>>> GetAllCategories(GetAllCategoriesRequest request)
         {

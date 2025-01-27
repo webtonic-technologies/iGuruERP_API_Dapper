@@ -10,7 +10,7 @@ namespace LibraryManagement_API.Services.Interfaces
     public interface ICategoryService
     {
         Task<ServiceResponse<List<CategoryResponse>>> GetAllCategories(GetAllCategoriesRequest request);
-        Task<ServiceResponse<string>> AddUpdateCategory(Category request);
+        Task<ServiceResponse<string>> AddUpdateCategories(List<Category> requests);
         Task<ServiceResponse<Category>> GetCategoryById(int categoryId);
         Task<ServiceResponse<bool>> DeleteCategory(int categoryId);
     }

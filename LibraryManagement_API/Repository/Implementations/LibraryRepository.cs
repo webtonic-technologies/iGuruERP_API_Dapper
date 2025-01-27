@@ -91,6 +91,7 @@ namespace LibraryManagement_API.Repository.Implementations
 
                 string sql = @"
                     SELECT 
+                        l.LibraryID,
                         l.LibraryName, 
                         l.ShortName, 
                         CONCAT(e.First_Name, ' ', e.Middle_Name, ' ', e.Last_Name) AS LibraryIncharge 
@@ -113,20 +114,22 @@ namespace LibraryManagement_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<Library>> GetLibraryById(int libraryId)
+        public async Task<ServiceResponse<LibraryResponse>> GetLibraryById(int libraryId)
         {
             try
             {
-                string sql = "SELECT * FROM tblLibrary WHERE LibraryID = @LibraryID AND IsActive = 1";
-                var library = await _connection.QueryFirstOrDefaultAsync<Library>(sql, new { LibraryID = libraryId });
+                string sql = @"SELECT l.LibraryID, l.LibraryName, l.ShortName, CONCAT(e.First_Name, ' ', e.Middle_Name, ' ', e.Last_Name) AS LibraryIncharge FROM tblLibrary l
+                    LEFT JOIN tbl_EmployeeProfileMaster e ON l.LibraryInchargeID = e.Employee_id
+                    WHERE LibraryID = @LibraryID AND IsActive = 1";
+                var library = await _connection.QueryFirstOrDefaultAsync<LibraryResponse>(sql, new { LibraryID = libraryId });
 
                 return library != null ?
-                    new ServiceResponse<Library>(true, "Record Found", library, 200) :
-                    new ServiceResponse<Library>(false, "Record Not Found", null, 404);
+                    new ServiceResponse<LibraryResponse>(true, "Record Found", library, 200) :
+                    new ServiceResponse<LibraryResponse>(false, "Record Not Found", null, 404);
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<Library>(false, ex.Message, null, 500);
+                return new ServiceResponse<LibraryResponse>(false, ex.Message, null, 500);
             }
         }
 

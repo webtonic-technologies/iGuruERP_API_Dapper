@@ -23,7 +23,7 @@ namespace LibraryManagement_API.Services.Implementations
             return await _catalogueRepository.GetAllCatalogues(request);
         }
 
-        public async Task<ServiceResponse<Catalogue>> GetCatalogueById(int catalogueId)
+        public async Task<ServiceResponse<CatalogueResponse>> GetCatalogueById(int catalogueId)
         {
             return await _catalogueRepository.GetCatalogueById(catalogueId);
         }
@@ -36,6 +36,16 @@ namespace LibraryManagement_API.Services.Implementations
         public async Task<ServiceResponse<bool>> DeleteCatalogue(int catalogueId)
         {
             return await _catalogueRepository.DeleteCatalogue(catalogueId);
+        }
+
+        public async Task<ServiceResponse<IEnumerable<GetCatalogueSettingResponse>>> GetCatalogueSetting(GetCatalogueSettingRequest request)
+        {
+            return await _catalogueRepository.GetCatalogueSetting(request);
+        }
+
+        public async Task<ServiceResponse<string>> AddRemoveCatalogueSetting(AddRemoveCatalogueSettingRequest request)
+        {
+            return await _catalogueRepository.AddRemoveCatalogueSetting(request);
         }
     }
 }

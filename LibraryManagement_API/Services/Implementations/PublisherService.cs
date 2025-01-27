@@ -16,9 +16,9 @@ namespace LibraryManagement_API.Services.Implementations
             _publisherRepository = publisherRepository;
         }
 
-        public async Task<ServiceResponse<string>> AddUpdatePublisher(Publisher request)
+        public async Task<ServiceResponse<string>> AddUpdatePublisher(List<Publisher> requests)
         {
-            return await _publisherRepository.AddUpdatePublisher(request);
+            return await _publisherRepository.AddUpdatePublisher(requests);
         }
 
         public async Task<ServiceResponse<List<PublisherResponse>>> GetAllPublishers(GetAllPublishersRequest request)

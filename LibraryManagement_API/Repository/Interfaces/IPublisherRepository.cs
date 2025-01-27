@@ -13,7 +13,10 @@ namespace LibraryManagement_API.Repository.Interfaces
         Task<ServiceResponse<List<PublisherFetchResponse>>> GetAllPublishersFetch(GetAllPublishersFetchRequest request);
 
         Task<ServiceResponse<Publisher>> GetPublisherById(int publisherId);
-        Task<ServiceResponse<string>> AddUpdatePublisher(Publisher request);
+        Task<ServiceResponse<string>> AddUpdatePublisher(List<Publisher> requests);
         Task<ServiceResponse<bool>> DeletePublisher(int publisherId);
     }
 }
+
+
+ 

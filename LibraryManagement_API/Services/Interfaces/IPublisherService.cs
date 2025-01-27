@@ -9,8 +9,11 @@ namespace LibraryManagement_API.Services.Interfaces
     {
         Task<ServiceResponse<List<PublisherResponse>>> GetAllPublishers(GetAllPublishersRequest request);
         Task<ServiceResponse<List<PublisherFetchResponse>>> GetAllPublishersFetch(GetAllPublishersFetchRequest request);
-        Task<ServiceResponse<string>> AddUpdatePublisher(Publisher request);
+        Task<ServiceResponse<string>> AddUpdatePublisher(List<Publisher> requests);
         Task<ServiceResponse<Publisher>> GetPublisherById(int publisherId);
         Task<ServiceResponse<bool>> DeletePublisher(int publisherId);
     }
 }
+
+
+ 

@@ -13,9 +13,9 @@
         public int NumberOfPages { get; set; }
         public int BookID { get; set; }
         public int LibraryID { get; set; }
-        public DateTime DateOfPurchase { get; set; }
+        public string DateOfPurchase { get; set; }
         public string LocationID { get; set; }
-        public DateTime PublishedDate { get; set; }
+        public string PublishedDate { get; set; }
         public string Edition { get; set; }
         public string Volume { get; set; }
         public string FundingSource { get; set; }
@@ -25,5 +25,6 @@
         public int LibraryCategoryID { get; set; }
         public int GenreID { get; set; }
         public bool? IsActive { get; set; }
+        public List<int> AuthorIDs { get; set; }
     }
 }

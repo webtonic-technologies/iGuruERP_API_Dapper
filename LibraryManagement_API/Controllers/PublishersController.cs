@@ -17,9 +17,9 @@ namespace LibraryManagement_API.Controllers.Configuration
         }
 
         [HttpPost("AddUpdatePublisher")]
-        public async Task<IActionResult> AddUpdatePublisher(Publisher request)
+        public async Task<IActionResult> AddUpdatePublisher(List<Publisher> requests)
         {
-            var response = await _publisherService.AddUpdatePublisher(request);
+            var response = await _publisherService.AddUpdatePublisher(requests);
             return StatusCode(response.StatusCode, response);
         }
 

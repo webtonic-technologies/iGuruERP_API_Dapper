@@ -9,7 +9,7 @@ namespace LibraryManagement_API.Repository.Interfaces
     {
         Task<ServiceResponse<List<LibraryResponse>>> GetAllLibraries(GetAllLibraryRequest request);
         Task<ServiceResponse<string>> AddUpdateLibrary(AddUpdateLibraryRequest request);
-        Task<ServiceResponse<Library>> GetLibraryById(int libraryId);
+        Task<ServiceResponse<LibraryResponse>> GetLibraryById(int libraryId);
         Task<ServiceResponse<bool>> DeleteLibrary(int libraryId);
         Task<ServiceResponse<List<LibraryInchargeResponse>>> GetAllLibraryIncharge(GetAllLibraryInchargeRequest request);
         Task<ServiceResponse<List<LibraryFetchResponse>>> GetAllLibraryFetch(GetAllLibraryFetchRequest request);

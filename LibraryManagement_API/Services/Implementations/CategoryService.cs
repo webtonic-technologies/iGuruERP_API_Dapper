@@ -18,9 +18,9 @@ namespace LibraryManagement_API.Services.Implementations
             _categoryRepository = categoryRepository;
         }
 
-        public async Task<ServiceResponse<string>> AddUpdateCategory(Category request)
+        public async Task<ServiceResponse<string>> AddUpdateCategories(List<Category> requests)
         {
-            return await _categoryRepository.AddUpdateCategory(request);
+            return await _categoryRepository.AddUpdateCategories(requests);
         }
 
         public async Task<ServiceResponse<List<CategoryResponse>>> GetAllCategories(GetAllCategoriesRequest request)

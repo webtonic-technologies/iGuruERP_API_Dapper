@@ -37,6 +37,9 @@ builder.Services.AddTransient<ICatalogueService, CatalogueService>();
 builder.Services.AddTransient<IIssueRepository, IssueRepository>();
 builder.Services.AddTransient<IIssueService, IssueService>();
 
+builder.Services.AddTransient<IReturnRepository, ReturnRepository>();
+builder.Services.AddTransient<IReturnService, ReturnService>();
+
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

@@ -17,9 +17,9 @@ namespace LibraryManagement_API.Controllers
         }
 
         [HttpPost("AddUpdateCategory")]
-        public async Task<IActionResult> AddUpdateCategory(Category request)
+        public async Task<IActionResult> AddUpdateCategories(List<Category> requests)
         {
-            var response = await _categoryService.AddUpdateCategory(request);
+            var response = await _categoryService.AddUpdateCategories(requests);
             return StatusCode(response.StatusCode, response);
         }
 

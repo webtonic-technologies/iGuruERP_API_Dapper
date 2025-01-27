@@ -44,5 +44,36 @@ namespace LibraryManagement_API.Controllers.Operations
             var response = await _catalogueService.DeleteCatalogue(catalogueId);
             return StatusCode(response.StatusCode, response);
         }
+
+
+
+        [HttpPost("GetCatalogueSetting")]
+        public async Task<IActionResult> GetCatalogueSetting([FromBody] GetCatalogueSettingRequest request)
+        {
+            try
+            {
+                var response = await _catalogueService.GetCatalogueSetting(request);
+                return StatusCode(response.StatusCode, response);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+        [HttpPost("AddRemoveCatalogueSetting")]
+        public async Task<IActionResult> AddRemoveCatalogueSetting([FromBody] AddRemoveCatalogueSettingRequest request)
+        {
+            try
+            {
+                var response = await _catalogueService.AddRemoveCatalogueSetting(request);
+                return StatusCode(response.StatusCode, response);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
     }
 }

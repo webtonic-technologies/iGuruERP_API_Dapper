@@ -84,35 +84,51 @@ namespace LibraryManagement_API.Repository.Implementations
             }
         }
 
-        public async Task<ServiceResponse<string>> AddUpdatePublisher(Publisher request)
+        public async Task<ServiceResponse<string>> AddUpdatePublisher(List<Publisher> requests)
         {
             try
             {
-                string sql = request.PublisherID == 0 ?
-                    @"INSERT INTO tblPublisher (InstituteID, PublisherName, MobileNumber, CountryID, IsActive) 
-                      VALUES (@InstituteID, @PublisherName, @MobileNumber, @CountryID, @IsActive)" :
-                    @"UPDATE tblPublisher SET InstituteID = @InstituteID, PublisherName = @PublisherName, 
-                      MobileNumber = @MobileNumber, CountryID = @CountryID, IsActive = @IsActive 
-                      WHERE PublisherID = @PublisherID";
-
-                int rowsAffected = await _connection.ExecuteAsync(sql, new
+                using (var connection = _connection)
                 {
-                    request.InstituteID,
-                    request.PublisherName,
-                    request.MobileNumber,
-                    request.CountryID,
-                    request.IsActive,
-                    request.PublisherID
-                });
+                    connection.Open();
+                    using (var transaction = connection.BeginTransaction())
+                    {
+                        foreach (var request in requests)
+                        {
+                            string sql = request.PublisherID == 0 ?
+                                @"INSERT INTO tblPublisher (InstituteID, PublisherName, MobileNumber, CountryID, IsActive) 
+                          VALUES (@InstituteID, @PublisherName, @MobileNumber, @CountryID, @IsActive)" :
+                                @"UPDATE tblPublisher SET InstituteID = @InstituteID, PublisherName = @PublisherName, 
+                          MobileNumber = @MobileNumber, CountryID = @CountryID, IsActive = @IsActive 
+                          WHERE PublisherID = @PublisherID";
 
-                return new ServiceResponse<string>(rowsAffected > 0, rowsAffected > 0 ? "Success" : "Failure",
-                    rowsAffected > 0 ? "Publisher saved successfully" : "Failed to save publisher", rowsAffected > 0 ? 200 : 400);
+                            int rowsAffected = await connection.ExecuteAsync(sql, new
+                            {
+                                request.InstituteID,
+                                request.PublisherName,
+                                request.MobileNumber,
+                                request.CountryID,
+                                request.IsActive,
+                                request.PublisherID
+                            }, transaction);
+
+                            if (rowsAffected <= 0)
+                            {
+                                throw new Exception($"Failed to save publisher {request.PublisherName}");
+                            }
+                        }
+
+                        transaction.Commit();
+                        return new ServiceResponse<string>(true, "Success", "Publishers saved successfully", 200);
+                    }
+                }
             }
             catch (Exception ex)
             {
                 return new ServiceResponse<string>(false, ex.Message, null, 500);
             }
         }
+
 
         public async Task<ServiceResponse<bool>> DeletePublisher(int publisherId)
         {

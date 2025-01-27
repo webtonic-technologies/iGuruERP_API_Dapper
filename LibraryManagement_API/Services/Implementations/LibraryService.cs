@@ -26,7 +26,7 @@ namespace LibraryManagement_API.Services.Implementations
             return await _libraryRepository.GetAllLibraries(request);
         }
 
-        public async Task<ServiceResponse<Library>> GetLibraryById(int libraryId)
+        public async Task<ServiceResponse<LibraryResponse>> GetLibraryById(int libraryId)
         {
             return await _libraryRepository.GetLibraryById(libraryId);
         }
