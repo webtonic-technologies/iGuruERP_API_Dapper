@@ -34,10 +34,11 @@ namespace HostelManagement_API.Services.Implementations
             return new ServiceResponse<BuildingResponse>(true, "Building retrieved successfully", building, 200);
         }
 
-        public async Task<IEnumerable<BuildingResponse>> GetAllBuildingsFetch()
+        public async Task<IEnumerable<BuildingFetchResponse>> GetAllBuildingsFetch(int instituteId)
         {
-            return await _buildingRepository.GetAllBuildingsFetch();
+            return await _buildingRepository.GetAllBuildingsFetch(instituteId);
         }
+
 
         public async Task<ServiceResponse<int>> DeleteBuilding(int buildingId)
         {

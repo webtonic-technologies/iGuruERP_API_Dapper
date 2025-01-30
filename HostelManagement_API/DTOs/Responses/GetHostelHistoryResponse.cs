@@ -6,6 +6,7 @@
         public string StudentName { get; set; }
         public string ClassSection { get; set; }
         public string RollNumber { get; set; }
+        public string AdmissionNumber { get; set; } 
         public List<StudentHostelHistory> StudentHostels { get; set; }
     }
 
@@ -17,5 +18,6 @@
         public string RoomName { get; set; }
         public string? AllocateDate { get; set; }
         public string? VacateDate { get; set; }
+        public string AllotterName { get; set; }
     }
 }

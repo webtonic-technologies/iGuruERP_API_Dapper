@@ -10,7 +10,7 @@ namespace HostelManagement_API.Services.Interfaces
     { 
         Task<ServiceResponse<string>> AddUpdateBuildings(AddUpdateBuildingsRequest request);
         Task<ServiceResponse<IEnumerable<GetAllBuildingsResponse>>> GetAllBuildings(GetAllBuildingsRequest request);
-        Task<IEnumerable<BuildingResponse>> GetAllBuildingsFetch();
+        Task<IEnumerable<BuildingFetchResponse>> GetAllBuildingsFetch(int instituteId);
         Task<ServiceResponse<BuildingResponse>> GetBuildingById(int buildingId);
         Task<ServiceResponse<int>> DeleteBuilding(int buildingId);
     }

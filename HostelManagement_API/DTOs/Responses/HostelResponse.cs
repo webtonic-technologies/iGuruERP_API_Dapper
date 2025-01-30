@@ -9,6 +9,7 @@ namespace HostelManagement_API.DTOs.Responses
         public string HostelName { get; set; }
         public int HostelTypeID { get; set; }
         public string HostelType { get; set; } // HostelType from tblHostelType
+        public string Address { get; set; }   
         public string PhoneNo { get; set; }
         public string HostelWarden { get; set; } 
         public string Block { get; set; }

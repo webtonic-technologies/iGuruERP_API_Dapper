@@ -91,9 +91,9 @@ namespace HostelManagement_API.Repository.Implementations
 
                 string sqlQuery = @"
             INSERT INTO tblHostelRoomAllocation
-            (StudentID, HostelID, RoomID, RoomBedID, AllocateDate, VacateDate, IsAllocated, IsVacated, InstituteID, EntryDate)
+            (StudentID, HostelID, RoomID, RoomBedID, AllocateDate, VacateDate, IsAllocated, IsVacated, InstituteID, EntryDate, AllotterID)
             VALUES
-            (@StudentID, @HostelID, @RoomID, @RoomBedID, @AllocateDate, @VacateDate, @IsAllocated, @IsVacated, @InstituteID, @EntryDate)";
+            (@StudentID, @HostelID, @RoomID, @RoomBedID, @AllocateDate, @VacateDate, @IsAllocated, @IsVacated, @InstituteID, @EntryDate, @AllotterID)";
 
                 var result = await db.ExecuteAsync(sqlQuery, new
                 {
@@ -106,7 +106,8 @@ namespace HostelManagement_API.Repository.Implementations
                     request.IsAllocated,
                     request.IsVacated,
                     request.InstituteID,
-                    EntryDate = System.DateTime.Now // Current date and time when the entry is created
+                    EntryDate = System.DateTime.Now,  // Current date and time when the entry is created
+                    request.AllotterID  // Include AllotterID in the query
                 });
 
                 if (result > 0)
@@ -119,28 +120,34 @@ namespace HostelManagement_API.Repository.Implementations
                 }
             }
         }
-         
+
         public async Task<GetHostelHistoryResponse> GetHostelHistory(GetHostelHistoryRequest request)
         {
             using (var db = new SqlConnection(_connectionString))
             {
                 var sqlQuery = @"
-                    SELECT 
-                        sm.student_id AS StudentID, 
-                        CONCAT(sm.First_Name, ' ', sm.Last_Name) AS StudentName, 
-                        CONCAT(c.class_name, ' - ', s.section_name) AS ClassSection, 
-                        sm.Roll_Number, 
-                        hr.HostelID, h.HostelName, 
-                        hr.RoomID, r.RoomName, 
-                        hr.AllocateDate, hr.VacateDate
-                    FROM tblHostelRoomAllocation hr
-                    INNER JOIN tbl_StudentMaster sm ON hr.StudentID = sm.student_id
-                    INNER JOIN tbl_Class c ON sm.class_id = c.class_id
-                    INNER JOIN tbl_Section s ON sm.section_id = s.section_id
-                    INNER JOIN tblHostel h ON hr.HostelID = h.HostelID
-                    INNER JOIN tblRoom r ON hr.RoomID = r.RoomID
-                    WHERE sm.student_id = @StudentID AND sm.Institute_id = @InstituteID
-                    ORDER BY hr.AllocateDate ASC";  // Fixed typo here: "hr.tblHostelRoomAllocation ASC"
+            SELECT 
+                sm.student_id AS StudentID, 
+                CONCAT(sm.First_Name, ' ', sm.Last_Name) AS StudentName, 
+                CONCAT(c.class_name, ' - ', s.section_name) AS ClassSection, 
+                sm.Roll_Number AS RollNumber, 
+                sm.Admission_Number AS AdmissionNumber,
+                hr.HostelID, h.HostelName, 
+                hr.RoomID, r.RoomName, 
+                hr.AllocateDate, hr.VacateDate,  
+                CASE 
+                    WHEN ep.Employee_id IS NOT NULL THEN CONCAT(ep.First_Name, ' ', ep.Last_Name) 
+                    ELSE 'Not Available'
+                END AS AllotterName
+            FROM tblHostelRoomAllocation hr
+            INNER JOIN tbl_StudentMaster sm ON hr.StudentID = sm.student_id
+            INNER JOIN tbl_Class c ON sm.class_id = c.class_id
+            INNER JOIN tbl_Section s ON sm.section_id = s.section_id
+            INNER JOIN tblHostel h ON hr.HostelID = h.HostelID
+            INNER JOIN tblRoom r ON hr.RoomID = r.RoomID
+            LEFT JOIN tbl_EmployeeProfileMaster ep ON hr.AllotterID = ep.Employee_id
+            WHERE sm.student_id = @StudentID AND sm.Institute_id = @InstituteID
+            ORDER BY hr.AllocateDate ASC";
 
                 var history = await db.QueryAsync<dynamic>(sqlQuery, new
                 {
@@ -148,15 +155,15 @@ namespace HostelManagement_API.Repository.Implementations
                     request.InstituteID
                 });
 
-                // Map dynamic result to the StudentHostelHistory model
                 var hostelHistoryList = history.Select(h => new StudentHostelHistory
                 {
                     HostelID = h.HostelID,
                     HostelName = h.HostelName,
                     RoomID = h.RoomID,
                     RoomName = h.RoomName,
-                    AllocateDate = h.AllocateDate == null ? null : ((DateTime)h.AllocateDate).ToString("dd-MM-yyyy"), // Convert to string with format 'DD-MM-YYYY'
-                    VacateDate = h.VacateDate == null ? null : ((DateTime?)h.VacateDate)?.ToString("dd-MM-yyyy")  // Convert to string with format 'DD-MM-YYYY'
+                    AllocateDate = h.AllocateDate == null ? null : ((DateTime)h.AllocateDate).ToString("dd-MM-yyyy"),
+                    VacateDate = h.VacateDate == null ? null : ((DateTime?)h.VacateDate)?.ToString("dd-MM-yyyy"),
+                    AllotterName = h.AllotterName  // Ensure AllotterName is mapped here
                 }).ToList();
 
                 return new GetHostelHistoryResponse
@@ -165,6 +172,7 @@ namespace HostelManagement_API.Repository.Implementations
                     StudentName = history.FirstOrDefault()?.StudentName ?? "Not Found",
                     ClassSection = history.FirstOrDefault()?.ClassSection ?? "Not Found",
                     RollNumber = history.FirstOrDefault()?.RollNumber ?? "Not Found",
+                    AdmissionNumber = history.FirstOrDefault()?.AdmissionNumber ?? "Not Found", 
                     StudentHostels = hostelHistoryList
                 };
             }

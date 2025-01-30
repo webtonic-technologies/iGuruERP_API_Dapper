@@ -94,12 +94,16 @@ namespace HostelManagement_API.Repository.Implementations
                     sm.Admission_Number AS AdmissionNumber,
                     CONCAT(c.class_name, ' - ', s.section_name) AS ClassSection,
                     sa.StatusID,
-                    sa.Remarks
+                    sa.Remarks,  
+                    r.RoomName -- Added RoomName from tblRoom table
                 FROM tblHostelRoomAllocation hra
                 LEFT OUTER JOIN tbl_StudentMaster sm ON hra.StudentID = sm.student_id
-                LEFT OUTER JOIN tblHostelAttendance sa ON sa.StudentID = sm.student_id AND sa.AttendanceDate = @AttendanceDate AND sa.AttendanceTypeID = @AttendanceTypeID
+                LEFT OUTER JOIN tblHostelAttendance sa ON sa.StudentID = sm.student_id 
+                    AND sa.AttendanceDate = @AttendanceDate
+                    AND sa.AttendanceTypeID = @AttendanceTypeID
                 LEFT OUTER JOIN tbl_Class c ON sm.class_id = c.class_id
                 LEFT OUTER JOIN tbl_Section s ON sm.section_id = s.section_id 
+                LEFT OUTER JOIN tblRoom r ON hra.RoomID = r.RoomID
                 WHERE hra.HostelID = @HostelID
                 AND hra.InstituteID = @InstituteID
                 AND hra.IsAllocated = 1 

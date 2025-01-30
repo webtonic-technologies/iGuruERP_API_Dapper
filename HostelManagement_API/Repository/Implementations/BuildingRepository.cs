@@ -67,6 +67,8 @@ namespace HostelManagement_API.Repository.Implementations
             }
         }
 
+
+
         public async Task<ServiceResponse<IEnumerable<GetAllBuildingsResponse>>> GetAllBuildings(GetAllBuildingsRequest request)
         {
             using (IDbConnection db = new SqlConnection(_connectionString))
@@ -80,14 +82,20 @@ namespace HostelManagement_API.Repository.Implementations
                 // Fetch buildings data
                 var buildings = await db.QueryAsync<BuildingResponse>(sqlQuery, new { request.InstituteID });
 
-                // Group by BlockName and create a list of Building Names per Block
-                var groupedBuildings = buildings.GroupBy(b => b.BlockName)
-                                                .Select(g => new GetAllBuildingsResponse
-                                                {
-                                                    BlockName = g.Key,
-                                                    Buildings = g.Select(b => b.BuildingName).ToList()
-                                                })
-                                                .ToList();
+                // Group by BlockName and create a list of Building IDs, Names, and BlockID per Block
+                var groupedBuildings = buildings
+                    .GroupBy(b => b.BlockName)
+                    .Select(g => new GetAllBuildingsResponse
+                    {
+                        BlockID = g.First().BlockID,  // Get BlockID for the response
+                        BlockName = g.Key,            // BlockName for the response
+                        Buildings = g.Select(b => new BuildingResponse1
+                        {
+                            BuildingID = b.BuildingID,  // Include BuildingID
+                            BuildingName = b.BuildingName  // Include BuildingName
+                        }).ToList()
+                    })
+                    .ToList();
 
                 // Return response with grouped buildings
                 return new ServiceResponse<IEnumerable<GetAllBuildingsResponse>>(
@@ -101,47 +109,38 @@ namespace HostelManagement_API.Repository.Implementations
         }
 
 
-        //public async Task<IEnumerable<GetAllBuildingsResponse>> GetAllBuildings(GetAllBuildingsRequest request)
-        //{
-        //    using (IDbConnection db = new SqlConnection(_connectionString))
-        //    {
-        //        string sqlQuery = @"SELECT b.BuildingID, b.BuildingName, bl.BlockID, bl.BlockName 
-        //                            FROM tblBuilding b
-        //                            JOIN tblBlock bl ON b.BlockID = bl.BlockID
-        //                            WHERE b.InstituteID = @InstituteID AND b.IsActive = 1
-        //                            ORDER BY bl.BlockName, b.BuildingName";
-
-        //        var buildings = await db.QueryAsync<BuildingResponse>(sqlQuery, new { request.InstituteID });
-
-        //        var groupedBuildings = buildings.GroupBy(b => b.BlockName)
-        //                                        .Select(g => new GetAllBuildingsResponse
-        //                                        {
-        //                                            BlockName = g.Key,
-        //                                            Buildings = g.Select(b => b.BuildingName).ToList()
-        //                                        })
-        //                                        .ToList();
-
-        //        //return groupedBuildings;
-
-        //        return new ServiceResponse<IEnumerable<GetAllBuildingsResponse>>(true, "Blocks Retrieved Successfully", buildings, statusCode: 200, 0);
-
-        //    }
-        //}
-
-        public async Task<IEnumerable<BuildingResponse>> GetAllBuildingsFetch()
+        public async Task<IEnumerable<BuildingFetchResponse>> GetAllBuildingsFetch(int instituteId)
         {
             using (IDbConnection db = new SqlConnection(_connectionString))
             {
                 string sqlQuery = @"
-                    SELECT 
-                        BuildingID, BuildingName, BlockID, InstituteID, IsActive
-                    FROM tblBuilding
-                    ORDER BY BuildingName";
+            SELECT 
+                BuildingID, BuildingName, BlockID, InstituteID, IsActive
+            FROM tblBuilding
+            WHERE InstituteID = @InstituteID  -- Use InstituteID for filtering
+            ORDER BY BuildingName";
 
-                var buildings = await db.QueryAsync<BuildingResponse>(sqlQuery);
+                var buildings = await db.QueryAsync<BuildingFetchResponse>(sqlQuery, new { InstituteID = instituteId });
                 return buildings;
             }
         }
+
+
+
+        //public async Task<IEnumerable<BuildingResponse>> GetAllBuildingsFetch()
+        //{
+        //    using (IDbConnection db = new SqlConnection(_connectionString))
+        //    {
+        //        string sqlQuery = @"
+        //            SELECT 
+        //                BuildingID, BuildingName, BlockID, InstituteID, IsActive
+        //            FROM tblBuilding
+        //            ORDER BY BuildingName";
+
+        //        var buildings = await db.QueryAsync<BuildingResponse>(sqlQuery);
+        //        return buildings;
+        //    }
+        //}
 
         public async Task<BuildingResponse> GetBuildingById(int buildingId)
         {

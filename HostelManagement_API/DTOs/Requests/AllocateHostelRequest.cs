@@ -11,5 +11,6 @@
         public bool IsAllocated { get; set; }
         public bool IsVacated { get; set; }
         public int InstituteID { get; set; }
+        public int AllotterID { get; set; }
     }
 }

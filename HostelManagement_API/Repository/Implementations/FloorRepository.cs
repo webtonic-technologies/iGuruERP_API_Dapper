@@ -67,29 +67,35 @@ namespace HostelManagement_API.Repository.Implementations
             }
         }
 
-
         public async Task<ServiceResponse<IEnumerable<GetAllFloorsResponse>>> GetAllFloors(GetAllFloorsRequest request)
         {
             using (IDbConnection db = new SqlConnection(_connectionString))
             {
                 string sqlQuery = @"SELECT f.FloorID, f.FloorName, b.BuildingID, b.BuildingName, bl.BlockName 
-                                    FROM tblBuildingFloors f
-                                    JOIN tblBuilding b ON f.BuildingID = b.BuildingID
-                                    JOIN tblBlock bl ON b.BlockID = bl.BlockID
-                                    WHERE f.InstituteID = @InstituteID AND f.IsActive = 1
-                                    ORDER BY bl.BlockName, b.BuildingName, f.FloorName";
+                            FROM tblBuildingFloors f
+                            JOIN tblBuilding b ON f.BuildingID = b.BuildingID
+                            JOIN tblBlock bl ON b.BlockID = bl.BlockID
+                            WHERE f.InstituteID = @InstituteID AND f.IsActive = 1
+                            ORDER BY bl.BlockName, b.BuildingName, f.FloorName";
 
                 var floors = await db.QueryAsync<FloorResponse>(sqlQuery, new { request.InstituteID });
 
-                var groupedFloors = floors.GroupBy(f => $"{f.BlockName} - {f.BuildingName}")
-                                          .Select(g => new GetAllFloorsResponse
-                                          {
-                                              BuildingName = g.Key,
-                                              Floors = g.Select(f => f.FloorName).ToList()
-                                          })
-                                          .ToList();
+                // Group by BlockName and BuildingName, and create a list of Floor ID and Name per building
+                var groupedFloors = floors
+                    .GroupBy(f => new { f.BuildingID, f.BuildingName })  // Group by BuildingID and BuildingName
+                    .Select(g => new GetAllFloorsResponse
+                    {
+                        BuildingID = g.Key.BuildingID,  // Include BuildingID
+                        BuildingName = g.Key.BuildingName,  // Include BuildingName
+                        Floors = g.Select(f => new FloorResponse1
+                        {
+                            FloorID = f.FloorID,       // Include FloorID
+                            FloorName = f.FloorName    // Include FloorName
+                        }).ToList()
+                    })
+                    .ToList();
 
-                //return groupedFloors;
+                // Return grouped floors in the response
                 return new ServiceResponse<IEnumerable<GetAllFloorsResponse>>(
                     success: true,
                     message: "Floors Retrieved Successfully",
@@ -99,6 +105,41 @@ namespace HostelManagement_API.Repository.Implementations
                 );
             }
         }
+
+
+
+
+        //public async Task<ServiceResponse<IEnumerable<GetAllFloorsResponse>>> GetAllFloors(GetAllFloorsRequest request)
+        //{
+        //    using (IDbConnection db = new SqlConnection(_connectionString))
+        //    {
+        //        string sqlQuery = @"SELECT f.FloorID, f.FloorName, b.BuildingID, b.BuildingName, bl.BlockName 
+        //                            FROM tblBuildingFloors f
+        //                            JOIN tblBuilding b ON f.BuildingID = b.BuildingID
+        //                            JOIN tblBlock bl ON b.BlockID = bl.BlockID
+        //                            WHERE f.InstituteID = @InstituteID AND f.IsActive = 1
+        //                            ORDER BY bl.BlockName, b.BuildingName, f.FloorName";
+
+        //        var floors = await db.QueryAsync<FloorResponse>(sqlQuery, new { request.InstituteID });
+
+        //        var groupedFloors = floors.GroupBy(f => $"{f.BlockName} - {f.BuildingName}")
+        //                                  .Select(g => new GetAllFloorsResponse
+        //                                  {
+        //                                      BuildingName = g.Key,
+        //                                      Floors = g.Select(f => f.FloorName).ToList()
+        //                                  })
+        //                                  .ToList();
+
+        //        //return groupedFloors;
+        //        return new ServiceResponse<IEnumerable<GetAllFloorsResponse>>(
+        //            success: true,
+        //            message: "Floors Retrieved Successfully",
+        //            data: groupedFloors,
+        //            statusCode: 200,
+        //            groupedFloors.Count()
+        //        );
+        //    }
+        //}
 
         public async Task<FloorResponse> GetFloorById(int floorId)
         {

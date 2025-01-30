@@ -134,7 +134,7 @@ namespace HostelManagement_API.Repository.Implementations
                     JOIN tblBuilding bl ON f.BuildingID = bl.BuildingID
                     GROUP BY hfm.HostelID
                 ) Floors ON h.HostelID = Floors.HostelID
-                WHERE h.InstituteID = @InstituteID
+                WHERE h.InstituteID = @InstituteID AND h.IsActive = 1
                 ORDER BY h.HostelName
                 OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 

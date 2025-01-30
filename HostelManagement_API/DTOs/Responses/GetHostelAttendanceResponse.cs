@@ -8,5 +8,6 @@
         public string ClassSection { get; set; }
         public int StatusID { get; set; }
         public string Remarks { get; set; }
+        public string RoomName { get; set; }
     }
 }

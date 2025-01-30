@@ -8,4 +8,12 @@
         public string BlockName { get; set; }  // Added BlockName
         public bool IsActive { get; set; }
     }
+
+    public class BuildingFetchResponse
+    {
+        public int BuildingID { get; set; }
+        public string BuildingName { get; set; }
+        public int BlockID { get; set; } 
+        public bool IsActive { get; set; }
+    }
 }

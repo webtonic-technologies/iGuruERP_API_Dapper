@@ -6,5 +6,6 @@
         public int HostelID { get; set; }
         public int MealTypeID { get; set; }
         public int InstituteID { get; set; }
+        public string Search { get; set; }
     }
 }

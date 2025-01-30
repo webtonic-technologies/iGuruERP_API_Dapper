@@ -39,13 +39,17 @@ namespace HostelManagement_API.Controllers
         }
 
         [HttpPost("GetAllBuildings_Fetch")]
-        public async Task<IActionResult> GetAllBuildingsFetch()
+        public async Task<IActionResult> GetAllBuildingsFetch([FromBody] GetAllBuildingsFetchRequest request)
         {
-            _logger.LogInformation("GetAllBuildingsFetch Request Received");
-            IEnumerable<BuildingResponse> buildings = await _buildingService.GetAllBuildingsFetch();
+            _logger.LogInformation("GetAllBuildingsFetch Request Received with InstituteID: {@InstituteID}", request.InstituteID);
+
+            // Pass InstituteID from the request to the service
+            IEnumerable<BuildingFetchResponse> buildings = await _buildingService.GetAllBuildingsFetch(request.InstituteID);
+
             _logger.LogInformation("GetAllBuildingsFetch Response: {@Response}", buildings);
             return Ok(new { Success = true, Message = "Buildings retrieved successfully", Data = buildings });
         }
+
 
         [HttpGet("GetBuilding/{buildingId}")]
         public async Task<IActionResult> GetBuilding(int buildingId)

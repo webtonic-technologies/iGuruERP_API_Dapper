@@ -8,5 +8,7 @@
         public string ClassSection { get; set; }
         public int StatusID { get; set; }
         public string Remarks { get; set; }
+        public string HostelName { get; set; }  // Added HostelName here
+        public string RoomName { get; set; }    // Added RoomName here
     }
 }
