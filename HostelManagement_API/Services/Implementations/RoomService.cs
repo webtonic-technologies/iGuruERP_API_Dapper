@@ -44,5 +44,11 @@ namespace HostelManagement_API.Services.Implementations
             var result = await _roomRepository.DeleteRoom(roomId);
             return new ServiceResponse<bool>(result > 0, result > 0 ? "Room deleted successfully" : "Room not found", result > 0, result > 0 ? 200 : 404);
         }
+
+        public async Task<IEnumerable<GetFloorsDDLResponse>> GetFloorsDDL(int instituteID)
+        {
+            return await _roomRepository.GetFloorsDDL(instituteID);
+        }
+
     }
 }

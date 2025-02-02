@@ -11,13 +11,16 @@
         public int HostelID { get; set; }
         public string RoomNo { get; set; }
         public string RelationshipToStudent { get; set; }
-        public DateTime DateOfVisit { get; set; }
+        public string DateOfVisit { get; set; }
         public string Address { get; set; }
-        public DateTime CheckInTime { get; set; }
-        public DateTime CheckOutTime { get; set; }
+        public string CheckInTime { get; set; }
+        public string CheckOutTime { get; set; }
         public string PurposeOfVisit { get; set; }
         public string UploadFile { get; set; }
         public int InstituteID { get; set; }
         public bool IsActive { get; set; }
+        public string StudentName { get; set; }
+        public string ClassSection { get; set; }
+
     }
 }

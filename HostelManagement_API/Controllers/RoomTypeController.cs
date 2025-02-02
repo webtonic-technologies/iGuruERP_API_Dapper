@@ -1,4 +1,6 @@
 ﻿using HostelManagement_API.DTOs.Requests;
+using HostelManagement_API.DTOs.Responses;
+using HostelManagement_API.DTOs.ServiceResponse;
 using HostelManagement_API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -54,5 +56,18 @@ namespace HostelManagement_API.Controllers
             _logger.LogInformation("DeleteRoomType Response: {@Response}", response);
             return StatusCode(response.StatusCode, response);
         }
+
+        [HttpPost("GetRoomTypesDDL")]
+        public async Task<IActionResult> GetRoomTypesDDL([FromBody] GetRoomTypesDDLRequest request)
+        {
+            _logger.LogInformation("GetRoomTypesDDL Request Received: {@Request}", request);
+
+            var roomTypes = await _roomTypeService.GetRoomTypesDDL(request.InstituteID);
+
+            _logger.LogInformation("GetRoomTypesDDL Response: {@Response}", roomTypes);
+
+            return Ok(new ServiceResponse<IEnumerable<GetRoomTypesDDLResponse>>(true, "Room types retrieved successfully", roomTypes, 200));
+        }
+
     }
 }

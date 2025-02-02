@@ -175,5 +175,23 @@ namespace HostelManagement_API.Repository.Implementations
                 return await db.ExecuteAsync(sqlQuery, new { RoomID = roomId });
             }
         }
+
+        public async Task<IEnumerable<GetFloorsDDLResponse>> GetFloorsDDL(int instituteID)
+        {
+            using (IDbConnection db = new SqlConnection(_connectionString))
+            {
+                string sqlQuery = @"
+            SELECT f.FloorID, f.FloorName, b.BuildingID, b.BuildingName
+            FROM tblBuildingFloors f
+            JOIN tblBuilding b ON f.BuildingID = b.BuildingID
+            JOIN tblBlock bl ON b.BlockID = bl.BlockID
+            WHERE f.InstituteID = @InstituteID AND f.IsActive = 1
+            ORDER BY b.BuildingName, f.FloorName";
+
+                var floors = await db.QueryAsync<GetFloorsDDLResponse>(sqlQuery, new { InstituteID = instituteID });
+                return floors;
+            }
+        }
+
     }
 }

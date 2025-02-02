@@ -4,13 +4,13 @@
     {
         public int? OutpassID { get; set; }
         public string OutpassCode { get; set; }
-        public DateTime OutpassDate { get; set; }
+        public string OutpassDate { get; set; }
         public int HostelID { get; set; }
         public int StudentID { get; set; }
         public string RoomNo { get; set; }
-        public DateTime DepartureTime { get; set; }
-        public DateTime ExpectedArrivalTime { get; set; }
-        public DateTime EntryTime { get; set; }
+        public string DepartureTime { get; set; }  // Changed to string
+        public string ExpectedArrivalTime { get; set; }  // Changed to string
+        public string EntryTime { get; set; }  // Changed to string 
         public string Reason { get; set; }
         public string Remarks { get; set; }
         public string UploadFile { get; set; }

@@ -1,6 +1,7 @@
 ﻿using HostelManagement_API.DTOs.Requests;
 using HostelManagement_API.DTOs.Responses;
 using HostelManagement_API.DTOs.ServiceResponse;
+using HostelManagement_API.Repository.Implementations;
 using HostelManagement_API.Repository.Interfaces;
 using HostelManagement_API.Services.Interfaces;
 using System.Threading.Tasks;
@@ -21,11 +22,10 @@ namespace HostelManagement_API.Services.Implementations
             var hostelVisitorId = await _visitorLogRepository.AddUpdateVisitorLog(request);
             return new ServiceResponse<int>(true, "Visitor log added/updated successfully", hostelVisitorId, 200);
         }
-
-        public async Task<ServiceResponse<PagedResponse<VisitorLogResponse>>> GetAllVisitorLogs(GetAllVisitorLogsRequest request)
+         
+        public async Task<ServiceResponse<IEnumerable<VisitorLogResponse>>> GetAllVisitorLogs(GetAllVisitorLogsRequest request)
         {
-            var visitorLogs = await _visitorLogRepository.GetAllVisitorLogs(request);
-            return new ServiceResponse<PagedResponse<VisitorLogResponse>>(true, "Visitor logs retrieved successfully", visitorLogs, 200);
+            return await _visitorLogRepository.GetAllVisitorLogs(request); 
         }
 
         public async Task<ServiceResponse<VisitorLogResponse>> GetVisitorLogById(int hostelVisitorId)

@@ -8,7 +8,7 @@ namespace HostelManagement_API.Services.Interfaces
     public interface IOutpassService
     {
         Task<ServiceResponse<int>> AddUpdateOutpass(AddUpdateOutpassRequest request);
-        Task<ServiceResponse<PagedResponse<OutpassResponse>>> GetAllOutpass(GetAllOutpassRequest request);
+        Task<ServiceResponse<IEnumerable<OutpassResponse>>> GetAllOutpass(GetAllOutpassRequest request);
         Task<ServiceResponse<OutpassResponse>> GetOutpassById(int outpassId);
         Task<ServiceResponse<bool>> DeleteOutpass(int outpassId);
     }

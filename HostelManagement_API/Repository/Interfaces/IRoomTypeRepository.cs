@@ -11,5 +11,7 @@ namespace HostelManagement_API.Repository.Interfaces
         Task<ServiceResponse<IEnumerable<RoomTypeResponse>>> GetAllRoomTypes(GetAllRoomTypesRequest request); 
         Task<RoomTypeResponse> GetRoomTypeById(int roomTypeId);
         Task<int> DeleteRoomType(int roomTypeId);
+        Task<IEnumerable<GetRoomTypesDDLResponse>> GetRoomTypesDDL(int instituteID);
+
     }
 }

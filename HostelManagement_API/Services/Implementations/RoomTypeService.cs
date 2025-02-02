@@ -40,5 +40,11 @@ namespace HostelManagement_API.Services.Implementations
             var result = await _roomTypeRepository.DeleteRoomType(roomTypeId);
             return new ServiceResponse<int>(true, "Room type deleted successfully", result, 200);
         }
+
+        public async Task<IEnumerable<GetRoomTypesDDLResponse>> GetRoomTypesDDL(int instituteID)
+        {
+            return await _roomTypeRepository.GetRoomTypesDDL(instituteID);
+        }
+
     }
 }

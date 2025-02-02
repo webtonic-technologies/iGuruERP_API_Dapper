@@ -12,5 +12,7 @@ namespace HostelManagement_API.Repository.Interfaces
         Task<ServiceResponse<IEnumerable<RoomResponse>>> GetAllRooms(GetAllRoomsRequest request);
         Task<RoomResponse> GetRoomById(int roomId);
         Task<int> DeleteRoom(int roomId);
+        Task<IEnumerable<GetFloorsDDLResponse>> GetFloorsDDL(int instituteID);
+
     }
 }

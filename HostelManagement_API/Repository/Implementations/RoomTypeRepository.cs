@@ -139,5 +139,20 @@ namespace HostelManagement_API.Repository.Implementations
                 return await db.ExecuteAsync(sqlQuery, new { RoomTypeID = roomTypeId });
             }
         }
+
+        public async Task<IEnumerable<GetRoomTypesDDLResponse>> GetRoomTypesDDL(int instituteID)
+        {
+            using (IDbConnection db = new SqlConnection(_connectionString))
+            {
+                string sqlQuery = @"
+                SELECT RoomTypeID, RoomType
+                FROM tblRoomTypes
+                WHERE InstituteID = @InstituteID AND IsActive = 1";
+
+                var roomTypes = await db.QueryAsync<GetRoomTypesDDLResponse>(sqlQuery, new { InstituteID = instituteID });
+                return roomTypes;
+            }
+        }
+
     }
 }

@@ -7,8 +7,8 @@ namespace HostelManagement_API.Services.Interfaces
 {
     public interface IVisitorLogService
     {
-        Task<ServiceResponse<int>> AddUpdateVisitorLog(AddUpdateVisitorLogRequest request);
-        Task<ServiceResponse<PagedResponse<VisitorLogResponse>>> GetAllVisitorLogs(GetAllVisitorLogsRequest request);
+        Task<ServiceResponse<int>> AddUpdateVisitorLog(AddUpdateVisitorLogRequest request); 
+        Task<ServiceResponse<IEnumerable<VisitorLogResponse>>> GetAllVisitorLogs(GetAllVisitorLogsRequest request); 
         Task<ServiceResponse<VisitorLogResponse>> GetVisitorLogById(int hostelVisitorId);
         Task<ServiceResponse<bool>> DeleteVisitorLog(int hostelVisitorId);
     }

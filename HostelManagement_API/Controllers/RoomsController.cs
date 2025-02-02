@@ -1,4 +1,6 @@
 ﻿using HostelManagement_API.DTOs.Requests;
+using HostelManagement_API.DTOs.Responses;
+using HostelManagement_API.DTOs.ServiceResponse; 
 using HostelManagement_API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -54,5 +56,18 @@ namespace HostelManagement_API.Controllers
             _logger.LogInformation("DeleteRoom Response: {@Response}", response);
             return StatusCode(response.StatusCode, response);
         }
+
+        [HttpPost("GetFloorsDDL")]
+        public async Task<IActionResult> GetFloorsDDL([FromBody] GetFloorsDDLRequest request)
+        {
+            _logger.LogInformation("GetFloorsDDL Request Received: {@Request}", request);
+
+            var floors = await _roomService.GetFloorsDDL(request.InstituteID);
+
+            _logger.LogInformation("GetFloorsDDL Response: {@Response}", floors);
+
+            return Ok(new ServiceResponse<IEnumerable<GetFloorsDDLResponse>>(true, "Floors retrieved successfully", floors, 200));
+        }
+
     }
 }

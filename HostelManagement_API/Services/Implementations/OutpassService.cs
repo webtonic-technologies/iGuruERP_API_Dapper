@@ -1,6 +1,7 @@
 ﻿using HostelManagement_API.DTOs.Requests;
 using HostelManagement_API.DTOs.Responses;
 using HostelManagement_API.DTOs.ServiceResponse;
+using HostelManagement_API.Repository.Implementations;
 using HostelManagement_API.Repository.Interfaces;
 using HostelManagement_API.Services.Interfaces;
 using System.Threading.Tasks;
@@ -22,10 +23,9 @@ namespace HostelManagement_API.Services.Implementations
             return new ServiceResponse<int>(true, "Outpass added/updated successfully", outpassId, 200);
         }
 
-        public async Task<ServiceResponse<PagedResponse<OutpassResponse>>> GetAllOutpass(GetAllOutpassRequest request)
+        public async Task<ServiceResponse<IEnumerable<OutpassResponse>>> GetAllOutpass(GetAllOutpassRequest request)
         {
-            var outpasses = await _outpassRepository.GetAllOutpass(request);
-            return new ServiceResponse<PagedResponse<OutpassResponse>>(true, "Outpasses retrieved successfully", outpasses, 200);
+            return await _outpassRepository.GetAllOutpass(request); 
         }
 
         public async Task<ServiceResponse<OutpassResponse>> GetOutpassById(int outpassId)
