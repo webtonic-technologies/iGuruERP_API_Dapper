@@ -257,5 +257,23 @@ namespace Communication_API.Services.Implementations.WhatsApp
             return new ServiceResponse<string>(true, "Excel file generated", filePath, 200);
         }
 
+        public async Task<ServiceResponse<WhatsAppPlanResponse>> GetWhatsAppPlan(int WhatsAppVendorID)
+        {
+            return await _whatsAppRepository.GetWhatsAppPlan(WhatsAppVendorID);
+        }
+
+
+        public async Task<ServiceResponse<List<GetWhatsAppTopUpHistoryResponse>>> GetWhatsAppTopUpHistory(GetWhatsAppTopUpHistoryRequest request)
+        {
+            return await _whatsAppRepository.GetWhatsAppTopUpHistory(request.InstituteID);
+        }
+
+        public async Task<ServiceResponse<List<GetWhatsAppTopUpHistoryExportResponse>>> GetWhatsAppTopUpHistoryExport(GetWhatsAppTopUpHistoryExportRequest request)
+        {
+            var exportData = await _whatsAppRepository.GetWhatsAppTopUpHistoryExport(request.InstituteID);
+
+            var response = new ServiceResponse<List<GetWhatsAppTopUpHistoryExportResponse>>(true, "Export Data Retrieved", exportData, 200);
+            return response;
+        }
     }
 }

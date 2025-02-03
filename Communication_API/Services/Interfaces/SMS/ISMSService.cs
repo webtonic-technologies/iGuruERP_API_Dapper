@@ -1,4 +1,6 @@
-﻿using Communication_API.DTOs.Requests.SMS;
+﻿using Communication_API.DTOs.Requests;
+using Communication_API.DTOs.Requests.SMS;
+using Communication_API.DTOs.Responses;
 using Communication_API.DTOs.Responses.SMS;
 using Communication_API.DTOs.ServiceResponse;
 using Communication_API.Models.SMS;
@@ -22,7 +24,9 @@ namespace Communication_API.Services.Interfaces.SMS
         Task<ServiceResponse<string>> UpdateSMSStudentStatus(UpdateSMSStudentStatusRequest request);
         Task<ServiceResponse<string>> UpdateSMSEmployeeStatus(UpdateSMSEmployeeStatusRequest request);
         Task<ServiceResponse<List<SMSTemplateDDLResponse>>> GetSMSTemplateDDL(SMSTemplateDDLRequest request);
-
+        Task<ServiceResponse<SMSPlanResponse>> GetSMSPlan(int SMSVendorID);  // Add this line
+        Task<ServiceResponse<List<GetSMSTopUpHistoryResponse>>> GetSMSTopUpHistory(GetSMSTopUpHistoryRequest request);
+        Task<ServiceResponse<List<GetSMSTopUpHistoryExportResponse>>> GetSMSTopUpHistoryExport(GetSMSTopUpHistoryExportRequest request);
 
     }
 }

@@ -34,7 +34,7 @@ namespace Communication_API.Repository.Implementations.WhatsApp
             };
 
             var result = await _connection.ExecuteAsync(query, parameters);
-            return new ServiceResponse<string>(true, "Operation Successful", result > 0 ? "Success" : "Failure", result > 0 ? 201 : 400);
+            return new ServiceResponse<string>(true, "Operation Successful", result > 0 ? "Success" : "Failure", result > 0 ? 200 : 400);
         }
 
         public async Task<ServiceResponse<WhatsAppConfiguration>> GetBalance(int VendorID)
@@ -678,6 +678,72 @@ namespace Communication_API.Repository.Implementations.WhatsApp
             }
 
             return filePath;
+        }
+
+        public async Task<ServiceResponse<WhatsAppPlanResponse>> GetWhatsAppPlan(int WhatsAppVendorID)
+        {
+            var query = "SELECT RateID, CreditCount, CreditAmount FROM tblWhatsAppTopUpRate WHERE WhatsAppVendorID = @WhatsAppVendorID AND IsDeleted = 0";
+
+            var plan = await _connection.QueryFirstOrDefaultAsync<WhatsAppPlanResponse>(query, new { WhatsAppVendorID });
+
+            if (plan != null)
+            {
+                return new ServiceResponse<WhatsAppPlanResponse>(true, "Plan found", plan, 200);
+            }
+            else
+            {
+                return new ServiceResponse<WhatsAppPlanResponse>(false, "No plan found for this vendor", null, 404);
+            }
+        }
+
+
+        public async Task<ServiceResponse<List<GetWhatsAppTopUpHistoryResponse>>> GetWhatsAppTopUpHistory(int instituteID)
+        {
+            var query = @"
+            SELECT WO.WhatsAppOrderID, WT.CreditCount AS WhatsAppCredits, WO.TransactionAmount AS Amount, WO.TransactionDate
+            FROM tblWhatsAppOrder WO
+            LEFT JOIN tblWhatsAppTopUpRate WT ON WO.RateID = WT.RateID
+            WHERE WO.InstituteID = @InstituteID";
+
+            var result = await _connection.QueryAsync<dynamic>(query, new { InstituteID = instituteID });
+
+            var responseList = result.Select(x => new GetWhatsAppTopUpHistoryResponse
+            {
+                WhatsAppOrderID = x.WhatsAppOrderID,
+                WhatsAppCredits = x.WhatsAppCredits,
+                Amount = x.Amount,
+                TransactionDate = ((DateTime)x.TransactionDate).ToString("dd-MM-yyyy 'at' hh:mm tt") // Format the date
+            }).ToList();
+
+            if (responseList.Any())
+            {
+                return new ServiceResponse<List<GetWhatsAppTopUpHistoryResponse>>(true, "WhatsApp Top Up History Found", responseList, 200);
+            }
+            else
+            {
+                return new ServiceResponse<List<GetWhatsAppTopUpHistoryResponse>>(false, "No records found", null, 404);
+            }
+        }
+
+        public async Task<List<GetWhatsAppTopUpHistoryExportResponse>> GetWhatsAppTopUpHistoryExport(int instituteID)
+        {
+            var query = @"
+                SELECT WT.CreditCount AS WhatsAppCredits, 
+                       WO.TransactionAmount AS Amount, 
+                       WO.TransactionDate
+                FROM tblWhatsAppOrder WO
+                LEFT JOIN tblWhatsAppTopUpRate WT ON WO.RateID = WT.RateID
+                WHERE WO.InstituteID = @InstituteID";
+
+            var result = await _connection.QueryAsync<GetWhatsAppTopUpHistoryExportResponse>(query, new { InstituteID = instituteID });
+
+            // Format the TransactionDate as 'dd-MM-yyyy at hh:mm tt'
+            foreach (var record in result)
+            {
+                record.TransactionDate = DateTime.Parse(record.TransactionDate).ToString("dd-MM-yyyy 'at' hh:mm tt");
+            }
+
+            return result.ToList();
         }
     }
 }

@@ -275,14 +275,47 @@ namespace SiteAdmin_API.Repository.Implementations
             }
         }
 
+        //public async Task<ServiceResponse<string>> CreateWhatsAppOrder(CreateWhatsAppOrderRequest request)
+        //{
+        //    try
+        //    {
+        //        string query = @"
+        //            INSERT INTO tblWhatsAppOrder (WhatsAppVendorID, InstituteID, TransactionID, TransactionAmount, TransactionDate, OrderStatus)
+        //            VALUES (@WhatsAppVendorID, @InstituteID, @TransactionID, @TransactionAmount, @TransactionDate, @OrderStatus)";
+
+        //        var rowsAffected = await _dbConnection.ExecuteAsync(query, new
+        //        {
+        //            request.WhatsAppVendorID,
+        //            request.InstituteID,
+        //            request.TransactionID,
+        //            request.TransactionAmount,
+        //            request.TransactionDate,
+        //            request.OrderStatus
+        //        });
+
+        //        if (rowsAffected > 0)
+        //        {
+        //            return new ServiceResponse<string>(true, "WhatsApp Order created successfully.", "Success", 200);
+        //        }
+
+        //        return new ServiceResponse<string>(false, "Failed to create WhatsApp Order.", "Failure", 400);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return new ServiceResponse<string>(false, ex.Message, "Error", 500);
+        //    }
+        //}
+
         public async Task<ServiceResponse<string>> CreateWhatsAppOrder(CreateWhatsAppOrderRequest request)
         {
             try
             {
+                // Modified the SQL query to include RateID
                 string query = @"
-                    INSERT INTO tblWhatsAppOrder (WhatsAppVendorID, InstituteID, TransactionID, TransactionAmount, TransactionDate, OrderStatus)
-                    VALUES (@WhatsAppVendorID, @InstituteID, @TransactionID, @TransactionAmount, @TransactionDate, @OrderStatus)";
+            INSERT INTO tblWhatsAppOrder (WhatsAppVendorID, InstituteID, TransactionID, TransactionAmount, TransactionDate, OrderStatus, RateID)
+            VALUES (@WhatsAppVendorID, @InstituteID, @TransactionID, @TransactionAmount, @TransactionDate, @OrderStatus, @RateID)"; // Include RateID in the insert query
 
+                // Execute the query and pass the RateID from the request body
                 var rowsAffected = await _dbConnection.ExecuteAsync(query, new
                 {
                     request.WhatsAppVendorID,
@@ -290,7 +323,8 @@ namespace SiteAdmin_API.Repository.Implementations
                     request.TransactionID,
                     request.TransactionAmount,
                     request.TransactionDate,
-                    request.OrderStatus
+                    request.OrderStatus,
+                    request.RateID // Pass RateID as part of the parameters
                 });
 
                 if (rowsAffected > 0)
@@ -305,6 +339,7 @@ namespace SiteAdmin_API.Repository.Implementations
                 return new ServiceResponse<string>(false, ex.Message, "Error", 500);
             }
         }
+
 
         public async Task<ServiceResponse<IEnumerable<GetWhatsAppOrderResponse>>> GetWhatsAppOrder(GetWhatsAppOrderRequest request)
         {

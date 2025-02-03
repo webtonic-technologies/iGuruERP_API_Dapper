@@ -1,4 +1,5 @@
 ﻿using Communication_API.DTOs.Requests.SMS;
+using Communication_API.DTOs.Responses;
 using Communication_API.DTOs.Responses.SMS;
 using Communication_API.DTOs.ServiceResponse;
 using Communication_API.Models.SMS;
@@ -724,6 +725,74 @@ namespace Communication_API.Repository.Implementations.SMS
             var templates = await _connection.QueryAsync<SMSTemplateDDLResponse>(sql, new { InstituteID = instituteID });
 
             return new ServiceResponse<List<SMSTemplateDDLResponse>>(true, "Templates fetched successfully.", templates.ToList(), 200);
+        }
+
+        public async Task<ServiceResponse<SMSPlanResponse>> GetSMSPlan(int SMSVendorID)
+        {
+            var query = "SELECT RateID, CreditCount, CreditAmount FROM tblSMSTopUpRate WHERE SMSVendorID = @SMSVendorID AND IsDeleted = 0";
+
+            var plan = await _connection.QueryFirstOrDefaultAsync<SMSPlanResponse>(query, new { SMSVendorID });
+
+            if (plan != null)
+            {
+                return new ServiceResponse<SMSPlanResponse>(true, "Plan found", plan, 200);
+            }
+            else
+            {
+                return new ServiceResponse<SMSPlanResponse>(false, "No plan found for this vendor", null, 404);
+            }
+        }
+
+        public async Task<ServiceResponse<List<GetSMSTopUpHistoryResponse>>> GetSMSTopUpHistory(int instituteID)
+        {
+            var query = @"
+            SELECT SO.SMSOrderID, ST.CreditCount AS SMSCredits, SO.TransactionAmount AS Amount, SO.TransactionDate
+            FROM tblSMSOrder SO
+            LEFT JOIN tblSMSTopUpRate ST ON SO.RateID = ST.RateID
+            WHERE SO.InstituteID = @InstituteID";
+
+            var result = await _connection.QueryAsync<dynamic>(query, new { InstituteID = instituteID });
+
+            // Format the TransactionDate and return the response
+            var responseList = result.Select(x => new GetSMSTopUpHistoryResponse
+            {
+                SMSOrderID = x.SMSOrderID,
+                SMSCredits = x.SMSCredits,
+                Amount = x.Amount,
+                // Format the TransactionDate to the required format
+                TransactionDate = ((DateTime)x.TransactionDate).ToString("dd-MM-yyyy 'at' hh:mm tt")
+            }).ToList();
+
+            if (responseList.Any())
+            {
+                return new ServiceResponse<List<GetSMSTopUpHistoryResponse>>(true, "SMS Top Up History Found", responseList, 200);
+            }
+            else
+            {
+                return new ServiceResponse<List<GetSMSTopUpHistoryResponse>>(false, "No records found", null, 404);
+            }
+        }
+
+
+        public async Task<List<GetSMSTopUpHistoryExportResponse>> GetSMSTopUpHistoryExport(int instituteID)
+        {
+            var query = @"
+                SELECT ST.CreditCount AS SMSCredits, 
+                       SO.TransactionAmount AS Amount, 
+                       SO.TransactionDate
+                FROM tblSMSOrder SO
+                LEFT JOIN tblSMSTopUpRate ST ON SO.RateID = ST.RateID
+                WHERE SO.InstituteID = @InstituteID";
+
+            var result = await _connection.QueryAsync<GetSMSTopUpHistoryExportResponse>(query, new { InstituteID = instituteID });
+
+            // Format the TransactionDate as 'dd-MM-yyyy at hh:mm tt'
+            foreach (var record in result)
+            {
+                record.TransactionDate = DateTime.Parse(record.TransactionDate).ToString("dd-MM-yyyy 'at' hh:mm tt");
+            }
+
+            return result.ToList();
         }
 
     }

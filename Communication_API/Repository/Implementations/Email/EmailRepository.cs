@@ -36,7 +36,7 @@ namespace Communication_API.Repository.Implementations.Email
             };
 
             var result = await _connection.ExecuteAsync(query, parameters);
-            return new ServiceResponse<string>(true, "Operation Successful", result > 0 ? "Success" : "Failure", result > 0 ? 201 : 400);
+            return new ServiceResponse<string>(true, "Operation Successful", result > 0 ? "Success" : "Failure", result > 0 ? 200 : 400);
         }
 
         public async Task<ServiceResponse<string>> SendNewEmail(SendNewEmailRequest request)
@@ -121,7 +121,7 @@ namespace Communication_API.Repository.Implementations.Email
                     }
                 }
 
-                return new ServiceResponse<string>(true, "Email added successfully", "Email added/updated successfully", 201);
+                return new ServiceResponse<string>(true, "Email added successfully", "Email added/updated successfully", 200);
             }
             else
             {

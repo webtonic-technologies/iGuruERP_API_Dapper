@@ -8,5 +8,6 @@
         public decimal TransactionAmount { get; set; }
         public DateTime TransactionDate { get; set; }
         public int OrderStatus { get; set; }
+        public int RateID { get; set; }
     }
 }

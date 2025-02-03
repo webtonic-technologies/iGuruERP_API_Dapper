@@ -277,13 +277,45 @@ namespace SiteAdmin_API.Repository.Implementations
             }
         }
 
+        //public async Task<ServiceResponse<string>> CreateSMSOrder(CreateSMSOrderRequest request)
+        //{
+        //    try
+        //    {
+        //        string query = @"
+        //        INSERT INTO tblSMSOrder (SMSVendorID, InstituteID, TransactionID, TransactionAmount, TransactionDate, OrderStatus)
+        //        VALUES (@SMSVendorID, @InstituteID, @TransactionID, @TransactionAmount, @TransactionDate, @OrderStatus)";
+
+        //        var rowsAffected = await _dbConnection.ExecuteAsync(query, new
+        //        {
+        //            request.SMSVendorID,
+        //            request.InstituteID,
+        //            request.TransactionID,
+        //            request.TransactionAmount,
+        //            request.TransactionDate,
+        //            request.OrderStatus
+        //        });
+
+        //        if (rowsAffected > 0)
+        //        {
+        //            return new ServiceResponse<string>(true, "SMS Order created successfully.", "Success", 200);
+        //        }
+
+        //        return new ServiceResponse<string>(false, "Failed to create SMS Order.", "Failure", 400);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return new ServiceResponse<string>(false, ex.Message, "Error", 500);
+        //    }
+        //}
+
+
         public async Task<ServiceResponse<string>> CreateSMSOrder(CreateSMSOrderRequest request)
         {
             try
             {
                 string query = @"
-                INSERT INTO tblSMSOrder (SMSVendorID, InstituteID, TransactionID, TransactionAmount, TransactionDate, OrderStatus)
-                VALUES (@SMSVendorID, @InstituteID, @TransactionID, @TransactionAmount, @TransactionDate, @OrderStatus)";
+                INSERT INTO tblSMSOrder (SMSVendorID, InstituteID, TransactionID, TransactionAmount, TransactionDate, OrderStatus, RateID)
+                VALUES (@SMSVendorID, @InstituteID, @TransactionID, @TransactionAmount, @TransactionDate, @OrderStatus, @RateID)"; // Add RateID in the insert query
 
                 var rowsAffected = await _dbConnection.ExecuteAsync(query, new
                 {
@@ -292,7 +324,8 @@ namespace SiteAdmin_API.Repository.Implementations
                     request.TransactionID,
                     request.TransactionAmount,
                     request.TransactionDate,
-                    request.OrderStatus
+                    request.OrderStatus,
+                    request.RateID  // Pass RateID as part of the parameters
                 });
 
                 if (rowsAffected > 0)
@@ -307,6 +340,7 @@ namespace SiteAdmin_API.Repository.Implementations
                 return new ServiceResponse<string>(false, ex.Message, "Error", 500);
             }
         }
+
 
         public async Task<ServiceResponse<IEnumerable<GetSMSOrderResponse>>> GetSMSOrder(DateTime startDate, DateTime endDate, int statusID)
         {

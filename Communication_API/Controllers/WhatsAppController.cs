@@ -235,5 +235,71 @@ namespace Communication_API.Controllers
             }
         }
 
+        [HttpPost("GetWhatsAppPlan")]
+        public async Task<IActionResult> GetWhatsAppPlan([FromBody] GetWhatsAppPlanRequest request)
+        {
+            var response = await _whatsAppService.GetWhatsAppPlan(request.WhatsAppVendorID);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("GetWhatsAppTopUpHistory")]
+        public async Task<IActionResult> GetWhatsAppTopUpHistory([FromBody] GetWhatsAppTopUpHistoryRequest request)
+        {
+            var response = await _whatsAppService.GetWhatsAppTopUpHistory(request);
+
+            if (response.Success)
+            {
+                return Ok(response); // Return 200 OK response
+            }
+
+            return BadRequest(response); // Return 400 Bad Request response
+        }
+
+        [HttpPost("GetWhatsAppTopUpHistoryExport")]
+        public async Task<IActionResult> GetWhatsAppTopUpHistoryExport([FromBody] GetWhatsAppTopUpHistoryExportRequest request)
+        {
+            var response = await _whatsAppService.GetWhatsAppTopUpHistoryExport(request);
+
+            if (response.Success)
+            {
+                var memoryStream = new MemoryStream();
+
+                // Handle export type (Excel or CSV)
+                if (request.ExportType == 1)
+                {
+                    // Generate Excel
+                    using (var package = new ExcelPackage(memoryStream))
+                    {
+                        var worksheet = package.Workbook.Worksheets.Add("WhatsAppTopUpHistory");
+                        worksheet.Cells.LoadFromCollection(response.Data, true);
+                        package.Save();
+                    }
+                    memoryStream.Position = 0;
+                    return File(memoryStream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "WhatsAppTopUpHistory.xlsx");
+                }
+                else if (request.ExportType == 2)
+                {
+                    // Generate CSV
+                    var csv = string.Join(",", new[] { "WhatsAppCredits", "Amount", "TransactionDate" }) + "\n";
+                    foreach (var record in response.Data)
+                    {
+                        csv += $"{record.WhatsAppCredits},{record.Amount},{record.TransactionDate}\n";
+                    }
+
+                    var csvBytes = System.Text.Encoding.UTF8.GetBytes(csv);
+                    memoryStream.Write(csvBytes, 0, csvBytes.Length);
+                    memoryStream.Position = 0;
+                    return File(memoryStream, "text/csv", "WhatsAppTopUpHistory.csv");
+                }
+                else
+                {
+                    return BadRequest("Invalid ExportType");
+                }
+            }
+            else
+            {
+                return BadRequest(response.Message);
+            }
+        }
     }
 }

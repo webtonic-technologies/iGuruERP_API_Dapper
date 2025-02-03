@@ -25,5 +25,9 @@ namespace Communication_API.Services.Interfaces.WhatsApp
         Task<ServiceResponse<string>> GetWhatsAppStudentReportExport(WhatsAppStudentReportExportRequest request);
         Task<ServiceResponse<List<WhatsAppEmployeeReportsResponse>>> GetWhatsAppEmployeeReport(GetWhatsAppEmployeeReportRequest request);
         Task<ServiceResponse<string>> GetWhatsAppEmployeeReportExport(WhatsAppEmployeeReportExportRequest request);
+        Task<ServiceResponse<WhatsAppPlanResponse>> GetWhatsAppPlan(int WhatsAppVendorID);
+        Task<ServiceResponse<List<GetWhatsAppTopUpHistoryResponse>>> GetWhatsAppTopUpHistory(GetWhatsAppTopUpHistoryRequest request);
+        Task<ServiceResponse<List<GetWhatsAppTopUpHistoryExportResponse>>> GetWhatsAppTopUpHistoryExport(GetWhatsAppTopUpHistoryExportRequest request);
+
     }
 }

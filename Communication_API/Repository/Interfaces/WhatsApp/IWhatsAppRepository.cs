@@ -24,7 +24,10 @@ namespace Communication_API.Repository.Interfaces.WhatsApp
         Task<ServiceResponse<List<WhatsAppStudentReportsResponse>>> GetWhatsAppStudentReport(GetWhatsAppStudentReportRequest request);
         Task<List<WhatsAppStudentReportExportResponse>> GetWhatsAppStudentReportData(WhatsAppStudentReportExportRequest request);
         Task<ServiceResponse<List<WhatsAppEmployeeReportsResponse>>> GetWhatsAppEmployeeReport(GetWhatsAppEmployeeReportRequest request);
-        Task<string> GetWhatsAppEmployeeReportExport(WhatsAppEmployeeReportExportRequest request); 
+        Task<string> GetWhatsAppEmployeeReportExport(WhatsAppEmployeeReportExportRequest request);
+        Task<ServiceResponse<WhatsAppPlanResponse>> GetWhatsAppPlan(int WhatsAppVendorID);
+        Task<ServiceResponse<List<GetWhatsAppTopUpHistoryResponse>>> GetWhatsAppTopUpHistory(int instituteID);
+        Task<List<GetWhatsAppTopUpHistoryExportResponse>> GetWhatsAppTopUpHistoryExport(int instituteID);
 
     }
 }

@@ -1,4 +1,6 @@
-﻿using Communication_API.DTOs.Requests.SMS;
+﻿using Communication_API.DTOs.Requests;
+using Communication_API.DTOs.Requests.SMS;
+using Communication_API.DTOs.Responses;
 using Communication_API.DTOs.Responses.SMS;
 using Communication_API.DTOs.ServiceResponse;
 using Communication_API.Models.SMS;
@@ -250,5 +252,26 @@ namespace Communication_API.Services.Implementations.SMS
         {
             return await _smsRepository.GetSMSTemplateDDL(request.InstituteID);
         }
+
+        public async Task<ServiceResponse<SMSPlanResponse>> GetSMSPlan(int SMSVendorID)
+        {
+            // Call the repository method to get the plan for the given SMSVendorID
+            return await _smsRepository.GetSMSPlan(SMSVendorID);
+        }
+
+        public async Task<ServiceResponse<List<GetSMSTopUpHistoryResponse>>> GetSMSTopUpHistory(GetSMSTopUpHistoryRequest request)
+        {
+            return await _smsRepository.GetSMSTopUpHistory(request.InstituteID);
+        }
+
+
+        public async Task<ServiceResponse<List<GetSMSTopUpHistoryExportResponse>>> GetSMSTopUpHistoryExport(GetSMSTopUpHistoryExportRequest request)
+        {
+            var exportData = await _smsRepository.GetSMSTopUpHistoryExport(request.InstituteID);
+
+            var response = new ServiceResponse<List<GetSMSTopUpHistoryExportResponse>>(true, "Export Data Retrieved", exportData, 200);
+            return response;
+        }
+
     }
 }
