@@ -18,6 +18,7 @@
         public int InstituteID { get; set; }
         public List<StudentEmail> StudentEmail { get; set; }  // Renamed to avoid conflict
         public string EmailDate { get; set; } // Changed to string to match request format
+        public int SentBy { get; set; }
     }
 
     public class StudentEmail

@@ -22,5 +22,7 @@
         // New properties
         public string AcademicYearCode { get; set; } 
         public int InstituteID { get; set; }
+        public int SentBy { get; set; }
+
     }
 }

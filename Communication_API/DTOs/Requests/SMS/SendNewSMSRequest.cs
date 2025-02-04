@@ -23,5 +23,6 @@
         // Add new properties for AcademicYearCode and InstituteID
         public string? AcademicYearCode { get; set; }
         public int? InstituteID { get; set; }
+        public int SentBy { get; set; }
     }
 }

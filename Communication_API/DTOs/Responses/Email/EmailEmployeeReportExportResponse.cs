@@ -8,5 +8,7 @@
         public string EmailSubject { get; set; }
         public string EmailID { get; set; }
         public string Status { get; set; }
+        public string SentBy { get; set; }
+
     }
 }

@@ -80,7 +80,7 @@ namespace Communication_API.Services.Implementations.WhatsApp
                 // Iterate over each studentMessage and insert SMS data into the table
                 foreach (var student in request.StudentMessages)
                 {
-                    await _whatsAppRepository.InsertWhatsAppForStudent(request.GroupID, request.InstituteID, student.StudentID, student.WhatsAppMessage, whatsAppDate, 1); // Assuming SMSStatusID is 1
+                    await _whatsAppRepository.InsertWhatsAppForStudent(request.GroupID, request.InstituteID, student.StudentID, student.WhatsAppMessage, whatsAppDate, 1, request.SentBy); // Assuming SMSStatusID is 1
                 }
 
                 return new ServiceResponse<string>(true, "WhatsApp sent successfully to students.", "WhatsApp sent successfully", 200);
@@ -102,7 +102,7 @@ namespace Communication_API.Services.Implementations.WhatsApp
                 // Iterate over each employeeMessage and insert SMS data into the table
                 foreach (var employee in request.EmployeeMessages)
                 {
-                    await _whatsAppRepository.InsertWhatsAppForEmployee(request.GroupID, request.InstituteID, employee.EmployeeID, employee.Message, WhatsAppDate, 1); // Assuming SMSStatusID is 1
+                    await _whatsAppRepository.InsertWhatsAppForEmployee(request.GroupID, request.InstituteID, employee.EmployeeID, employee.Message, WhatsAppDate, 1, request.SentBy); // Assuming SMSStatusID is 1
                 }
 
                 return new ServiceResponse<string>(true, "WhatsApp sent successfully to employees.", "WhatsApp sent successfully", 200);
@@ -205,6 +205,7 @@ namespace Communication_API.Services.Implementations.WhatsApp
                 worksheet.Cells[1, 4].Value = "Date Time";
                 worksheet.Cells[1, 5].Value = "Message";
                 worksheet.Cells[1, 6].Value = "Status";
+                worksheet.Cells[1, 7].Value = "Sent By";
 
                 int row = 2;
                 foreach (var item in data)
@@ -215,6 +216,8 @@ namespace Communication_API.Services.Implementations.WhatsApp
                     worksheet.Cells[row, 4].Value = item.DateTime;
                     worksheet.Cells[row, 5].Value = item.Message;
                     worksheet.Cells[row, 6].Value = item.Status;
+                    worksheet.Cells[row, 7].Value = item.SentBy;
+
                     row++;
                 }
 
@@ -228,11 +231,11 @@ namespace Communication_API.Services.Implementations.WhatsApp
         private string GenerateCsvFile(List<WhatsAppStudentReportExportResponse> data)
         {
             var csvBuilder = new StringBuilder();
-            csvBuilder.AppendLine("Admission Number, Student Name, Class Section, Date Time, Message, Status");
+            csvBuilder.AppendLine("Admission Number, Student Name, Class Section, Date Time, Message, Status, Sent By");
 
             foreach (var item in data)
             {
-                csvBuilder.AppendLine($"{item.AdmissionNumber}, {item.StudentName}, {item.ClassSection}, {item.DateTime}, {item.Message}, {item.Status}");
+                csvBuilder.AppendLine($"{item.AdmissionNumber}, {item.StudentName}, {item.ClassSection}, {item.DateTime}, {item.Message}, {item.Status}, {item.SentBy}");
             }
 
             var filePath = Path.Combine(Directory.GetCurrentDirectory(), "WhatsAppReport.csv");

@@ -1,3 +1,3 @@
-Admission Number, Student Name, Class Section, Date Time, Message, Status
-ADM001, Aarav Kumar Sharma, Grade 1-Section A, 18 January 2025, 12:00 AM, Your class has been rescheduled to tomorrow at 10 AM., Sent
-ADM002, Vivaan Raj Gupta, Grade 1-Section A, 18 January 2025, 12:00 AM, Reminder: Your upcoming exam is scheduled for next week. Prepare well!, Pending
+Admission Number, Student Name, Class Section, Date Time, Message, Status, Sent By
+ADM001, Aarav Kumar Sharma, Grade 1-Section A, 04 February 2025, 12:00 AM, Hello, your attendance has been recorded., Pending, John Smith
+ADM002, Vivaan Raj Gupta, Grade 1-Section A, 04 February 2025, 12:00 AM, Reminder: Your exam is scheduled for tomorrow., Pending, John Smith

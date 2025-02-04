@@ -7,6 +7,7 @@
         public int InstituteID { get; set; }
         public List<StudentMessage> StudentMessages { get; set; }  // Renamed to avoid conflict
         public string SMSDate { get; set; } // Changed to string to match request format
+        public int SentBy { get; set; }
     }
 
     public class StudentMessage

@@ -142,28 +142,29 @@ namespace Communication_API.Controllers
             return StatusCode(response.StatusCode, response);
         }
 
-        //[HttpPost("GetEmailEmployeeReportExport")]
-        //public async Task<IActionResult> GetEmailEmployeeReportExport([FromBody] EmailEmployeeReportExportRequest request)
-        //{
-        //    var response = await _emailService.GetEmailEmployeeReportExport(request);
 
-        //    if (response.Success)
-        //    {
-        //        string filePath = response.Data;
-        //        if (System.IO.File.Exists(filePath))
-        //        {
-        //            byte[] fileBytes = System.IO.File.ReadAllBytes(filePath);
-        //            return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "EmailReport.xlsx");
-        //        }
-        //        else
-        //        {
-        //            return BadRequest("File not found.");
-        //        }
-        //    }
-        //    else
-        //    {
-        //        return BadRequest(response.Message);
-        //    }
-        //}
+        [HttpPost("GetEmailEmployeeReportExport")]
+        public async Task<IActionResult> GetEmailEmployeeReportExport([FromBody] EmailEmployeeReportExportRequest request)
+        {
+            var response = await _emailService.GetEmailEmployeeReportExport(request);
+
+            if (response.Success)
+            {
+                string filePath = response.Data;
+                if (System.IO.File.Exists(filePath))
+                {
+                    byte[] fileBytes = System.IO.File.ReadAllBytes(filePath);
+                    return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "EmailReport.xlsx");
+                }
+                else
+                {
+                    return BadRequest("File not found.");
+                }
+            }
+            else
+            {
+                return BadRequest(response.Message);
+            }
+        }
     }
 }

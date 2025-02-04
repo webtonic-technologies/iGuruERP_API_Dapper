@@ -15,6 +15,7 @@
         public int InstituteID { get; set; }
         public List<EmployeeMessage> EmployeeMessages { get; set; }  // Renamed property to EmployeeMessages
         public string SMSDate { get; set; } // Changed to string to match request format
+        public int SentBy { get; set; }
     }
 
     public class EmployeeMessage

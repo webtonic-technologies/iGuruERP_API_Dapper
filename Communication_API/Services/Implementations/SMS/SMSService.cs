@@ -99,6 +99,7 @@ namespace Communication_API.Services.Implementations.SMS
                 worksheet.Cells[1, 4].Value = "Date Time";
                 worksheet.Cells[1, 5].Value = "Message";
                 worksheet.Cells[1, 6].Value = "Status";
+                worksheet.Cells[1, 7].Value = "Sent By";
 
                 int row = 2;
                 foreach (var item in data)
@@ -109,6 +110,7 @@ namespace Communication_API.Services.Implementations.SMS
                     worksheet.Cells[row, 4].Value = item.DateTime;
                     worksheet.Cells[row, 5].Value = item.Message;
                     worksheet.Cells[row, 6].Value = item.Status;
+                    worksheet.Cells[row, 7].Value = item.SentBy;
                     row++;
                 }
 
@@ -122,11 +124,11 @@ namespace Communication_API.Services.Implementations.SMS
         private string GenerateCsvFile(List<SMSStudentReportExportResponse> data)
         {
             var csvBuilder = new StringBuilder();
-            csvBuilder.AppendLine("Admission Number, Student Name, Class Section, Date Time, Message, Status");
+            csvBuilder.AppendLine("Admission Number, Student Name, Class Section, Date Time, Message, Status, Sent By");
 
             foreach (var item in data)
             {
-                csvBuilder.AppendLine($"{item.AdmissionNumber}, {item.StudentName}, {item.ClassSection}, {item.DateTime}, {item.Message}, {item.Status}");
+                csvBuilder.AppendLine($"{item.AdmissionNumber}, {item.StudentName}, {item.ClassSection}, {item.DateTime}, {item.Message}, {item.Status}, {item.SentBy}");
             }
 
             var filePath = Path.Combine(Directory.GetCurrentDirectory(), "SMSReport.csv");
@@ -183,7 +185,7 @@ namespace Communication_API.Services.Implementations.SMS
                 // Iterate over each studentMessage and insert SMS data into the table
                 foreach (var student in request.StudentMessages)
                 {
-                    await _smsRepository.InsertSMSForStudent(request.GroupID, request.InstituteID, student.StudentID, student.Message, smsDate, 1); // Assuming SMSStatusID is 1
+                    await _smsRepository.InsertSMSForStudent(request.GroupID, request.InstituteID, student.StudentID, student.Message, smsDate, 1, request.SentBy); // Assuming SMSStatusID is 1
                 }
 
                 return new ServiceResponse<string>(true, "SMS sent successfully to students.", "SMS sent successfully", 200);
@@ -205,7 +207,7 @@ namespace Communication_API.Services.Implementations.SMS
                 // Iterate over each employeeMessage and insert SMS data into the table
                 foreach (var employee in request.EmployeeMessages)
                 {
-                    await _smsRepository.InsertSMSForEmployee(request.GroupID, request.InstituteID, employee.EmployeeID, employee.Message, smsDate, 1); // Assuming SMSStatusID is 1
+                    await _smsRepository.InsertSMSForEmployee(request.GroupID, request.InstituteID, employee.EmployeeID, employee.Message, smsDate, 1, request.SentBy); // Assuming SMSStatusID is 1
                 }
 
                 return new ServiceResponse<string>(true, "SMS sent successfully to employees.", "SMS sent successfully", 200);

@@ -6,6 +6,7 @@
         public int InstituteID { get; set; }
         public List<EmployeeWhatsAppMessage> EmployeeMessages { get; set; }  // Renamed property to EmployeeMessages
         public string WhatsAppDate { get; set; } // Changed to string to match request format
+        public int SentBy { get; set; } // Changed to string to match request format
     }
     
     public class EmployeeWhatsAppMessage

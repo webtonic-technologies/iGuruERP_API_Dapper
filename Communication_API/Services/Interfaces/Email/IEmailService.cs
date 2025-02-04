@@ -19,6 +19,6 @@ namespace Communication_API.Services.Interfaces.Email
         Task<ServiceResponse<List<EmailStudentReportsResponse>>> GetEmailStudentReport(GetEmailStudentReportRequest request);
         Task<ServiceResponse<string>> GetEmailStudentReportExport(EmailStudentReportExportRequest request);
         Task<ServiceResponse<List<EmailEmployeeReportsResponse>>> GetEmailEmployeeReport(GetEmailEmployeeReportRequest request);
-        //Task<ServiceResponse<string>> GetEmailEmployeeReportExport(EmailEmployeeReportExportRequest request);
+        Task<ServiceResponse<string>> GetEmailEmployeeReportExport(EmailEmployeeReportExportRequest request);
     }
 }

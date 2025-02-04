@@ -19,8 +19,8 @@ namespace Communication_API.Repository.Interfaces.SMS
         Task<List<SMSStudentReportExportResponse>> GetSMSStudentReportData(SMSStudentReportExportRequest request); 
         Task<ServiceResponse<List<SMSEmployeeReportsResponse>>> GetSMSEmployeeReport(GetSMSEmployeeReportRequest request);
         Task<string> GetSMSEmployeeReportExport(SMSEmployeeReportExportRequest request); 
-        Task InsertSMSForStudent(int groupID, int instituteID, int studentID, string smsMessage, DateTime smsDate, int smsStatusID);
-        Task InsertSMSForEmployee(int groupID, int instituteID, int employeeID, string smsMessage, DateTime smsDate, int smsStatusID);
+        Task InsertSMSForStudent(int groupID, int instituteID, int studentID, string smsMessage, DateTime smsDate, int smsStatusID, int SentBy);
+        Task InsertSMSForEmployee(int groupID, int instituteID, int employeeID, string smsMessage, DateTime smsDate, int smsStatusID, int SentBy);
         Task UpdateSMSStudentStatus(int groupID, int instituteID, int studentID, int smsStatusID);
         Task UpdateSMSEmployeeStatus(int groupID, int instituteID, int employeeID, int smsStatusID);
         Task<ServiceResponse<List<SMSTemplateDDLResponse>>> GetSMSTemplateDDL(int instituteID); 

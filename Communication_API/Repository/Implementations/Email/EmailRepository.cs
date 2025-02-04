@@ -78,9 +78,9 @@ namespace Communication_API.Repository.Implementations.Email
             }
 
             // Insert or update the Email
-            var query = @"INSERT INTO [tblEmailMaster] (EmailSubject, EmailBody, UserTypeID, GroupID, Status, ScheduleNow, ScheduleDate, ScheduleTime, AcademicYearCode, InstituteID) 
-          VALUES (@EmailSubject, @EmailBody, @UserTypeID, @GroupID, @Status, @ScheduleNow, @ScheduleDate, @ScheduleTime, @AcademicYearCode, @InstituteID);
-          SELECT CAST(SCOPE_IDENTITY() as int);";
+            var query = @"INSERT INTO [tblEmailMaster] (EmailSubject, EmailBody, UserTypeID, GroupID, Status, ScheduleNow, ScheduleDate, ScheduleTime, AcademicYearCode, InstituteID, SentBy) 
+              VALUES (@EmailSubject, @EmailBody, @UserTypeID, @GroupID, @Status, @ScheduleNow, @ScheduleDate, @ScheduleTime, @AcademicYearCode, @InstituteID, @SentBy);
+              SELECT CAST(SCOPE_IDENTITY() as int);";
 
             // Execute the query and get the EmailSendID
             var emailSendID = await _connection.ExecuteScalarAsync<int>(query, new
@@ -94,7 +94,8 @@ namespace Communication_API.Repository.Implementations.Email
                 ScheduleDate = scheduleDate,
                 ScheduleTime = scheduleTime,
                 request.AcademicYearCode,
-                request.InstituteID
+                request.InstituteID,
+                request.SentBy
             });
 
             // Proceed with student or employee mappings
@@ -192,11 +193,11 @@ namespace Communication_API.Repository.Implementations.Email
             }
         }
 
-        public async Task InsertEmailForStudent(int groupID, int instituteID, int studentID, string emailSubject, string emailBody, DateTime emailDate, int emailStatusID)
+        public async Task InsertEmailForStudent(int groupID, int instituteID, int studentID, string emailSubject, string emailBody, DateTime emailDate, int emailStatusID, int SentBy)
         {
             string sql = @"
-                INSERT INTO tblEmailStudent (GroupID, InstituteID, StudentID, EmailSubject, EmailBody, EmailDate, EmailStatusID)
-                VALUES (@GroupID, @InstituteID, @StudentID, @EmailSubject, @EmailBody, @EmailDate, @EmailStatusID)";
+                INSERT INTO tblEmailStudent (GroupID, InstituteID, StudentID, EmailSubject, EmailBody, EmailDate, EmailStatusID, SentBy)
+                VALUES (@GroupID, @InstituteID, @StudentID, @EmailSubject, @EmailBody, @EmailDate, @EmailStatusID, @SentBy)";
 
             await _connection.ExecuteAsync(sql, new
             {
@@ -206,18 +207,21 @@ namespace Communication_API.Repository.Implementations.Email
                 EmailSubject = emailSubject,
                 EmailBody = emailBody,
                 EmailDate = emailDate,
-                EmailStatusID = emailStatusID
+                EmailStatusID = emailStatusID,
+                SentBy = SentBy
             });
+
             string receiverEmailQuery = @"SELECT s.student_id, spi.Email_id FROM tbl_StudentMaster s LEFT JOIN tbl_StudentParentsInfo spi ON s.student_id = spi.student_id where s.student_id = @student_id";
             string receiverEmail = await _connection.QueryFirstOrDefaultAsync<string>(receiverEmailQuery, new { student_id = studentID });
             var email = new SendEmail();
             email.SendEmailWithAttachmentAsync(receiverEmail, string.Empty, emailSubject, emailBody);
         }
-        public async Task InsertEmailForEmployee(int groupID, int instituteID, int employeeID, string emailSubject, string emailBody, DateTime emailDate, int emailStatusID)
+
+        public async Task InsertEmailForEmployee(int groupID, int instituteID, int employeeID, string emailSubject, string emailBody, DateTime emailDate, int emailStatusID, int SentBy)
         {
             string sql = @"
-                INSERT INTO tblEmailEmployee (GroupID, InstituteID, EmployeeID, EmailSubject, EmailBody, EmailDate, EmailStatusID)
-                VALUES (@GroupID, @InstituteID, @EmployeeID, @EmailSubject, @EmailBody, @EmailDate, @EmailStatusID)";
+                INSERT INTO tblEmailEmployee (GroupID, InstituteID, EmployeeID, EmailSubject, EmailBody, EmailDate, EmailStatusID, SentBy)
+                VALUES (@GroupID, @InstituteID, @EmployeeID, @EmailSubject, @EmailBody, @EmailDate, @EmailStatusID, @SentBy)";
 
             await _connection.ExecuteAsync(sql, new
             {
@@ -227,7 +231,8 @@ namespace Communication_API.Repository.Implementations.Email
                 EmailSubject = emailSubject,
                 EmailBody = emailBody,
                 EmailDate = emailDate,
-                EmailStatusID = emailStatusID
+                EmailStatusID = emailStatusID,
+                SentBy = SentBy
             });
             string receiverEmail = await _connection.QueryFirstOrDefaultAsync<string>(@"select EmailID from tbl_EmployeeProfileMaster where Employee_id = @Employee_id", new { Employee_id = employeeID });
             var email = new SendEmail();
@@ -305,13 +310,15 @@ namespace Communication_API.Repository.Implementations.Email
                 --ss.SMSDate AS DateTime,  -- SMSDate is the equivalent of ScheduleDate
                 FORMAT(ss.EmailDate, 'dd MMMM yyyy, hh:mm tt', 'en-US') AS DateTime, 
                 ss.EmailSubject AS EmailSubject,  -- SMSMessage is the equivalent of Message
-                sts.EmailStatusName AS Status  -- Join with tblSMSStatus to get the status name
+                sts.EmailStatusName AS Status,  -- Join with tblSMSStatus to get the status name
+	            e.First_Name + ' ' + e.Last_Name AS SentBy  -- Adding SentByName from tbl_EmployeeProfileMaster 
             FROM tblEmailStudent ss
             INNER JOIN tbl_StudentMaster s ON ss.StudentID = s.student_id
             --INNER JOIN tblGroupClassSectionMapping gcsm ON gcsm.GroupID = ss.GroupID
             INNER JOIN tbl_Class c ON s.class_id = c.class_id
             INNER JOIN tbl_Section sec ON s.section_id = sec.section_id
             INNER JOIN tblEmailStatus sts ON ss.EmailStatusID = sts.EmailStatusID
+            LEFT JOIN tbl_EmployeeProfileMaster e ON ss.SentBy = e.Employee_id
             WHERE ss.EmailDate BETWEEN @StartDate AND @EndDate
             AND (s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name) LIKE '%' + @Search + '%'
             AND s.Institute_id = @InstituteID
@@ -333,7 +340,8 @@ namespace Communication_API.Repository.Implementations.Email
                 ClassSection = report.ClassSection,
                 DateTime = report.DateTime,
                 EmailSubject = report.EmailSubject,
-                Status = report.Status // Assuming you want a string for status
+                Status = report.Status, // Assuming you want a string for status
+                SentBy = report.SentBy
             }).ToList();
 
             // Return the response with totalCount
@@ -356,19 +364,22 @@ namespace Communication_API.Repository.Implementations.Email
 
             string sql = @"
             SELECT 
+                s.student_id AS StudentID,
                 s.Admission_Number AS AdmissionNumber,
                 s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name AS StudentName,
                 CONCAT(c.class_name, '-', sec.section_name) AS ClassSection,
                 --ss.SMSDate AS DateTime,  -- SMSDate is the equivalent of ScheduleDate
-                FORMAT(ss.EmailDate, 'dd MMMM yyyy, hh:mm tt', 'en-US') AS DateTime,  
+                FORMAT(ss.EmailDate, 'dd MMMM yyyy, hh:mm tt', 'en-US') AS DateTime, 
                 ss.EmailSubject AS EmailSubject,  -- SMSMessage is the equivalent of Message
-                sts.EmailStatusName AS Status  -- Join with tblSMSStatus to get the status name
+                sts.EmailStatusName AS Status,  -- Join with tblSMSStatus to get the status name
+	            e.First_Name + ' ' + e.Last_Name AS SentBy  -- Adding SentByName from tbl_EmployeeProfileMaster 
             FROM tblEmailStudent ss
             INNER JOIN tbl_StudentMaster s ON ss.StudentID = s.student_id
             --INNER JOIN tblGroupClassSectionMapping gcsm ON gcsm.GroupID = ss.GroupID
             INNER JOIN tbl_Class c ON s.class_id = c.class_id
             INNER JOIN tbl_Section sec ON s.section_id = sec.section_id
             INNER JOIN tblEmailStatus sts ON ss.EmailStatusID = sts.EmailStatusID
+            LEFT JOIN tbl_EmployeeProfileMaster e ON ss.SentBy = e.Employee_id
             WHERE ss.EmailDate BETWEEN @StartDate AND @EndDate
             AND (s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name) LIKE '%' + @Search + '%'
             AND s.Institute_id = @InstituteID
@@ -416,13 +427,15 @@ namespace Communication_API.Repository.Implementations.Email
                 FORMAT(se.EmailDate, 'dd MMMM yyyy, hh:mm tt', 'en-US') AS DateTime,  
                 se.EmailSubject AS EmailSubject,  -- SMSMessage is the equivalent of Message
                 e.EmailID AS EmailID,
-                sts.EmailStatusName AS Status  -- Join with tblSMSStatus to get the status name
+                sts.EmailStatusName AS Status,  -- Join with tblSMSStatus to get the status name
+                ee.First_Name + ' ' + ee.Last_Name AS SentBy
             FROM tblEmailEmployee se
             INNER JOIN tbl_EmployeeProfileMaster e ON se.EmployeeID = e.Employee_id
             --INNER JOIN tblGroupEmployeeMapping gem ON gem.GroupID = se.GroupID
             INNER JOIN tbl_Department d ON e.Department_id = d.Department_id
             INNER JOIN tbl_Designation de ON e.Designation_id = de.Designation_id
             INNER JOIN tblEmailStatus sts ON se.EmailStatusID = sts.EmailStatusID
+            LEFT JOIN tbl_EmployeeProfileMaster ee ON se.SentBy = ee.Employee_id
              WHERE se.EmailDate BETWEEN @StartDate AND @EndDate
              AND (e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name) LIKE '%' + @Search + '%'
              AND e.Institute_id = @InstituteID
@@ -452,7 +465,9 @@ namespace Communication_API.Repository.Implementations.Email
                 DateTime = report.DateTime.ToString(),  // Format the DateTime as '15 Dec 2024, 05:00 PM'
                 EmailSubject = report.EmailSubject,
                 EmailID = report.EmailID,
-                Status = report.Status
+                Status = report.Status,
+                SentBy = report.SentBy
+
             }).ToList();
 
             // Return the response with totalCount
@@ -465,133 +480,144 @@ namespace Communication_API.Repository.Implementations.Email
                 return new ServiceResponse<List<EmailEmployeeReportsResponse>>(false, "No records found", null, 404);
             }
         }
+
          
-        //public async Task<string> GetEmailEmployeeReportExport(EmailEmployeeReportExportRequest request)
-        //{
-        //    DateTime startDate = DateTime.ParseExact(request.StartDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
-        //    DateTime endDate = DateTime.ParseExact(request.EndDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+        public async Task<ServiceResponse<string>> GetEmailEmployeeReportExport(EmailEmployeeReportExportRequest request)
+        {
+            DateTime startDate = DateTime.ParseExact(request.StartDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+            DateTime endDate = DateTime.ParseExact(request.EndDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
 
-        //    string sql = @"
-        //    SELECT
-        //        e.Employee_id AS EmployeeID, 
-        //        e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name AS EmployeeName,
-        //        CONCAT(d.DepartmentName, '-', de.DesignationName) AS DepartmentDesignation,
-        //        --se.SMSDate AS DateTime,  
-        //        FORMAT(se.EmailDate, 'dd MMMM yyyy, hh:mm tt', 'en-US') AS DateTime,  
-        //        se.EmailSubject AS EmailSubject,  
-	       //     e.EmailID AS EmailID,   
-        //        sts.EmailStatusName AS Status  
-        //    FROM tblEmailEmployee se
-        //    INNER JOIN tbl_EmployeeProfileMaster e ON se.EmployeeID = e.Employee_id
-        //    --INNER JOIN tblGroupEmployeeMapping gem ON gem.GroupID = se.GroupID
-        //    INNER JOIN tbl_Department d ON e.Department_id = d.Department_id
-        //    INNER JOIN tbl_Designation de ON e.Designation_id = de.Designation_id
-        //    INNER JOIN tblEmailStatus sts ON se.EmailStatusID = sts.EmailStatusID
-        //    WHERE se.EmailDate BETWEEN @StartDate AND @EndDate
-        //    AND (e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name) LIKE '%' + @Search + '%'
-        //    AND e.Institute_id = @InstituteID
-        //    ORDER BY se.EmailDate;";
+            string sql = @"
+            SELECT
+                e.Employee_id AS EmployeeID, 
+                e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name AS EmployeeName,
+                CONCAT(d.DepartmentName, '-', de.DesignationName) AS DepartmentDesignation,
+                --se.SMSDate AS DateTime,  -- SMSDate is the equivalent of ScheduleDate
+                FORMAT(se.EmailDate, 'dd MMMM yyyy, hh:mm tt', 'en-US') AS DateTime,  
+                se.EmailSubject AS EmailSubject,  -- SMSMessage is the equivalent of Message
+                e.EmailID AS EmailID,
+                sts.EmailStatusName AS Status,  -- Join with tblSMSStatus to get the status name
+                ee.First_Name + ' ' + ee.Last_Name AS SentBy
+            FROM tblEmailEmployee se
+            INNER JOIN tbl_EmployeeProfileMaster e ON se.EmployeeID = e.Employee_id
+            --INNER JOIN tblGroupEmployeeMapping gem ON gem.GroupID = se.GroupID
+            INNER JOIN tbl_Department d ON e.Department_id = d.Department_id
+            INNER JOIN tbl_Designation de ON e.Designation_id = de.Designation_id
+            INNER JOIN tblEmailStatus sts ON se.EmailStatusID = sts.EmailStatusID
+            LEFT JOIN tbl_EmployeeProfileMaster ee ON se.SentBy = ee.Employee_id
+            WHERE se.EmailDate BETWEEN @StartDate AND @EndDate
+            AND (e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name) LIKE '%' + @Search + '%'
+            AND e.Institute_id = @InstituteID
+            ORDER BY se.EmailDate;";
 
-        //    // Execute the query and get the result
-        //    var result = await _connection.QueryAsync<EmailEmployeeReportExportResponse>(
-        //        sql, new { StartDate = startDate, EndDate = endDate, Search = request.Search, InstituteID = request.InstituteID });
+            // Execute the query and get the result
+            var result = await _connection.QueryAsync<EmailEmployeeReportExportResponse>(
+                sql, new { StartDate = startDate, EndDate = endDate, Search = request.Search, InstituteID = request.InstituteID });
 
-        //    // Generate the file based on ExportType
-        //    string filePath = "";
-        //    if (request.ExportType == 1)
-        //    {
-        //        filePath = await GenerateExcelReport(result);
-        //    }
-        //    else if (request.ExportType == 2)
-        //    {
-        //        filePath = await GenerateCsvReport(result);
-        //    }
+            // Generate the file based on ExportType
+            string filePath = "";
+            if (request.ExportType == 1)
+            {
+                filePath = await GenerateExcelReport(result);
+            }
+            else if (request.ExportType == 2)
+            {
+                filePath = await GenerateCsvReport(result);
+            }
 
-        //    return filePath;
-        //}
+            if (string.IsNullOrEmpty(filePath))
+            {
+                return new ServiceResponse<string>(false, "Failed to generate report", null, 400);
+            }
 
-        //private async Task<string> GenerateExcelReport(IEnumerable<EmailEmployeeReportExportResponse> data)
-        //{
-        //    // Use the current directory of the application for saving the file
-        //    string directory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EmailReports");
+            return new ServiceResponse<string>(true, "Excel file generated", filePath, 200);
 
-        //    // Ensure the directory exists
-        //    if (!Directory.Exists(directory))
-        //    {
-        //        Directory.CreateDirectory(directory);
-        //    }
+        }
 
-        //    // Create a dynamic file name based on the current date and time
-        //    string fileName = $"EmailEmployeeReport_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";  // e.g., SMSEmployeeReport_20241215_123000.xlsx
+        private async Task<string> GenerateExcelReport(IEnumerable<EmailEmployeeReportExportResponse> data)
+        {
+            // Use the current directory of the application for saving the file
+            string directory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EmailReports");
 
-        //    // Combine the directory and file name to form the complete file path
-        //    string filePath = Path.Combine(directory, fileName);
+            // Ensure the directory exists
+            if (!Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
 
-        //    // Generate the Excel file using EPPlus
-        //    using (var package = new ExcelPackage(new FileInfo(filePath)))
-        //    {
-        //        var worksheet = package.Workbook.Worksheets.Add("Email Employee Report");
+            // Create a dynamic file name based on the current date and time
+            string fileName = $"EmailEmployeeReport_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";  // e.g., SMSEmployeeReport_20241215_123000.xlsx
 
-        //        // Add headers
-        //        worksheet.Cells[1, 1].Value = "Employee Name";
-        //        worksheet.Cells[1, 2].Value = "Department Designation";
-        //        worksheet.Cells[1, 3].Value = "DateTime";
-        //        worksheet.Cells[1, 4].Value = "Email Subject";
-        //        worksheet.Cells[1, 5].Value = "Email ID";
-        //        worksheet.Cells[1, 6].Value = "Status";
+            // Combine the directory and file name to form the complete file path
+            string filePath = Path.Combine(directory, fileName);
 
-        //        // Add data rows
-        //        int row = 2;
-        //        foreach (var record in data)
-        //        {
-        //            worksheet.Cells[row, 1].Value = record.EmployeeName;
-        //            worksheet.Cells[row, 2].Value = record.DepartmentDesignation;
-        //            worksheet.Cells[row, 3].Value = record.DateTime;
-        //            worksheet.Cells[row, 4].Value = record.EmailSubject;
-        //            worksheet.Cells[row, 5].Value = record.EmailID;
-        //            worksheet.Cells[row, 6].Value = record.Status;
-        //            row++;
-        //        }
+            // Generate the Excel file using EPPlus
+            using (var package = new ExcelPackage(new FileInfo(filePath)))
+            {
+                var worksheet = package.Workbook.Worksheets.Add("Email Employee Report");
 
-        //        // Save the file
-        //        await package.SaveAsync();
-        //    }
+                // Add headers
+                worksheet.Cells[1, 1].Value = "Employee Name";
+                worksheet.Cells[1, 2].Value = "Department Designation";
+                worksheet.Cells[1, 3].Value = "DateTime";
+                worksheet.Cells[1, 4].Value = "Email Subject";
+                worksheet.Cells[1, 5].Value = "Email ID";
+                worksheet.Cells[1, 6].Value = "Status";
+                worksheet.Cells[1, 7].Value = "Sent By";
 
-        //    return filePath;
-        //}
+                // Add data rows
+                int row = 2;
+                foreach (var record in data)
+                {
+                    worksheet.Cells[row, 1].Value = record.EmployeeName;
+                    worksheet.Cells[row, 2].Value = record.DepartmentDesignation;
+                    worksheet.Cells[row, 3].Value = record.DateTime;
+                    worksheet.Cells[row, 4].Value = record.EmailSubject;
+                    worksheet.Cells[row, 5].Value = record.EmailID;
+                    worksheet.Cells[row, 6].Value = record.Status; 
+                    worksheet.Cells[row, 7].Value = record.SentBy;
+                    row++;
+                }
 
-        //private async Task<string> GenerateCsvReport(IEnumerable<EmailEmployeeReportExportResponse> data)
-        //{
-        //    // Use the current directory of the application for saving the file
-        //    string directory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EmailReports");
+                // Save the file
+                await package.SaveAsync();
+            }
 
-        //    // Ensure the directory exists
-        //    if (!Directory.Exists(directory))
-        //    {
-        //        Directory.CreateDirectory(directory);
-        //    }
+            return filePath;
+        }
 
-        //    // Create a dynamic file name based on the current date and time
-        //    string fileName = $"EmailEmployeeReport_{DateTime.Now:yyyyMMdd_HHmmss}.csv";  // e.g., SMSEmployeeReport_20241215_123000.csv
+        private async Task<string> GenerateCsvReport(IEnumerable<EmailEmployeeReportExportResponse> data)
+        {
+            // Use the current directory of the application for saving the file
+            string directory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EmailReports");
 
-        //    // Combine the directory and file name to form the complete file path
-        //    string filePath = Path.Combine(directory, fileName);
+            // Ensure the directory exists
+            if (!Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
 
-        //    // Generate the CSV file
-        //    using (var writer = new StreamWriter(filePath))
-        //    {
-        //        // Write headers
-        //        writer.WriteLine("Employee Name,Department Designation,DateTime,Email Subject, Email ID,Status");
+            // Create a dynamic file name based on the current date and time
+            string fileName = $"EmailEmployeeReport_{DateTime.Now:yyyyMMdd_HHmmss}.csv";  // e.g., SMSEmployeeReport_20241215_123000.csv
 
-        //        // Write data rows
-        //        foreach (var record in data)
-        //        {
-        //            writer.WriteLine($"{record.EmployeeName},{record.DepartmentDesignation},{record.DateTime},{record.EmailSubject}, {record.EmailID},{record.Status}");
-        //        }
-        //    }
+            // Combine the directory and file name to form the complete file path
+            string filePath = Path.Combine(directory, fileName);
 
-        //    return filePath;
-        //}
+            // Generate the CSV file
+            using (var writer = new StreamWriter(filePath))
+            {
+                // Write headers
+                writer.WriteLine("Employee Name,Department Designation,DateTime,Email Subject, Email ID,Status, Sent By");
+
+                // Write data rows
+                foreach (var record in data)
+                {
+                    writer.WriteLine($"{record.EmployeeName},{record.DepartmentDesignation},{record.DateTime},{record.EmailSubject}, {record.EmailID},{record.Status},{record.SentBy}");
+                }
+            }
+
+            return filePath;
+        }
 
     }
 }

@@ -142,6 +142,7 @@ namespace Communication_API.Repository.Implementations.WhatsApp
         //}
 
 
+
         public async Task<ServiceResponse<string>> Send(SendWhatsAppRequest request)
         {
             // Convert ScheduleDate and ScheduleTime from string to DateTime for insertion into the database
@@ -163,8 +164,8 @@ namespace Communication_API.Repository.Implementations.WhatsApp
             // Step 1: Insert the WhatsApp message into tblWhatsAppMessage
             string sql = @"
             INSERT INTO [tblWhatsAppMessage] 
-            (PredefinedTemplateID, WhatsAppMessage, UserTypeID, GroupID, Status, ScheduleNow, ScheduleDate, ScheduleTime, AcademicYearCode, InstituteID) 
-            VALUES (@PredefinedTemplateID, @WhatsAppMessage, @UserTypeID, @GroupID, @Status, @ScheduleNow, @ScheduleDate, @ScheduleTime, @AcademicYearCode, @InstituteID);
+            (PredefinedTemplateID, WhatsAppMessage, UserTypeID, GroupID, Status, ScheduleNow, ScheduleDate, ScheduleTime, AcademicYearCode, InstituteID, SentBy) 
+            VALUES (@PredefinedTemplateID, @WhatsAppMessage, @UserTypeID, @GroupID, @Status, @ScheduleNow, @ScheduleDate, @ScheduleTime, @AcademicYearCode, @InstituteID, @SentBy);
             SELECT CAST(SCOPE_IDENTITY() as int);"; // Get the newly inserted ID
 
             // Execute the query and get the WhatsAppMessageID
@@ -179,7 +180,8 @@ namespace Communication_API.Repository.Implementations.WhatsApp
                 ScheduleDate = scheduleDate,
                 ScheduleTime = scheduleTime,
                 request.AcademicYearCode,  // Passing the AcademicYearCode
-                request.InstituteID        // Passing the InstituteID
+                request.InstituteID,       // Passing the InstituteID
+                request.SentBy             // Passing the SentBy
             });
 
             // Step 2: Proceed with student or employee mappings
@@ -213,6 +215,78 @@ namespace Communication_API.Repository.Implementations.WhatsApp
                 return new ServiceResponse<string>(false, "Operation Failed", "Error adding/updating WhatsApp message", 400);
             }
         }
+
+        //public async Task<ServiceResponse<string>> Send(SendWhatsAppRequest request)
+        //{
+        //    // Convert ScheduleDate and ScheduleTime from string to DateTime for insertion into the database
+        //    DateTime? scheduleDate = null;
+        //    DateTime? scheduleTime = null;
+
+        //    // Parse ScheduleDate if provided
+        //    if (!string.IsNullOrEmpty(request.ScheduleDate))
+        //    {
+        //        scheduleDate = DateTime.ParseExact(request.ScheduleDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+        //    }
+
+        //    // Parse ScheduleTime if provided
+        //    if (!string.IsNullOrEmpty(request.ScheduleTime))
+        //    {
+        //        scheduleTime = DateTime.ParseExact(request.ScheduleTime, "hh:mm tt", CultureInfo.InvariantCulture);
+        //    }
+
+        //    // Step 1: Insert the WhatsApp message into tblWhatsAppMessage
+        //    string sql = @"
+        //    INSERT INTO [tblWhatsAppMessage] 
+        //    (PredefinedTemplateID, WhatsAppMessage, UserTypeID, GroupID, Status, ScheduleNow, ScheduleDate, ScheduleTime, AcademicYearCode, InstituteID) 
+        //    VALUES (@PredefinedTemplateID, @WhatsAppMessage, @UserTypeID, @GroupID, @Status, @ScheduleNow, @ScheduleDate, @ScheduleTime, @AcademicYearCode, @InstituteID);
+        //    SELECT CAST(SCOPE_IDENTITY() as int);"; // Get the newly inserted ID
+
+        //    // Execute the query and get the WhatsAppMessageID
+        //    var whatsAppMessageID = await _connection.ExecuteScalarAsync<int>(sql, new
+        //    {
+        //        request.PredefinedTemplateID,
+        //        request.WhatsAppMessage,
+        //        request.UserTypeID,
+        //        request.GroupID,
+        //        request.Status,
+        //        request.ScheduleNow,
+        //        ScheduleDate = scheduleDate,
+        //        ScheduleTime = scheduleTime,
+        //        request.AcademicYearCode,  // Passing the AcademicYearCode
+        //        request.InstituteID        // Passing the InstituteID
+        //    });
+
+        //    // Step 2: Proceed with student or employee mappings
+        //    if (whatsAppMessageID > 0)
+        //    {
+        //        // Handle student mapping
+        //        if (request.UserTypeID == 1 && request.StudentIDs != null && request.StudentIDs.Count > 0)
+        //        {
+        //            // Insert into tblWhatsAppStudentMapping
+        //            string insertStudentMappingSql = "INSERT INTO tblWhatsAppStudentMapping (WhatsAppMessageID, StudentID) VALUES (@WhatsAppMessageID, @StudentID)";
+        //            foreach (var studentID in request.StudentIDs)
+        //            {
+        //                await _connection.ExecuteAsync(insertStudentMappingSql, new { WhatsAppMessageID = whatsAppMessageID, StudentID = studentID });
+        //            }
+        //        }
+        //        // Handle employee mapping
+        //        else if (request.UserTypeID == 2 && request.EmployeeIDs != null && request.EmployeeIDs.Count > 0)
+        //        {
+        //            // Insert into tblWhatsAppEmployeeMapping
+        //            string insertEmployeeMappingSql = "INSERT INTO tblWhatsAppEmployeeMapping (WhatsAppMessageID, EmployeeID) VALUES (@WhatsAppMessageID, @EmployeeID)";
+        //            foreach (var employeeID in request.EmployeeIDs)
+        //            {
+        //                await _connection.ExecuteAsync(insertEmployeeMappingSql, new { WhatsAppMessageID = whatsAppMessageID, EmployeeID = employeeID });
+        //            }
+        //        }
+
+        //        return new ServiceResponse<string>(true, "WhatsApp message sent successfully", "WhatsApp message added/updated successfully", 200);
+        //    }
+        //    else
+        //    {
+        //        return new ServiceResponse<string>(false, "Operation Failed", "Error adding/updating WhatsApp message", 400);
+        //    }
+        //}
 
 
         public async Task<ServiceResponse<List<WhatsAppReportResponse>>> GetWhatsAppReport(GetWhatsAppReportRequest request)
@@ -278,11 +352,11 @@ namespace Communication_API.Repository.Implementations.WhatsApp
             }
         }
 
-        public async Task InsertWhatsAppForStudent(int groupID, int instituteID, int studentID, string whatsAppMessage, DateTime whatsAppDate, int whatsAppStatusID)
+        public async Task InsertWhatsAppForStudent(int groupID, int instituteID, int studentID, string whatsAppMessage, DateTime whatsAppDate, int whatsAppStatusID, int SentBy)
         {
             string sql = @"
-                INSERT INTO tblWhatsAppStudent (GroupID, InstituteID, StudentID, WhatsAppMessage, WhatsAppDate, WhatsAppStatusID)
-                VALUES (@GroupID, @InstituteID, @StudentID, @WhatsAppMessage, @WhatsAppDate, @WhatsAppStatusID)";
+                INSERT INTO tblWhatsAppStudent (GroupID, InstituteID, StudentID, WhatsAppMessage, WhatsAppDate, WhatsAppStatusID, SentBy)
+                VALUES (@GroupID, @InstituteID, @StudentID, @WhatsAppMessage, @WhatsAppDate, @WhatsAppStatusID, @SentBy)";
 
             await _connection.ExecuteAsync(sql, new
             {
@@ -291,15 +365,16 @@ namespace Communication_API.Repository.Implementations.WhatsApp
                 StudentID = studentID,
                 WhatsAppMessage = whatsAppMessage,
                 WhatsAppDate = whatsAppDate,
-                WhatsAppStatusID = whatsAppStatusID
+                WhatsAppStatusID = whatsAppStatusID,
+                SentBy = SentBy
             });
         }
 
-        public async Task InsertWhatsAppForEmployee(int groupID, int instituteID, int employeeID, string whatsAppMessage, DateTime whatsAppDate, int whatsAppStatusID)
+        public async Task InsertWhatsAppForEmployee(int groupID, int instituteID, int employeeID, string whatsAppMessage, DateTime whatsAppDate, int whatsAppStatusID, int SentBy)
         {
             string sql = @"
-                INSERT INTO tblWhatsAppEmployee (GroupID, InstituteID, EmployeeID, WhatsAppMessage, WhatsAppDate, WhatsAppStatusID)
-                VALUES (@GroupID, @InstituteID, @EmployeeID, @WhatsAppMessage, @WhatsAppDate, @WhatsAppStatusID)";
+                INSERT INTO tblWhatsAppEmployee (GroupID, InstituteID, EmployeeID, WhatsAppMessage, WhatsAppDate, WhatsAppStatusID, SentBy)
+                VALUES (@GroupID, @InstituteID, @EmployeeID, @WhatsAppMessage, @WhatsAppDate, @WhatsAppStatusID, @SentBy)";
 
             await _connection.ExecuteAsync(sql, new
             {
@@ -308,7 +383,8 @@ namespace Communication_API.Repository.Implementations.WhatsApp
                 EmployeeID = employeeID,
                 WhatsAppMessage = whatsAppMessage,
                 WhatsAppDate = whatsAppDate,
-                WhatsAppStatusID = whatsAppStatusID
+                WhatsAppStatusID = whatsAppStatusID,
+                SentBy = SentBy
             });
         }
 
@@ -397,13 +473,15 @@ namespace Communication_API.Repository.Implementations.WhatsApp
                 --ss.SMSDate AS DateTime,  -- SMSDate is the equivalent of ScheduleDate
                 FORMAT(ss.WhatsAppDate, 'dd MMMM yyyy, hh:mm tt', 'en-US') AS DateTime, 
                 ss.WhatsAppMessage AS Message,  -- SMSMessage is the equivalent of Message
-                sts.SMSStatusName AS Status  -- Join with tblSMSStatus to get the status name
+                sts.WhatsAppStatusName AS Status, 
+                e.First_Name + ' ' + e.Last_Name AS SentBy  -- Adding SentByName from tbl_EmployeeProfileMaster
             FROM tblWhatsAppStudent ss
             INNER JOIN tbl_StudentMaster s ON ss.StudentID = s.student_id
             --INNER JOIN tblGroupClassSectionMapping gcsm ON gcsm.GroupID = ss.GroupID
             INNER JOIN tbl_Class c ON s.class_id = c.class_id
             INNER JOIN tbl_Section sec ON s.section_id = sec.section_id
-            INNER JOIN tblSMSStatus sts ON ss.WhatsAppStatusID = sts.SMSStatusID
+            INNER JOIN tblWhatsAppStatus sts ON ss.WhatsAppStatusID = sts.WhatsAppStatusID
+            LEFT JOIN tbl_EmployeeProfileMaster e ON ss.SentBy = e.Employee_id
             WHERE ss.WhatsAppDate BETWEEN @StartDate AND @EndDate
             AND (s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name) LIKE '%' + @Search + '%'
             AND s.Institute_id = @InstituteID
@@ -425,7 +503,8 @@ namespace Communication_API.Repository.Implementations.WhatsApp
                 ClassSection = report.ClassSection,
                 DateTime = report.DateTime,
                 Message = report.Message,
-                Status = report.Status // Assuming you want a string for status
+                Status = report.Status, // Assuming you want a string for status
+                SentBy = report.SentBy
             }).ToList();
 
             // Return the response with totalCount
@@ -446,20 +525,23 @@ namespace Communication_API.Repository.Implementations.WhatsApp
             DateTime endDate = DateTime.ParseExact(request.EndDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
 
             string sql = @"
-             SELECT 
-                s.Admission_Number AS AdmissionNumber,
-                s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name AS StudentName,
-                CONCAT(c.class_name, '-', sec.section_name) AS ClassSection,
-                --ss.SMSDate AS DateTime,  -- SMSDate is the equivalent of ScheduleDate
-                FORMAT(ss.WhatsAppDate, 'dd MMMM yyyy, hh:mm tt', 'en-US') AS DateTime,  
-                ss.WhatsAppMessage AS Message,  -- SMSMessage is the equivalent of Message
-                sts.WhatsAppStatusName AS Status  -- Join with tblSMSStatus to get the status name
-            FROM tblWhatsAppStudent ss
-            INNER JOIN tbl_StudentMaster s ON ss.StudentID = s.student_id
-            --INNER JOIN tblGroupClassSectionMapping gcsm ON gcsm.GroupID = ss.GroupID
-            INNER JOIN tbl_Class c ON s.class_id = c.class_id
-            INNER JOIN tbl_Section sec ON s.section_id = sec.section_id
-            INNER JOIN tblWhatsAppStatus sts ON ss.WhatsAppStatusID = sts.WhatsAppStatusID
+                 SELECT 
+                    s.student_id AS StudentID,
+                    s.Admission_Number AS AdmissionNumber,
+                    s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name AS StudentName,
+                    CONCAT(c.class_name, '-', sec.section_name) AS ClassSection,
+                    --ss.SMSDate AS DateTime,  -- SMSDate is the equivalent of ScheduleDate
+                    FORMAT(ss.WhatsAppDate, 'dd MMMM yyyy, hh:mm tt', 'en-US') AS DateTime, 
+                    ss.WhatsAppMessage AS Message,  -- SMSMessage is the equivalent of Message
+                    sts.WhatsAppStatusName AS Status, 
+                    e.First_Name + ' ' + e.Last_Name AS SentBy  -- Adding SentByName from tbl_EmployeeProfileMaster
+                FROM tblWhatsAppStudent ss
+                INNER JOIN tbl_StudentMaster s ON ss.StudentID = s.student_id
+                --INNER JOIN tblGroupClassSectionMapping gcsm ON gcsm.GroupID = ss.GroupID
+                INNER JOIN tbl_Class c ON s.class_id = c.class_id
+                INNER JOIN tbl_Section sec ON s.section_id = sec.section_id
+                INNER JOIN tblWhatsAppStatus sts ON ss.WhatsAppStatusID = sts.WhatsAppStatusID
+                LEFT JOIN tbl_EmployeeProfileMaster e ON ss.SentBy = e.Employee_id
                 WHERE ss.WhatsAppDate BETWEEN @StartDate AND @EndDate
                 AND (s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name) LIKE '%' + @Search + '%'
                 AND s.Institute_id = @InstituteID
@@ -498,25 +580,27 @@ namespace Communication_API.Repository.Implementations.WhatsApp
 
             // Modify the SQL query to get the actual records, including InstituteID filter
             string sql = @"
-            SELECT
-                e.Employee_id AS EmployeeID, 
-                e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name AS EmployeeName,
-                CONCAT(d.DepartmentName, '-', de.DesignationName) AS DepartmentDesignation,
-                --se.SMSDate AS DateTime,  -- SMSDate is the equivalent of ScheduleDate
-                FORMAT(se.WhatsAppDate, 'dd MMMM yyyy, hh:mm tt', 'en-US') AS DateTime,  
-                se.WhatsAppMessage AS Message,  -- SMSMessage is the equivalent of Message
-                sts.WhatsAppStatusName AS Status  -- Join with tblSMSStatus to get the status name
-            FROM tblWhatsAppEmployee se
-            INNER JOIN tbl_EmployeeProfileMaster e ON se.EmployeeID = e.Employee_id
-            --INNER JOIN tblGroupEmployeeMapping gem ON gem.GroupID = se.GroupID
-            INNER JOIN tbl_Department d ON e.Department_id = d.Department_id
-            INNER JOIN tbl_Designation de ON e.Designation_id = de.Designation_id
-            INNER JOIN tblWhatsAppStatus sts ON se.WhatsAppStatusID = sts.WhatsAppStatusID
-           WHERE se.WhatsAppDate BETWEEN @StartDate AND @EndDate
-           AND (e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name) LIKE '%' + @Search + '%'
-           AND e.Institute_id = @InstituteID
-           ORDER BY se.WhatsAppDate
-           OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";  // Added InstituteID filter
+             SELECT
+                 e.Employee_id AS EmployeeID, 
+                 e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name AS EmployeeName,
+                 CONCAT(d.DepartmentName, '-', de.DesignationName) AS DepartmentDesignation,
+                 --se.SMSDate AS DateTime,  -- SMSDate is the equivalent of ScheduleDate
+                 FORMAT(se.WhatsAppDate, 'dd MMMM yyyy, hh:mm tt', 'en-US') AS DateTime,  
+                 se.WhatsAppMessage AS Message,  -- SMSMessage is the equivalent of Message
+                 sts.WhatsAppStatusName AS Status,  -- Join with tblSMSStatus to get the status name
+                ee.First_Name + ' ' + ee.Last_Name AS SentBy  -- Adding SentByName from tbl_EmployeeProfileMaster 
+             FROM tblWhatsAppEmployee se
+             INNER JOIN tbl_EmployeeProfileMaster e ON se.EmployeeID = e.Employee_id
+             --INNER JOIN tblGroupEmployeeMapping gem ON gem.GroupID = se.GroupID
+             INNER JOIN tbl_Department d ON e.Department_id = d.Department_id
+             INNER JOIN tbl_Designation de ON e.Designation_id = de.Designation_id
+             INNER JOIN tblWhatsAppStatus sts ON se.WhatsAppStatusID = sts.WhatsAppStatusID
+             LEFT JOIN tbl_EmployeeProfileMaster ee ON se.SentBy = ee.Employee_id 
+               WHERE se.WhatsAppDate BETWEEN @StartDate AND @EndDate
+               AND (e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name) LIKE '%' + @Search + '%'
+               AND e.Institute_id = @InstituteID
+               ORDER BY se.WhatsAppDate
+               OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";  // Added InstituteID filter
 
             // Calculate the offset for pagination
             int offset = (request.PageNumber - 1) * request.PageSize;
@@ -540,7 +624,8 @@ namespace Communication_API.Repository.Implementations.WhatsApp
                 DepartmentDesignation = report.DepartmentDesignation,
                 DateTime = report.DateTime.ToString(),  // Format the DateTime as '15 Dec 2024, 05:00 PM'
                 Message = report.Message,
-                Status = report.Status
+                Status = report.Status,
+                SentBy = report.SentBy
             }).ToList();
 
             // Return the response with totalCount
@@ -561,24 +646,26 @@ namespace Communication_API.Repository.Implementations.WhatsApp
             DateTime endDate = DateTime.ParseExact(request.EndDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
 
             string sql = @"
-        SELECT
-        e.Employee_id AS EmployeeID, 
-        e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name AS EmployeeName,
-        CONCAT(d.DepartmentName, '-', de.DesignationName) AS DepartmentDesignation,
-        --se.SMSDate AS DateTime,  
-        FORMAT(se.WhatsAppDate, 'dd MMMM yyyy, hh:mm tt', 'en-US') AS DateTime,  
-        se.WhatsAppMessage AS Message,  
-        sts.WhatsAppStatusName AS Status  
-    FROM tblWhatsAppEmployee se
-    INNER JOIN tbl_EmployeeProfileMaster e ON se.EmployeeID = e.Employee_id
-    --INNER JOIN tblGroupEmployeeMapping gem ON gem.GroupID = se.GroupID
-    INNER JOIN tbl_Department d ON e.Department_id = d.Department_id
-    INNER JOIN tbl_Designation de ON e.Designation_id = de.Designation_id
-    INNER JOIN tblWhatsAppStatus sts ON se.WhatsAppStatusID = sts.WhatsAppStatusID
-    WHERE se.WhatsAppDate BETWEEN @StartDate AND @EndDate
-    AND (e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name) LIKE '%' + @Search + '%'
-    AND e.Institute_id = @InstituteID
-    ORDER BY se.WhatsAppDate;";
+             SELECT
+                 e.Employee_id AS EmployeeID, 
+                 e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name AS EmployeeName,
+                 CONCAT(d.DepartmentName, '-', de.DesignationName) AS DepartmentDesignation,
+                 --se.SMSDate AS DateTime,  -- SMSDate is the equivalent of ScheduleDate
+                 FORMAT(se.WhatsAppDate, 'dd MMMM yyyy, hh:mm tt', 'en-US') AS DateTime,  
+                 se.WhatsAppMessage AS Message,  -- SMSMessage is the equivalent of Message
+                 sts.WhatsAppStatusName AS Status,  -- Join with tblSMSStatus to get the status name
+                ee.First_Name + ' ' + ee.Last_Name AS SentBy  -- Adding SentByName from tbl_EmployeeProfileMaster 
+             FROM tblWhatsAppEmployee se
+             INNER JOIN tbl_EmployeeProfileMaster e ON se.EmployeeID = e.Employee_id
+             --INNER JOIN tblGroupEmployeeMapping gem ON gem.GroupID = se.GroupID
+             INNER JOIN tbl_Department d ON e.Department_id = d.Department_id
+             INNER JOIN tbl_Designation de ON e.Designation_id = de.Designation_id
+             INNER JOIN tblWhatsAppStatus sts ON se.WhatsAppStatusID = sts.WhatsAppStatusID
+             LEFT JOIN tbl_EmployeeProfileMaster ee ON se.SentBy = ee.Employee_id 
+            WHERE se.WhatsAppDate BETWEEN @StartDate AND @EndDate
+            AND (e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name) LIKE '%' + @Search + '%'
+            AND e.Institute_id = @InstituteID
+            ORDER BY se.WhatsAppDate;";
 
             // Execute the query and get the result
             var result = await _connection.QueryAsync<WhatsAppEmployeeReportExportResponse>(
@@ -627,6 +714,8 @@ namespace Communication_API.Repository.Implementations.WhatsApp
                 worksheet.Cells[1, 3].Value = "DateTime";
                 worksheet.Cells[1, 4].Value = "Message";
                 worksheet.Cells[1, 5].Value = "Status";
+                worksheet.Cells[1, 6].Value = "Sent By";
+
 
                 // Add data rows
                 int row = 2;
@@ -637,6 +726,8 @@ namespace Communication_API.Repository.Implementations.WhatsApp
                     worksheet.Cells[row, 3].Value = record.DateTime;
                     worksheet.Cells[row, 4].Value = record.Message;
                     worksheet.Cells[row, 5].Value = record.Status;
+                    worksheet.Cells[row, 6].Value = record.SentBy;
+
                     row++;
                 }
 
@@ -668,12 +759,12 @@ namespace Communication_API.Repository.Implementations.WhatsApp
             using (var writer = new StreamWriter(filePath))
             {
                 // Write headers
-                writer.WriteLine("Employee Name,Department Designation,DateTime,Message,Status");
+                writer.WriteLine("Employee Name,Department Designation,DateTime,Message,Status, Sent By");
 
                 // Write data rows
                 foreach (var record in data)
                 {
-                    writer.WriteLine($"{record.EmployeeName},{record.DepartmentDesignation},{record.DateTime},{record.Message},{record.Status}");
+                    writer.WriteLine($"{record.EmployeeName},{record.DepartmentDesignation},{record.DateTime},{record.Message},{record.Status},{record.SentBy}");
                 }
             }
 

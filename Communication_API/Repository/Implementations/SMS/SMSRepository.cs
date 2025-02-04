@@ -101,72 +101,6 @@ namespace Communication_API.Repository.Implementations.SMS
             return templates.AsList();
         }
 
-        //public async Task<ServiceResponse<string>> SendNewSMS(SendNewSMSRequest request)
-        //{
-        //    // Step 1: Insert or update the SMS message
-        //    string sql;
-        //    if (request.SMSID == 0)
-        //    {
-        //        sql = @"INSERT INTO [tblSMSMessage] (PredefinedTemplateID, SMSMessage, UserTypeID, GroupID, Status, ScheduleNow, ScheduleDate, ScheduleTime) 
-        //        VALUES (@PredefinedTemplateID, @SMSMessage, @UserTypeID, @GroupID, @Status, @ScheduleNow, @ScheduleDate, @ScheduleTime);
-        //        SELECT CAST(SCOPE_IDENTITY() as int);";  // Get the newly inserted ID
-        //    }
-        //    else
-        //    {
-        //        sql = @"UPDATE [tblSMSMessage] 
-        //        SET PredefinedTemplateID = @PredefinedTemplateID, SMSMessage = @SMSMessage, UserTypeID = @UserTypeID, GroupID = @GroupID, 
-        //            Status = @Status, ScheduleNow = @ScheduleNow, ScheduleDate = @ScheduleDate, ScheduleTime = @ScheduleTime 
-        //        WHERE SMSID = @SMSID;
-        //        SELECT @SMSID;";
-        //    }
-
-        //    // Execute the query and get the SMSID
-        //    var smsID = await _connection.ExecuteScalarAsync<int>(sql, request);
-
-        //    if (smsID > 0)
-        //    {
-        //        // Step 2: Handle the student or employee mappings
-        //        if (request.UserTypeID == 1 && request.StudentIDs != null && request.StudentIDs.Count > 0)
-        //        {
-        //            // Delete existing mappings if updating
-        //            if (request.SMSID != 0)
-        //            {
-        //                string deleteStudentMappingSql = "DELETE FROM tblSMSStudentMapping WHERE SMSID = @SMSID";
-        //                await _connection.ExecuteAsync(deleteStudentMappingSql, new { SMSID = smsID });
-        //            }
-
-        //            // Insert into tblSMSStudentMapping
-        //            string insertStudentMappingSql = "INSERT INTO tblSMSStudentMapping (SMSID, StudentID) VALUES (@SMSID, @StudentID)";
-        //            foreach (var studentID in request.StudentIDs)
-        //            {
-        //                await _connection.ExecuteAsync(insertStudentMappingSql, new { SMSID = smsID, StudentID = studentID });
-        //            }
-        //        }
-        //        else if (request.UserTypeID == 2 && request.EmployeeIDs != null && request.EmployeeIDs.Count > 0)
-        //        {
-        //            // Delete existing mappings if updating
-        //            if (request.SMSID != 0)
-        //            {
-        //                string deleteEmployeeMappingSql = "DELETE FROM tblSMSEmployeeMapping WHERE SMSID = @SMSID";
-        //                await _connection.ExecuteAsync(deleteEmployeeMappingSql, new { SMSID = smsID });
-        //            }
-
-        //            // Insert into tblSMSEmployeeMapping
-        //            string insertEmployeeMappingSql = "INSERT INTO tblSMSEmployeeMapping (SMSID, EmployeeID) VALUES (@SMSID, @EmployeeID)";
-        //            foreach (var employeeID in request.EmployeeIDs)
-        //            {
-        //                await _connection.ExecuteAsync(insertEmployeeMappingSql, new { SMSID = smsID, EmployeeID = employeeID });
-        //            }
-        //        }
-
-        //        return new ServiceResponse<string>(true, "Operation Successful", "SMS added/updated successfully", StatusCodes.Status200OK);
-        //    }
-        //    else
-        //    {
-        //        return new ServiceResponse<string>(false, "Operation Failed", "Error adding/updating SMS", StatusCodes.Status400BadRequest);
-        //    }
-        //}
-
         public async Task<ServiceResponse<string>> SendNewSMS(SendNewSMSRequest request)
         {
             // Convert ScheduleDate and ScheduleTime from string to DateTime for insertion into database
@@ -189,18 +123,18 @@ namespace Communication_API.Repository.Implementations.SMS
             string sql;
             if (request.SMSID == 0)
             {
-                sql = @"INSERT INTO [tblSMSMessage] (PredefinedTemplateID, SMSMessage, UserTypeID, GroupID, Status, ScheduleNow, ScheduleDate, ScheduleTime, AcademicYearCode, InstituteID) 
-                VALUES (@PredefinedTemplateID, @SMSMessage, @UserTypeID, @GroupID, @Status, @ScheduleNow, @ScheduleDate, @ScheduleTime, @AcademicYearCode, @InstituteID);
-                SELECT CAST(SCOPE_IDENTITY() as int);";  // Get the newly inserted ID
-                    }
-                    else
-                    {
-                        sql = @"UPDATE [tblSMSMessage] 
-                SET PredefinedTemplateID = @PredefinedTemplateID, SMSMessage = @SMSMessage, UserTypeID = @UserTypeID, GroupID = @GroupID, 
-                    Status = @Status, ScheduleNow = @ScheduleNow, ScheduleDate = @ScheduleDate, ScheduleTime = @ScheduleTime, 
-                    AcademicYearCode = @AcademicYearCode, InstituteID = @InstituteID 
-                WHERE SMSID = @SMSID;
-                SELECT @SMSID;";
+                sql = @"INSERT INTO [tblSMSMessage] (PredefinedTemplateID, SMSMessage, UserTypeID, GroupID, Status, ScheduleNow, ScheduleDate, ScheduleTime, AcademicYearCode, InstituteID, SentBy) 
+        VALUES (@PredefinedTemplateID, @SMSMessage, @UserTypeID, @GroupID, @Status, @ScheduleNow, @ScheduleDate, @ScheduleTime, @AcademicYearCode, @InstituteID, @SentBy);
+        SELECT CAST(SCOPE_IDENTITY() as int);";  // Get the newly inserted ID
+            }
+            else
+            {
+                sql = @"UPDATE [tblSMSMessage] 
+        SET PredefinedTemplateID = @PredefinedTemplateID, SMSMessage = @SMSMessage, UserTypeID = @UserTypeID, GroupID = @GroupID, 
+            Status = @Status, ScheduleNow = @ScheduleNow, ScheduleDate = @ScheduleDate, ScheduleTime = @ScheduleTime, 
+            AcademicYearCode = @AcademicYearCode, InstituteID = @InstituteID, SentBy = @SentBy 
+        WHERE SMSID = @SMSID;
+        SELECT @SMSID;";
             }
 
             // Execute the query and get the SMSID
@@ -216,7 +150,8 @@ namespace Communication_API.Repository.Implementations.SMS
                 ScheduleTime = scheduleTime,
                 request.AcademicYearCode,
                 request.InstituteID,
-                request.SMSID
+                request.SMSID,
+                request.SentBy // Include SentBy in the parameters
             });
 
             if (smsID > 0)
@@ -263,6 +198,102 @@ namespace Communication_API.Repository.Implementations.SMS
             }
         }
 
+        //public async Task<ServiceResponse<string>> SendNewSMS(SendNewSMSRequest request)
+        //{
+        //    // Convert ScheduleDate and ScheduleTime from string to DateTime for insertion into database
+        //    DateTime? scheduleDate = null;
+        //    DateTime? scheduleTime = null;
+
+        //    // Parse ScheduleDate if provided
+        //    if (!string.IsNullOrEmpty(request.ScheduleDate))
+        //    {
+        //        scheduleDate = DateTime.ParseExact(request.ScheduleDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+        //    }
+
+        //    // Parse ScheduleTime if provided
+        //    if (!string.IsNullOrEmpty(request.ScheduleTime))
+        //    {
+        //        scheduleTime = DateTime.ParseExact(request.ScheduleTime, "hh:mm tt", CultureInfo.InvariantCulture);
+        //    }
+
+        //    // Step 1: Insert or update the SMS message
+        //    string sql;
+        //    if (request.SMSID == 0)
+        //    {
+        //        sql = @"INSERT INTO [tblSMSMessage] (PredefinedTemplateID, SMSMessage, UserTypeID, GroupID, Status, ScheduleNow, ScheduleDate, ScheduleTime, AcademicYearCode, InstituteID) 
+        //        VALUES (@PredefinedTemplateID, @SMSMessage, @UserTypeID, @GroupID, @Status, @ScheduleNow, @ScheduleDate, @ScheduleTime, @AcademicYearCode, @InstituteID);
+        //        SELECT CAST(SCOPE_IDENTITY() as int);";  // Get the newly inserted ID
+        //            }
+        //            else
+        //            {
+        //                sql = @"UPDATE [tblSMSMessage] 
+        //        SET PredefinedTemplateID = @PredefinedTemplateID, SMSMessage = @SMSMessage, UserTypeID = @UserTypeID, GroupID = @GroupID, 
+        //            Status = @Status, ScheduleNow = @ScheduleNow, ScheduleDate = @ScheduleDate, ScheduleTime = @ScheduleTime, 
+        //            AcademicYearCode = @AcademicYearCode, InstituteID = @InstituteID 
+        //        WHERE SMSID = @SMSID;
+        //        SELECT @SMSID;";
+        //    }
+
+        //    // Execute the query and get the SMSID
+        //    var smsID = await _connection.ExecuteScalarAsync<int>(sql, new
+        //    {
+        //        request.PredefinedTemplateID,
+        //        request.SMSMessage,
+        //        request.UserTypeID,
+        //        request.GroupID,
+        //        request.Status,
+        //        request.ScheduleNow,
+        //        ScheduleDate = scheduleDate,
+        //        ScheduleTime = scheduleTime,
+        //        request.AcademicYearCode,
+        //        request.InstituteID,
+        //        request.SMSID
+        //    });
+
+        //    if (smsID > 0)
+        //    {
+        //        // Step 2: Handle the student or employee mappings
+        //        if (request.UserTypeID == 1 && request.StudentIDs != null && request.StudentIDs.Count > 0)
+        //        {
+        //            // Delete existing mappings if updating
+        //            if (request.SMSID != 0)
+        //            {
+        //                string deleteStudentMappingSql = "DELETE FROM tblSMSStudentMapping WHERE SMSID = @SMSID";
+        //                await _connection.ExecuteAsync(deleteStudentMappingSql, new { SMSID = smsID });
+        //            }
+
+        //            // Insert into tblSMSStudentMapping
+        //            string insertStudentMappingSql = "INSERT INTO tblSMSStudentMapping (SMSID, StudentID) VALUES (@SMSID, @StudentID)";
+        //            foreach (var studentID in request.StudentIDs)
+        //            {
+        //                await _connection.ExecuteAsync(insertStudentMappingSql, new { SMSID = smsID, StudentID = studentID });
+        //            }
+        //        }
+        //        else if (request.UserTypeID == 2 && request.EmployeeIDs != null && request.EmployeeIDs.Count > 0)
+        //        {
+        //            // Delete existing mappings if updating
+        //            if (request.SMSID != 0)
+        //            {
+        //                string deleteEmployeeMappingSql = "DELETE FROM tblSMSEmployeeMapping WHERE SMSID = @SMSID";
+        //                await _connection.ExecuteAsync(deleteEmployeeMappingSql, new { SMSID = smsID });
+        //            }
+
+        //            // Insert into tblSMSEmployeeMapping
+        //            string insertEmployeeMappingSql = "INSERT INTO tblSMSEmployeeMapping (SMSID, EmployeeID) VALUES (@SMSID, @EmployeeID)";
+        //            foreach (var employeeID in request.EmployeeIDs)
+        //            {
+        //                await _connection.ExecuteAsync(insertEmployeeMappingSql, new { SMSID = smsID, EmployeeID = employeeID });
+        //            }
+        //        }
+
+        //        return new ServiceResponse<string>(true, "Operation Successful", "SMS added/updated successfully", StatusCodes.Status200OK);
+        //    }
+        //    else
+        //    {
+        //        return new ServiceResponse<string>(false, "Operation Failed", "Error adding/updating SMS", StatusCodes.Status400BadRequest);
+        //    }
+        //}
+
         public async Task<ServiceResponse<List<SMSStudentReportsResponse>>> GetSMSStudentReport(GetSMSStudentReportRequest request)
         {
             string sql = string.Empty;
@@ -294,16 +325,16 @@ namespace Communication_API.Repository.Implementations.SMS
                 s.Admission_Number AS AdmissionNumber,
                 s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name AS StudentName,
                 CONCAT(c.class_name, '-', sec.section_name) AS ClassSection,
-                --ss.SMSDate AS DateTime,  -- SMSDate is the equivalent of ScheduleDate
                 FORMAT(ss.SMSDate, 'dd MMMM yyyy, hh:mm tt', 'en-US') AS DateTime, 
-                ss.SMSMessage AS Message,  -- SMSMessage is the equivalent of Message
-                sts.SMSStatusName AS Status  -- Join with tblSMSStatus to get the status name
+                ss.SMSMessage AS Message,
+                sts.SMSStatusName AS Status, 
+                e.First_Name + ' ' + e.Last_Name AS SentByName  -- Adding SentByName from tbl_EmployeeProfileMaster
             FROM tblSMSStudent ss
             INNER JOIN tbl_StudentMaster s ON ss.StudentID = s.student_id
-            --INNER JOIN tblGroupClassSectionMapping gcsm ON gcsm.GroupID = ss.GroupID
             INNER JOIN tbl_Class c ON s.class_id = c.class_id
             INNER JOIN tbl_Section sec ON s.section_id = sec.section_id
             INNER JOIN tblSMSStatus sts ON ss.SMSStatusID = sts.SMSStatusID
+            LEFT JOIN tbl_EmployeeProfileMaster e ON ss.SentBy = e.Employee_id
             WHERE ss.SMSDate BETWEEN @StartDate AND @EndDate
             AND (s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name) LIKE '%' + @Search + '%'
             AND s.Institute_id = @InstituteID
@@ -325,7 +356,8 @@ namespace Communication_API.Repository.Implementations.SMS
                 ClassSection = report.ClassSection,
                 DateTime = report.DateTime,
                 Message = report.Message,
-                Status = report.Status // Assuming you want a string for status
+                Status = report.Status,
+                SentByName = report.SentByName// Assuming you want a string for status
             }).ToList();
 
             // Return the response with totalCount
@@ -346,24 +378,46 @@ namespace Communication_API.Repository.Implementations.SMS
             DateTime endDate = DateTime.ParseExact(request.EndDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
 
             string sql = @"
-            SELECT 
+            SELECT  
                 s.Admission_Number AS AdmissionNumber,
                 s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name AS StudentName,
                 CONCAT(c.class_name, '-', sec.section_name) AS ClassSection,
-                --ss.SMSDate AS DateTime,  -- SMSDate is the equivalent of ScheduleDate
-                FORMAT(ss.SMSDate, 'dd MMMM yyyy, hh:mm tt', 'en-US') AS DateTime,  
-                ss.SMSMessage AS Message,  -- SMSMessage is the equivalent of Message
-                sts.SMSStatusName AS Status  -- Join with tblSMSStatus to get the status name
+                FORMAT(ss.SMSDate, 'dd MMMM yyyy, hh:mm tt', 'en-US') AS DateTime, 
+                ss.SMSMessage AS Message,
+                sts.SMSStatusName AS Status, 
+                e.First_Name + ' ' + e.Last_Name AS SentBy  -- Adding SentByName from tbl_EmployeeProfileMaster
             FROM tblSMSStudent ss
             INNER JOIN tbl_StudentMaster s ON ss.StudentID = s.student_id
-            --INNER JOIN tblGroupClassSectionMapping gcsm ON gcsm.GroupID = ss.GroupID
             INNER JOIN tbl_Class c ON s.class_id = c.class_id
             INNER JOIN tbl_Section sec ON s.section_id = sec.section_id
             INNER JOIN tblSMSStatus sts ON ss.SMSStatusID = sts.SMSStatusID
+            LEFT JOIN tbl_EmployeeProfileMaster e ON ss.SentBy = e.Employee_id
             WHERE ss.SMSDate BETWEEN @StartDate AND @EndDate
             AND (s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name) LIKE '%' + @Search + '%'
             AND s.Institute_id = @InstituteID
             ORDER BY ss.SMSDate;";
+
+
+
+            //string sql = @"
+            //SELECT 
+            //    s.Admission_Number AS AdmissionNumber,
+            //    s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name AS StudentName,
+            //    CONCAT(c.class_name, '-', sec.section_name) AS ClassSection,
+            //    --ss.SMSDate AS DateTime,  -- SMSDate is the equivalent of ScheduleDate
+            //    FORMAT(ss.SMSDate, 'dd MMMM yyyy, hh:mm tt', 'en-US') AS DateTime,  
+            //    ss.SMSMessage AS Message,  -- SMSMessage is the equivalent of Message
+            //    sts.SMSStatusName AS Status  -- Join with tblSMSStatus to get the status name
+            //FROM tblSMSStudent ss
+            //INNER JOIN tbl_StudentMaster s ON ss.StudentID = s.student_id
+            //--INNER JOIN tblGroupClassSectionMapping gcsm ON gcsm.GroupID = ss.GroupID
+            //INNER JOIN tbl_Class c ON s.class_id = c.class_id
+            //INNER JOIN tbl_Section sec ON s.section_id = sec.section_id
+            //INNER JOIN tblSMSStatus sts ON ss.SMSStatusID = sts.SMSStatusID
+            //WHERE ss.SMSDate BETWEEN @StartDate AND @EndDate
+            //AND (s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name) LIKE '%' + @Search + '%'
+            //AND s.Institute_id = @InstituteID
+            //ORDER BY ss.SMSDate;";
 
             return (await _connection.QueryAsync<SMSStudentReportExportResponse>(sql, new
             {
@@ -404,14 +458,16 @@ namespace Communication_API.Repository.Implementations.SMS
                 CONCAT(d.DepartmentName, '-', de.DesignationName) AS DepartmentDesignation,
                 --se.SMSDate AS DateTime,  -- SMSDate is the equivalent of ScheduleDate
                 FORMAT(se.SMSDate, 'dd MMMM yyyy, hh:mm tt', 'en-US') AS DateTime,  
-                se.SMSMessage AS Message,  -- SMSMessage is the equivalent of Message
-                sts.SMSStatusName AS Status  -- Join with tblSMSStatus to get the status name
+                se.SMSMessage AS Message,  -- SMSMessage is the equivalent of Message 
+                sts.SMSStatusName AS Status,  -- Join with tblSMSStatus to get the status name
+	            ee.First_Name + ' ' + ee.Last_Name AS SentByName  -- Adding SentByName from tbl_EmployeeProfileMaster  
             FROM tblSMSEmployee se
             INNER JOIN tbl_EmployeeProfileMaster e ON se.EmployeeID = e.Employee_id
             --INNER JOIN tblGroupEmployeeMapping gem ON gem.GroupID = se.GroupID
             INNER JOIN tbl_Department d ON e.Department_id = d.Department_id
             INNER JOIN tbl_Designation de ON e.Designation_id = de.Designation_id
             INNER JOIN tblSMSStatus sts ON se.SMSStatusID = sts.SMSStatusID
+            LEFT JOIN tbl_EmployeeProfileMaster ee ON se.SentBy = ee.Employee_id 
             WHERE se.SMSDate BETWEEN @StartDate AND @EndDate
             AND (e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name) LIKE '%' + @Search + '%'
             AND e.Institute_id = @InstituteID
@@ -440,7 +496,8 @@ namespace Communication_API.Repository.Implementations.SMS
                 DepartmentDesignation = report.DepartmentDesignation,
                 DateTime = report.DateTime.ToString(),  // Format the DateTime as '15 Dec 2024, 05:00 PM'
                 Message = report.Message,
-                Status = report.Status
+                Status = report.Status,
+                SentByName = report.SentByName
             }).ToList();
 
             // Return the response with totalCount
@@ -458,7 +515,7 @@ namespace Communication_API.Repository.Implementations.SMS
         {
             DateTime startDate = DateTime.ParseExact(request.StartDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
             DateTime endDate = DateTime.ParseExact(request.EndDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
-
+             
             string sql = @"
             SELECT
                 e.Employee_id AS EmployeeID, 
@@ -645,11 +702,11 @@ namespace Communication_API.Repository.Implementations.SMS
         //    }
         //}
 
-        public async Task InsertSMSForStudent(int groupID, int instituteID, int studentID, string smsMessage, DateTime smsDate, int smsStatusID)
+        public async Task InsertSMSForStudent(int groupID, int instituteID, int studentID, string smsMessage, DateTime smsDate, int smsStatusID, int SentBy)
         {
             string sql = @"
-                INSERT INTO tblSMSStudent (GroupID, InstituteID, StudentID, SMSMessage, SMSDate, SMSStatusID)
-                VALUES (@GroupID, @InstituteID, @StudentID, @SMSMessage, @SMSDate, @SMSStatusID)";
+                INSERT INTO tblSMSStudent (GroupID, InstituteID, StudentID, SMSMessage, SMSDate, SMSStatusID, SentBy)
+                VALUES (@GroupID, @InstituteID, @StudentID, @SMSMessage, @SMSDate, @SMSStatusID, @SentBy)";
 
             await _connection.ExecuteAsync(sql, new
             {
@@ -658,15 +715,16 @@ namespace Communication_API.Repository.Implementations.SMS
                 StudentID = studentID,
                 SMSMessage = smsMessage,
                 SMSDate = smsDate,
-                SMSStatusID = smsStatusID
+                SMSStatusID = smsStatusID,
+                SentBy = SentBy
             });
         }
 
-        public async Task InsertSMSForEmployee(int groupID, int instituteID, int employeeID, string smsMessage, DateTime smsDate, int smsStatusID)
+        public async Task InsertSMSForEmployee(int groupID, int instituteID, int employeeID, string smsMessage, DateTime smsDate, int smsStatusID, int SentBy)
         {
             string sql = @"
-                INSERT INTO tblSMSEmployee (GroupID, InstituteID, EmployeeID, SMSMessage, SMSDate, SMSStatusID)
-                VALUES (@GroupID, @InstituteID, @EmployeeID, @SMSMessage, @SMSDate, @SMSStatusID)";
+                INSERT INTO tblSMSEmployee (GroupID, InstituteID, EmployeeID, SMSMessage, SMSDate, SMSStatusID, SentBy)
+                VALUES (@GroupID, @InstituteID, @EmployeeID, @SMSMessage, @SMSDate, @SMSStatusID, @SentBy)";
 
             await _connection.ExecuteAsync(sql, new
             {
@@ -675,7 +733,8 @@ namespace Communication_API.Repository.Implementations.SMS
                 EmployeeID = employeeID,
                 SMSMessage = smsMessage,
                 SMSDate = smsDate,
-                SMSStatusID = smsStatusID
+                SMSStatusID = smsStatusID, 
+                SentBy = SentBy
             });
         }
 
