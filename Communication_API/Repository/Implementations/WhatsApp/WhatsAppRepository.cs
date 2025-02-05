@@ -764,7 +764,7 @@ namespace Communication_API.Repository.Implementations.WhatsApp
                 // Write data rows
                 foreach (var record in data)
                 {
-                    writer.WriteLine($"{record.EmployeeName},{record.DepartmentDesignation},{record.DateTime},{record.Message},{record.Status},{record.SentBy}");
+                    writer.WriteLine($"{record.EmployeeName},{record.DepartmentDesignation},{record.DateTime.Replace(",","")},{record.Message.Replace(",", "")},{record.Status},{record.SentBy}");
                 }
             }
 

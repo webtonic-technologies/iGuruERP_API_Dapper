@@ -171,6 +171,7 @@ namespace Communication_API.Controllers
             var response = await _whatsAppService.GetWhatsAppStudentReport(request);
             return StatusCode(response.StatusCode, response);
         }
+         
 
         [HttpPost("GetWhatsAppStudentReportExport")]
         public async Task<IActionResult> GetWhatsAppStudentReportExport([FromBody] WhatsAppStudentReportExportRequest request)
@@ -190,8 +191,26 @@ namespace Communication_API.Controllers
                     // Get the file bytes
                     byte[] fileBytes = System.IO.File.ReadAllBytes(filePath);
 
+                    // Determine the MIME type and filename based on ExportType
+                    string mimeType;
+                    string fileName;
+                    if (request.ExportType == 1)
+                    {
+                        mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                        fileName = "WhatsAppReport.xlsx";
+                    }
+                    else if (request.ExportType == 2)
+                    {
+                        mimeType = "text/csv";
+                        fileName = "WhatsAppReport.csv";
+                    }
+                    else
+                    {
+                        return BadRequest("Invalid ExportType.");
+                    }
+
                     // Return the file as a downloadable response
-                    return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "WhatsAppReport.xlsx");
+                    return File(fileBytes, mimeType, fileName);
                 }
                 else
                 {
@@ -204,12 +223,45 @@ namespace Communication_API.Controllers
             }
         }
 
+        //[HttpPost("GetWhatsAppStudentReportExport")]
+        //public async Task<IActionResult> GetWhatsAppStudentReportExport([FromBody] WhatsAppStudentReportExportRequest request)
+        //{
+        //    // Get the export file content
+        //    var response = await _whatsAppService.GetWhatsAppStudentReportExport(request);
+
+        //    // Check if the export was successful
+        //    if (response.Success)
+        //    {
+        //        // Get the file path
+        //        string filePath = response.Data;
+
+        //        // Check if the file exists
+        //        if (System.IO.File.Exists(filePath))
+        //        {
+        //            // Get the file bytes
+        //            byte[] fileBytes = System.IO.File.ReadAllBytes(filePath);
+
+        //            // Return the file as a downloadable response
+        //            return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "WhatsAppReport.xlsx");
+        //        }
+        //        else
+        //        {
+        //            return BadRequest("File not found.");
+        //        }
+        //    }
+        //    else
+        //    {
+        //        return BadRequest(response.Message);
+        //    }
+        //}
+
         [HttpPost("GetWhatsAppEmployeeReport")]
         public async Task<IActionResult> GetWhatsAppEmployeeReport([FromBody] GetWhatsAppEmployeeReportRequest request)
         {
             var response = await _whatsAppService.GetWhatsAppEmployeeReport(request);
             return StatusCode(response.StatusCode, response);
         }
+
 
         [HttpPost("GetWhatsAppEmployeeReportExport")]
         public async Task<IActionResult> GetWhatsAppEmployeeReportExport([FromBody] WhatsAppEmployeeReportExportRequest request)
@@ -222,7 +274,27 @@ namespace Communication_API.Controllers
                 if (System.IO.File.Exists(filePath))
                 {
                     byte[] fileBytes = System.IO.File.ReadAllBytes(filePath);
-                    return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "WhatsAppReport.xlsx");
+
+                    // Determine the MIME type and filename based on ExportType
+                    string mimeType;
+                    string fileName;
+
+                    if (request.ExportType == 1)
+                    {
+                        mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                        fileName = "WhatsAppReport.xlsx";
+                    }
+                    else if (request.ExportType == 2)
+                    {
+                        mimeType = "text/csv";
+                        fileName = "WhatsAppReport.csv";
+                    }
+                    else
+                    {
+                        return BadRequest("Invalid ExportType.");
+                    }
+
+                    return File(fileBytes, mimeType, fileName);
                 }
                 else
                 {
@@ -234,6 +306,31 @@ namespace Communication_API.Controllers
                 return BadRequest(response.Message);
             }
         }
+
+
+        //[HttpPost("GetWhatsAppEmployeeReportExport")]
+        //public async Task<IActionResult> GetWhatsAppEmployeeReportExport([FromBody] WhatsAppEmployeeReportExportRequest request)
+        //{
+        //    var response = await _whatsAppService.GetWhatsAppEmployeeReportExport(request);
+
+        //    if (response.Success)
+        //    {
+        //        string filePath = response.Data;
+        //        if (System.IO.File.Exists(filePath))
+        //        {
+        //            byte[] fileBytes = System.IO.File.ReadAllBytes(filePath);
+        //            return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "WhatsAppReport.xlsx");
+        //        }
+        //        else
+        //        {
+        //            return BadRequest("File not found.");
+        //        }
+        //    }
+        //    else
+        //    {
+        //        return BadRequest(response.Message);
+        //    }
+        //}
 
         [HttpPost("GetWhatsAppPlan")]
         public async Task<IActionResult> GetWhatsAppPlan([FromBody] GetWhatsAppPlanRequest request)

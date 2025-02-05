@@ -235,7 +235,7 @@ namespace Communication_API.Services.Implementations.WhatsApp
 
             foreach (var item in data)
             {
-                csvBuilder.AppendLine($"{item.AdmissionNumber}, {item.StudentName}, {item.ClassSection}, {item.DateTime}, {item.Message}, {item.Status}, {item.SentBy}");
+                csvBuilder.AppendLine($"{item.AdmissionNumber}, {item.StudentName}, {item.ClassSection}, {item.DateTime.Replace(",","")}, {item.Message.Replace(",", "")}, {item.Status}, {item.SentBy}");
             }
 
             var filePath = Path.Combine(Directory.GetCurrentDirectory(), "WhatsAppReport.csv");

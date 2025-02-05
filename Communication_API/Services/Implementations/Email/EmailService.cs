@@ -187,7 +187,7 @@ namespace Communication_API.Services.Implementations.Email
 
             foreach (var item in data)
             {
-                csvBuilder.AppendLine($"{item.AdmissionNumber}, {item.StudentName}, {item.ClassSection}, {item.DateTime}, {item.EmailSubject}, {item.EmailID}, {item.Status}, {item.SentBy}");
+                csvBuilder.AppendLine($"{item.AdmissionNumber}, {item.StudentName}, {item.ClassSection}, {item.DateTime.Replace(",","")}, {item.EmailSubject.Replace(",", "")}, {item.EmailID}, {item.Status}, {item.SentBy}");
             }
 
             var filePath = Path.Combine(Directory.GetCurrentDirectory(), "EmailReport.csv");

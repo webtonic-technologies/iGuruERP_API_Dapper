@@ -628,7 +628,7 @@ namespace Communication_API.Repository.Implementations.SMS
                 // Write data rows
                 foreach (var record in data)
                 {
-                    writer.WriteLine($"{record.EmployeeName},{record.DepartmentDesignation},{record.DateTime},{record.Message},{record.Status}");
+                    writer.WriteLine($"{record.EmployeeName},{record.DepartmentDesignation},{record.DateTime.Replace(",","")},{record.Message.Replace(",", "")},{record.Status}");
                 }
             }
 

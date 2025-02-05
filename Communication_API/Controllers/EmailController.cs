@@ -101,9 +101,8 @@ namespace Communication_API.Controllers
         }
 
 
-
         [HttpPost("GetEmailStudentReportExport")]
-        public async Task<IActionResult> GetSMSStudentReportExport([FromBody] EmailStudentReportExportRequest request)
+        public async Task<IActionResult> GetEmailStudentReportExport([FromBody] EmailStudentReportExportRequest request)
         {
             // Get the export file content
             var response = await _emailService.GetEmailStudentReportExport(request);
@@ -120,8 +119,26 @@ namespace Communication_API.Controllers
                     // Get the file bytes
                     byte[] fileBytes = System.IO.File.ReadAllBytes(filePath);
 
+                    // Determine the MIME type and filename based on ExportType
+                    string mimeType;
+                    string fileName;
+                    if (request.ExportType == 1)
+                    {
+                        mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                        fileName = "EmailReport.xlsx";
+                    }
+                    else if (request.ExportType == 2)
+                    {
+                        mimeType = "text/csv";
+                        fileName = "EmailReport.csv";
+                    }
+                    else
+                    {
+                        return BadRequest("Invalid ExportType.");
+                    }
+
                     // Return the file as a downloadable response
-                    return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "EmailReport.xlsx");
+                    return File(fileBytes, mimeType, fileName);
                 }
                 else
                 {
@@ -133,6 +150,38 @@ namespace Communication_API.Controllers
                 return BadRequest(response.Message);
             }
         }
+         
+        //[HttpPost("GetEmailStudentReportExport")]
+        //public async Task<IActionResult> GetSMSStudentReportExport([FromBody] EmailStudentReportExportRequest request)
+        //{
+        //    // Get the export file content
+        //    var response = await _emailService.GetEmailStudentReportExport(request);
+
+        //    // Check if the export was successful
+        //    if (response.Success)
+        //    {
+        //        // Get the file path
+        //        string filePath = response.Data;
+
+        //        // Check if the file exists
+        //        if (System.IO.File.Exists(filePath))
+        //        {
+        //            // Get the file bytes
+        //            byte[] fileBytes = System.IO.File.ReadAllBytes(filePath);
+
+        //            // Return the file as a downloadable response
+        //            return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "EmailReport.xlsx");
+        //        }
+        //        else
+        //        {
+        //            return BadRequest("File not found.");
+        //        }
+        //    }
+        //    else
+        //    {
+        //        return BadRequest(response.Message);
+        //    }
+        //}
 
 
         [HttpPost("GetEmailEmployeeReport")]
@@ -146,15 +195,41 @@ namespace Communication_API.Controllers
         [HttpPost("GetEmailEmployeeReportExport")]
         public async Task<IActionResult> GetEmailEmployeeReportExport([FromBody] EmailEmployeeReportExportRequest request)
         {
+            // Get the export file content
             var response = await _emailService.GetEmailEmployeeReportExport(request);
 
+            // Check if the export was successful
             if (response.Success)
             {
+                // Get the file path
                 string filePath = response.Data;
+
+                // Check if the file exists
                 if (System.IO.File.Exists(filePath))
                 {
+                    // Get the file bytes
                     byte[] fileBytes = System.IO.File.ReadAllBytes(filePath);
-                    return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "EmailReport.xlsx");
+
+                    // Determine the MIME type and filename based on ExportType
+                    string mimeType;
+                    string fileName;
+                    if (request.ExportType == 1)
+                    {
+                        mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                        fileName = "EmailReport.xlsx";
+                    }
+                    else if (request.ExportType == 2)
+                    {
+                        mimeType = "text/csv";
+                        fileName = "EmailReport.csv";
+                    }
+                    else
+                    {
+                        return BadRequest("Invalid ExportType.");
+                    }
+
+                    // Return the file as a downloadable response
+                    return File(fileBytes, mimeType, fileName);
                 }
                 else
                 {
@@ -166,5 +241,30 @@ namespace Communication_API.Controllers
                 return BadRequest(response.Message);
             }
         }
+
+
+        //[HttpPost("GetEmailEmployeeReportExport")]
+        //public async Task<IActionResult> GetEmailEmployeeReportExport([FromBody] EmailEmployeeReportExportRequest request)
+        //{
+        //    var response = await _emailService.GetEmailEmployeeReportExport(request);
+
+        //    if (response.Success)
+        //    {
+        //        string filePath = response.Data;
+        //        if (System.IO.File.Exists(filePath))
+        //        {
+        //            byte[] fileBytes = System.IO.File.ReadAllBytes(filePath);
+        //            return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "EmailReport.xlsx");
+        //        }
+        //        else
+        //        {
+        //            return BadRequest("File not found.");
+        //        }
+        //    }
+        //    else
+        //    {
+        //        return BadRequest(response.Message);
+        //    }
+        //}
     }
 }

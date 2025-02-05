@@ -612,7 +612,7 @@ namespace Communication_API.Repository.Implementations.Email
                 // Write data rows
                 foreach (var record in data)
                 {
-                    writer.WriteLine($"{record.EmployeeName},{record.DepartmentDesignation},{record.DateTime},{record.EmailSubject}, {record.EmailID},{record.Status},{record.SentBy}");
+                    writer.WriteLine($"{record.EmployeeName},{record.DepartmentDesignation},{record.DateTime.Replace(",","")},{record.EmailSubject}, {record.EmailID},{record.Status},{record.SentBy}");
                 }
             }
 
