@@ -20,6 +20,8 @@
         // Lists for student and employee IDs
         public List<int>? StudentIDs { get; set; }
         public List<int>? EmployeeIDs { get; set; }
+
+        public int SentBy { get; set; }
     }
 
 

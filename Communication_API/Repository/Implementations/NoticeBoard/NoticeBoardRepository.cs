@@ -381,35 +381,35 @@ namespace Communication_API.Repository.Implementations.NoticeBoard
             var totalCount = await _connection.ExecuteScalarAsync<int>(countSql, new { request.InstituteID });
 
             var sql = @"
-        SELECT 
-            c.CircularID,
-            c.AcademicYear,
-            c.CircularNo,
-            c.Title,
-            c.CircularDate,
-            CASE 
-                WHEN c.IsStudent = 1 THEN (
-                    SELECT STRING_AGG(CONCAT(cl.class_name, '-', sec.section_name), ', ') 
-                    FROM tblCircularStudentMapping csm
-                    INNER JOIN tbl_Class cl ON csm.ClassID = cl.class_id
-                    INNER JOIN tbl_Section sec ON csm.SectionID = sec.section_id
-                    WHERE csm.CircularID = c.CircularID
-                )
-                WHEN c.IsEmployee = 1 THEN (
-                    SELECT STRING_AGG(CONCAT(d.DepartmentName, '-', des.DesignationName), ', ') 
-                    FROM tblCircularEmployeeMapping cem
-                    INNER JOIN tbl_Department d ON cem.DepartmentID = d.Department_id
-                    INNER JOIN tbl_Designation des ON cem.DesignationID = des.Designation_id
-                    WHERE cem.CircularID = c.CircularID
-                )
-                ELSE ''
-            END AS Recipients
-        FROM tblCircular c
-        WHERE (@StartDate IS NULL OR c.CircularDate >= @StartDate)
-          AND (@EndDate IS NULL OR c.CircularDate <= @EndDate)
-          AND (@InstituteID IS NULL OR c.InstituteID = @InstituteID)
-        ORDER BY c.CircularID 
-        OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+            SELECT 
+                c.CircularID,
+                c.AcademicYear,
+                c.CircularNo,
+                c.Title,
+                c.CircularDate,
+                CASE 
+                    WHEN c.IsStudent = 1 THEN (
+                        SELECT STRING_AGG(CONCAT(cl.class_name, '-', sec.section_name), ', ') 
+                        FROM tblCircularStudentMapping csm
+                        INNER JOIN tbl_Class cl ON csm.ClassID = cl.class_id
+                        INNER JOIN tbl_Section sec ON csm.SectionID = sec.section_id
+                        WHERE csm.CircularID = c.CircularID
+                    )
+                    WHEN c.IsEmployee = 1 THEN (
+                        SELECT STRING_AGG(CONCAT(d.DepartmentName, '-', des.DesignationName), ', ') 
+                        FROM tblCircularEmployeeMapping cem
+                        INNER JOIN tbl_Department d ON cem.DepartmentID = d.Department_id
+                        INNER JOIN tbl_Designation des ON cem.DesignationID = des.Designation_id
+                        WHERE cem.CircularID = c.CircularID
+                    )
+                    ELSE ''
+                END AS Recipients
+            FROM tblCircular c
+            WHERE (@StartDate IS NULL OR c.CircularDate >= @StartDate)
+              AND (@EndDate IS NULL OR c.CircularDate <= @EndDate)
+              AND (@InstituteID IS NULL OR c.InstituteID = @InstituteID)
+            ORDER BY c.CircularID 
+            OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
             var parameters = new
             {
@@ -424,6 +424,7 @@ namespace Communication_API.Repository.Implementations.NoticeBoard
 
             return new ServiceResponse<List<CircularResponse>>(true, "Records Found", circulars.ToList(), 302, totalCount);
         }
+
 
         public async Task<ServiceResponse<string>> NoticeSetStudentView(NoticeSetStudentViewRequest request)
         {
@@ -471,26 +472,26 @@ namespace Communication_API.Repository.Implementations.NoticeBoard
         {
             // Query to get the total number of students, viewed count, and not viewed count
             var statisticsSql = @"
-        SELECT 
-            COUNT(*) AS TotalStudent,
-            SUM(CASE WHEN ns.IsViewed = 1 THEN 1 ELSE 0 END) AS Viewed,
-            SUM(CASE WHEN ns.IsViewed = 0 THEN 1 ELSE 0 END) AS NotViewed
-        FROM tblNoticeStudentMapping ns
-        INNER JOIN tbl_StudentMaster s ON ns.StudentID = s.student_id
-        WHERE ns.NoticeID = @NoticeID AND s.Institute_id = @InstituteID";
+            SELECT 
+                COUNT(*) AS TotalStudent,
+                SUM(CASE WHEN ns.IsViewed = 1 THEN 1 ELSE 0 END) AS Viewed,
+                SUM(CASE WHEN ns.IsViewed = 0 THEN 1 ELSE 0 END) AS NotViewed
+            FROM tblNoticeStudentMapping ns
+            INNER JOIN tbl_StudentMaster s ON ns.StudentID = s.student_id
+            WHERE ns.NoticeID = @NoticeID AND s.Institute_id = @InstituteID";
 
             // Query to get the student list details
             var studentListSql = @"
-        SELECT 
-            s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name AS StudentName,
-            CONCAT(c.class_name, '-', sec.section_name) AS ClassSection,
-            s.Admission_Number as AdmissionNumber,
-            CASE WHEN ns.IsViewed = 1 THEN GETDATE() ELSE NULL END AS ViewedOn
-        FROM tblNoticeStudentMapping ns
-        INNER JOIN tbl_StudentMaster s ON ns.StudentID = s.student_id
-        INNER JOIN tbl_Class c ON ns.ClassID = c.class_id
-        INNER JOIN tbl_Section sec ON ns.SectionID = sec.section_id
-        WHERE ns.NoticeID = @NoticeID AND s.Institute_id = @InstituteID";
+            SELECT 
+                s.First_Name + ' ' + ISNULL(s.Middle_Name, '') + ' ' + s.Last_Name AS StudentName,
+                CONCAT(c.class_name, '-', sec.section_name) AS ClassSection,
+                s.Admission_Number as AdmissionNumber,
+                CASE WHEN ns.IsViewed = 1 THEN GETDATE() ELSE NULL END AS ViewedOn
+            FROM tblNoticeStudentMapping ns
+            INNER JOIN tbl_StudentMaster s ON ns.StudentID = s.student_id
+            INNER JOIN tbl_Class c ON ns.ClassID = c.class_id
+            INNER JOIN tbl_Section sec ON ns.SectionID = sec.section_id
+            WHERE ns.NoticeID = @NoticeID AND s.Institute_id = @InstituteID";
 
             var parameters = new
             {
@@ -517,27 +518,27 @@ namespace Communication_API.Repository.Implementations.NoticeBoard
         {
             // SQL query to get employee statistics
             var sql = @"
-        SELECT 
-            COUNT(ne.EmployeeID) AS TotalEmployee,
-            SUM(CASE WHEN ne.IsViewed = 1 THEN 1 ELSE 0 END) AS Viewed,
-            SUM(CASE WHEN ne.IsViewed = 0 THEN 1 ELSE 0 END) AS NotViewed
-        FROM tblNoticeEmployeeMapping ne
-        WHERE ne.NoticeID = @NoticeID AND ne.EmployeeID IN (
-            SELECT e.Employee_id
-            FROM tbl_EmployeeMaster e
-            WHERE e.Institute_id = @InstituteID
-        );
+            SELECT 
+                COUNT(ne.EmployeeID) AS TotalEmployee,
+                SUM(CASE WHEN ne.IsViewed = 1 THEN 1 ELSE 0 END) AS Viewed,
+                SUM(CASE WHEN ne.IsViewed = 0 THEN 1 ELSE 0 END) AS NotViewed
+            FROM tblNoticeEmployeeMapping ne
+            WHERE ne.NoticeID = @NoticeID AND ne.EmployeeID IN (
+                SELECT e.Employee_id
+                FROM tbl_EmployeeMaster e
+                WHERE e.Institute_id = @InstituteID
+            );
 
-        SELECT 
-            e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name AS EmployeeName,
-            CONCAT(d.DepartmentName, '-', des.DesignationName) AS DepartmentDesignation,
-            e.Employee_code_id AS EmployeeCode,
-            null as ViewedOn
-        FROM tblNoticeEmployeeMapping ne
-        INNER JOIN tbl_EmployeeMaster e ON ne.EmployeeID = e.Employee_id
-        INNER JOIN tbl_Department d ON e.Department_id = d.Department_id
-        INNER JOIN tbl_Designation des ON e.Designation_id = des.Designation_id
-        WHERE ne.NoticeID = @NoticeID AND e.Institute_id = @InstituteID;";
+            SELECT 
+                e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name AS EmployeeName,
+                CONCAT(d.DepartmentName, '-', des.DesignationName) AS DepartmentDesignation,
+                e.Employee_code_id AS EmployeeCode,
+                null as ViewedOn
+            FROM tblNoticeEmployeeMapping ne
+            INNER JOIN tbl_EmployeeMaster e ON ne.EmployeeID = e.Employee_id
+            INNER JOIN tbl_Department d ON e.Department_id = d.Department_id
+            INNER JOIN tbl_Designation des ON e.Designation_id = des.Designation_id
+            WHERE ne.NoticeID = @NoticeID AND e.Institute_id = @InstituteID;";
 
             // Execute the queries
             using (var multi = await _connection.QueryMultipleAsync(sql, new { request.NoticeID, request.InstituteID }))

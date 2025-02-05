@@ -1,4 +1,6 @@
-﻿using Communication_API.DTOs.Requests.PushNotification;
+﻿using Communication_API.DTOs.Requests.NoticeBoard;
+using Communication_API.DTOs.Requests.PushNotification;
+using Communication_API.DTOs.Requests.SMS;
 using Communication_API.Services.Interfaces.PushNotification;
 using Microsoft.AspNetCore.Mvc;
 
@@ -36,12 +38,130 @@ namespace Communication_API.Controllers
             return StatusCode(response.StatusCode, response);
         }
 
-        [HttpPost("GetNotificationReport")]
-        public async Task<IActionResult> GetNotificationReport([FromBody] GetNotificationReportRequest request)
+        //[HttpPost("GetNotificationReport")]
+        //public async Task<IActionResult> GetNotificationReport([FromBody] GetNotificationReportRequest request)
+        //{
+        //    var response = await _notificationService.GetNotificationReport(request);
+        //    return StatusCode(response.StatusCode, response);
+        //}
+         
+
+        [HttpPost("GetNotificationStudentReport")]
+        public async Task<IActionResult> GetNotificationStudentReport([FromBody] GetNotificationStudentReportRequest request)
         {
-            var response = await _notificationService.GetNotificationReport(request);
+            var response = await _notificationService.GetNotificationStudentReport(request);
             return StatusCode(response.StatusCode, response);
         }
+         
+
+        [HttpPost("GetNotificationStudentReportExport")]
+        public async Task<IActionResult> GetNotificationStudentReportExport([FromBody] GetNotificationStudentReportExportRequest request)
+        {
+            // Get the export file content
+            var response = await _notificationService.GetNotificationStudentReportExport(request);
+
+            // Check if the export was successful
+            if (response.Success)
+            {
+                // Get the file path
+                string filePath = response.Data;
+
+                // Check if the file exists
+                if (System.IO.File.Exists(filePath))
+                {
+                    // Get the file bytes
+                    byte[] fileBytes = System.IO.File.ReadAllBytes(filePath);
+
+                    // Determine the MIME type and filename based on ExportType
+                    string mimeType;
+                    string fileName;
+                    if (request.ExportType == 1)
+                    {
+                        mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                        fileName = "NotificationReport.xlsx";
+                    }
+                    else if (request.ExportType == 2)
+                    {
+                        mimeType = "text/csv";
+                        fileName = "NotificationReport.csv";
+                    }
+                    else
+                    {
+                        return BadRequest("Invalid ExportType.");
+                    }
+
+                    // Return the file as a downloadable response
+                    return File(fileBytes, mimeType, fileName);
+                }
+                else
+                {
+                    return BadRequest("File not found.");
+                }
+            }
+            else
+            {
+                return BadRequest(response.Message);
+            }
+        }
+
+        [HttpPost("GetNotificationEmployeeReport")]
+        public async Task<IActionResult> GetNotificationEmployeeReport([FromBody] GetNotificationEmployeeReportRequest request)
+        {
+            var response = await _notificationService.GetNotificationEmployeeReport(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+
+        [HttpPost("GetNotificationEmployeeReportExport")]
+        public async Task<IActionResult> GetNotificationEmployeeReportExport([FromBody] GetNotificationEmployeeReportExportRequest request)
+        {
+            // Get the export file content
+            var response = await _notificationService.GetNotificationEmployeeReportExport(request);
+
+            // Check if the export was successful
+            if (response.Success)
+            {
+                // Get the file path
+                string filePath = response.Data;
+
+                // Check if the file exists
+                if (System.IO.File.Exists(filePath))
+                {
+                    // Get the file bytes
+                    byte[] fileBytes = System.IO.File.ReadAllBytes(filePath);
+
+                    // Determine the MIME type and filename based on ExportType
+                    string mimeType;
+                    string fileName;
+                    if (request.ExportType == 1)
+                    {
+                        mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                        fileName = "NotificationEmployeeReport.xlsx";
+                    }
+                    else if (request.ExportType == 2)
+                    {
+                        mimeType = "text/csv";
+                        fileName = "NotificationEmployeeReport.csv";
+                    }
+                    else
+                    {
+                        return BadRequest("Invalid ExportType.");
+                    }
+
+                    // Return the file as a downloadable response
+                    return File(fileBytes, mimeType, fileName);
+                }
+                else
+                {
+                    return BadRequest("File not found.");
+                }
+            }
+            else
+            {
+                return BadRequest(response.Message);
+            }
+        }
+
 
         [HttpPost("SendPushNotificationStudent")]
         public async Task<IActionResult> SendPushNotificationStudent([FromBody] SendPushNotificationStudentRequest request)
