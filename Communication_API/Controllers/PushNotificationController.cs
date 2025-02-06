@@ -3,6 +3,7 @@ using Communication_API.DTOs.Requests.PushNotification;
 using Communication_API.DTOs.Requests.SMS;
 using Communication_API.Services.Interfaces.PushNotification;
 using Microsoft.AspNetCore.Mvc;
+using OfficeOpenXml;
 
 namespace Communication_API.Controllers
 {
@@ -190,5 +191,68 @@ namespace Communication_API.Controllers
             var response = await _notificationService.UpdatePushNotificationEmployeeStatus(request);
             return StatusCode(response.StatusCode, response);
         }
+
+
+        [HttpPost("CreatePushNotificationTemplate")]
+        public async Task<IActionResult> CreatePushNotificationTemplate([FromBody] CreatePushNotificationTemplate request)
+        {
+            var response = await _notificationService.CreatePushNotificationTemplate(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+
+        [HttpPost("GetAllPushNotificationTemplate")]
+        public async Task<IActionResult> GetAllPushNotificationTemplate([FromBody] GetAllPushNotificationTemplateRequest request)
+        {
+            var response = await _notificationService.GetAllPushNotificationTemplate(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("GetAllPushNotificationTemplateExport")]
+        public async Task<IActionResult> GetAllPushNotificationTemplateExport([FromBody] GetAllPushNotificationTemplateExportRequest request)
+        {
+            var response = await _notificationService.GetAllPushNotificationTemplateExport(request);
+            if (response.Success)
+            {
+                // Return file based on ExportType
+                var memoryStream = new MemoryStream();
+                if (request.ExportType == 1)
+                {
+                    // Generate Excel
+                    using (var package = new ExcelPackage(memoryStream))
+                    {
+                        var worksheet = package.Workbook.Worksheets.Add("PushNotificationTemplates");
+                        worksheet.Cells.LoadFromCollection(response.Data, true);
+                        package.Save();
+                    }
+
+                    memoryStream.Position = 0;
+                    return File(memoryStream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "PushNotificationTemplates.xlsx");
+                }
+                else if (request.ExportType == 2)
+                {
+                    // Generate CSV
+                    var csv = string.Join(",", new[] { "TemplateName", "TemplateMessage" }) + "\n";
+                    foreach (var template in response.Data)
+                    {
+                        csv += $"{template.TemplateName.Replace(",","")},{template.TemplateMessage.Replace(",", "")}\n";
+                    }
+
+                    var csvBytes = System.Text.Encoding.UTF8.GetBytes(csv);
+                    memoryStream.Write(csvBytes, 0, csvBytes.Length);
+                    memoryStream.Position = 0;
+                    return File(memoryStream, "text/csv", "PushNotificationTemplates.csv");
+                }
+                else
+                {
+                    return BadRequest("Invalid ExportType");
+                }
+            }
+            else
+            {
+                return BadRequest(response.Message);
+            }
+        }
+
     }
 }

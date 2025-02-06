@@ -4,6 +4,7 @@ using Communication_API.DTOs.Responses.PushNotification;
 using Communication_API.DTOs.Responses.SMS;
 using Communication_API.DTOs.ServiceResponse;
 using Communication_API.Models.PushNotification;
+using Communication_API.Models.SMS;
 using Communication_API.Repository.Interfaces.PushNotification;
 using Dapper;
 using System.Data;
@@ -600,6 +601,75 @@ namespace Communication_API.Repository.Implementations.PushNotification
                 EmployeeID = employeeID,
                 PushNotificationStatusID = pushNotificationStatusID
             });
+        }
+
+
+        public async Task<ServiceResponse<string>> CreatePushNotificationTemplate(CreatePushNotificationTemplate request)
+        {
+            var query = "INSERT INTO [tblPushNotificationTemplate] (TemplateName, TemplateMessage, InstituteID) VALUES (@TemplateName, @TemplateMessage, @InstituteID)";  // Updated query
+
+            var parameters = new
+            {
+                request.TemplateName,
+                request.TemplateMessage,
+                request.InstituteID
+            };
+
+            var result = await _connection.ExecuteAsync(query, parameters);
+            return new ServiceResponse<string>(true, "Operation Successful", result > 0 ? "Success" : "Failure", result > 0 ? 200 : 400);
+        }
+
+
+
+        //public async Task<List<GetAllPushNotificationTemplateResponse>> GetAllPushNotificationTemplate(int instituteID)
+        //{
+        //    var query = @"SELECT TemplateName, TemplateMessage
+        //          FROM [tblPushNotificationTemplate]
+        //          WHERE (@InstituteID IS NULL OR InstituteID = @InstituteID)
+        //          ORDER BY PushNotificationTemplateID";
+
+        //    var templates = await _connection.QueryAsync<GetAllPushNotificationTemplateResponse>(query, new { InstituteID = instituteID });
+        //    return templates.AsList();
+        //}
+
+
+        public async Task<ServiceResponse<List<GetAllPushNotificationTemplateResponse>>> GetAllPushNotificationTemplate(GetAllPushNotificationTemplateRequest request)
+        {
+            // SQL to count the total number of records, applying the InstituteID filter if provided
+            var countSql = "SELECT COUNT(*) FROM [tblPushNotificationTemplate] WHERE (@InstituteID IS NULL OR InstituteID = @InstituteID)";
+            var totalCount = await _connection.ExecuteScalarAsync<int>(countSql, new { request.InstituteID });
+
+            // SQL query to retrieve the templates, including TemplateCode
+            var sql = @"SELECT PushNotificationTemplateID, TemplateName, TemplateMessage 
+                FROM [tblPushNotificationTemplate]
+                WHERE (@InstituteID IS NULL OR InstituteID = @InstituteID)
+                ORDER BY PushNotificationTemplateID 
+                OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+
+            // Define parameters for the query, including InstituteID and pagination
+            var parameters = new
+            {
+                InstituteID = request.InstituteID,
+                Offset = (request.PageNumber - 1) * request.PageSize,
+                PageSize = request.PageSize
+            };
+
+            // Execute the query to fetch the templates
+            var templates = await _connection.QueryAsync<GetAllPushNotificationTemplateResponse>(sql, parameters);
+
+            // Return the response with the templates and total count
+            return new ServiceResponse<List<GetAllPushNotificationTemplateResponse>>(true, "Records Found", templates.ToList(), 200, totalCount);
+        }
+
+        public async Task<List<GetAllPushNotificationTemplateExportResponse>> GetAllPushNotificationTemplateExport(int instituteID)
+        {
+            var query = @"SELECT TemplateName, TemplateMessage
+                          FROM [tblPushNotificationTemplate]
+                          WHERE (@InstituteID IS NULL OR InstituteID = @InstituteID)
+                          ORDER BY PushNotificationTemplateID";
+
+            var templates = await _connection.QueryAsync<GetAllPushNotificationTemplateExportResponse>(query, new { InstituteID = instituteID });
+            return templates.AsList();
         }
 
     }

@@ -4,6 +4,7 @@ using Communication_API.DTOs.Responses.PushNotification;
 using Communication_API.DTOs.Responses.SMS;
 using Communication_API.DTOs.ServiceResponse;
 using Communication_API.Models.PushNotification;
+using Communication_API.Models.SMS;
 using Communication_API.Repository.Interfaces.PushNotification;
 using Communication_API.Services.Interfaces.PushNotification;
 using CsvHelper;
@@ -285,6 +286,27 @@ namespace Communication_API.Services.Implementations.PushNotification
             await _notificationRepository.UpdatePushNotificationEmployeeStatus(request.GroupID, request.InstituteID, request.EmployeeID, request.PushNotificationStatusID);
 
             return new ServiceResponse<string>(true, "Push Notification Status Updated Successfully", "The status has been successfully updated", StatusCodes.Status200OK);
+        }
+
+
+        public async Task<ServiceResponse<string>> CreatePushNotificationTemplate(CreatePushNotificationTemplate request)
+        {
+            return await _notificationRepository.CreatePushNotificationTemplate(request);
+        }
+
+
+        public async Task<ServiceResponse<List<GetAllPushNotificationTemplateResponse>>> GetAllPushNotificationTemplate(GetAllPushNotificationTemplateRequest request)
+        {
+            return await _notificationRepository.GetAllPushNotificationTemplate(request);
+        }
+
+        public async Task<ServiceResponse<List<GetAllPushNotificationTemplateExportResponse>>> GetAllPushNotificationTemplateExport(GetAllPushNotificationTemplateExportRequest request)
+        {
+            // Fetch data from repository
+            var templates = await _notificationRepository.GetAllPushNotificationTemplateExport(request.InstituteID);
+
+            var response = new ServiceResponse<List<GetAllPushNotificationTemplateExportResponse>>(true, "Export Data Retrieved", templates, 200);
+            return response;
         }
     }
 }

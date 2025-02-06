@@ -4,6 +4,7 @@ using Communication_API.DTOs.Responses.PushNotification;
 using Communication_API.DTOs.Responses.SMS;
 using Communication_API.DTOs.ServiceResponse;
 using Communication_API.Models.PushNotification;
+using Communication_API.Models.SMS;
 
 namespace Communication_API.Repository.Interfaces.PushNotification
 {
@@ -21,6 +22,8 @@ namespace Communication_API.Repository.Interfaces.PushNotification
         Task InsertPushNotificationForEmployee(int groupID, int instituteID, int employeeID, string message, DateTime notificationDate, int statusID, int SentBy);
         Task UpdatePushNotificationStudentStatus(int groupID, int instituteID, int studentID, int pushNotificationStatusID);
         Task UpdatePushNotificationEmployeeStatus(int groupID, int instituteID, int employeeID, int pushNotificationStatusID);
-
+        Task<ServiceResponse<string>> CreatePushNotificationTemplate(CreatePushNotificationTemplate request);   
+        Task<ServiceResponse<List<GetAllPushNotificationTemplateResponse>>> GetAllPushNotificationTemplate(GetAllPushNotificationTemplateRequest request);
+        Task<List<GetAllPushNotificationTemplateExportResponse>> GetAllPushNotificationTemplateExport(int instituteID);
     }
 }
