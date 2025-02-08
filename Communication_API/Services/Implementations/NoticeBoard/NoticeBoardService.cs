@@ -63,6 +63,21 @@ namespace Communication_API.Services.Implementations.NoticeBoard
         {
             return await _noticeBoardRepository.DeleteCircular(request);
         }
-
+        public async Task<ServiceResponse<string>> CircularSetStudentView(CircularSetStudentViewRequest request)
+        {
+            return await _noticeBoardRepository.CircularSetStudentView(request);
+        }
+        public async Task<ServiceResponse<string>> CircularSetEmployeeView(CircularSetEmployeeViewRequest request)
+        {
+            return await _noticeBoardRepository.CircularSetEmployeeView(request);
+        }
+        public async Task<ServiceResponse<StudentCircularStatisticsResponse>> GetStudentCircularStatistics(GetStudentCircularStatisticsRequest request)
+        {
+            return await _noticeBoardRepository.GetStudentCircularStatistics(request);
+        }
+        public async Task<ServiceResponse<EmployeeCircularStatisticsResponse>> GetEmployeeCircularStatistics(GetEmployeeCircularStatisticsRequest request)
+        {
+            return await _noticeBoardRepository.GetEmployeeCircularStatistics(request);
+        }
     }
 }

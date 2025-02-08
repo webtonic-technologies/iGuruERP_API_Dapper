@@ -125,5 +125,49 @@ namespace Communication_API.Controllers
             }
         }
 
+        [HttpPost]
+        [Route("CircularSetStudentView")]
+        public async Task<IActionResult> CircularSetStudentView([FromBody] CircularSetStudentViewRequest request)
+        {
+            var response = await _noticeBoardService.CircularSetStudentView(request);
+            if (response.Success)
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
+        }
+
+        [HttpPost]
+        [Route("CircularSetEmployeeView")]
+        public async Task<IActionResult> CircularSetEmployeeView([FromBody] CircularSetEmployeeViewRequest request)
+        {
+            var response = await _noticeBoardService.CircularSetEmployeeView(request);
+            if (response.Success)
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
+        }
+
+        [HttpPost]
+        [Route("GetStudentCircularStatistics")]
+        public async Task<IActionResult> GetStudentCircularStatistics([FromBody] GetStudentCircularStatisticsRequest request)
+        {
+            var response = await _noticeBoardService.GetStudentCircularStatistics(request);
+            if (response.Success)
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
+        }
+
+        [HttpPost("GetEmployeeCircularStatistics")]
+        public async Task<IActionResult> GetEmployeeCircularStatistics([FromBody] GetEmployeeCircularStatisticsRequest request)
+        {
+            var response = await _noticeBoardService.GetEmployeeCircularStatistics(request);
+            if (response.Success)
+                return Ok(response);
+            return StatusCode(response.StatusCode, response);
+        }
     }
 }

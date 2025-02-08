@@ -17,8 +17,10 @@ namespace Communication_API.Services.Interfaces.NoticeBoard
         Task<ServiceResponse<EmployeeNoticeStatisticsResponse>> GetEmployeeNoticeStatistics(GetEmployeeNoticeStatisticsRequest request);
         Task<ServiceResponse<string>> DeleteNotice(int InstituteID, int NoticeID);
         Task<ServiceResponse<string>> DeleteCircular(DeleteCircularRequest request);
-
-
+        Task<ServiceResponse<string>> CircularSetStudentView(CircularSetStudentViewRequest request);
+        Task<ServiceResponse<string>> CircularSetEmployeeView(CircularSetEmployeeViewRequest request);
+        Task<ServiceResponse<StudentCircularStatisticsResponse>> GetStudentCircularStatistics(GetStudentCircularStatisticsRequest request);
+        Task<ServiceResponse<EmployeeCircularStatisticsResponse>> GetEmployeeCircularStatistics(GetEmployeeCircularStatisticsRequest request);
 
     }
 }

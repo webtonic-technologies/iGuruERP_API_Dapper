@@ -1,8 +1,8 @@
-﻿using System;
+﻿using System.Collections.Generic;
 
 namespace Communication_API.DTOs.Responses.NoticeBoard
 {
-    public class EmployeeNoticeStatisticsResponse
+    public class EmployeeCircularStatisticsResponse
     {
         public int TotalEmployee { get; set; }
         public int Viewed { get; set; }
@@ -17,6 +17,4 @@ namespace Communication_API.DTOs.Responses.NoticeBoard
             public string? ViewedOn { get; set; }
         }
     }
-
-   
 }

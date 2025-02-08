@@ -4,8 +4,8 @@
     {
         public int PageNumber { get; set; }
         public int PageSize { get; set; }
-        public DateTime? StartDate { get; set; } // Add this property
-        public DateTime? EndDate { get; set; }   // Add this property
+        public string? StartDate { get; set; } // Add this property
+        public string? EndDate { get; set; }   // Add this property
         public int? InstituteID { get; set; }    // Add this property
     }
 

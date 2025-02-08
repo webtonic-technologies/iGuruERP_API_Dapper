@@ -1,6 +1,8 @@
-﻿namespace Communication_API.DTOs.Responses.NoticeBoard
+﻿using System.Collections.Generic;
+
+namespace Communication_API.DTOs.Responses.NoticeBoard
 {
-    public class StudentNoticeStatisticsResponse
+    public class StudentCircularStatisticsResponse
     {
         public int TotalStudent { get; set; }
         public int Viewed { get; set; }

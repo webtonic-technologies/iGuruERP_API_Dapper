@@ -18,6 +18,7 @@
         // Add these properties to support mappings
         public List<StudentMapping>? StudentMappings { get; set; }
         public List<EmployeeMapping>? EmployeeMappings { get; set; }
+        public int CreatedBy { get; set; }
     }
 
     public class StudentMapping
