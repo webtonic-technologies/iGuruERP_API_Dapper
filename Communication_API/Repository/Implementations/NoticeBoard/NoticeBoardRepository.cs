@@ -766,5 +766,118 @@ namespace Communication_API.Repository.Implementations.NoticeBoard
                 return new ServiceResponse<EmployeeCircularStatisticsResponse>(false, "No records found", null, 404);
             }
         }
+
+        public async Task<List<GetAllNoticeExportResponse>> GetAllNoticeExportData(GetAllNoticeExportRequest request)
+        {
+            // Parse StartDate and EndDate from string to DateTime (if provided)
+            DateTime? startDate = null;
+            DateTime? endDate = null;
+            if (!string.IsNullOrEmpty(request.StartDate))
+            {
+                startDate = DateTime.ParseExact(request.StartDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+            }
+            if (!string.IsNullOrEmpty(request.EndDate))
+            {
+                endDate = DateTime.ParseExact(request.EndDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+            }
+
+            string sql = @"
+            SELECT  
+                n.Title,
+                n.Description,
+                FORMAT(n.StartDate, 'dd-MM-yyyy') AS StartDate,
+                FORMAT(n.EndDate, 'dd-MM-yyyy') AS EndDate,
+                FORMAT(n.CreatedOn, 'dd-MM-yyyy') AS CreatedOn,
+                ISNULL(CONCAT(emp.First_Name, ' ', emp.Middle_Name, ' ', emp.Last_Name), 'Unknown') AS CreatedBy,
+                CASE 
+                    WHEN n.IsStudent = 1 THEN (
+                        SELECT STRING_AGG(CONCAT(c.class_name, '-', sec.section_name), ', ') 
+                        FROM tblNoticeStudentMapping ns
+                        INNER JOIN tbl_Class c ON ns.ClassID = c.class_id
+                        INNER JOIN tbl_Section sec ON ns.SectionID = sec.section_id
+                        WHERE ns.NoticeID = n.NoticeID
+                    )
+                    WHEN n.IsEmployee = 1 THEN (
+                        SELECT STRING_AGG(CONCAT(d.DepartmentName, '-', des.DesignationName), ', ') 
+                        FROM tblNoticeEmployeeMapping ne
+                        INNER JOIN tbl_Department d ON ne.DepartmentID = d.Department_id
+                        INNER JOIN tbl_Designation des ON ne.DesignationID = des.Designation_id
+                        WHERE ne.NoticeID = n.NoticeID
+                    )
+                END AS Recipients
+            FROM tblNotice n
+            LEFT JOIN tbl_EmployeeProfileMaster emp ON n.CreatedBy = emp.Employee_id
+            WHERE (@InstituteID = 0 OR n.InstituteID = @InstituteID)
+              AND (@StartDate IS NULL OR n.StartDate >= @StartDate)
+              AND (@EndDate IS NULL OR n.EndDate <= @EndDate)
+              AND (@Search IS NULL OR (n.Title LIKE '%' + @Search + '%' OR n.Description LIKE '%' + @Search + '%'))
+              AND n.IsActive = 1";
+
+            var parameters = new
+            {
+                InstituteID = request.InstituteID,
+                StartDate = startDate,
+                EndDate = endDate,
+                Search = string.IsNullOrEmpty(request.Search) ? null : request.Search
+            };
+
+            var result = await _connection.QueryAsync<GetAllNoticeExportResponse>(sql, parameters);
+            return result.ToList();
+        }
+
+        public async Task<List<GetAllCircularExportResponse>> GetAllCircularExportData(GetAllCircularExportRequest request)
+        {
+            // Parse StartDate and EndDate to DateTime objects (if provided)
+            DateTime? startDate = null;
+            DateTime? endDate = null;
+            if (!string.IsNullOrEmpty(request.StartDate))
+                startDate = DateTime.ParseExact(request.StartDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+            if (!string.IsNullOrEmpty(request.EndDate))
+                endDate = DateTime.ParseExact(request.EndDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+
+            string sql = @"
+            SELECT 
+                c.AcademicYear,
+                c.CircularNo,
+                c.Title,
+                FORMAT(c.CircularDate, 'dd-MM-yyyy') AS CircularDate,
+                FORMAT(c.PublishedDate, 'dd-MM-yyyy') AS PublishedDate,
+                FORMAT(c.CreatedOn, 'dd-MM-yyyy') AS CreatedOn,
+                (e.First_Name + ' ' + ISNULL(e.Middle_Name, '') + ' ' + e.Last_Name) AS CreatedBy,
+                CASE 
+                    WHEN c.IsStudent = 1 THEN (
+                        SELECT STRING_AGG(CONCAT(cl.class_name, '-', sec.section_name), ', ') 
+                        FROM tblCircularStudentMapping csm
+                        INNER JOIN tbl_Class cl ON csm.ClassID = cl.class_id
+                        INNER JOIN tbl_Section sec ON csm.SectionID = sec.section_id
+                        WHERE csm.CircularID = c.CircularID
+                    )
+                    WHEN c.IsEmployee = 1 THEN (
+                        SELECT STRING_AGG(CONCAT(d.DepartmentName, '-', des.DesignationName), ', ') 
+                        FROM tblCircularEmployeeMapping cem
+                        INNER JOIN tbl_Department d ON cem.DepartmentID = d.Department_id
+                        INNER JOIN tbl_Designation des ON cem.DesignationID = des.Designation_id
+                        WHERE cem.CircularID = c.CircularID
+                    )
+                    ELSE ''
+                END AS Recipients
+            FROM tblCircular c
+            LEFT JOIN tbl_EmployeeProfileMaster e ON c.CreatedBy = e.Employee_id
+            WHERE (@StartDate IS NULL OR c.CircularDate >= @StartDate)
+              AND (@EndDate IS NULL OR c.CircularDate <= @EndDate)
+              AND (@InstituteID IS NULL OR c.InstituteID = @InstituteID)
+              AND c.IsActive = 1
+            ORDER BY c.CircularID";
+
+            var parameters = new
+            {
+                InstituteID = request.InstituteID,
+                StartDate = startDate,
+                EndDate = endDate
+            };
+
+            var result = await _connection.QueryAsync<GetAllCircularExportResponse>(sql, parameters);
+            return result.ToList();
+        }
     }
 }

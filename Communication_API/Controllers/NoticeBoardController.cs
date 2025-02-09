@@ -169,5 +169,86 @@ namespace Communication_API.Controllers
                 return Ok(response);
             return StatusCode(response.StatusCode, response);
         }
+
+        [HttpPost("GetAllNoticeExport")]
+        public async Task<IActionResult> GetAllNoticeExport([FromBody] GetAllNoticeExportRequest request)
+        {
+            // Get the export file path from the service
+            var response = await _noticeBoardService.GetAllNoticeExport(request);
+            if (response.Success)
+            {
+                string filePath = response.Data;
+                if (System.IO.File.Exists(filePath))
+                {
+                    byte[] fileBytes = System.IO.File.ReadAllBytes(filePath);
+                    string mimeType;
+                    string fileName;
+                    if (request.ExportType == 1)
+                    {
+                        mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                        fileName = "NoticeReport.xlsx";
+                    }
+                    else if (request.ExportType == 2)
+                    {
+                        mimeType = "text/csv";
+                        fileName = "NoticeReport.csv";
+                    }
+                    else
+                    {
+                        return BadRequest("Invalid ExportType.");
+                    }
+                    return File(fileBytes, mimeType, fileName);
+                }
+                else
+                {
+                    return BadRequest("File not found.");
+                }
+            }
+            else
+            {
+                return BadRequest(response.Message);
+            }
+        }
+
+
+
+        [HttpPost("GetAllCircularExport")]
+        public async Task<IActionResult> GetAllCircularExport([FromBody] GetAllCircularExportRequest request)
+        {
+            var response = await _noticeBoardService.GetAllCircularExport(request);
+            if (response.Success)
+            {
+                string filePath = response.Data;
+                if (System.IO.File.Exists(filePath))
+                {
+                    byte[] fileBytes = System.IO.File.ReadAllBytes(filePath);
+                    string mimeType;
+                    string fileName;
+                    if (request.ExportType == 1)
+                    {
+                        mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                        fileName = "CircularReport.xlsx";
+                    }
+                    else if (request.ExportType == 2)
+                    {
+                        mimeType = "text/csv";
+                        fileName = "CircularReport.csv";
+                    }
+                    else
+                    {
+                        return BadRequest("Invalid ExportType.");
+                    }
+                    return File(fileBytes, mimeType, fileName);
+                }
+                else
+                {
+                    return BadRequest("File not found.");
+                }
+            }
+            else
+            {
+                return BadRequest(response.Message);
+            }
+        }
     }
 }

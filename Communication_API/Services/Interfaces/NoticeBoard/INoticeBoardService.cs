@@ -21,6 +21,8 @@ namespace Communication_API.Services.Interfaces.NoticeBoard
         Task<ServiceResponse<string>> CircularSetEmployeeView(CircularSetEmployeeViewRequest request);
         Task<ServiceResponse<StudentCircularStatisticsResponse>> GetStudentCircularStatistics(GetStudentCircularStatisticsRequest request);
         Task<ServiceResponse<EmployeeCircularStatisticsResponse>> GetEmployeeCircularStatistics(GetEmployeeCircularStatisticsRequest request);
+        Task<ServiceResponse<string>> GetAllNoticeExport(GetAllNoticeExportRequest request);
+        Task<ServiceResponse<string>> GetAllCircularExport(GetAllCircularExportRequest request);
 
     }
 }
