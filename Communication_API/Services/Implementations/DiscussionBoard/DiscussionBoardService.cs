@@ -1,4 +1,5 @@
 ﻿using Communication_API.DTOs.Requests.DiscussionBoard;
+using Communication_API.DTOs.Responses.DiscussionBoard;
 using Communication_API.DTOs.ServiceResponse;
 using Communication_API.Models.DiscussionBoard;
 using Communication_API.Repository.Interfaces.DiscussionBoard;
@@ -20,20 +21,21 @@ namespace Communication_API.Services.Implementations.DiscussionBoard
             return await _discussionBoardRepository.AddUpdateDiscussion(request);
         }
 
-        public async Task<ServiceResponse<List<Communication_API.Models.DiscussionBoard.DiscussionBoard>>> GetAllDiscussion(GetAllDiscussionRequest request)
+        public async Task<ServiceResponse<List<GetAllDiscussionResponse>>> GetAllDiscussion(GetAllDiscussionRequest request)
         {
             return await _discussionBoardRepository.GetAllDiscussion(request);
+        }
+         
+        public async Task<ServiceResponse<GetDiscussionBoardDetailsResponse>> GetDiscussionBoardDetails(GetDiscussionBoardDetailsRequest request)
+        {
+            return await _discussionBoardRepository.GetDiscussionBoardDetails(request);
         }
 
         public async Task<ServiceResponse<string>> DeleteDiscussion(int DiscussionBoardID)
         {
             return await _discussionBoardRepository.DeleteDiscussion(DiscussionBoardID);
         }
-
-        public async Task<ServiceResponse<Communication_API.Models.DiscussionBoard.DiscussionBoard>> GetDiscussionBoard(int DiscussionBoardID)
-        {
-            return await _discussionBoardRepository.GetDiscussionBoard(DiscussionBoardID);
-        }
+         
 
         public async Task<ServiceResponse<string>> CreateDiscussionThread(CreateDiscussionThreadRequest request)
         {
@@ -43,6 +45,26 @@ namespace Communication_API.Services.Implementations.DiscussionBoard
         public async Task<ServiceResponse<List<DiscussionThread>>> GetDiscussionThread(int DiscussionBoardID)
         {
             return await _discussionBoardRepository.GetDiscussionThread(DiscussionBoardID);
+        }
+
+        public async Task<ServiceResponse<string>> AddDiscussionBoardComment(AddDiscussionBoardCommentRequest request)
+        {
+            return await _discussionBoardRepository.AddDiscussionBoardComment(request);
+        }
+
+        public async Task<ServiceResponse<string>> AddDiscussionBoardReaction(AddDiscussionBoardReactionRequest request)
+        {
+            return await _discussionBoardRepository.AddDiscussionBoardReaction(request);
+        }
+
+        public async Task<ServiceResponse<List<GetDiscussionBoardCommentsResponse>>> GetDiscussionBoardComments(GetDiscussionBoardCommentsRequest request)
+        {
+            return await _discussionBoardRepository.GetDiscussionBoardComments(request);
+        }
+
+        public async Task<ServiceResponse<GetDiscussionBoardReactionsResponse>> GetDiscussionBoardReactions(GetDiscussionBoardReactionsRequest request)
+        {
+            return await _discussionBoardRepository.GetDiscussionBoardReactions(request);
         }
     }
 }

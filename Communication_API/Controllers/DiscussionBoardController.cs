@@ -1,5 +1,9 @@
 ﻿using Communication_API.DTOs.Requests.DiscussionBoard;
 using Communication_API.Services.Interfaces.DiscussionBoard;
+using Communication_API.DTOs.Responses.DiscussionBoard;
+using Communication_API.DTOs.ServiceResponse;
+
+
 using Microsoft.AspNetCore.Mvc;
 
 namespace Communication_API.Controllers
@@ -25,7 +29,22 @@ namespace Communication_API.Controllers
         [HttpPost("GetAllDiscussion")]
         public async Task<IActionResult> GetAllDiscussion([FromBody] GetAllDiscussionRequest request)
         {
-            var response = await _discussionBoardService.GetAllDiscussion(request);
+            ServiceResponse<List<GetAllDiscussionResponse>> response = await _discussionBoardService.GetAllDiscussion(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpGet("GetDiscussionBoard/{DiscussionBoardID}")]
+        public async Task<IActionResult> GetDiscussionBoardDetails([FromRoute] int DiscussionBoardID, [FromQuery] int InstituteID)
+        {
+            var request = new GetDiscussionBoardDetailsRequest
+            {
+                DiscussionBoardID = DiscussionBoardID,
+                InstituteID = InstituteID
+            };
+
+            ServiceResponse<GetDiscussionBoardDetailsResponse> response =
+                await _discussionBoardService.GetDiscussionBoardDetails(request);
+
             return StatusCode(response.StatusCode, response);
         }
 
@@ -35,25 +54,48 @@ namespace Communication_API.Controllers
             var response = await _discussionBoardService.DeleteDiscussion(DiscussionBoardID);
             return StatusCode(response.StatusCode, response);
         }
+         
 
-        [HttpGet("GetDiscussionBoard/{DiscussionBoardID}")]
-        public async Task<IActionResult> GetDiscussionBoard(int DiscussionBoardID)
+        //[HttpPost("CreateDiscussionThread")]
+        //public async Task<IActionResult> CreateDiscussionThread([FromBody] CreateDiscussionThreadRequest request)
+        //{
+        //    var response = await _discussionBoardService.CreateDiscussionThread(request);
+        //    return StatusCode(response.StatusCode, response);
+        //}
+
+        //[HttpPost("GetDiscussionThread/{DiscussionBoardID}")]
+        //public async Task<IActionResult> GetDiscussionThread(int DiscussionBoardID)
+        //{
+        //    var response = await _discussionBoardService.GetDiscussionThread(DiscussionBoardID);
+        //    return StatusCode(response.StatusCode, response);
+        //}
+
+        [HttpPost("AddDiscussionBoardComment")]
+        public async Task<IActionResult> AddDiscussionBoardComment([FromBody] AddDiscussionBoardCommentRequest request)
         {
-            var response = await _discussionBoardService.GetDiscussionBoard(DiscussionBoardID);
+            ServiceResponse<string> response = await _discussionBoardService.AddDiscussionBoardComment(request);
             return StatusCode(response.StatusCode, response);
         }
 
-        [HttpPost("CreateDiscussionThread")]
-        public async Task<IActionResult> CreateDiscussionThread([FromBody] CreateDiscussionThreadRequest request)
+        [HttpPost("AddDiscussionBoardReaction")]
+        public async Task<IActionResult> AddDiscussionBoardReaction([FromBody] AddDiscussionBoardReactionRequest request)
         {
-            var response = await _discussionBoardService.CreateDiscussionThread(request);
+            ServiceResponse<string> response = await _discussionBoardService.AddDiscussionBoardReaction(request);
             return StatusCode(response.StatusCode, response);
         }
 
-        [HttpPost("GetDiscussionThread/{DiscussionBoardID}")]
-        public async Task<IActionResult> GetDiscussionThread(int DiscussionBoardID)
+        [HttpPost("GetDiscussionBoardComments")]
+        public async Task<IActionResult> GetDiscussionBoardComments([FromBody] GetDiscussionBoardCommentsRequest request)
         {
-            var response = await _discussionBoardService.GetDiscussionThread(DiscussionBoardID);
+            ServiceResponse<List<GetDiscussionBoardCommentsResponse>> response =
+                await _discussionBoardService.GetDiscussionBoardComments(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("GetDiscussionBoardReactions")]
+        public async Task<IActionResult> GetDiscussionBoardReactions([FromBody] GetDiscussionBoardReactionsRequest request)
+        {
+            ServiceResponse<GetDiscussionBoardReactionsResponse> response = await _discussionBoardService.GetDiscussionBoardReactions(request);
             return StatusCode(response.StatusCode, response);
         }
     }

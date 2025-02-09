@@ -37,6 +37,10 @@ using Communication_API.Services.Interfaces.WhatsApp;
 using System.Data.SqlClient;
 using System.Data;
 using OfficeOpenXml;
+using Communication_API.Repository.Implementations;
+using Communication_API.Repository.Interfaces;
+using Communication_API.Services.Implementations;
+using Communication_API.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 string connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
@@ -72,6 +76,9 @@ builder.Services.AddTransient<IDiscussionBoardService, DiscussionBoardService>()
 
 builder.Services.AddTransient<IDigitalDiaryRepository, DigitalDiaryRepository>();
 builder.Services.AddTransient<IDigitalDiaryService, DigitalDiaryService>();
+
+builder.Services.AddScoped<ICommunicationUserRepository, CommunicationUserRepository>();
+builder.Services.AddScoped<ICommunicationUserService, CommunicationUserService>();
 
 // Add services to the container.
 

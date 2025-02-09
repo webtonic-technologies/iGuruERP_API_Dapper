@@ -2,7 +2,10 @@
 {
     public class GetAllDiscussionRequest
     {
-        public int PageNumber { get; set; }
-        public int PageSize { get; set; }
+        public int InstituteID { get; set; }
+        // Expected format: "dd-MM-yyyy"
+        public string StartDate { get; set; }
+        // Expected format: "dd-MM-yyyy"
+        public string EndDate { get; set; }
     }
 }

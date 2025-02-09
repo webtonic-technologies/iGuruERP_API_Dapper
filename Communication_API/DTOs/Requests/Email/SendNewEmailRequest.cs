@@ -7,7 +7,7 @@
         public string EmailBody { get; set; }
         public int UserTypeID { get; set; }
         public int GroupID { get; set; }
-        public bool Status { get; set; }
+        public int Status { get; set; }
         public bool ScheduleNow { get; set; }
 
         // Changed to string with format DD-MM-YYYY for ScheduleDate

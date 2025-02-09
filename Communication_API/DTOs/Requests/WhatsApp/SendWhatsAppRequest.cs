@@ -7,7 +7,7 @@
         public string WhatsAppMessage { get; set; }
         public int UserTypeID { get; set; }
         public int GroupID { get; set; }
-        public bool Status { get; set; }
+        public int Status { get; set; }
         public bool ScheduleNow { get; set; }
 
         // ScheduleDate and ScheduleTime changed to string
