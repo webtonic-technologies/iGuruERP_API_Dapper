@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.SqlServer.Server;
 using Student_API.DTOs.RequestDTO;
 using Student_API.Services.Interfaces;
 
@@ -8,7 +9,7 @@ namespace Student_API.Controllers
     [ApiController]
     public class StudentLoginsController : ControllerBase
     {
-        private readonly IStudentLoginsServices _studentLoginsServices; 
+        private readonly IStudentLoginsServices _studentLoginsServices;
         public StudentLoginsController(IStudentLoginsServices studentLoginsServices)
         {
             _studentLoginsServices = studentLoginsServices;
@@ -82,7 +83,15 @@ namespace Student_API.Controllers
             var response = await _studentLoginsServices.DownloadExcelSheet(InstituteId, format);
             if (response.Success)
             {
-                return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "StudentCredentials.xlsx");
+                if (format.ToLower() == "excel")
+                {
+                    return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "StudentCredentials.xlsx");
+                }
+
+                else if (format.ToLower() == "csv")
+                {
+                    return File(response.Data, "text/csv", "StudentCredentials.csv");
+                }
             }
             return StatusCode(response.StatusCode, response.Message);
         }
@@ -92,7 +101,14 @@ namespace Student_API.Controllers
             var response = await _studentLoginsServices.DownloadExcelSheetNonAppUsers(InstituteId, format);
             if (response.Success)
             {
-                return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "StudentNonAppUsers.xlsx");
+                if (format.ToLower() == "excel")
+                {
+                    return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "StudentNonAppUsers.xlsx");
+                }
+                else if (format.ToLower() == "csv")
+                {
+                    return File(response.Data, "text/csv", "StudentNonAppUsers.csv");
+                }
             }
             return StatusCode(response.StatusCode, response.Message);
         }
@@ -102,7 +118,14 @@ namespace Student_API.Controllers
             var response = await _studentLoginsServices.DownloadExcelSheetStudentActivity(InstituteId, format);
             if (response.Success)
             {
-                return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "StudentActivity.xlsx");
+                if (format.ToLower() == "excel")
+                {
+                    return File(response.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "StudentActivity.xlsx");
+                }
+                else if (format.ToLower() == "csv")
+                {
+                    return File(response.Data, "text/csv", "StudentActivity.csv");
+                }
             }
             return StatusCode(response.StatusCode, response.Message);
         }
