@@ -122,4 +122,13 @@
         public string HistoryofMajorIllness { get; set; }
         public string AnyOtherRemarksOrWeakness { get; set; }
     }
+
+    public class StudentInformationImportRequestDto
+    {
+        // This property will be populated from a form field named "InstituteID"
+        public int InstituteID { get; set; }
+
+        // This property will be bound to the uploaded file (form field "File")
+        public IFormFile File { get; set; }
+    }
 }

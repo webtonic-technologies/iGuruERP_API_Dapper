@@ -796,22 +796,57 @@ namespace StudentManagement_API.Repository.Implementations
             return response;
         }
 
-
-        public async Task<ServiceResponse<string>> InsertStudents(List<StudentInformationImportRequest> students)
+        public async Task<List<SectionJoinedResponse>> GetSectionsWithClassNames(int instituteID)
         {
+            const string sql = @"
+            SELECT 
+                s.section_id     AS SectionID,
+                c.class_name     AS ClassName,
+                s.section_name   AS SectionName
+            FROM tbl_Section s
+            JOIN tbl_Class c ON s.class_id = c.class_id
+            WHERE s.IsDeleted = 0
+              AND c.IsDeleted = 0
+              AND c.institute_id = @InstituteID
+            ORDER BY c.class_id, s.section_id;
+    ";
+
+            var result = await _dbConnection.QueryAsync<SectionJoinedResponse>(
+                sql, new { InstituteID = instituteID }
+            );
+
+            return result.ToList();
+        }
+
+        public async Task<ServiceResponse<string>> InsertStudents(int instituteID, List<StudentInformationImportRequest> students)
+        {
+
+            // Ensure the connection is open before beginning the transaction.
+            if (_dbConnection.State == System.Data.ConnectionState.Closed)
+            {
+                _dbConnection.Open();
+            }
+
             using (var transaction = _dbConnection.BeginTransaction())
             {
                 try
                 {
                     foreach (var student in students)
                     {
+                        //string insertStudentQuery = @"
+                        //INSERT INTO tbl_StudentMaster 
+                        //(First_Name, Middle_Name, Last_Name, gender_id, class_id, section_id, Admission_Number, Roll_Number, Date_of_Joining, AcademicYearCode, 
+                        // Nationality_id, Religion_id, Date_of_Birth, Mother_Tongue_id, Caste_id, Blood_Group_id, Aadhar_Number, PEN, StudentType_id, Institute_house_id) 
+                        //VALUES 
+                        //(@FirstName, @MiddleName, @LastName, @GenderID, @ClassID, @SectionID, @AdmissionNumber, @RollNumber, @DateOfJoining, @AcademicYear, 
+                        // @NationalityID, @ReligionID, @DateOfBirth, @MotherTongueID, @CasteID, @BloodGroupID, @AadharNo, @PEN, @StudentTypeID, @StudentHouseID)";
+
+
                         string insertStudentQuery = @"
                         INSERT INTO tbl_StudentMaster 
-                        (First_Name, Middle_Name, Last_Name, gender_id, class_id, section_id, Admission_Number, Roll_Number, Date_of_Joining, AcademicYearCode, 
-                         Nationality_id, Religion_id, Date_of_Birth, Mother_Tongue_id, Caste_id, Blood_Group_id, Aadhar_Number, PEN, StudentType_id, Institute_house_id) 
+                        (First_Name, Middle_Name, Last_Name, gender_id, class_id, section_id, Admission_Number, Roll_Number, Institute_id) 
                         VALUES 
-                        (@FirstName, @MiddleName, @LastName, @GenderID, @ClassID, @SectionID, @AdmissionNumber, @RollNumber, @DateOfJoining, @AcademicYear, 
-                         @NationalityID, @ReligionID, @DateOfBirth, @MotherTongueID, @CasteID, @BloodGroupID, @AadharNo, @PEN, @StudentTypeID, @StudentHouseID)";
+                        (@FirstName, @MiddleName, @LastName, @GenderID, @ClassID, @SectionID, @AdmissionNumber, @RollNumber, @InstituteID)";
 
                         await _dbConnection.ExecuteAsync(insertStudentQuery, new
                         {
@@ -823,18 +858,19 @@ namespace StudentManagement_API.Repository.Implementations
                             student.StudentDetails.SectionID,
                             student.StudentDetails.AdmissionNumber,
                             student.StudentDetails.RollNumber,
-                            student.StudentDetails.DateOfJoining,
-                            student.StudentDetails.AcademicYear,
-                            student.StudentDetails.NationalityID,
-                            student.StudentDetails.ReligionID,
-                            student.StudentDetails.DateOfBirth,
-                            student.StudentDetails.MotherTongueID,
-                            student.StudentDetails.CasteID,
-                            student.StudentDetails.BloodGroupID,
-                            student.StudentDetails.AadharNo,
-                            student.StudentDetails.PEN,
-                            student.StudentDetails.StudentTypeID,
-                            student.StudentDetails.StudentHouseID
+                            //student.StudentDetails.DateOfJoining,
+                            //student.StudentDetails.AcademicYear,
+                            //student.StudentDetails.NationalityID,
+                            //student.StudentDetails.ReligionID,
+                            //student.StudentDetails.DateOfBirth,
+                            //student.StudentDetails.MotherTongueID,
+                            //student.StudentDetails.CasteID,
+                            //student.StudentDetails.BloodGroupID,
+                            //student.StudentDetails.AadharNo,
+                            //student.StudentDetails.PEN,
+                            //student.StudentDetails.StudentTypeID,
+                            //student.StudentDetails.StudentHouseID
+                            InstituteID = instituteID
                         }, transaction);
                     }
 

@@ -84,18 +84,41 @@ namespace StudentManagement_API.Controllers
         }
 
 
+        //[HttpPost("StudentInformationImport")]
+        //public async Task<IActionResult> StudentInformationImport([FromForm] IFormFile file)
+        //{
+        //    if (file == null || file.Length == 0)
+        //        return BadRequest(new ServiceResponse<string>(false, "No file uploaded", null, 400));
+
+        //    try
+        //    {
+        //        using (var stream = new MemoryStream())
+        //        {
+        //            await file.CopyToAsync(stream);
+        //            var result = await _studentInformationService.ImportStudentInformation(stream);
+        //            return result.Success ? Ok(result) : BadRequest(result);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(500, new ServiceResponse<string>(false, ex.Message, null, 500));
+        //    }
+        //}
+
         [HttpPost("StudentInformationImport")]
-        public async Task<IActionResult> StudentInformationImport([FromForm] IFormFile file)
+        public async Task<IActionResult> StudentInformationImport([FromForm] StudentInformationImportRequestDto request)
         {
-            if (file == null || file.Length == 0)
+            if (request.File == null || request.File.Length == 0)
                 return BadRequest(new ServiceResponse<string>(false, "No file uploaded", null, 400));
 
             try
             {
                 using (var stream = new MemoryStream())
                 {
-                    await file.CopyToAsync(stream);
-                    var result = await _studentInformationService.ImportStudentInformation(stream);
+                    await request.File.CopyToAsync(stream);
+
+                    // Pass the InstituteID along with the file stream to the service.
+                    var result = await _studentInformationService.ImportStudentInformation(request.InstituteID, stream);
                     return result.Success ? Ok(result) : BadRequest(result);
                 }
             }
@@ -104,5 +127,6 @@ namespace StudentManagement_API.Controllers
                 return StatusCode(500, new ServiceResponse<string>(false, ex.Message, null, 500));
             }
         }
+
     }
 }

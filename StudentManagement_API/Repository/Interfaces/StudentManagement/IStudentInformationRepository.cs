@@ -13,7 +13,8 @@ namespace StudentManagement_API.Repository.Interfaces
         Task<ServiceResponse<string>> SetStudentStatusActivity(SetStudentStatusActivityRequest request);
         Task<ServiceResponse<IEnumerable<GetStudentStatusActivityResponse>>> GetStudentStatusActivity(GetStudentStatusActivityRequest request);
         Task<DownloadStudentImportTemplateResponse> GetMasterTablesData(int instituteID);
-        Task<ServiceResponse<string>> InsertStudents(List<StudentInformationImportRequest> students);
+        Task<ServiceResponse<string>> InsertStudents(int instituteID, List<StudentInformationImportRequest> students);
+        Task<List<SectionJoinedResponse>> GetSectionsWithClassNames(int instituteID);
 
     }
 }
