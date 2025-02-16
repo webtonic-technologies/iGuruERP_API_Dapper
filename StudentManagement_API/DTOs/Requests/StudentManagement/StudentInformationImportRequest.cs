@@ -52,24 +52,84 @@
 
     public class ParentsInfo_IM
     {
-        public string FirstName { get; set; }
-        public string MiddleName { get; set; }
-        public string LastName { get; set; }
-        public string PrimaryContactNo { get; set; }
-        public string BankAccountNo { get; set; }
-        public string BankIFSCCode { get; set; }
-        public string FamilyRationCardType { get; set; }
-        public string FamilyRationCardNo { get; set; }
-        public string DateOfBirth { get; set; }
-        public string AadharNo { get; set; }
-        public string PANCardNo { get; set; }
-        public string Occupation { get; set; }
-        public string Designation { get; set; }
-        public string NameoftheEmployer { get; set; }
-        public string OfficeNo { get; set; }
-        public string EmailID { get; set; }
-        public decimal AnnualIncome { get; set; }
-        public string ResidentialAddress { get; set; }
+        //public string FirstName { get; set; }
+        //public string MiddleName { get; set; }
+        //public string LastName { get; set; }
+        //public string PrimaryContactNo { get; set; }
+        //public string BankAccountNo { get; set; }
+        //public string BankIFSCCode { get; set; }
+        //public string FamilyRationCardType { get; set; }
+        //public string FamilyRationCardNo { get; set; }
+        //public string DateOfBirth { get; set; }
+        //public string AadharNo { get; set; }
+        //public string PANCardNo { get; set; }
+        //public string Occupation { get; set; }
+        //public string Designation { get; set; }
+        //public string NameoftheEmployer { get; set; }
+        //public string OfficeNo { get; set; }
+        //public string EmailID { get; set; }
+        //public decimal AnnualIncome { get; set; }
+        //public string ResidentialAddress { get; set; }
+
+        // Father Info
+        public string FatherFirstName { get; set; }
+        public string FatherMiddleName { get; set; }
+        public string FatherLastName { get; set; }
+        public string FatherPrimaryContactNo { get; set; }
+        public string FatherBankAccountNo { get; set; }
+        public string FatherBankIFSCCode { get; set; }
+        public string FatherFamilyRationCardType { get; set; }
+        public string FatherFamilyRationCardNo { get; set; }
+        public string FatherDateOfBirth { get; set; }
+        public string FatherAadharNo { get; set; }
+        public string FatherPANCardNo { get; set; }
+        public string FatherOccupation { get; set; }
+        public string FatherDesignation { get; set; }
+        public string FatherNameoftheEmployer { get; set; }
+        public string FatherOfficeNo { get; set; }
+        public string FatherEmailID { get; set; }
+        public decimal FatherAnnualIncome { get; set; }
+        public string FatherResidentialAddress { get; set; }
+
+        // Mother Info
+        public string MotherFirstName { get; set; }
+        public string MotherMiddleName { get; set; }
+        public string MotherLastName { get; set; }
+        public string MotherPrimaryContactNo { get; set; }
+        public string MotherBankAccountNo { get; set; }
+        public string MotherBankIFSCCode { get; set; }
+        public string MotherFamilyRationCardType { get; set; }
+        public string MotherFamilyRationCardNo { get; set; }
+        public string MotherDateOfBirth { get; set; }
+        public string MotherAadharNo { get; set; }
+        public string MotherPANCardNo { get; set; }
+        public string MotherOccupation { get; set; }
+        public string MotherDesignation { get; set; }
+        public string MotherNameoftheEmployer { get; set; }
+        public string MotherOfficeNo { get; set; }
+        public string MotherEmailID { get; set; }
+        public decimal MotherAnnualIncome { get; set; }
+        public string MotherResidentialAddress { get; set; }
+
+        // Guardian Info
+        public string GuardianFirstName { get; set; }
+        public string GuardianMiddleName { get; set; }
+        public string GuardianLastName { get; set; }
+        public string GuardianPrimaryContactNo { get; set; }
+        public string GuardianBankAccountNo { get; set; }
+        public string GuardianBankIFSCCode { get; set; }
+        public string GuardianFamilyRationCardType { get; set; }
+        public string GuardianFamilyRationCardNo { get; set; }
+        public string GuardianDateOfBirth { get; set; }
+        public string GuardianAadharNo { get; set; }
+        public string GuardianPANCardNo { get; set; }
+        public string GuardianOccupation { get; set; }
+        public string GuardianDesignation { get; set; }
+        public string GuardianNameoftheEmployer { get; set; }
+        public string GuardianOfficeNo { get; set; }
+        public string GuardianEmailID { get; set; }
+        public decimal GuardianAnnualIncome { get; set; }
+        public string GuardianResidentialAddress { get; set; }
     }
 
     public class SiblingsDetails_IM
@@ -130,5 +190,5 @@
 
         // This property will be bound to the uploaded file (form field "File")
         public IFormFile File { get; set; }
-    }
+    } 
 }

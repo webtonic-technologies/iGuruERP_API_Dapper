@@ -15,6 +15,10 @@ namespace StudentManagement_API.Repository.Interfaces
         Task<DownloadStudentImportTemplateResponse> GetMasterTablesData(int instituteID);
         Task<ServiceResponse<string>> InsertStudents(int instituteID, List<StudentInformationImportRequest> students);
         Task<List<SectionJoinedResponse>> GetSectionsWithClassNames(int instituteID);
+        Task<ServiceResponse<IEnumerable<GetStudentSettingResponse>>> GetStudentSetting(GetStudentSettingRequest request);
+        Task<ServiceResponse<string>> AddRemoveStudentSetting(AddRemoveStudentSettingRequest request);
 
     }
 }
+
+

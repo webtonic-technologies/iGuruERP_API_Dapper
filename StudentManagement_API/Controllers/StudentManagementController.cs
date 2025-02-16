@@ -128,5 +128,33 @@ namespace StudentManagement_API.Controllers
             }
         }
 
+        [HttpPost("GetStudentSetting")]
+        public async Task<IActionResult> GetStudentSetting([FromBody] GetStudentSettingRequest request)
+        {
+            try
+            {
+                var response = await _studentInformationService.GetStudentSetting(request);
+                return StatusCode(response.StatusCode, response);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPost("AddRemoveStudentSetting")]
+        public async Task<IActionResult> AddRemoveStudentSetting([FromBody] AddRemoveStudentSettingRequest request)
+        {
+            try
+            {
+                var response = await _studentInformationService.AddRemoveStudentSetting(request);
+                return StatusCode(response.StatusCode, response);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
     }
 }

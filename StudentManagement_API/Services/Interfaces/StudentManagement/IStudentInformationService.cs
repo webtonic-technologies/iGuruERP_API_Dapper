@@ -14,8 +14,9 @@ namespace StudentManagement_API.Services.Interfaces
         Task<ServiceResponse<string>> SetStudentStatusActivity(SetStudentStatusActivityRequest request);
         Task<ServiceResponse<IEnumerable<GetStudentStatusActivityResponse>>> GetStudentStatusActivity(GetStudentStatusActivityRequest request);
         Task<ServiceResponse<byte[]>> DownloadStudentImportTemplate(int instituteID);
-        Task<ServiceResponse<StudentImportResponse>> ImportStudentInformation(int instituteID, Stream fileStream);
-
+        Task<ServiceResponse<StudentImportResponse>> ImportStudentInformation(int instituteID, Stream fileStream); 
+        Task<ServiceResponse<IEnumerable<GetStudentSettingResponse>>> GetStudentSetting(GetStudentSettingRequest request);
+        Task<ServiceResponse<string>> AddRemoveStudentSetting(AddRemoveStudentSettingRequest request);
 
     }
 }
