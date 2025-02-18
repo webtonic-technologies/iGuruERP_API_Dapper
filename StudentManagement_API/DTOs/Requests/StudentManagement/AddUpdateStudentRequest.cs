@@ -3,6 +3,7 @@
     public class AddUpdateStudentRequest
     {
         public int StudentID { get; set; }
+        public int InstituteID { get; set; } 
         public StudentDetails StudentDetails { get; set; }
         public OtherInformation OtherInformation { get; set; }
         public ParentsInfo ParentsInfo { get; set; }

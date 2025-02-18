@@ -75,9 +75,9 @@ namespace StudentManagement_API.Repository.Implementations
                         // Insert into tbl_StudentMaster
                         string insertMasterQuery = @"
                     INSERT INTO tbl_StudentMaster
-                        (First_Name, Middle_Name, Last_Name, gender_id, class_id, section_id, Admission_Number, Roll_Number, Date_of_Joining, AcademicYearCode, Nationality_id, Religion_id, Date_of_Birth, Mother_Tongue_id, Caste_id, Blood_Group_id, Aadhar_Number, PEN, StudentType_id, Institute_house_id)
+                        (First_Name, Middle_Name, Last_Name, gender_id, class_id, section_id, Admission_Number, Roll_Number, Date_of_Joining, AcademicYearCode, Nationality_id, Religion_id, Date_of_Birth, Mother_Tongue_id, Caste_id, Blood_Group_id, Aadhar_Number, PEN, StudentType_id, Institute_id, Institute_house_id)
                     VALUES
-                        (@FirstName, @MiddleName, @LastName, @GenderID, @ClassID, @SectionID, @AdmissionNumber, @RollNumber, @DateOfJoining, @AcademicYear, @NationalityID, @ReligionID, @Date_of_Birth, @MotherTongueID, @CasteID, @BloodGroupID, @AadharNo, @PEN, @StudentTypeID, @StudentHouseID);
+                        (@FirstName, @MiddleName, @LastName, @GenderID, @ClassID, @SectionID, @AdmissionNumber, @RollNumber, @DateOfJoining, @AcademicYear, @NationalityID, @ReligionID, @Date_of_Birth, @MotherTongueID, @CasteID, @BloodGroupID, @AadharNo, @PEN, @StudentTypeID, @InstituteID, @StudentHouseID);
                     SELECT CAST(SCOPE_IDENTITY() as int);";
 
                         int newStudentId = await _dbConnection.QuerySingleAsync<int>(
@@ -103,6 +103,7 @@ namespace StudentManagement_API.Repository.Implementations
                                 request.StudentDetails.AadharNo,
                                 request.StudentDetails.PEN,
                                 request.StudentDetails.StudentTypeID,
+                                InstituteID = request.InstituteID,  // <-- New parameter 
                                 request.StudentDetails.StudentHouseID
                             },
                             transaction
@@ -301,6 +302,7 @@ namespace StudentManagement_API.Repository.Implementations
                         Aadhar_Number = @AadharNo,
                         PEN = @PEN,
                         StudentType_id = @StudentTypeID,
+                        Institute_id = @InstituteID, 
                         Institute_house_id = @StudentHouseID
                     WHERE student_id = @StudentID";
 
@@ -320,13 +322,14 @@ namespace StudentManagement_API.Repository.Implementations
                                 AcademicYear = request.StudentDetails.AcademicYear,
                                 request.StudentDetails.NationalityID,
                                 request.StudentDetails.ReligionID,
-                                Date_of_Birth = dateOfBirth,
+                                DateOfBirth = dateOfBirth,  // Changed here to match the query (@DateOfBirth)
                                 request.StudentDetails.MotherTongueID,
                                 request.StudentDetails.CasteID,
                                 request.StudentDetails.BloodGroupID,
                                 request.StudentDetails.AadharNo,
                                 request.StudentDetails.PEN,
                                 request.StudentDetails.StudentTypeID,
+                                InstituteID = request.InstituteID,  // <-- New parameter 
                                 request.StudentDetails.StudentHouseID,
                                 StudentID = request.StudentID
                             },
@@ -452,12 +455,12 @@ namespace StudentManagement_API.Repository.Implementations
                                 {
                                     StudentID = request.StudentID,
                                     FirstName = request.SiblingsDetails.FirstName,
-                                    Middle_Name = request.SiblingsDetails.MiddleName,
+                                    MiddleName = request.SiblingsDetails.MiddleName,
                                     LastName = request.SiblingsDetails.LastName,
                                     AdmissionNo = request.SiblingsDetails.AdmissionNo,
                                     Date_of_Birth = siblingDOB, // Already converted above
-                                    Institute_Name = request.SiblingsDetails.InstituteName,
-                                    Aadhar_no = request.SiblingsDetails.AadharNo,
+                                    InstituteName = request.SiblingsDetails.InstituteName,
+                                    AadharNo = request.SiblingsDetails.AadharNo,
                                     Class = request.SiblingsDetails.Class,
                                     Section = request.SiblingsDetails.Section
                                 },
