@@ -3,12 +3,17 @@ using StudentManagement_API.Repository.Implementations;
 using StudentManagement_API.Repository.Interfaces;
 using StudentManagement_API.Services.Implementations;
 using StudentManagement_API.Services.Interfaces;
+using System.Data.SqlClient;
+using System.Data;
 
 
 // Set the license context for EPPlus to NonCommercial
 ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
 var builder = WebApplication.CreateBuilder(args);
+
+//builder.Services.AddScoped<IDbConnection>(sp =>
+//    new SqlConnection(builder.Configuration.GetConnectionString("DefaultConnection"))); 
 
 // Add services to the container.
 
@@ -20,6 +25,8 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IStudentInformationService, StudentInformationService>();
 builder.Services.AddScoped<IStudentInformationRepository, StudentInformationRepository>();
 
+builder.Services.AddScoped<IStudentDashboardRepository, StudentDashboardRepository>();
+builder.Services.AddScoped<IStudentDashboardService, StudentDashboardService>();
 
 var app = builder.Build();
 
