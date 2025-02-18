@@ -17,6 +17,7 @@ namespace StudentManagement_API.Services.Interfaces
         Task<ServiceResponse<StudentImportResponse>> ImportStudentInformation(int instituteID, Stream fileStream); 
         Task<ServiceResponse<IEnumerable<GetStudentSettingResponse>>> GetStudentSetting(GetStudentSettingRequest request);
         Task<ServiceResponse<string>> AddRemoveStudentSetting(AddRemoveStudentSettingRequest request);
+        Task<ServiceResponse<List<GetStudentInformationResponse>>> GetStudentInformationExport(GetStudentInformationExportRequest request);
 
     }
 }

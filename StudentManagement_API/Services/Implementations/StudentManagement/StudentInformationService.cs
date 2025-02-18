@@ -1928,5 +1928,11 @@ namespace StudentManagement_API.Services.Implementations
         {
             return await _studentInformationRepository.AddRemoveStudentSetting(request);
         }
+
+        public async Task<ServiceResponse<List<GetStudentInformationResponse>>> GetStudentInformationExport(GetStudentInformationExportRequest request)
+        {
+            var data = await _studentInformationRepository.GetStudentInformationExport(request);
+            return new ServiceResponse<List<GetStudentInformationResponse>>(true, "Data retrieved successfully", data, 200);
+        }
     }
 }

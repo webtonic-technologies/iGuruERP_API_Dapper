@@ -3,6 +3,10 @@ using System.Threading.Tasks;
 using StudentManagement_API.DTOs.Requests;
 using StudentManagement_API.DTOs.ServiceResponse;
 using StudentManagement_API.Services.Interfaces;
+using OfficeOpenXml;
+using System.Formats.Asn1;
+using System.Globalization;
+using CsvHelper;
 
 namespace StudentManagement_API.Controllers
 {
@@ -155,6 +159,53 @@ namespace StudentManagement_API.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
+
+        [HttpPost("GetStudentInformationExport")]
+        public async Task<IActionResult> GetStudentInformationExport([FromBody] GetStudentInformationExportRequest request)
+        {
+            var response = await _studentInformationService.GetStudentInformationExport(request);
+            if (response.Success)
+            {
+                var data = response.Data;
+                // Create a memory stream without a using block so it isn't disposed prematurely.
+                var memoryStream = new MemoryStream();
+
+                if (request.ExportType == 1)
+                {
+                    // Generate Excel using EPPlus
+                    using (var package = new ExcelPackage())
+                    {
+                        var worksheet = package.Workbook.Worksheets.Add("Students");
+                        worksheet.Cells.LoadFromCollection(data, true);
+                        package.SaveAs(memoryStream);
+                    }
+                    memoryStream.Position = 0;
+                    return File(memoryStream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "StudentInformation.xlsx");
+                }
+                else if (request.ExportType == 2)
+                {
+                    // Generate CSV using CsvHelper
+                    using (var streamWriter = new StreamWriter(memoryStream, leaveOpen: true))
+                    using (var csvWriter = new CsvWriter(streamWriter, CultureInfo.InvariantCulture))
+                    {
+                        csvWriter.WriteRecords(data);
+                        streamWriter.Flush();
+                    }
+                    memoryStream.Position = 0;
+                    return File(memoryStream, "text/csv", "StudentInformation.csv");
+                }
+                else
+                {
+                    return BadRequest("Invalid ExportType");
+                }
+            }
+            else
+            {
+                return BadRequest(response.Message);
+            }
+        }
+
 
     }
 }

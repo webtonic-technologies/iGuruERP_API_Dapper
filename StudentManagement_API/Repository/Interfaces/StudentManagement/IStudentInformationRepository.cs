@@ -17,6 +17,7 @@ namespace StudentManagement_API.Repository.Interfaces
         Task<List<SectionJoinedResponse>> GetSectionsWithClassNames(int instituteID);
         Task<ServiceResponse<IEnumerable<GetStudentSettingResponse>>> GetStudentSetting(GetStudentSettingRequest request);
         Task<ServiceResponse<string>> AddRemoveStudentSetting(AddRemoveStudentSettingRequest request);
+        Task<List<GetStudentInformationResponse>> GetStudentInformationExport(GetStudentInformationExportRequest request);
 
     }
 }
