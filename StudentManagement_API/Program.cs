@@ -28,6 +28,9 @@ builder.Services.AddScoped<IStudentInformationRepository, StudentInformationRepo
 builder.Services.AddScoped<IStudentDashboardRepository, StudentDashboardRepository>();
 builder.Services.AddScoped<IStudentDashboardService, StudentDashboardService>();
 
+builder.Services.AddScoped<IUpdateStudentDocumentRepository, UpdateStudentDocumentRepository>();
+builder.Services.AddScoped<IUpdateStudentDocumentService, UpdateStudentDocumentService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
