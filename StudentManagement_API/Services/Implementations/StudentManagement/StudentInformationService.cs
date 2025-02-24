@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.Net;
 using System.Threading.Tasks;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
@@ -792,7 +793,11 @@ namespace StudentManagement_API.Services.Implementations
             }
         }
 
-        public async Task<ServiceResponse<StudentImportResponse>> ImportStudentInformation(int instituteID, Stream fileStream)
+
+        
+        //public async Task<ServiceResponse<StudentImportResponse>> ImportStudentInformation(int instituteID, Stream fileStream)
+
+        public async Task<ServiceResponse<StudentImportResponse>> ImportStudentInformation(int instituteID, string AcademicYearCode, string IPAddress, int UserID, Stream fileStream)
         {
             try
             {
@@ -1687,7 +1692,8 @@ namespace StudentManagement_API.Services.Implementations
                     }
 
                     // If no errors, proceed with inserting the students.
-                    var insertResult = await _studentInformationRepository.InsertStudents(instituteID, students);
+                    //var insertResult = await _studentInformationRepository.InsertStudents(instituteID, students);
+                    var insertResult = await _studentInformationRepository.InsertStudents(instituteID, AcademicYearCode, IPAddress, UserID, students);
                     // Assuming insertResult returns a ServiceResponse<string> upon success.
 
                     var successResponse = new StudentImportResponse
@@ -1924,15 +1930,63 @@ namespace StudentManagement_API.Services.Implementations
             return await _studentInformationRepository.GetStudentSetting(request);
         }
 
-        public async Task<ServiceResponse<string>> AddRemoveStudentSetting(AddRemoveStudentSettingRequest request)
+        public async Task<ServiceResponse<string>> AddRemoveStudentSetting(List<AddRemoveStudentSettingRequest> request)
         {
             return await _studentInformationRepository.AddRemoveStudentSetting(request);
         }
-
-        public async Task<ServiceResponse<List<GetStudentInformationResponse>>> GetStudentInformationExport(GetStudentInformationExportRequest request)
+        
+        public async Task<ServiceResponse<List<GetStudentInformationResponse>>> GetStudentInformationExport(int instituteID, string AcademicYearCode, string IPAddress, int UserID, GetStudentInformationExportRequest request)
         {
-            var data = await _studentInformationRepository.GetStudentInformationExport(request);
+            var data = await _studentInformationRepository.GetStudentInformationExport(instituteID, AcademicYearCode, IPAddress, UserID, request);
             return new ServiceResponse<List<GetStudentInformationResponse>>(true, "Data retrieved successfully", data, 200);
+        }
+
+        public async Task<ServiceResponse<IEnumerable<GetStudentImportHistoryResponse>>> GetStudentImportHistoryAsync(GetStudentImportHistoryRequest request)
+        {
+            try
+            {
+                var data = await _studentInformationRepository.GetStudentImportHistoryAsync(request);
+                return new ServiceResponse<IEnumerable<GetStudentImportHistoryResponse>>(
+                    true,
+                    "History retrieved successfully",
+                    data,
+                    200,
+                    data.Count()
+                );
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<IEnumerable<GetStudentImportHistoryResponse>>(
+                    false,
+                    ex.Message,
+                    null,
+                    500
+                );
+            }
+        }
+
+        public async Task<ServiceResponse<IEnumerable<GetStudentExportHistoryResponse>>> GetStudentExportHistoryAsync(GetStudentExportHistoryRequest request)
+        {
+            try
+            {
+                var data = await _studentInformationRepository.GetStudentExportHistoryAsync(request);
+                return new ServiceResponse<IEnumerable<GetStudentExportHistoryResponse>>(
+                    true,
+                    "Student export history retrieved successfully",
+                    data,
+                    200,
+                    data.Count()
+                );
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<IEnumerable<GetStudentExportHistoryResponse>>(
+                    false,
+                    ex.Message,
+                    null,
+                    500
+                );
+            }
         }
     }
 }

@@ -4,6 +4,8 @@
     {
         public int InstituteID { get; set; }
         public string AcademicYearCode { get; set; }
+        public string IPAddress { get; set; } 
+        public int UserID { get; set; } 
         public int ClassID { get; set; }
         public int SectionID { get; set; }
 

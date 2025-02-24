@@ -187,8 +187,15 @@
     {
         // This property will be populated from a form field named "InstituteID"
         public int InstituteID { get; set; }
+        public string AcademicYearCode { get; set; }
+        public string IPAddress { get; set; }
+        public int UserID { get; set; } 
 
         // This property will be bound to the uploaded file (form field "File")
         public IFormFile File { get; set; }
     } 
 }
+
+
+
+  

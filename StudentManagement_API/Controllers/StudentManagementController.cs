@@ -7,6 +7,7 @@ using OfficeOpenXml;
 using System.Formats.Asn1;
 using System.Globalization;
 using CsvHelper;
+using System.Net;
 
 namespace StudentManagement_API.Controllers
 {
@@ -109,6 +110,7 @@ namespace StudentManagement_API.Controllers
         //    }
         //}
 
+ 
         [HttpPost("StudentInformationImport")]
         public async Task<IActionResult> StudentInformationImport([FromForm] StudentInformationImportRequestDto request)
         {
@@ -122,7 +124,8 @@ namespace StudentManagement_API.Controllers
                     await request.File.CopyToAsync(stream);
 
                     // Pass the InstituteID along with the file stream to the service.
-                    var result = await _studentInformationService.ImportStudentInformation(request.InstituteID, stream);
+                    //var result = await _studentInformationService.ImportStudentInformation(request.InstituteID, stream);
+                    var result = await _studentInformationService.ImportStudentInformation(request.InstituteID, request.AcademicYearCode, request.IPAddress, request.UserID, stream);
                     return result.Success ? Ok(result) : BadRequest(result);
                 }
             }
@@ -147,7 +150,7 @@ namespace StudentManagement_API.Controllers
         }
 
         [HttpPost("AddRemoveStudentSetting")]
-        public async Task<IActionResult> AddRemoveStudentSetting([FromBody] AddRemoveStudentSettingRequest request)
+        public async Task<IActionResult> AddRemoveStudentSetting([FromBody] List<AddRemoveStudentSettingRequest> request)
         {
             try
             {
@@ -164,7 +167,7 @@ namespace StudentManagement_API.Controllers
         [HttpPost("GetStudentInformationExport")]
         public async Task<IActionResult> GetStudentInformationExport([FromBody] GetStudentInformationExportRequest request)
         {
-            var response = await _studentInformationService.GetStudentInformationExport(request);
+            var response = await _studentInformationService.GetStudentInformationExport(request.InstituteID, request.AcademicYearCode, request.IPAddress, request.UserID, request);
             if (response.Success)
             {
                 var data = response.Data;
@@ -206,6 +209,18 @@ namespace StudentManagement_API.Controllers
             }
         }
 
+        [HttpPost("GetStudentImportHistory")]
+        public async Task<IActionResult> GetStudentImportHistory([FromBody] GetStudentImportHistoryRequest request)
+        {
+            var response = await _studentInformationService.GetStudentImportHistoryAsync(request);
+            return StatusCode(response.StatusCode, response);
+        }
 
+        [HttpPost("GetStudentExportHistory")]
+        public async Task<IActionResult> GetStudentExportHistory([FromBody] GetStudentExportHistoryRequest request)
+        {
+            var response = await _studentInformationService.GetStudentExportHistoryAsync(request);
+            return StatusCode(response.StatusCode, response);
+        }
     }
 }

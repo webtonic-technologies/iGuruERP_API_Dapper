@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data;
+using System.Data.Common;
 using System.Data.SqlClient;
 using System.Globalization;
 using System.Threading.Tasks;
@@ -1188,7 +1189,7 @@ namespace StudentManagement_API.Repository.Implementations
         }
 
 
-        public async Task<ServiceResponse<string>> InsertStudents(int instituteID, List<StudentInformationImportRequest> students)
+        public async Task<ServiceResponse<string>> InsertStudents(int instituteID, string AcademicYearCode, string IPAddress, int UserID, List<StudentInformationImportRequest> students)
         {
             // Ensure the connection is open before beginning the transaction.
             if (_dbConnection.State == System.Data.ConnectionState.Closed)
@@ -1459,10 +1460,36 @@ namespace StudentManagement_API.Repository.Implementations
                         }, transaction);
                     }
 
-                
-
 
                     transaction.Commit();
+
+
+
+
+                    // Log history: count of students inserted, etc.
+                    var historyResponse = await InsertStudentDataHistory(
+                        instituteID,
+                        students.Count,
+                        AcademicYearCode,
+                        IPAddress,
+                        UserID,
+                        1
+                    );
+
+                    if (!historyResponse.Success)
+                    {
+                        // Handle history insert error: log the error.
+                        // Replace with your logging mechanism (e.g., _logger.LogError).
+                        Console.WriteLine($"Error inserting student data history: {historyResponse.Message}");
+
+                        return new ServiceResponse<string>(false, "Error inserting students", null, 500);
+
+                    }
+
+                   
+
+
+
                     return new ServiceResponse<string>(true, "Students imported successfully", null, 200);
                 }
                 catch (Exception ex)
@@ -1472,6 +1499,56 @@ namespace StudentManagement_API.Repository.Implementations
                 }
             }
         }
+
+
+        public async Task<ServiceResponse<string>> InsertStudentDataHistory(
+        int instituteID,
+        int studentCount,
+        string academicYearCode,
+        string ipAddress,
+        int userID,
+        int exportHistoryTypeID)
+        {
+            // Ensure the connection is open.
+            if (_dbConnection.State != System.Data.ConnectionState.Open)
+            {
+                if (_dbConnection is System.Data.Common.DbConnection dbConn)
+                {
+                    await dbConn.OpenAsync();
+                }
+                else
+                {
+                    _dbConnection.Open();
+                }
+            }
+
+            try
+            {
+                string sql = @"
+                INSERT INTO tblStudentDataHistory 
+                (StudentCount, AcademicYearCode, DateTime, IPAddress, InstituteID, UserID, ExportHistoryTypeID)
+                VALUES 
+                (@StudentCount, @AcademicYearCode, GETDATE(), @IPAddress, @InstituteID, @UserID, @ExportHistoryTypeID)";
+
+                await _dbConnection.ExecuteAsync(sql, new
+                {
+                    StudentCount = studentCount,
+                    AcademicYearCode = academicYearCode,
+                    IPAddress = ipAddress,
+                    InstituteID = instituteID,
+                    UserID = userID,
+                    ExportHistoryTypeID = exportHistoryTypeID
+                });
+
+                return new ServiceResponse<string>(true, "Student data history inserted successfully", "Success", 200);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<string>(false, ex.Message, null, 500);
+            }
+        }
+
+
 
         public async Task<ServiceResponse<IEnumerable<GetStudentSettingResponse>>> GetStudentSetting(GetStudentSettingRequest request)
         {
@@ -1490,39 +1567,105 @@ namespace StudentManagement_API.Repository.Implementations
                 true, "Student settings fetched successfully", result, 200);
         }
 
-        public async Task<ServiceResponse<string>> AddRemoveStudentSetting(AddRemoveStudentSettingRequest request)
-        {
-            // Check if the mapping already exists
-            string checkSql = @"
-                SELECT COUNT(*) 
-                FROM tblStudentSettingMapping 
-                WHERE InstituteID = @InstituteID 
-                  AND StudentColumnID = @StudentColumnID";
-            int count = await _dbConnection.ExecuteScalarAsync<int>(checkSql, new { request.InstituteID, request.StudentColumnID });
+        //public async Task<ServiceResponse<string>> AddRemoveStudentSetting(AddRemoveStudentSettingRequest request)
+        //{
+        //    // Check if the mapping already exists
+        //    string checkSql = @"
+        //        SELECT COUNT(*) 
+        //        FROM tblStudentSettingMapping 
+        //        WHERE InstituteID = @InstituteID 
+        //          AND StudentColumnID = @StudentColumnID";
+        //    int count = await _dbConnection.ExecuteScalarAsync<int>(checkSql, new { request.InstituteID, request.StudentColumnID });
 
-            if (count > 0)
+        //    if (count > 0)
+        //    {
+        //        // Mapping exists, so remove it
+        //        string deleteSql = @"
+        //            DELETE FROM tblStudentSettingMapping 
+        //            WHERE InstituteID = @InstituteID 
+        //              AND StudentColumnID = @StudentColumnID";
+        //        await _dbConnection.ExecuteAsync(deleteSql, new { request.InstituteID, request.StudentColumnID });
+        //        return new ServiceResponse<string>(true, "Student setting removed successfully", "Success", 200);
+        //    }
+        //    else
+        //    {
+        //        // Mapping does not exist, so add it
+        //        string insertSql = @"
+        //            INSERT INTO tblStudentSettingMapping (InstituteID, StudentColumnID)
+        //            VALUES (@InstituteID, @StudentColumnID)";
+        //        await _dbConnection.ExecuteAsync(insertSql, new { request.InstituteID, request.StudentColumnID });
+        //        return new ServiceResponse<string>(true, "Student setting added successfully", "Success", 200);
+        //    }
+        //}
+
+        public async Task<ServiceResponse<string>> AddRemoveStudentSetting(List<AddRemoveStudentSettingRequest> requests)
+        {
+            // If there are no records, nothing to do.
+            if (requests == null || !requests.Any())
             {
-                // Mapping exists, so remove it
-                string deleteSql = @"
-                    DELETE FROM tblStudentSettingMapping 
-                    WHERE InstituteID = @InstituteID 
-                      AND StudentColumnID = @StudentColumnID";
-                await _dbConnection.ExecuteAsync(deleteSql, new { request.InstituteID, request.StudentColumnID });
-                return new ServiceResponse<string>(true, "Student setting removed successfully", "Success", 200);
+                return new ServiceResponse<string>(true, "No settings to process", "Success", 200);
             }
-            else
+
+            // Ensure the connection is open.
+            if (_dbConnection.State != System.Data.ConnectionState.Open)
             {
-                // Mapping does not exist, so add it
+                if (_dbConnection is System.Data.Common.DbConnection dbConn)
+                {
+                    await dbConn.OpenAsync();
+                }
+                else
+                {
+                    _dbConnection.Open();
+                }
+            }
+
+            using var transaction = _dbConnection.BeginTransaction();
+            try
+            {
+                // Get distinct InstituteIDs from the request.
+                var instituteIds = requests.Select(r => r.InstituteID).Distinct();
+
+                // For each institute, remove all existing records.
+                foreach (var instituteID in instituteIds)
+                {
+                    string deleteSql = @"
+                DELETE FROM tblStudentSettingMapping 
+                WHERE InstituteID = @InstituteID";
+                    await _dbConnection.ExecuteAsync(
+                        deleteSql,
+                        new { InstituteID = instituteID },
+                        transaction: transaction
+                    );
+                }
+
+                // Insert all new records.
                 string insertSql = @"
-                    INSERT INTO tblStudentSettingMapping (InstituteID, StudentColumnID)
-                    VALUES (@InstituteID, @StudentColumnID)";
-                await _dbConnection.ExecuteAsync(insertSql, new { request.InstituteID, request.StudentColumnID });
-                return new ServiceResponse<string>(true, "Student setting added successfully", "Success", 200);
+            INSERT INTO tblStudentSettingMapping (InstituteID, StudentColumnID)
+            VALUES (@InstituteID, @StudentColumnID)";
+                foreach (var request in requests)
+                {
+                    await _dbConnection.ExecuteAsync(
+                        insertSql,
+                        new { request.InstituteID, request.StudentColumnID },
+                        transaction: transaction
+                    );
+                }
+
+                transaction.Commit();
+                return new ServiceResponse<string>(true, "Student settings processed successfully", "Success", 200);
+            }
+            catch (Exception ex)
+            {
+                transaction.Rollback();
+                return new ServiceResponse<string>(false, ex.Message, null, 500);
             }
         }
 
 
-        public async Task<List<GetStudentInformationResponse>> GetStudentInformationExport(GetStudentInformationExportRequest request)
+
+        
+        //public async Task<List<GetStudentInformationResponse>> GetStudentInformationExport( GetStudentInformationExportRequest request)
+        public async Task<List<GetStudentInformationResponse>> GetStudentInformationExport(int instituteID, string AcademicYearCode, string IPAddress, int UserID, GetStudentInformationExportRequest request)
         {
             // Build the dynamic WHERE clause
             string whereClause = @"
@@ -1666,7 +1809,85 @@ namespace StudentManagement_API.Repository.Implementations
             parameters.Add("@Search", request.Search);
 
             var result = await _dbConnection.QueryAsync<GetStudentInformationResponse>(sql, parameters);
+           
+
+
+            var historyResponse = await InsertStudentDataHistory(
+                instituteID,
+                result.Count(),
+                AcademicYearCode,
+                IPAddress,
+                UserID,
+                2   
+            );
+
+            if (!historyResponse.Success)
+            {
+                // Handle history insert error: log the error.
+                // Replace with your logging mechanism (e.g., _logger.LogError).
+                Console.WriteLine($"Error inserting student data history: {historyResponse.Message}");
+
+            }
+
             return result.AsList();
+        }
+
+
+        public async Task<IEnumerable<GetStudentImportHistoryResponse>> GetStudentImportHistoryAsync(GetStudentImportHistoryRequest request)
+        {
+            string sql = @"
+            SELECT 
+                sdh.StudentCount,
+                sdh.AcademicYearCode,
+                FORMAT(sdh.DateTime, 'dd-MM-yyyy ''at'' hh:mm tt') AS DateTime,
+                sdh.IPAddress,
+                CONCAT(ep.First_Name, ' ', ISNULL(ep.Last_Name, '')) AS UserName
+            FROM tblStudentDataHistory sdh
+            LEFT JOIN tbl_EmployeeProfileMaster ep ON sdh.UserID = ep.Employee_id
+            WHERE sdh.InstituteID = @InstituteID
+              AND sdh.ExportHistoryTypeID = 1
+            ORDER BY sdh.DateTime DESC";
+
+            // Use the existing _dbConnection instead of creating a new connection using _connectionString.
+            if (_dbConnection.State == ConnectionState.Closed)
+            {
+                _dbConnection.Open();
+            }
+
+            var result = await _dbConnection.QueryAsync<GetStudentImportHistoryResponse>(
+                sql,
+                new { InstituteID = request.InstituteID }
+            );
+            return result;
+        }
+
+
+        public async Task<IEnumerable<GetStudentExportHistoryResponse>> GetStudentExportHistoryAsync(GetStudentExportHistoryRequest request)
+        {
+            string sql = @"
+                SELECT 
+                    sdh.StudentCount,
+                    sdh.AcademicYearCode,
+                    FORMAT(sdh.DateTime, 'dd-MM-yyyy ''at'' hh:mm tt') AS DateTime,
+                    sdh.IPAddress,
+                    CONCAT(ep.First_Name, ' ', ISNULL(ep.Last_Name, '')) AS UserName
+                FROM tblStudentDataHistory sdh
+                LEFT JOIN tbl_EmployeeProfileMaster ep ON sdh.UserID = ep.Employee_id
+                WHERE sdh.InstituteID = @InstituteID
+                  AND sdh.ExportHistoryTypeID = 2
+                ORDER BY sdh.DateTime DESC";
+
+            if (_dbConnection.State == ConnectionState.Closed)
+            {
+                _dbConnection.Open();
+            }
+
+            var result = await _dbConnection.QueryAsync<GetStudentExportHistoryResponse>(
+                sql,
+                new { InstituteID = request.InstituteID }
+            );
+
+            return result;
         }
     }
 }
