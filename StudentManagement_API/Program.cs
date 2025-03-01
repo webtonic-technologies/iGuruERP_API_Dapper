@@ -34,6 +34,12 @@ builder.Services.AddScoped<IUpdateStudentDocumentService, UpdateStudentDocumentS
 builder.Services.AddScoped<IApprovalsRepository, ApprovalsRepository>();
 builder.Services.AddScoped<IApprovalsService, ApprovalsService>();
 
+builder.Services.AddScoped<IStudentLoginsRepository, StudentLoginsRepository>();
+builder.Services.AddScoped<IStudentLoginsService, StudentLoginsService>();
+
+builder.Services.AddScoped<ICertificatesRepository, CertificatesRepository>();
+builder.Services.AddScoped<ICertificatesService, CertificatesService>();
+
 
 var app = builder.Build();
 
