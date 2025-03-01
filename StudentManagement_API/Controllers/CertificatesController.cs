@@ -28,5 +28,73 @@ namespace StudentManagement_API.Controllers
             var response = await _certificatesService.GetCertificateTemplateAsync(request);
             return StatusCode(response.StatusCode, response);
         }
+
+        //[HttpPost("GenerateCertificate")]
+        //public async Task<IActionResult> GenerateCertificate([FromBody] GenerateCertificateRequest request)
+        //{
+        //    var response = await _certificatesService.GenerateCertificateAsync(request);
+        //    return StatusCode(response.StatusCode, response);
+        //}
+
+
+        [HttpPost("GenerateCertificate")]
+        public async Task<IActionResult> GenerateCertificate([FromBody] GenerateCertificateRequest request)
+        {
+            var response = await _certificatesService.GenerateCertificatesAsync(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+
+        [HttpPost("GetStudents")]
+        public async Task<IActionResult> GetStudents([FromBody] GetStudentsRequest request)
+        {
+            var response = await _certificatesService.GetStudentsAsync(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+
+        [HttpPost("GetCertificateReport")]
+        public async Task<IActionResult> GetCertificateReport([FromBody] GetCertificateReportRequest request)
+        {
+            var response = await _certificatesService.GetCertificateReportAsync(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+
+        [HttpPost("GetCertificateReportExport")]
+        public async Task<IActionResult> GetCertificateReportExport([FromBody] GetCertificateReportExportRequest request)
+        {
+            var response = await _certificatesService.GetCertificateReportExportAsync(request);
+            if (!response.Success)
+            {
+                return BadRequest(response.Message);
+            }
+
+            string filePath = response.Data;
+            if (!System.IO.File.Exists(filePath))
+            {
+                return NotFound("Export file not found.");
+            }
+
+            // Read file bytes
+            var fileBytes = System.IO.File.ReadAllBytes(filePath);
+            // Return file based on ExportType
+            if (request.ExportType == 1)
+            {
+                return File(fileBytes,
+                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            "CertificateReportExport.xlsx");
+            }
+            else if (request.ExportType == 2)
+            {
+                return File(fileBytes,
+                            "text/csv",
+                            "CertificateReportExport.csv");
+            }
+            else
+            {
+                return BadRequest("Invalid ExportType.");
+            }
+        }
     }
 }
