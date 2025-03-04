@@ -96,5 +96,21 @@ namespace StudentManagement_API.Controllers
                 return BadRequest("Invalid ExportType.");
             }
         }
+
+
+        [HttpPost("GetCertificateInstituteTags")]
+        public async Task<IActionResult> GetCertificateInstituteTags()
+        {
+            var response = await _certificatesService.GetCertificateInstituteTagsAsync();
+            return StatusCode(response.StatusCode, response);
+        }
+
+
+        [HttpPost("GetCertificateStudentTags")]
+        public async Task<IActionResult> GetCertificateStudentTags()
+        {
+            var response = await _certificatesService.GetCertificateStudentTagsAsync();
+            return StatusCode(response.StatusCode, response);
+        }
     }
 }

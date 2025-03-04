@@ -13,6 +13,8 @@ namespace StudentManagement_API.Services.Interfaces
         Task<ServiceResponse<IEnumerable<GetStudentsResponse>>> GetStudentsAsync(GetStudentsRequest request);
         Task<ServiceResponse<IEnumerable<GetCertificateReportResponse>>> GetCertificateReportAsync(GetCertificateReportRequest request);
         Task<ServiceResponse<string>> GetCertificateReportExportAsync(GetCertificateReportExportRequest request);
+        Task<ServiceResponse<IEnumerable<GetCertificateInstituteTagsResponse>>> GetCertificateInstituteTagsAsync();
+        Task<ServiceResponse<Dictionary<string, List<GetCertificateStudentTagsResponse>>>> GetCertificateStudentTagsAsync();
 
     }
 }

@@ -32,6 +32,30 @@ namespace StudentManagement_API.Services.Implementations
             }
         }
 
+        //public async Task<ServiceResponse<IEnumerable<GetCertificateTemplateResponse>>> GetCertificateTemplateAsync(GetCertificateTemplateRequest request)
+        //{
+        //    try
+        //    {
+        //        var data = await _certificatesRepository.GetCertificateTemplateAsync(request);
+        //        return new ServiceResponse<IEnumerable<GetCertificateTemplateResponse>>(
+        //            true,
+        //            "Certificate template retrieved successfully.",
+        //            data,
+        //            200,
+        //            data.Count()
+        //        );
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return new ServiceResponse<IEnumerable<GetCertificateTemplateResponse>>(
+        //            false,
+        //            ex.Message,
+        //            null,
+        //            500
+        //        );
+        //    }
+        //}
+
         public async Task<ServiceResponse<IEnumerable<GetCertificateTemplateResponse>>> GetCertificateTemplateAsync(GetCertificateTemplateRequest request)
         {
             try
@@ -40,9 +64,9 @@ namespace StudentManagement_API.Services.Implementations
                 return new ServiceResponse<IEnumerable<GetCertificateTemplateResponse>>(
                     true,
                     "Certificate template retrieved successfully.",
-                    data,
+                    data.Data,
                     200,
-                    data.Count()
+                    data.TotalCount
                 );
             }
             catch (Exception ex)
@@ -55,6 +79,7 @@ namespace StudentManagement_API.Services.Implementations
                 );
             }
         }
+
 
         //public async Task<ServiceResponse<int>> GenerateCertificateAsync(GenerateCertificateRequest request)
         //{
@@ -91,9 +116,9 @@ namespace StudentManagement_API.Services.Implementations
                 return new ServiceResponse<IEnumerable<GetStudentsResponse>>(
                     true,
                     "Students retrieved successfully.",
-                    data,
+                    data.Data,
                     200,
-                    data.Count()
+                    data.TotalCount
                 );
             }
             catch (Exception ex)
@@ -105,7 +130,9 @@ namespace StudentManagement_API.Services.Implementations
                     500
                 );
             }
-        }
+        } 
+
+
 
         public async Task<ServiceResponse<IEnumerable<GetCertificateReportResponse>>> GetCertificateReportAsync(GetCertificateReportRequest request)
         {
@@ -115,9 +142,9 @@ namespace StudentManagement_API.Services.Implementations
                 return new ServiceResponse<IEnumerable<GetCertificateReportResponse>>(
                     true,
                     "Certificate report retrieved successfully.",
-                    data,
+                    data.Data,
                     200,
-                    data.Count()
+                    data.TotalCount
                 );
             }
             catch (Exception ex)
@@ -174,6 +201,49 @@ namespace StudentManagement_API.Services.Implementations
             }
 
             return new ServiceResponse<string>(true, "Export file generated", filePath, 200);
+        }
+
+        public async Task<ServiceResponse<IEnumerable<GetCertificateInstituteTagsResponse>>> GetCertificateInstituteTagsAsync()
+        {
+            var tags = await _certificatesRepository.GetCertificateInstituteTagsAsync();
+
+            var response = new ServiceResponse<IEnumerable<GetCertificateInstituteTagsResponse>>(
+                success: true,
+                message: "Certificate institute tags retrieved successfully.",
+                data: tags,
+                statusCode: 200,
+                totalCount: tags?.Count() ?? 0
+            );
+
+            return response;
+        }
+
+        public async Task<ServiceResponse<Dictionary<string, List<GetCertificateStudentTagsResponse>>>> GetCertificateStudentTagsAsync()
+        {
+            // 1. Retrieve raw data from the repository
+            var dtos = await _certificatesRepository.GetCertificateStudentTagsAsync();
+
+            // 2. Group by the "Group" property
+            var grouped = dtos
+                .GroupBy(x => x.Group)
+                .ToDictionary(
+                    grp => grp.Key ?? "NoGroup", // handle null if needed
+                    grp => grp.Select(x => new GetCertificateStudentTagsResponse
+                    {
+                        ColumnDisplayName = x.ColumnDisplayName,
+                        ColumnFieldName = x.ColumnFieldName,
+                        Value = x.Value
+                    }).ToList()
+                );
+
+            // 3. Wrap the grouped data in a ServiceResponse
+            return new ServiceResponse<Dictionary<string, List<GetCertificateStudentTagsResponse>>>(
+                success: true,
+                message: "Certificate student tags retrieved successfully.",
+                data: grouped,
+                statusCode: 200,
+                totalCount: grouped.Values.Sum(list => list.Count)
+            );
         }
     }
 }
