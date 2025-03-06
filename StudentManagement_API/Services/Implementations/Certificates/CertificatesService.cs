@@ -81,32 +81,33 @@ namespace StudentManagement_API.Services.Implementations
         }
 
 
-        //public async Task<ServiceResponse<int>> GenerateCertificateAsync(GenerateCertificateRequest request)
-        //{
-        //    try
-        //    {
-        //        int certificateId = await _certificatesRepository.GenerateCertificateAsync(request);
-        //        return new ServiceResponse<int>(true, "Certificate generated successfully.", certificateId, 200);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return new ServiceResponse<int>(false, ex.Message, 0, 500);
-        //    }
-        //}
-
-
-        public async Task<ServiceResponse<List<int>>> GenerateCertificatesAsync(GenerateCertificateRequest request)
+        public async Task<ServiceResponse<GenerateCertificateResponse>> GenerateCertificatesAsync(GenerateCertificateRequest request)
         {
             try
             {
-                var certificateIds = await _certificatesRepository.GenerateCertificatesAsync(request);
-                return new ServiceResponse<List<int>>(true, "Certificates generated successfully.", certificateIds, 200);
+                var certificateResponse = await _certificatesRepository.GenerateCertificatesAsync(request);
+                return new ServiceResponse<GenerateCertificateResponse>(true, "Certificates generated successfully.", certificateResponse, 200);
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<List<int>>(false, ex.Message, null, 500);
+                return new ServiceResponse<GenerateCertificateResponse>(false, ex.Message, null, 500);
             }
         }
+
+
+
+        //public async Task<ServiceResponse<List<int>>> GenerateCertificatesAsync(GenerateCertificateRequest request)
+        //{
+        //    try
+        //    {
+        //        var certificateIds = await _certificatesRepository.GenerateCertificatesAsync(request);
+        //        return new ServiceResponse<List<int>>(true, "Certificates generated successfully.", certificateIds, 200);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return new ServiceResponse<List<int>>(false, ex.Message, null, 500);
+        //    }
+        //}
 
         public async Task<ServiceResponse<IEnumerable<GetStudentsResponse>>> GetStudentsAsync(GetStudentsRequest request)
         {
@@ -244,6 +245,16 @@ namespace StudentManagement_API.Services.Implementations
                 statusCode: 200,
                 totalCount: grouped.Values.Sum(list => list.Count)
             );
+        }
+
+        public async Task<ServiceResponse<GetCertificateTagValueResponse>> GetCertificateTagValue(GetCertificateTagValueRequest request)
+        {
+            return await _certificatesRepository.GetCertificateTagValue(request);
+        }
+
+        public async Task<ServiceResponse<int>> AttachCertificatewithStudent(AttachCertificatewithStudentRequest request)
+        {
+            return await _certificatesRepository.AttachCertificatewithStudent(request);
         }
     }
 }

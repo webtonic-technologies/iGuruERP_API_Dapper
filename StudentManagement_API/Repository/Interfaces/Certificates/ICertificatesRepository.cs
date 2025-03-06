@@ -13,7 +13,10 @@ namespace StudentManagement_API.Repository.Interfaces
 
         Task<ServiceResponse<IEnumerable<GetCertificateTemplateResponse>>> GetCertificateTemplateAsync(GetCertificateTemplateRequest request);
 
-        Task<List<int>> GenerateCertificatesAsync(GenerateCertificateRequest request);
+        //Task<List<int>> GenerateCertificatesAsync(GenerateCertificateRequest request);
+        Task<GenerateCertificateResponse> GenerateCertificatesAsync(GenerateCertificateRequest request);
+
+
         //Task<IEnumerable<GetStudentsResponse>> GetStudentsAsync(GetStudentsRequest request);
         Task<ServiceResponse<IEnumerable<GetStudentsResponse>>> GetStudentsAsync(GetStudentsRequest request);
         //Task<IEnumerable<GetCertificateReportResponse>> GetCertificateReportAsync(GetCertificateReportRequest request);
@@ -21,6 +24,8 @@ namespace StudentManagement_API.Repository.Interfaces
         Task<IEnumerable<GetCertificateReportExportResponse>> GetCertificateReportExportAsync(GetCertificateReportExportRequest request);
         Task<IEnumerable<GetCertificateInstituteTagsResponse>> GetCertificateInstituteTagsAsync();
         Task<IEnumerable<CertificateStudentTagDto>> GetCertificateStudentTagsAsync();
+        Task<ServiceResponse<GetCertificateTagValueResponse>> GetCertificateTagValue(GetCertificateTagValueRequest request);
+        Task<ServiceResponse<int>> AttachCertificatewithStudent(AttachCertificatewithStudentRequest request);
 
     }
 }

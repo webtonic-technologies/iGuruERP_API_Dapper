@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using StudentManagement_API.DTOs.Requests;
+using StudentManagement_API.DTOs.Responses;
+using StudentManagement_API.DTOs.ServiceResponse; 
 using StudentManagement_API.Services.Interfaces;
 
 namespace StudentManagement_API.Controllers
@@ -29,13 +31,6 @@ namespace StudentManagement_API.Controllers
             return StatusCode(response.StatusCode, response);
         }
 
-        //[HttpPost("GenerateCertificate")]
-        //public async Task<IActionResult> GenerateCertificate([FromBody] GenerateCertificateRequest request)
-        //{
-        //    var response = await _certificatesService.GenerateCertificateAsync(request);
-        //    return StatusCode(response.StatusCode, response);
-        //}
-
 
         [HttpPost("GenerateCertificate")]
         public async Task<IActionResult> GenerateCertificate([FromBody] GenerateCertificateRequest request)
@@ -43,6 +38,14 @@ namespace StudentManagement_API.Controllers
             var response = await _certificatesService.GenerateCertificatesAsync(request);
             return StatusCode(response.StatusCode, response);
         }
+
+
+        //[HttpPost("GenerateCertificate")]
+        //public async Task<IActionResult> GenerateCertificate([FromBody] GenerateCertificateRequest request)
+        //{
+        //    var response = await _certificatesService.GenerateCertificatesAsync(request);
+        //    return StatusCode(response.StatusCode, response);
+        //}
 
 
         [HttpPost("GetStudents")]
@@ -110,6 +113,21 @@ namespace StudentManagement_API.Controllers
         public async Task<IActionResult> GetCertificateStudentTags()
         {
             var response = await _certificatesService.GetCertificateStudentTagsAsync();
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpPost("GetCertificateTagValue")]
+        public async Task<ActionResult<ServiceResponse<GetCertificateTagValueResponse>>> GetCertificateTagValue([FromBody] GetCertificateTagValueRequest request)
+        {
+            var response = await _certificatesService.GetCertificateTagValue(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+
+        [HttpPost("AttachCertificatewithStudent")]
+        public async Task<ActionResult<ServiceResponse<int>>> AttachCertificatewithStudent([FromBody] AttachCertificatewithStudentRequest request)
+        {
+            var response = await _certificatesService.AttachCertificatewithStudent(request);
             return StatusCode(response.StatusCode, response);
         }
     }
