@@ -252,9 +252,35 @@ namespace StudentManagement_API.Services.Implementations
             return await _certificatesRepository.GetCertificateTagValue(request);
         }
 
-        public async Task<ServiceResponse<int>> AttachCertificatewithStudent(AttachCertificatewithStudentRequest request)
+        public async Task<ServiceResponse<int>> AttachCertificatewithStudent(AttachCertificateWithStudentsRequest request)
         {
             return await _certificatesRepository.AttachCertificatewithStudent(request);
+        }
+
+        public async Task<ServiceResponse<List<GetCertificateTemplatesListResponse>>> GetCertificateTemplatesList(GetCertificateTemplatesListRequest request)
+        {
+            try
+            {
+                var templates = await _certificatesRepository.GetCertificateTemplatesList(request);
+                return templates;
+            }
+            catch (System.Exception ex)
+            {
+                return new ServiceResponse<List<GetCertificateTemplatesListResponse>>(false, ex.Message, null, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<int>> UpdateCertificateTemplate(UpdateCertificateTemplateRequest request)
+        {
+            try
+            {
+                var result = await _certificatesRepository.UpdateCertificateTemplate(request);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(false, ex.Message, 0, 500);
+            }
         }
     }
 }

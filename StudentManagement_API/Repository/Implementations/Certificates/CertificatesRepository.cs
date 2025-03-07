@@ -996,12 +996,47 @@ namespace StudentManagement_API.Repository.Implementations
         }
 
 
-        public async Task<ServiceResponse<int>> AttachCertificatewithStudent(AttachCertificatewithStudentRequest request)
+        //public async Task<ServiceResponse<int>> AttachCertificatewithStudent(AttachCertificatewithStudentRequest request)
+        //{
+        //    using var connection = new SqlConnection(_connectionString);
+        //    connection.Open();
+
+        //    // Update the CertificateFile and update the CertificateDate to current date.
+        //    string sql = @"
+        //    UPDATE tblStudentCertificate
+        //    SET CertificateFile = @Certificate, 
+        //        CertificateDate = GETDATE()
+        //    WHERE TemplateID = @TemplateID
+        //      AND StudentID = @StudentID
+        //      AND InstituteID = @InstituteID;
+        //    SELECT @@ROWCOUNT;";
+
+        //    int rowsAffected = await connection.QuerySingleAsync<int>(sql, new
+        //    {
+        //        TemplateID = request.TemplateID,
+        //        StudentID = request.StudentID,
+        //        InstituteID = request.InstituteID,
+        //        Certificate = request.Certificate
+        //    });
+
+        //    if (rowsAffected > 0)
+        //    {
+        //        return new ServiceResponse<int>(true, "Certificate attached successfully", rowsAffected, 200);
+        //    }
+        //    else
+        //    {
+        //        return new ServiceResponse<int>(false, "Certificate record not found or update failed", 0, 404);
+        //    }
+        //}
+
+        public async Task<ServiceResponse<int>> AttachCertificatewithStudent(AttachCertificateWithStudentsRequest request)
         {
+            int totalRowsAffected = 0;
+
             using var connection = new SqlConnection(_connectionString);
             connection.Open();
+            using var transaction = connection.BeginTransaction();
 
-            // Update the CertificateFile and update the CertificateDate to current date.
             string sql = @"
             UPDATE tblStudentCertificate
             SET CertificateFile = @Certificate, 
@@ -1011,24 +1046,84 @@ namespace StudentManagement_API.Repository.Implementations
               AND InstituteID = @InstituteID;
             SELECT @@ROWCOUNT;";
 
-            int rowsAffected = await connection.QuerySingleAsync<int>(sql, new
+            foreach (var cert in request.Certificates)
             {
-                TemplateID = request.TemplateID,
-                StudentID = request.StudentID,
-                InstituteID = request.InstituteID,
-                Certificate = request.Certificate
-            });
+                int rowsAffected = await connection.QuerySingleAsync<int>(sql, new
+                {
+                    TemplateID = request.TemplateID,
+                    StudentID = cert.StudentID,
+                    InstituteID = request.InstituteID,
+                    Certificate = cert.Certificate
+                }, transaction);
 
-            if (rowsAffected > 0)
+                totalRowsAffected += rowsAffected;
+            }
+
+            transaction.Commit();
+
+            if (totalRowsAffected > 0)
             {
-                return new ServiceResponse<int>(true, "Certificate attached successfully", rowsAffected, 200);
+                return new ServiceResponse<int>(true, "Certificates attached successfully", totalRowsAffected, 200);
             }
             else
             {
-                return new ServiceResponse<int>(false, "Certificate record not found or update failed", 0, 404);
+                return new ServiceResponse<int>(false, "Certificate records not found or update failed", 0, 404);
             }
         }
 
 
+        public async Task<ServiceResponse<List<GetCertificateTemplatesListResponse>>> GetCertificateTemplatesList(GetCertificateTemplatesListRequest request)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            connection.Open();
+
+            // Using SQL Server's FORMAT function to format the CreatedOn date as "dd MMM, yyyy"
+            string sql = @"
+                SELECT 
+                    TemplateID, 
+                    TemplateName, 
+                    TemplateContent, 
+                    FORMAT(CreatedOn, 'dd MMM, yyyy') AS CreatedOn
+                FROM tblCertificateTemplate
+                WHERE InstituteID = @InstituteID";
+
+            var templates = await connection.QueryAsync<GetCertificateTemplatesListResponse>(sql, new { InstituteID = request.InstituteID });
+
+            var list = templates.AsList();
+
+            return new ServiceResponse<List<GetCertificateTemplatesListResponse>>(true, "Templates retrieved successfully", list, 200, list.Count);
+        }
+
+        public async Task<ServiceResponse<int>> UpdateCertificateTemplate(UpdateCertificateTemplateRequest request)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            connection.Open();
+
+            string sql = @"
+                UPDATE tblCertificateTemplate
+                SET 
+                    TemplateName = @TemplateName,
+                    TemplateContent = @TemplateContent
+                WHERE TemplateID = @TemplateID
+                  AND InstituteID = @InstituteID;
+                SELECT @@ROWCOUNT;";
+
+            int rowsAffected = await connection.QuerySingleAsync<int>(sql, new
+            {
+                request.TemplateName,
+                request.TemplateContent,
+                request.TemplateID,
+                request.InstituteID
+            });
+
+            if (rowsAffected > 0)
+            {
+                return new ServiceResponse<int>(true, "Template updated successfully", rowsAffected, 200);
+            }
+            else
+            {
+                return new ServiceResponse<int>(false, "Template not found or update failed", 0, 404);
+            }
+        }
     }
 }

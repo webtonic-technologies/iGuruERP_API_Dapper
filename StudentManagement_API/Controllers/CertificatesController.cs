@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using StudentManagement_API.DTOs.Requests;
 using StudentManagement_API.DTOs.Responses;
-using StudentManagement_API.DTOs.ServiceResponse; 
+using StudentManagement_API.DTOs.ServiceResponse;
 using StudentManagement_API.Services.Interfaces;
 
 namespace StudentManagement_API.Controllers
@@ -124,10 +124,33 @@ namespace StudentManagement_API.Controllers
         }
 
 
+        //[HttpPost("AttachCertificatewithStudent")]
+        //public async Task<ActionResult<ServiceResponse<int>>> AttachCertificatewithStudent([FromBody] AttachCertificatewithStudentRequest request)
+        //{
+        //    var response = await _certificatesService.AttachCertificatewithStudent(request);
+        //    return StatusCode(response.StatusCode, response);
+        //} 
+
         [HttpPost("AttachCertificatewithStudent")]
-        public async Task<ActionResult<ServiceResponse<int>>> AttachCertificatewithStudent([FromBody] AttachCertificatewithStudentRequest request)
+        public async Task<ActionResult<ServiceResponse<int>>> AttachCertificatewithStudent([FromBody] AttachCertificateWithStudentsRequest request)
         {
             var response = await _certificatesService.AttachCertificatewithStudent(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+
+        [HttpPost("GetCertificateTemplatesList")]
+        public async Task<IActionResult> GetCertificateTemplatesList([FromBody] GetCertificateTemplatesListRequest request)
+        {
+            var response = await _certificatesService.GetCertificateTemplatesList(request);
+            return StatusCode(response.StatusCode, response);
+        }
+
+
+        [HttpPost("UpdateCertificateTemplate")]
+        public async Task<IActionResult> UpdateCertificateTemplate([FromBody] UpdateCertificateTemplateRequest request)
+        {
+            var response = await _certificatesService.UpdateCertificateTemplate(request);
             return StatusCode(response.StatusCode, response);
         }
     }
