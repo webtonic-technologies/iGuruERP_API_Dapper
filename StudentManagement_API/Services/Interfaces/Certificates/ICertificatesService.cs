@@ -22,6 +22,7 @@ namespace StudentManagement_API.Services.Interfaces
         Task<ServiceResponse<int>> AttachCertificatewithStudent(AttachCertificateWithStudentsRequest request);
         Task<ServiceResponse<List<GetCertificateTemplatesListResponse>>> GetCertificateTemplatesList(GetCertificateTemplatesListRequest request);
         Task<ServiceResponse<int>> UpdateCertificateTemplate(UpdateCertificateTemplateRequest request);
+        Task<ServiceResponse<int>> DeleteCertificateTemplate(DeleteCertificateTemplateRequest request);
 
     }
 }

@@ -282,5 +282,18 @@ namespace StudentManagement_API.Services.Implementations
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
+
+        public async Task<ServiceResponse<int>> DeleteCertificateTemplate(DeleteCertificateTemplateRequest request)
+        {
+            try
+            {
+                var response = await _certificatesRepository.DeleteCertificateTemplate(request);
+                return response;
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(false, ex.Message, 0, 500);
+            }
+        }
     }
 }

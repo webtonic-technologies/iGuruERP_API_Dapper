@@ -153,5 +153,13 @@ namespace StudentManagement_API.Controllers
             var response = await _certificatesService.UpdateCertificateTemplate(request);
             return StatusCode(response.StatusCode, response);
         }
+
+
+        [HttpDelete("DeleteCertificateTemplate")]
+        public async Task<IActionResult> DeleteCertificateTemplate([FromBody] DeleteCertificateTemplateRequest request)
+        {
+            var response = await _certificatesService.DeleteCertificateTemplate(request);
+            return StatusCode(response.StatusCode, response);
+        }
     }
 }

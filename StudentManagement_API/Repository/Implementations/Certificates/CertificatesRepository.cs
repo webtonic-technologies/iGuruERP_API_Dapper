@@ -1125,5 +1125,32 @@ namespace StudentManagement_API.Repository.Implementations
                 return new ServiceResponse<int>(false, "Template not found or update failed", 0, 404);
             }
         }
+
+        public async Task<ServiceResponse<int>> DeleteCertificateTemplate(DeleteCertificateTemplateRequest request)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            connection.Open();
+
+            string sql = @"
+                DELETE FROM tblCertificateTemplate
+                WHERE TemplateID = @TemplateID
+                  AND InstituteID = @InstituteID;
+                SELECT @@ROWCOUNT;";
+
+            int rowsAffected = await connection.QuerySingleAsync<int>(sql, new
+            {
+                TemplateID = request.TemplateID,
+                InstituteID = request.InstituteID
+            });
+
+            if (rowsAffected > 0)
+            {
+                return new ServiceResponse<int>(true, "Certificate template deleted successfully", rowsAffected, 200);
+            }
+            else
+            {
+                return new ServiceResponse<int>(false, "Certificate template not found or delete failed", 0, 404);
+            }
+        }
     }
 }
