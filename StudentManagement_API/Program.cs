@@ -40,6 +40,9 @@ builder.Services.AddScoped<IStudentLoginsService, StudentLoginsService>();
 builder.Services.AddScoped<ICertificatesRepository, CertificatesRepository>();
 builder.Services.AddScoped<ICertificatesService, CertificatesService>();
 
+builder.Services.AddScoped<IStudentPromotionRepository, StudentPromotionRepository>();
+builder.Services.AddScoped<IStudentPromotionService, StudentPromotionService>();
+
 
 var app = builder.Build();
 
