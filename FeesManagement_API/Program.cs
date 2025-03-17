@@ -91,6 +91,10 @@ builder.Services.AddScoped<IFeesReportsService, FeesReportsService>();
 builder.Services.AddScoped<IFeesDashboardRepository, FeesDashboardRepository>();
 builder.Services.AddScoped<IFeesDashboardService, FeesDashboardService>();
 
+builder.Services.AddScoped<IFeeReceiptRepository, FeeReceiptRepository>(); 
+builder.Services.AddScoped<IFeeReceiptService, FeeReceiptService>();
+
+
 
 var app = builder.Build();
 

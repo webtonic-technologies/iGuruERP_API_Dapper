@@ -47,7 +47,7 @@ namespace FeesManagement_API.Services.Implementations
             var result = await _offerRepository.DeleteOffer(offerID);
             if (result > 0)
             {
-                return new ServiceResponse<int>(true, "Offer status updated successfully", result, 200);
+                return new ServiceResponse<int>(true, "Offer deleted successfully", result, 200);
             }
             return new ServiceResponse<int>(false, "Failed to update offer status", 0, 400);
         }

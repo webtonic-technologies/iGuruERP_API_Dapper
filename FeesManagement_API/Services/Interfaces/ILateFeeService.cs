@@ -12,6 +12,7 @@ namespace FeesManagement_API.Services.Interfaces
         Task<ServiceResponse<LateFeeResponse>> GetLateFeeById(int lateFeeID);
         Task<ServiceResponse<int>> UpdateLateFeeStatus(int lateFeeID);  // Ensure this is the correct return type
         Task<ServiceResponse<IEnumerable<FeeTenureResponse>>> GetFeeTenureDDL(GetFeeTenureDDLRequest request);
+        Task<ServiceResponse<int>> DeleteLateFee(int lateFeeRuleID);
 
     }
 }

@@ -89,5 +89,17 @@ namespace FeesManagement_API.Controllers
             return BadRequest(response);
         }
 
+
+        [HttpPut("Detete/{lateFeeRuleID}")]
+        public async Task<IActionResult> DeleteLateFee(int lateFeeRuleID)
+        {
+            var response = await _lateFeeService.DeleteLateFee(lateFeeRuleID);
+            if (response.Success)
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
+        }
+
     }
 }

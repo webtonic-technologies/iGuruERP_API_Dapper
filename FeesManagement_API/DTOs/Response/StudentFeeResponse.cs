@@ -4,14 +4,15 @@ namespace FeesManagement_API.DTOs.Responses
 {
     public class StudentFeeResponse
     {
+        public int StudentID { get; set; } 
         public string AdmissionNo { get; set; }
         public string StudentName { get; set; }
         public string RollNo { get; set; }
         public string ClassName { get; set; }
         public string SectionName { get; set; }
-        public decimal TotalFeeAmount { get; set; }
-
-        // Property to hold the fee details
+        public string ConcessionGroup { get; set; }
+        public decimal TotalLateFee { get; set; }    // New property for total late fee 
+        public decimal TotalFeeAmount { get; set; }  
         public List<StudentFeeDetail> FeeDetails { get; set; }
     }
 
@@ -20,5 +21,7 @@ namespace FeesManagement_API.DTOs.Responses
         public string FeeHead { get; set; }
         public string TenureType { get; set; }
         public decimal Amount { get; set; }
+        public decimal LateFee { get; set; } // Add this property
+
     }
 }

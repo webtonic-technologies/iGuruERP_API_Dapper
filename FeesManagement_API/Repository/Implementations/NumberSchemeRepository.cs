@@ -188,10 +188,15 @@ namespace FeesManagement_API.Repository.Implementations
 
         public async Task<int> UpdateNumberSchemeStatus(int numberSchemeID)
         {
+            //var query = @"UPDATE tblNumberScheme 
+            //              SET IsActive = CASE WHEN IsActive = 1 THEN 0 ELSE 1 END 
+            //              WHERE NumberSchemeID = @NumberSchemeID";
+            //return await _connection.ExecuteAsync(query, new { NumberSchemeID = numberSchemeID });
+
             var query = @"UPDATE tblNumberScheme 
-                          SET IsActive = CASE WHEN IsActive = 1 THEN 0 ELSE 1 END 
-                          WHERE NumberSchemeID = @NumberSchemeID";
-            return await _connection.ExecuteAsync(query, new { NumberSchemeID = numberSchemeID });
+                  SET IsActive = 0 
+                  WHERE NumberSchemeID = @NumberSchemeID";
+            return await _connection.ExecuteAsync(query, new { numberSchemeID });
         }
 
         public async Task<IEnumerable<NumberSchemeTypeResponse>> GetNumberSchemeType()

@@ -61,7 +61,8 @@ namespace FeesManagement_API.Controllers
         //    return BadRequest(new { Success = false, Message = "Failed to update concession group status." });
         //}
 
-        [HttpPut("DeleteConcession")]
+        //[HttpPut("DeleteConcession")]
+        [HttpPut("Status")]
         public async Task<IActionResult> UpdateConcessionStatus([FromBody] ConcessionUpdateRequest request)
         {
             // Use request.ConcessionGroupID and request.InActiveReason

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
 using FeesManagement_API.DTOs.ServiceResponse;
+using System.Globalization;
 
 
 namespace FeesManagement_API.Repository.Implementations
@@ -29,6 +30,18 @@ namespace FeesManagement_API.Repository.Implementations
                 {
                     try
                     {
+
+                        // Convert the DueDate string to DateTime?
+                        DateTime? parsedDueDate = null;
+                        if (!string.IsNullOrWhiteSpace(request.DueDate))
+                        {
+                            parsedDueDate = DateTime.ParseExact(
+                                request.DueDate,
+                                "dd-MM-yyyy",
+                                CultureInfo.InvariantCulture);
+                        }
+
+
                         var lateFeeRuleId = request.LateFeeRuleID;
 
                         if (lateFeeRuleId == 0)
@@ -37,7 +50,19 @@ namespace FeesManagement_API.Repository.Implementations
                                   VALUES (@FeeHeadID, @FeeTenurityID, @DueDate, @InstituteID);
                                   SELECT CAST(SCOPE_IDENTITY() as int);";
 
-                            lateFeeRuleId = await connection.ExecuteScalarAsync<int>(query, request, transaction);
+
+                            lateFeeRuleId = await connection.ExecuteScalarAsync<int>(
+                            query,
+                            new
+                            {
+                                request.FeeHeadID,
+                                request.FeeTenurityID,
+                                DueDate = parsedDueDate, // use converted date
+                                request.InstituteID
+                            },
+                            transaction);
+
+                            //lateFeeRuleId = await connection.ExecuteScalarAsync<int>(query, request, transaction);
                         }
                         else
                         {
@@ -48,7 +73,20 @@ namespace FeesManagement_API.Repository.Implementations
                                       InstituteID = @InstituteID
                                   WHERE LateFeeRuleID = @LateFeeRuleID";
 
-                            await connection.ExecuteAsync(query, request, transaction);
+
+                            await connection.ExecuteAsync(
+                            query,
+                            new
+                            {
+                                request.FeeHeadID,
+                                request.FeeTenurityID,
+                                DueDate = parsedDueDate, // use converted date
+                                request.InstituteID,
+                                LateFeeRuleID = request.LateFeeRuleID
+                            },
+                            transaction);
+
+                            //await connection.ExecuteAsync(query, request, transaction);
                         }
 
                         // Handle Class Sections
@@ -187,7 +225,7 @@ namespace FeesManagement_API.Repository.Implementations
                     request.PageSize,
                     Search = "%" + request.Search + "%"  // Use wildcard for LIKE search
                 },
-                splitOn: "FeeRulesID");
+                splitOn: "FeeRulesID"); 
 
             // Return the response with both paginated data and total count
             return new ServiceResponse<IEnumerable<LateFeeResponse>>(
@@ -221,7 +259,8 @@ namespace FeesManagement_API.Repository.Implementations
             fh.FeeHead AS FeeHead,
             ft.FeeTenurityID,
             ft.FeeTenurityType AS FeeTenurity,
-            lf.DueDate,
+            FORMAT(lf.DueDate, 'dd MMM yyyy') as DueDate,
+            --lf.DueDate,
             lf.InstituteID,
             fr.FeeRulesID,
             fr.MinDays,
@@ -306,6 +345,16 @@ namespace FeesManagement_API.Repository.Implementations
 
             var result = await _connection.QueryAsync<FeeTenureResponse>(query, request);
             return result;
+        }
+
+
+        public async Task<int> DeleteLateFee(int lateFeeRuleID)
+        {
+            // Soft delete: update IsActive to 0
+            var query = @"UPDATE tblLateFeeRuleSetup 
+                  SET IsActive = 0 
+                  WHERE LateFeeRuleID = @lateFeeRuleID";
+            return await _connection.ExecuteAsync(query, new { lateFeeRuleID });
         }
 
     }

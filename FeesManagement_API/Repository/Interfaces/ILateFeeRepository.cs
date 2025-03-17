@@ -11,6 +11,6 @@ public interface ILateFeeRepository
     Task<LateFeeResponse> GetLateFeeById(int lateFeeID);
     Task<int> UpdateLateFeeStatus(int lateFeeID);
     Task<IEnumerable<FeeTenureResponse>> GetFeeTenureDDL(GetFeeTenureDDLRequest request);
-
+    Task<int> DeleteLateFee(int lateFeeRuleID);
 }
  

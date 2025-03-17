@@ -5,7 +5,7 @@
         public int LateFeeRuleID { get; set; }
         public int FeeHeadID { get; set; }
         public int FeeTenurityID { get; set; }
-        public DateTime? DueDate { get; set; }
+        public string DueDate { get; set; }
         public int InstituteID { get; set; }
         public List<LateFeeClassSectionMappingRequest> ClassSections { get; set; }
         public List<FeesRuleRequest> FeesRules { get; set; }

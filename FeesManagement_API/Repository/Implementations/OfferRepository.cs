@@ -427,12 +427,18 @@ namespace Configuration.Repository.Implementations
 
         public async Task<int> DeleteOffer(int offerID)
         {
-            var query = @"UPDATE tblOffer 
-                          SET IsActive = CASE WHEN IsActive = 1 THEN 0 ELSE 1 END 
-                          WHERE OfferID = @OfferID";
+            //var query = @"UPDATE tblOffer 
+            //              SET IsActive = CASE WHEN IsActive = 1 THEN 0 ELSE 1 END 
+            //              WHERE OfferID = @OfferID";
 
-            return await _connection.ExecuteAsync(query, new { OfferID = offerID });
+            //return await _connection.ExecuteAsync(query, new { OfferID = offerID });
+
+            var query = @"UPDATE tblOffer 
+                  SET IsActive = 0 
+                  WHERE OfferID = @OfferID";
+            return await _connection.ExecuteAsync(query, new { offerID });
         }
+
         public async Task<IEnumerable<OfferStudentTypeResponse>> GetOfferStudentTypes()
         {
             var query = "SELECT StudentTypeID, StudentType FROM tblOfferStudentype";

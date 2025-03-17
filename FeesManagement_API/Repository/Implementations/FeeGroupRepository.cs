@@ -4,6 +4,7 @@ using FeesManagement_API.DTOs.Response;
 using FeesManagement_API.Repository.Interfaces;
 using System.Collections.Generic;
 using System.Data;
+using System.Globalization;
 using System.Threading.Tasks; 
 
 
@@ -134,12 +135,26 @@ namespace FeesManagement_API.Repository.Implementations
                                 {
                                     var insertTermQuery = @"INSERT INTO tblTenurityTerm (FeeCollectionID, TermName, Amount, DueDate)
                                                     VALUES (@FeeCollectionID, @TermName, @Amount, @DueDate)";
+
+
                                     foreach (var term in collection.TenurityTerm.Terms)
                                     {
+                                        DateTime parsedDueDate = DateTime.ParseExact(
+                                            term.DueDate,
+                                            "dd-MM-yyyy",
+                                            CultureInfo.InvariantCulture);
+
                                         await _connection.ExecuteAsync(insertTermQuery,
-                                            new { FeeCollectionID = feeCollectionId, term.TermName, term.Amount, term.DueDate },
+                                            new { FeeCollectionID = feeCollectionId, term.TermName, term.Amount, DueDate = parsedDueDate },
                                             transaction);
                                     }
+
+                                    //foreach (var term in collection.TenurityTerm.Terms)
+                                    //{
+                                    //    await _connection.ExecuteAsync(insertTermQuery,
+                                    //        new { FeeCollectionID = feeCollectionId, term.TermName, term.Amount, term.DueDate },
+                                    //        transaction);
+                                    //}
                                 }
                                 else if (collection.FeeTenurityID == 3 && collection.TenurityMonthly != null)
                                 {
@@ -582,35 +597,72 @@ namespace FeesManagement_API.Repository.Implementations
         //    return await _connection.ExecuteAsync(query, new { FeeGroupID = feeGroupID });
         //}
 
+        //public async Task<int> UpdateFeeGroupStatus(int feeGroupID, string reason)
+        //{
+        //    // Toggle the status first
+        //    string updateStatusQuery = @"
+        //    UPDATE tblFeeGroup 
+        //    SET IsActive = CASE 
+        //                       WHEN IsActive = 1 THEN 0 
+        //                       ELSE 1 
+        //                   END
+        //    WHERE FeeGroupID = @FeeGroupID";
+
+        //    // Execute the first query to toggle the IsActive status
+        //    int rowsAffected = await _connection.ExecuteAsync(updateStatusQuery, new { FeeGroupID = feeGroupID });
+
+        //    // If the status was set to active (1), update the Reason
+        //    if (rowsAffected > 0 && reason != null)
+        //    {
+        //        string updateReasonQuery = @"
+        //        UPDATE tblFeeGroup 
+        //        SET Reason = @Reason 
+        //        WHERE FeeGroupID = @FeeGroupID";
+
+        //        // Execute the second query to update the Reason
+        //        await _connection.ExecuteAsync(updateReasonQuery, new { FeeGroupID = feeGroupID, Reason = reason });
+        //    }
+
+        //    return rowsAffected; // Return the number of rows affected by the status update
+        //}
+
         public async Task<int> UpdateFeeGroupStatus(int feeGroupID, string reason)
         {
             // Toggle the status first
             string updateStatusQuery = @"
-    UPDATE tblFeeGroup 
-    SET IsActive = CASE 
-                       WHEN IsActive = 1 THEN 0 
-                       ELSE 1 
-                   END
-    WHERE FeeGroupID = @FeeGroupID";
+            UPDATE tblFeeGroup 
+            SET IsActive = CASE 
+                                WHEN IsActive = 1 THEN 0 
+                                ELSE 1 
+                            END
+            WHERE FeeGroupID = @FeeGroupID";
 
-            // Execute the first query to toggle the IsActive status
+            // Execute the query to toggle IsActive
             int rowsAffected = await _connection.ExecuteAsync(updateStatusQuery, new { FeeGroupID = feeGroupID });
 
-            // If the status was set to active (1), update the Reason
-            if (rowsAffected > 0 && reason != null)
+            if (rowsAffected > 0)
             {
-                string updateReasonQuery = @"
-        UPDATE tblFeeGroup 
-        SET Reason = @Reason 
-        WHERE FeeGroupID = @FeeGroupID";
+                // Retrieve the new status value
+                var newStatus = await _connection.QuerySingleAsync<int>(
+                    "SELECT IsActive FROM tblFeeGroup WHERE FeeGroupID = @FeeGroupID",
+                    new { FeeGroupID = feeGroupID });
 
-                // Execute the second query to update the Reason
-                await _connection.ExecuteAsync(updateReasonQuery, new { FeeGroupID = feeGroupID, Reason = reason });
+                // When reactivated (active = 1), clear the Reason field
+                if (newStatus == 1)
+                {
+                    string clearReasonQuery = @"UPDATE tblFeeGroup SET Reason = NULL WHERE FeeGroupID = @FeeGroupID";
+                    await _connection.ExecuteAsync(clearReasonQuery, new { FeeGroupID = feeGroupID });
+                }
+                // When deactivated (active = 0), update the Reason if provided
+                else if (newStatus == 0 && reason != null)
+                {
+                    string updateReasonQuery = @"UPDATE tblFeeGroup SET Reason = @Reason WHERE FeeGroupID = @FeeGroupID";
+                    await _connection.ExecuteAsync(updateReasonQuery, new { FeeGroupID = feeGroupID, Reason = reason });
+                }
             }
 
-            return rowsAffected; // Return the number of rows affected by the status update
+            return rowsAffected;
         }
-
 
 
     }

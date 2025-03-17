@@ -68,5 +68,16 @@ namespace FeesManagement_API.Services.Implementations
             return new ServiceResponse<IEnumerable<FeeTenureResponse>>(true, "Fee Tenures retrieved successfully", feeTenureResponses, 200);
         }
 
+        public async Task<ServiceResponse<int>> DeleteLateFee(int lateFeeRuleID)
+        {
+            var result = await _lateFeeRepository.DeleteLateFee(lateFeeRuleID);
+            if (result > 0)
+            {
+                return new ServiceResponse<int>(true, "Late Fee deleted successfully", result, 200);
+            }
+            return new ServiceResponse<int>(false, "Failed to delete Late Fee", result, 400);
+        }
+
+
     }
 }

@@ -38,7 +38,7 @@
     {
         public string TermName { get; set; }
         public decimal Amount { get; set; }
-        public DateTime DueDate { get; set; }
+        public string DueDate { get; set; }
     }
 
     public class TenurityMonthlyRequest

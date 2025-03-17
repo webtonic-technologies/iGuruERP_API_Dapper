@@ -41,7 +41,7 @@ namespace FeesManagement_API.Services.Implementations
         public async Task<ServiceResponse<int>> UpdateNumberSchemeStatus(int numberSchemeID)
         {
             var result = await _numberSchemeRepository.UpdateNumberSchemeStatus(numberSchemeID);
-            return new ServiceResponse<int>(true, "Number Scheme status updated successfully", result, 200);
+            return new ServiceResponse<int>(true, "Number Scheme deleted successfully", result, 200);
         }
         public async Task<ServiceResponse<IEnumerable<NumberSchemeTypeResponse>>> GetNumberSchemeType()
         {
