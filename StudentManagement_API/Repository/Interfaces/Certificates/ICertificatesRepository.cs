@@ -12,6 +12,7 @@ namespace StudentManagement_API.Repository.Interfaces
         //Task<int> GenerateCertificateAsync(GenerateCertificateRequest request);
 
         Task<ServiceResponse<IEnumerable<GetCertificateTemplateResponse>>> GetCertificateTemplateAsync(GetCertificateTemplateRequest request);
+        Task<ServiceResponse<GetCertificateTemplateByIDResponse>> GetCertificateTemplateByIDAsync(int templateId);
 
         //Task<List<int>> GenerateCertificatesAsync(GenerateCertificateRequest request);
         Task<GenerateCertificateResponse> GenerateCertificatesAsync(GenerateCertificateRequest request);

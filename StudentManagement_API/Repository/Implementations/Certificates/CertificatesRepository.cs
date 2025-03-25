@@ -137,6 +137,8 @@ namespace StudentManagement_API.Repository.Implementations
         }
 
 
+
+
         //public async Task<List<int>> GenerateCertificatesAsync(GenerateCertificateRequest request)
         //{
         //    var insertedIds = new List<int>();
@@ -291,6 +293,30 @@ namespace StudentManagement_API.Repository.Implementations
         //    transaction.Commit();
         //    //return new GenerateCertificateResponse { StudentCertificates = certificateContents };
         //}
+
+        public async Task<ServiceResponse<GetCertificateTemplateByIDResponse>> GetCertificateTemplateByIDAsync(int templateId)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            string sql = @"
+        SELECT 
+            ct.TemplateID,
+            ct.TemplateName,
+            CONCAT(ep.First_Name, ' ', ISNULL(ep.Middle_Name, ''), ' ', ep.Last_Name) AS UserName,
+            FORMAT(ct.CreatedOn, 'dd-MM-yyyy ''at'' hh:mm tt') AS CreatedOn,
+            ct.InstituteID
+        FROM tblCertificateTemplate ct
+        LEFT JOIN tbl_EmployeeProfileMaster ep ON ct.UserID = ep.Employee_id
+        WHERE ct.TemplateID = @TemplateID";
+
+            connection.Open();
+            var result = await connection.QueryFirstOrDefaultAsync<GetCertificateTemplateByIDResponse>(sql, new { TemplateID = templateId });
+
+            if (result != null)
+                return new ServiceResponse<GetCertificateTemplateByIDResponse>(true, "Template retrieved successfully", result, 200);
+            else
+                return new ServiceResponse<GetCertificateTemplateByIDResponse>(false, "Template not found", null, 404);
+        }
+
 
         public async Task<GenerateCertificateResponse> GenerateCertificatesAsync(GenerateCertificateRequest request)
         {
@@ -902,98 +928,296 @@ namespace StudentManagement_API.Repository.Implementations
         {
             try
             {
-                string sql = @"
-            SELECT 
-                il.InstituteLogo,
-                d.Institute_name AS InstituteName,
-                CONCAT(a.house, ', ', a.Locality, ', ', a.Landmark, ', ', a.pincode) AS InstituteAdress,
-                YEAR(d.en_date) AS AcademicYear,
-                CONCAT(a.Mobile_number, ', ', a.Email) AS InstituteContact,
-                STRING_AGG(acc.Accreditation_Number, ', ') AS AccreditationNumber,
-                aff.AffiliationNumber,
-                aff.AffiliationBoardLogo,
-                aff.AffiliationBoardName,
-                aff.InstituteCode
-            FROM tbl_InstituteDetails d
-                LEFT JOIN tbl_InstituteAddress a ON d.Institute_id = a.Institute_id
-                LEFT JOIN tbl_InstituteLogo il ON d.Institute_id = il.InstituteId
-                LEFT JOIN tbl_AffiliationInfo aff ON d.Institute_id = aff.Institute_id
-                LEFT JOIN tbl_Accreditation acc ON aff.Affiliation_info_id = acc.Affiliation_id
-            WHERE d.Institute_id = @InstituteID
-            GROUP BY 
-                il.InstituteLogo,
-                d.Institute_name,
-                a.house, a.Locality, a.Landmark, a.pincode,
-                d.en_date,
-                a.Mobile_number, a.Email,
-                aff.AffiliationNumber, 
-                aff.AffiliationBoardLogo, 
-                aff.AffiliationBoardName, 
-                aff.InstituteCode;";
-
-                // Create a new connection using the connection string
                 using var connection = new SqlConnection(_connectionString);
                 connection.Open();
 
-                var result = await connection.QueryFirstOrDefaultAsync<dynamic>(sql, new { InstituteID = request.InstituteID });
+                // 1) Identify if this tag is single or multi-record by looking up tblCertificatesInstitutes.
+                const string tagLookupSql = @"
+            SELECT TOP 1 ColumnFieldName, IsMultiRecord 
+            FROM tblCertificatesInstitutes
+            WHERE Value = @TagValue
+        ";
 
-                if (result == null)
+                var tagInfo = await connection.QueryFirstOrDefaultAsync<(string ColumnFieldName, bool IsMultiRecord)>(
+                    tagLookupSql, new { TagValue = request.Tag.Trim() }
+                );
+
+                // If we didn't find a match, return invalid tag.
+                if (string.IsNullOrEmpty(tagInfo.ColumnFieldName))
                 {
-                    return new ServiceResponse<GetCertificateTagValueResponse>(false, "Institute not found", null, 404);
+                    return new ServiceResponse<GetCertificateTagValueResponse>(
+                        success: false,
+                        message: "Invalid tag",
+                        data: null,
+                        statusCode: 400
+                    );
                 }
 
-                string tagValue = string.Empty;
-                string tag = request.Tag.Trim();
+                // Prepare a response object
+                var responseDto = new GetCertificateTagValueResponse();
 
-                // Match the tag value to the corresponding column
-                switch (tag)
+                // 2) If it's a single-record tag (IsMultiRecord=0), use the existing institute query:
+                if (!tagInfo.IsMultiRecord)
                 {
-                    case "<%InstituteLogo%>":
-                        tagValue = result.InstituteLogo;
-                        break;
-                    case "<%InstituteName%>":
-                        tagValue = result.InstituteName;
-                        break;
-                    case "<%InstituteAdress%>":
-                        tagValue = result.InstituteAdress;
-                        break;
-                    case "<%AcademicYear%>":
-                        tagValue = result.AcademicYear.ToString();
-                        break;
-                    case "<%InstituteContact%>":
-                        tagValue = result.InstituteContact;
-                        break;
-                    case "<%AccrediationNumber%>": // Note: Typo as provided. Adjust if needed.
-                        tagValue = result.AccreditationNumber;
-                        break;
-                    case "<%AffiliationNumber%>":
-                        tagValue = result.AffiliationNumber;
-                        break;
-                    case "<%AffiliationBoardLogo%>":
-                        tagValue = result.AffiliationBoardLogo;
-                        break;
-                    case "<%AffiliationBoardName%>":
-                        tagValue = result.AffiliationBoardName;
-                        break;
-                    case "<%InstituteCode%>":
-                        tagValue = result.InstituteCode;
-                        break;
-                    default:
-                        return new ServiceResponse<GetCertificateTagValueResponse>(false, "Invalid tag", null, 400);
+                    // Query the relevant institute details (the same query you already use).
+                    const string instituteSql = @"
+                SELECT 
+                    il.InstituteLogo,
+                    d.Institute_name AS InstituteName,
+                    CONCAT(a.house, ', ', a.Locality, ', ', a.Landmark, ', ', a.pincode) AS InstituteAdress,
+                    YEAR(d.en_date) AS AcademicYear,
+                    CONCAT(a.Mobile_number, ', ', a.Email) AS InstituteContact,
+                    STRING_AGG(acc.Accreditation_Number, ', ') AS AccreditationNumber,
+                    aff.AffiliationNumber,
+                    aff.AffiliationBoardLogo,
+                    aff.AffiliationBoardName,
+                    aff.InstituteCode
+                FROM tbl_InstituteDetails d
+                    LEFT JOIN tbl_InstituteAddress a ON d.Institute_id = a.Institute_id
+                    LEFT JOIN tbl_InstituteLogo il ON d.Institute_id = il.InstituteId
+                    LEFT JOIN tbl_AffiliationInfo aff ON d.Institute_id = aff.Institute_id
+                    LEFT JOIN tbl_Accreditation acc ON aff.Affiliation_info_id = acc.Affiliation_id
+                WHERE d.Institute_id = @InstituteID
+                GROUP BY 
+                    il.InstituteLogo,
+                    d.Institute_name,
+                    a.house, a.Locality, a.Landmark, a.pincode,
+                    d.en_date,
+                    a.Mobile_number, a.Email,
+                    aff.AffiliationNumber, 
+                    aff.AffiliationBoardLogo, 
+                    aff.AffiliationBoardName, 
+                    aff.InstituteCode;
+            ";
+
+                    var instituteResult = await connection.QueryFirstOrDefaultAsync(instituteSql, new
+                    {
+                        InstituteID = request.InstituteID
+                    });
+
+                    if (instituteResult == null)
+                    {
+                        return new ServiceResponse<GetCertificateTagValueResponse>(
+                            success: false,
+                            message: "Institute not found",
+                            data: null,
+                            statusCode: 404
+                        );
+                    }
+
+                    // Match the ColumnFieldName to the property in the query result
+                    switch (tagInfo.ColumnFieldName)
+                    {
+                        case "InstituteLogo":
+                            responseDto.TagValue = instituteResult.InstituteLogo;
+                            break;
+                        case "InstituteName":
+                            responseDto.TagValue = instituteResult.InstituteName;
+                            break;
+                        case "InstituteAdress":
+                            responseDto.TagValue = instituteResult.InstituteAdress;
+                            break;
+                        case "AcademicYear":
+                            responseDto.TagValue = instituteResult.AcademicYear.ToString();
+                            break;
+                        case "InstituteContact":
+                            responseDto.TagValue = instituteResult.InstituteContact;
+                            break;
+                        case "AccrediationNumber":
+                            responseDto.TagValue = instituteResult.AccreditationNumber;
+                            break;
+                        case "AffiliationNumber":
+                            responseDto.TagValue = instituteResult.AffiliationNumber;
+                            break;
+                        case "AffiliationBoardLogo":
+                            responseDto.TagValue = instituteResult.AffiliationBoardLogo;
+                            break;
+                        case "AffiliationBoardName":
+                            responseDto.TagValue = instituteResult.AffiliationBoardName;
+                            break;
+                        case "InstituteCode":
+                            responseDto.TagValue = instituteResult.InstituteCode;
+                            break;
+                        default:
+                            return new ServiceResponse<GetCertificateTagValueResponse>(
+                                success: false,
+                                message: "Invalid tag",
+                                data: null,
+                                statusCode: 400
+                            );
+                    }
+                }
+                else
+                {
+                    // 3) Multi-record tag (IsMultiRecord=1): fetch from the appropriate table
+                    //    based on ColumnFieldName (PrincipalSignature, DigitalStamps, DigitalSignature).
+
+                    string multiSql;
+                    switch (tagInfo.ColumnFieldName)
+                    {
+                        case "PrincipalSignature":
+                            multiSql = @"
+                        SELECT InstitutePrinSign AS [Value]
+                        FROM tbl_InstitutePrinSign
+                        WHERE InstituteId = @InstituteID
+                    ";
+                            break;
+
+                        case "DigitalStamps":
+                            multiSql = @"
+                        SELECT DigitalStamp AS [Value]
+                        FROM tbl_InstituteDigitalStamp
+                        WHERE InstituteId = @InstituteID
+                    ";
+                            break;
+
+                        case "DigitalSignature":
+                            multiSql = @"
+                        SELECT DigitalSign AS [Value]
+                        FROM tbl_InstituteDigitalSign
+                        WHERE InstituteId = @InstituteID
+                    ";
+                            break;
+
+                        default:
+                            return new ServiceResponse<GetCertificateTagValueResponse>(
+                                success: false,
+                                message: "Invalid tag for multi-record",
+                                data: null,
+                                statusCode: 400
+                            );
+                    }
+
+                    // Query all matching rows
+                    var multiResults = await connection.QueryAsync<string>(multiSql, new
+                    {
+                        InstituteID = request.InstituteID
+                    });
+
+                    // Build the list of { "tagValue": "..."} objects
+                    responseDto.TagValues = multiResults
+                        .Select(x => new TagValueItem { TagValue = x })
+                        .ToList();
                 }
 
-                var response = new GetCertificateTagValueResponse
-                {
-                    TagValue = tagValue
-                };
-
-                return new ServiceResponse<GetCertificateTagValueResponse>(true, "Tag value retrieved successfully", response, 200);
+                // 4) Return success response with the final data
+                return new ServiceResponse<GetCertificateTagValueResponse>(
+                    success: true,
+                    message: "Tag value(s) retrieved successfully",
+                    data: responseDto,
+                    statusCode: 200
+                );
             }
             catch (Exception ex)
             {
-                return new ServiceResponse<GetCertificateTagValueResponse>(false, ex.Message, null, 500);
+                return new ServiceResponse<GetCertificateTagValueResponse>(
+                    success: false,
+                    message: ex.Message,
+                    data: null,
+                    statusCode: 500
+                );
             }
         }
+
+
+
+        //Commented
+        //public async Task<ServiceResponse<GetCertificateTagValueResponse>> GetCertificateTagValue(GetCertificateTagValueRequest request)
+        //{
+        //    try
+        //    {
+        //        string sql = @"
+        //    SELECT 
+        //        il.InstituteLogo,
+        //        d.Institute_name AS InstituteName,
+        //        CONCAT(a.house, ', ', a.Locality, ', ', a.Landmark, ', ', a.pincode) AS InstituteAdress,
+        //        YEAR(d.en_date) AS AcademicYear,
+        //        CONCAT(a.Mobile_number, ', ', a.Email) AS InstituteContact,
+        //        STRING_AGG(acc.Accreditation_Number, ', ') AS AccreditationNumber,
+        //        aff.AffiliationNumber,
+        //        aff.AffiliationBoardLogo,
+        //        aff.AffiliationBoardName,
+        //        aff.InstituteCode
+        //    FROM tbl_InstituteDetails d
+        //        LEFT JOIN tbl_InstituteAddress a ON d.Institute_id = a.Institute_id
+        //        LEFT JOIN tbl_InstituteLogo il ON d.Institute_id = il.InstituteId
+        //        LEFT JOIN tbl_AffiliationInfo aff ON d.Institute_id = aff.Institute_id
+        //        LEFT JOIN tbl_Accreditation acc ON aff.Affiliation_info_id = acc.Affiliation_id
+        //    WHERE d.Institute_id = @InstituteID
+        //    GROUP BY 
+        //        il.InstituteLogo,
+        //        d.Institute_name,
+        //        a.house, a.Locality, a.Landmark, a.pincode,
+        //        d.en_date,
+        //        a.Mobile_number, a.Email,
+        //        aff.AffiliationNumber, 
+        //        aff.AffiliationBoardLogo, 
+        //        aff.AffiliationBoardName, 
+        //        aff.InstituteCode;";
+
+        //        // Create a new connection using the connection string
+        //        using var connection = new SqlConnection(_connectionString);
+        //        connection.Open();
+
+        //        var result = await connection.QueryFirstOrDefaultAsync<dynamic>(sql, new { InstituteID = request.InstituteID });
+
+        //        if (result == null)
+        //        {
+        //            return new ServiceResponse<GetCertificateTagValueResponse>(false, "Institute not found", null, 404);
+        //        }
+
+        //        string tagValue = string.Empty;
+        //        string tag = request.Tag.Trim();
+
+        //        // Match the tag value to the corresponding column
+        //        switch (tag)
+        //        {
+        //            case "<%InstituteLogo%>":
+        //                tagValue = result.InstituteLogo;
+        //                break;
+        //            case "<%InstituteName%>":
+        //                tagValue = result.InstituteName;
+        //                break;
+        //            case "<%InstituteAdress%>":
+        //                tagValue = result.InstituteAdress;
+        //                break;
+        //            case "<%AcademicYear%>":
+        //                tagValue = result.AcademicYear.ToString();
+        //                break;
+        //            case "<%InstituteContact%>":
+        //                tagValue = result.InstituteContact;
+        //                break;
+        //            case "<%AccrediationNumber%>": // Note: Typo as provided. Adjust if needed.
+        //                tagValue = result.AccreditationNumber;
+        //                break;
+        //            case "<%AffiliationNumber%>":
+        //                tagValue = result.AffiliationNumber;
+        //                break;
+        //            case "<%AffiliationBoardLogo%>":
+        //                tagValue = result.AffiliationBoardLogo;
+        //                break;
+        //            case "<%AffiliationBoardName%>":
+        //                tagValue = result.AffiliationBoardName;
+        //                break;
+        //            case "<%InstituteCode%>":
+        //                tagValue = result.InstituteCode;
+        //                break;
+        //            default:
+        //                return new ServiceResponse<GetCertificateTagValueResponse>(false, "Invalid tag", null, 400);
+        //        }
+
+        //        var response = new GetCertificateTagValueResponse
+        //        {
+        //            TagValue = tagValue
+        //        };
+
+        //        return new ServiceResponse<GetCertificateTagValueResponse>(true, "Tag value retrieved successfully", response, 200);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return new ServiceResponse<GetCertificateTagValueResponse>(false, ex.Message, null, 500);
+        //    }
+        //}
 
 
         //public async Task<ServiceResponse<int>> AttachCertificatewithStudent(AttachCertificatewithStudentRequest request)

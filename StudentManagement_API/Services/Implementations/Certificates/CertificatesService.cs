@@ -80,6 +80,20 @@ namespace StudentManagement_API.Services.Implementations
             }
         }
 
+        public async Task<ServiceResponse<GetCertificateTemplateByIDResponse>> GetCertificateTemplateByIDAsync(int templateId)
+        {
+            try
+            {
+                var response = await _certificatesRepository.GetCertificateTemplateByIDAsync(templateId);
+                return response;
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<GetCertificateTemplateByIDResponse>(false, ex.Message, null, 500);
+            }
+        }
+
+
 
         public async Task<ServiceResponse<GenerateCertificateResponse>> GenerateCertificatesAsync(GenerateCertificateRequest request)
         {

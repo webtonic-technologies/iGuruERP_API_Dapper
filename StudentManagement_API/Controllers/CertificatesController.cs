@@ -31,6 +31,14 @@ namespace StudentManagement_API.Controllers
             return StatusCode(response.StatusCode, response);
         }
 
+        [HttpPost("GetCertificateTemplateByID/{TemplateID}")]
+        public async Task<IActionResult> GetCertificateTemplateByID([FromRoute] int TemplateID)
+        {
+            var response = await _certificatesService.GetCertificateTemplateByIDAsync(TemplateID);
+            return StatusCode(response.StatusCode, response);
+        }
+
+
 
         [HttpPost("GenerateCertificate")]
         public async Task<IActionResult> GenerateCertificate([FromBody] GenerateCertificateRequest request)

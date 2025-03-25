@@ -10,8 +10,8 @@ namespace StudentManagement_API.Services.Interfaces
         Task<ServiceResponse<IEnumerable<GetCertificateTemplateResponse>>> GetCertificateTemplateAsync(GetCertificateTemplateRequest request);
         //Task<ServiceResponse<int>> GenerateCertificateAsync(GenerateCertificateRequest request);
         //Task<ServiceResponse<List<int>>> GenerateCertificatesAsync(GenerateCertificateRequest request);
-        Task<ServiceResponse<GenerateCertificateResponse>> GenerateCertificatesAsync(GenerateCertificateRequest request);
-
+        Task<ServiceResponse<GenerateCertificateResponse>> GenerateCertificatesAsync(GenerateCertificateRequest request); 
+        Task<ServiceResponse<GetCertificateTemplateByIDResponse>> GetCertificateTemplateByIDAsync(int templateId); 
         Task<ServiceResponse<IEnumerable<GetStudentsResponse>>> GetStudentsAsync(GetStudentsRequest request);
         Task<ServiceResponse<IEnumerable<GetCertificateReportResponse>>> GetCertificateReportAsync(GetCertificateReportRequest request);
         Task<ServiceResponse<string>> GetCertificateReportExportAsync(GetCertificateReportExportRequest request);
