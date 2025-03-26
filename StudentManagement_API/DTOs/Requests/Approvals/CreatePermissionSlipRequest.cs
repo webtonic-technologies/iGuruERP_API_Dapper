@@ -8,5 +8,6 @@
         public int RequestedBy { get; set; }
         public string PickedUpBy { get; set; }
         public string Reason { get; set; }
+        public string AcademicYearCode { get; set; }
     }
 }

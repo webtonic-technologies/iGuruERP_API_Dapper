@@ -8,6 +8,7 @@
         // Date strings in the format "dd-MM-yyyy"
         public string StartDate { get; set; }
         public string EndDate { get; set; }
+        public string AcademicYearCode { get; set; }
         public string Search { get; set; }
         // 1 for Excel, 2 for CSV
         public int ExportType { get; set; }

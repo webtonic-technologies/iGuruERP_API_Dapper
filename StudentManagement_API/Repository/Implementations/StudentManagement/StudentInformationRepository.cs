@@ -111,6 +111,36 @@ namespace StudentManagement_API.Repository.Implementations
                         );
                         request.StudentID = newStudentId;
 
+
+                        //---------------- Add Information in tblStudentStandards
+
+                         request.StudentID = newStudentId;
+
+                         string insertStudentStandardsQuery = @"
+                            INSERT INTO tblStudentStandards
+                                (StudentID, ClassID, SectionID, AcademicYearCode, PromotionDate, InstituteID)
+                            VALUES
+                                (@StudentID, @ClassID, @SectionID, @AcademicYearCode, @PromotionDate, @InstituteID);
+                        ";
+
+                        await _dbConnection.ExecuteAsync(
+                            insertStudentStandardsQuery,
+                            new
+                            {
+                                StudentID = request.StudentID,
+                                ClassID = request.StudentDetails.ClassID,
+                                SectionID = request.StudentDetails.SectionID,
+                                AcademicYearCode = request.StudentDetails.AcademicYear,
+                                PromotionDate = (DateTime?)null, // Set PromotionDate here if you have a value; otherwise, null
+                                InstituteID = request.InstituteID
+                            },
+                            transaction
+                        );
+
+                        //---------------- Add Information in tblStudentStandards
+
+
+
                         // Insert into tbl_StudentOtherInfo using OtherInformation
                         if (!DateTime.TryParseExact(request.OtherInformation.RegistrationDate, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime registrationDate))
                         {
@@ -808,277 +838,7 @@ namespace StudentManagement_API.Repository.Implementations
                 );
             }
         }
-
-
-        //public async Task<ServiceResponse<IEnumerable<GetStudentInformationResponse>>> GetStudentInformation(GetStudentInformationRequest request)
-        //{
-        //    try
-        //    {
-        //        // 1. Count total records matching the filter criteria
-        //        string countSql = @"
-        //        SELECT COUNT(*) 
-        //        FROM tbl_StudentMaster 
-        //        WHERE Institute_id = @InstituteID 
-        //          AND AcademicYearCode = @AcademicYearCode 
-        //          AND class_id = @ClassID 
-        //          AND section_id = @SectionID 
-        //          AND StudentType_id = @StudentTypeID";
-
-        //        int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql, new
-        //        {
-        //            request.InstituteID,
-        //            request.AcademicYearCode,
-        //            request.ClassID,
-        //            request.SectionID,
-        //            request.StudentTypeID
-        //        });
-
-        //        // 2. Build the dynamic column list from tblStudentColumnSetting.
-        //        // This returns a comma-separated list of column names (e.g. "student_id, First_Name, ...").
-        //        string columnListSql = @"
-        //        SELECT STRING_AGG(SCS.DatabaseFieldName, ', ')
-        //        FROM tblStudentColumnSetting SCS
-        //        INNER JOIN tblStudentSettingMapping SSM 
-        //            ON SCS.StudentColumnID = SSM.StudentColumnID 
-        //            AND SSM.InstituteID = @InstituteID
-        //        WHERE SCS.IsActive = 1";
-        //        string columnList = await _dbConnection.ExecuteScalarAsync<string>(columnListSql, new { request.InstituteID });
-
-
-
-
-
-        //        // 3. Build the inner query ensuring every column in the dynamic list is present.
-        //        // Note: Columns from joined tables are aliased to avoid ambiguity.
-        //        string innerQuery = @"
-        //        SELECT
-        //            -- Student Master
-        //            sm.student_id AS StudentID,
-        //            sm.First_Name AS FirstName,
-        //            sm.Middle_Name AS MiddleName,
-        //            sm.Last_Name AS LastName,
-        //            sm.gender_id AS Gender,
-        //            sm.class_id AS Class,
-        //            sm.section_id AS Section,
-        //            sm.Admission_Number AS AdmissionNo,
-        //            sm.Roll_Number AS RollNumber,
-        //            sm.Date_of_Joining AS DateOfJoining,
-        //            sm.Nationality_id AS Nationality,
-        //            sm.Religion_id AS Religion,
-        //            sm.Date_of_Birth AS DateOfBirth,
-        //            sm.Mother_Tongue_id AS MotherTongue,
-        //            sm.Caste_id AS Caste,
-        //            sm.Blood_Group_id AS BloodGroup,
-        //            sm.Aadhar_Number AS AadharNo,
-        //            sm.PEN AS PEN,
-        //            sm.QR_code AS QRCode,
-        //            sm.IsPhysicallyChallenged AS PhysicallyChallenged,
-        //            sm.IsSports AS Sports,
-        //            sm.IsAided AS Aided,
-        //            sm.IsNCC AS NCC,
-        //            sm.IsNSS AS NSS,
-        //            sm.IsScout AS Scout,
-        //            sm.File_Name AS FileName,
-        //            sm.isActive AS IsActive,
-        //            sm.Institute_id AS InstituteID,
-        //            sm.Institute_house_id AS InstituteHouseID,
-        //            sm.StudentType_id AS StudentType,
-        //            sm.AcademicYearCode AS AcademicYearCode,
-
-        //            -- Student Other Info
-        //            soi.Student_Other_Info_id AS StudentOtherInfoID,
-        //            soi.email_id AS EmailID,
-        //            soi.Hall_Ticket_Number AS HallTicketNumber,
-        //            soi.Identification_Mark_1 AS IdentificationMark1,
-        //            soi.Identification_Mark_2 AS IdentificationMark2,
-        //            soi.Admission_Date AS AdmissionDate,
-        //            soi.Register_Date AS RegisterDate,
-        //            soi.Register_Number AS RegisterNumber,
-        //            soi.samagra_ID AS SamagraID,
-        //            soi.Place_of_Birth AS PlaceOfBirth,
-        //            soi.comments AS Comments,
-        //            soi.language_known AS LanguageKnown,
-        //            soi.Mobile_Number AS MobileNumber,
-
-        //            -- Father Info (Parent_Type_id = 1)
-        //            spi_f.First_Name AS FatherFirstName,
-        //            spi_f.Middle_Name AS FatherMiddleName,
-        //            spi_f.Last_Name AS FatherLastName,
-        //            spi_f.Mobile_Number AS FatherMobileNumber,
-        //            spi_f.Bank_Account_no AS FatherBankAccountNo,
-        //            spi_f.Bank_IFSC_Code AS FatherBankIFSCCode,
-        //            spi_f.Family_Ration_Card_Type AS FatherRationCardType,
-        //            spi_f.Family_Ration_Card_no AS FatherRationCardNo,
-        //            spi_f.Date_of_Birth AS FatherDateOfBirth,
-        //            spi_f.Aadhar_no AS FatherAadharNo,
-        //            spi_f.PAN_card_no AS FatherPANCardNo,
-        //            spi_f.Residential_Address AS FatherResidentialAddress,
-        //            spi_f.Designation AS FatherDesignation,
-        //            spi_f.Name_of_the_Employer AS FatherEmployerName,
-        //            spi_f.Office_no AS FatherOfficeNo,
-        //            spi_f.Email_id AS FatherEmailID,
-        //            spi_f.Annual_Income AS FatherAnnualIncome,
-        //            spi_f.Occupation AS FatherOccupation,
-
-        //            -- Mother Info (Parent_Type_id = 2)
-        //            spi_m.First_Name AS MotherFirstName,
-        //            spi_m.Middle_Name AS MotherMiddleName,
-        //            spi_m.Last_Name AS MotherLastName,
-        //            spi_m.Mobile_Number AS MotherMobileNumber,
-        //            spi_m.Bank_Account_no AS MotherBankAccountNo,
-        //            spi_m.Bank_IFSC_Code AS MotherBankIFSCCode,
-        //            spi_m.Family_Ration_Card_Type AS MotherRationCardType,
-        //            spi_m.Family_Ration_Card_no AS MotherRationCardNo,
-        //            spi_m.Date_of_Birth AS MotherDateOfBirth,
-        //            spi_m.Aadhar_no AS MotherAadharNo,
-        //            spi_m.PAN_card_no AS MotherPANCardNo,
-        //            spi_m.Residential_Address AS MotherResidentialAddress,
-        //            spi_m.Designation AS MotherDesignation,
-        //            spi_m.Name_of_the_Employer AS MotherEmployerName,
-        //            spi_m.Office_no AS MotherOfficeNo,
-        //            spi_m.Email_id AS MotherEmailID,
-        //            spi_m.Annual_Income AS MotherAnnualIncome,
-        //            spi_m.Occupation AS MotherOccupation,
-
-        //            -- Guardian Info (Parent_Type_id = 3)
-        //            spi_g.First_Name AS GuardianFirstName,
-        //            spi_g.Middle_Name AS GuardianMiddleName,
-        //            spi_g.Last_Name AS GuardianLastName,
-        //            spi_g.Mobile_Number AS GuardianMobileNumber,
-        //            spi_g.Bank_Account_no AS GuardianBankAccountNo,
-        //            spi_g.Bank_IFSC_Code AS GuardianBankIFSCCode,
-        //            spi_g.Family_Ration_Card_Type AS GuardianRationCardType,
-        //            spi_g.Family_Ration_Card_no AS GuardianRationCardNo,
-        //            spi_g.Date_of_Birth AS GuardianDateOfBirth,
-        //            spi_g.Aadhar_no AS GuardianAadharNo,
-        //            spi_g.PAN_card_no AS GuardianPANCardNo,
-        //            spi_g.Residential_Address AS GuardianResidentialAddress,
-        //            spi_g.Designation AS GuardianDesignation,
-        //            spi_g.Name_of_the_Employer AS GuardianEmployerName,
-        //            spi_g.Office_no AS GuardianOfficeNo,
-        //            spi_g.Email_id AS GuardianEmailID,
-        //            spi_g.Annual_Income AS GuardianAnnualIncome,
-        //            spi_g.Occupation AS GuardianOccupation,
-
-        //            -- Sibling Info
-        //            ss.Student_Siblings_id AS StudentSiblingsID,
-        //            ss.Student_id AS SiblingStudentID,
-        //            ss.Name AS SiblingName,
-        //            ss.Last_Name AS SiblingLastName,
-        //            ss.Admission_Number AS SiblingAdmissionNo,
-        //            ss.Date_of_Birth AS SiblingDateOfBirth,
-        //            ss.Institute_Name AS SiblingInstituteName,
-        //            ss.Aadhar_no AS SiblingAadharNo,
-        //            ss.Class AS SiblingClass,
-        //            ss.section AS SiblingSection,
-        //            ss.Middle_Name AS SiblingMiddleName,
-
-        //            -- Document Info
-        //            sd.Student_Documents_id AS StudentDocumentsID,
-        //            sd.Student_id AS DocumentStudentID,
-        //            sd.Document_Name AS DocumentName,
-        //            sd.File_Name AS DocumentFileName,
-        //            sd.File_Path AS DocumentFilePath,
-        //            CAST(sd.isDelete AS INT) AS IsDeletedDocument,
-
-        //            -- Previous School Info
-        //            sps.Student_Prev_School_id AS StudentPreviousSchoolID,
-        //            sps.student_id AS PrevSchoolStudentID,
-        //            sps.Previous_School_Name AS PreviousSchoolName,
-        //            sps.Previous_Board AS PreviousBoard,
-        //            sps.Previous_Medium AS PreviousMedium,
-        //            sps.Previous_School_Address AS PreviousSchoolAddress,
-        //            sps.previous_School_Course AS PreviousSchoolCourse,
-        //            sps.Previous_Class AS PreviousClass,
-        //            sps.TC_number AS TCNumber,
-        //            sps.TC_date AS TCDate,
-        //            CAST(sps.isTC_Submitted AS INT) AS TCSubmitted,
-
-        //            -- Parent Office Info
-        //            spoi.Student_Parent_Office_Info_id AS StudentParentOfficeInfoID,
-        //            spoi.Student_id AS ParentOfficeStudentID,
-        //            spoi.Parents_Type_id AS ParentTypeIDOffice,
-        //            spoi.Office_Building_no AS OfficeBuildingNo,
-        //            spoi.Street AS Street,
-        //            spoi.Area AS Area,
-        //            spoi.Pincode AS Pincode,
-        //            spoi.City AS City,
-        //            spoi.State AS State,
-
-        //            -- Health Info
-        //            sh.Student_Health_Info_id AS StudentHealthInfoID,
-        //            sh.Student_id AS HealthStudentID,
-        //            sh.Allergies AS Allergies,
-        //            sh.Medications AS Medications,
-        //            sh.Doctor_Name AS DoctorName,
-        //            sh.Doctor_Phone_no AS DoctorPhoneNo,
-        //            sh.height AS Height,
-        //            sh.weight AS Weight,
-        //            sh.Government_ID AS GovernmentHealthID,
-        //            sh.Chest AS Chest,
-        //            sh.Physical_Deformity AS PhysicalDeformity,
-        //            sh.History_Majorillness AS HistoryOfMajorIllness,
-        //            sh.History_Accident AS HistoryOfAccident,
-        //            sh.Vision AS Vision,
-        //            sh.Hearing AS Hearing,
-        //            sh.Speech AS Speech,
-        //            sh.Behavioral_Problem AS BehavioralProblem,
-        //            sh.Remarks_Weakness AS RemarksWeakness,
-        //            sh.Student_Name AS StudentNameHealth,
-        //            sh.Student_Age AS StudentAge,
-        //            sh.Admission_Status AS AdmissionStatus
-        //        FROM tbl_StudentMaster sm
-        //        LEFT JOIN tbl_StudentOtherInfo soi ON sm.student_id = soi.student_id
-        //        LEFT JOIN tbl_StudentParentsInfo spi_f ON sm.student_id = spi_f.Student_id AND spi_f.Parent_Type_id = 1
-        //        LEFT JOIN tbl_StudentParentsInfo spi_m ON sm.student_id = spi_m.Student_id AND spi_m.Parent_Type_id = 2
-        //        LEFT JOIN tbl_StudentParentsInfo spi_g ON sm.student_id = spi_g.Student_id AND spi_g.Parent_Type_id = 3
-        //        LEFT JOIN tbl_StudentSiblings ss ON sm.student_id = ss.Student_id
-        //        LEFT JOIN tbl_StudentDocuments sd ON sm.student_id = sd.Student_id
-        //        LEFT JOIN tbl_StudentPreviousSchool sps ON sm.student_id = sps.student_id
-        //        LEFT JOIN tbl_StudentParentsOfficeInfo spoi ON sm.student_id = spoi.Student_id
-        //        LEFT JOIN tbl_StudentHealthInfo sh ON sm.student_id = sh.Student_id
-        //        WHERE sm.Institute_id = @InstituteID
-        //          AND sm.AcademicYearCode = @AcademicYearCode
-        //          AND sm.class_id = @ClassID
-        //          AND sm.section_id = @SectionID
-        //          AND sm.StudentType_id = @StudentTypeID";
-
-        //            // 4. Build the outer query that uses the dynamic column list.
-        //            string sql = $@"
-        //        SELECT {columnList}
-        //        FROM (
-        //            {innerQuery}
-        //        ) AS db";
-
-        //        // 5. Prepare parameters and execute the dynamic query. 
-        //        var parameters = new DynamicParameters();
-        //        parameters.Add("@InstituteID", request.InstituteID);
-        //        parameters.Add("@AcademicYearCode", request.AcademicYearCode);
-        //        parameters.Add("@ClassID", request.ClassID);
-        //        parameters.Add("@SectionID", request.SectionID);
-        //        parameters.Add("@StudentTypeID", request.StudentTypeID);
-
-        //        var result = await _dbConnection.QueryAsync<GetStudentInformationResponse>(sql, parameters);
-
-        //        return new ServiceResponse<IEnumerable<GetStudentInformationResponse>>(
-        //            true,
-        //            "Student Information Retrieved Successfully",
-        //            result,
-        //            200,
-        //            totalCount
-        //        );
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return new ServiceResponse<IEnumerable<GetStudentInformationResponse>>(
-        //            false,
-        //            ex.Message,
-        //            null,
-        //            500
-        //        );
-        //    }
-        //}
-
+         
         public async Task<ServiceResponse<string>> SetStudentStatusActivity(SetStudentStatusActivityRequest request)
         {
             try
@@ -1188,7 +948,7 @@ namespace StudentManagement_API.Repository.Implementations
             return result.ToList();
         }
 
-
+        
         public async Task<ServiceResponse<string>> InsertStudents(int instituteID, string AcademicYearCode, string IPAddress, int UserID, List<StudentInformationImportRequest> students)
         {
             // Ensure the connection is open before beginning the transaction.
@@ -1262,7 +1022,36 @@ namespace StudentManagement_API.Repository.Implementations
                             student.StudentDetails.PEN,
                             InstituteID = instituteID
                         }, transaction);
-                         
+
+
+
+
+                        //---------------- Add Information in tblStudentStandards
+
+ 
+                        string insertStudentStandardsQuery = @"
+                            INSERT INTO tblStudentStandards
+                                (StudentID, ClassID, SectionID, AcademicYearCode, PromotionDate, InstituteID)
+                            VALUES
+                                (@StudentID, @ClassID, @SectionID, @AcademicYearCode, @PromotionDate, @InstituteID);
+                        ";
+
+                        await _dbConnection.ExecuteAsync(
+                            insertStudentStandardsQuery,
+                            new
+                            {
+                                StudentID = studentId,
+                                ClassID = student.StudentDetails.ClassID,
+                                SectionID = student.StudentDetails.SectionID,
+                                AcademicYearCode = student.StudentDetails.AcademicYear,
+                                PromotionDate = (DateTime?)null, // Set PromotionDate here if you have a value; otherwise, null
+                                InstituteID = instituteID
+                            },
+                            transaction
+                        );
+
+                        //---------------- Add Information in tblStudentStandards
+
 
                         // 2. Insert "other information" into tbl_StudentOtherInfo.
                         string insertOtherInfoQuery = @"
