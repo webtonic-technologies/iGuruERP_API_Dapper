@@ -651,162 +651,166 @@ namespace StudentManagement_API.Repository.Implementations
         }
 
 
+
         public async Task<ServiceResponse<IEnumerable<GetStudentInformationResponse>>> GetStudentInformation(GetStudentInformationRequest request)
         {
             try
             {
-                // 1. Count total records matching the filter criteria
+                // 1. Count total records matching the filter criteria from tblStudentStandards joined with tbl_StudentMaster.
                 string countSql = @"
-                SELECT COUNT(*) 
-                FROM tbl_StudentMaster 
-                WHERE Institute_id = @InstituteID 
-                  AND AcademicYearCode = @AcademicYearCode 
-                  AND class_id = @ClassID 
-                  AND section_id = @SectionID 
-                  AND StudentType_id = @StudentTypeID";
+            SELECT COUNT(*) 
+            FROM tblStudentStandards ts
+            INNER JOIN tbl_StudentMaster sm ON ts.StudentID = sm.student_id
+            WHERE ts.InstituteID = @InstituteID 
+              AND ts.AcademicYearCode = @AcademicYearCode 
+              AND ts.ClassID = @ClassID 
+              AND ts.SectionID = @SectionID";
 
                 int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql, new
                 {
                     request.InstituteID,
                     request.AcademicYearCode,
                     request.ClassID,
-                    request.SectionID,
-                    request.StudentTypeID
+                    request.SectionID
                 });
 
                 // 2. Build the dynamic column list from tblStudentColumnSetting.
                 string columnListSql = @"
-                SELECT STRING_AGG(SCS.DatabaseFieldName, ', ')
-                FROM tblStudentColumnSetting SCS
-                INNER JOIN tblStudentSettingMapping SSM 
-                    ON SCS.StudentColumnID = SSM.StudentColumnID 
-                    AND SSM.InstituteID = @InstituteID
-                WHERE SCS.IsActive = 1";
+            SELECT STRING_AGG(SCS.DatabaseFieldName, ', ')
+            FROM tblStudentColumnSetting SCS
+            INNER JOIN tblStudentSettingMapping SSM 
+                ON SCS.StudentColumnID = SSM.StudentColumnID 
+                AND SSM.InstituteID = @InstituteID
+            WHERE SCS.IsActive = 1";
                 string columnList = await _dbConnection.ExecuteScalarAsync<string>(columnListSql, new { request.InstituteID });
 
-                // 3. Build the dynamic WHERE clause starting with the required filters.
-                    string whereClause = @"
-                WHERE sm.Institute_id = @InstituteID
-                  AND sm.AcademicYearCode = @AcademicYearCode
-                  AND sm.class_id = @ClassID
-                  AND sm.section_id = @SectionID
-                  AND sm.StudentType_id = @StudentTypeID";
+                // 3. Build the dynamic WHERE clause using tblStudentStandards (ts) as the filter table.
+                string whereClause = @"
+            WHERE ts.InstituteID = @InstituteID
+              AND ts.AcademicYearCode = @AcademicYearCode
+              AND ts.ClassID = @ClassID
+              AND ts.SectionID = @SectionID";
 
                 // 4. Add the search condition if the Search parameter is provided.
                 if (!string.IsNullOrWhiteSpace(request.Search))
                 {
                     whereClause += @"
-                AND (
-                    (sm.First_Name + ' ' + sm.Middle_Name + ' ' + sm.Last_Name) LIKE '%' + @Search + '%' OR 
-                    sm.Admission_Number LIKE '%' + @Search + '%' OR 
-                    sm.Roll_Number LIKE '%' + @Search + '%' OR 
-                    spi_f.Mobile_Number LIKE '%' + @Search + '%'
-                )";
+              AND (
+                  (sm.First_Name + ' ' + sm.Middle_Name + ' ' + sm.Last_Name) LIKE '%' + @Search + '%' OR 
+                  sm.Admission_Number LIKE '%' + @Search + '%' OR 
+                  sm.Roll_Number LIKE '%' + @Search + '%' OR 
+                  soi.Mobile_Number LIKE '%' + @Search + '%'
+              )";
                 }
 
-                // 5. Build the inner query ensuring every column in the dynamic list is present.
+                // 5. Build the inner query joining tblStudentStandards with tbl_StudentMaster and related tables.
+                //    Note that we select ClassID, SectionID, and AcademicYearCode from tblStudentStandards (ts)
+                //    so that the filtering reflects the desired standards rather than the student master record.
                 string innerQuery = $@"
-                SELECT
-                    -- Student Master
-                    sm.student_id AS StudentID,
-                    sm.First_Name AS FirstName,
-                    sm.Middle_Name AS MiddleName,
-                    sm.Last_Name AS LastName,
-                    sm.gender_id AS Gender,
-                    sm.class_id AS Class,
-                    sm.section_id AS Section,
-                    sm.Admission_Number AS AdmissionNo,
-                    sm.Roll_Number AS RollNumber,
-                    sm.Date_of_Joining AS DateOfJoining,
-                    sm.Nationality_id AS Nationality,
-                    sm.Religion_id AS Religion,
-                    sm.Date_of_Birth AS DateOfBirth,
-                    sm.Mother_Tongue_id AS MotherTongue,
-                    sm.Caste_id AS Caste,
-                    sm.Blood_Group_id AS BloodGroup,
-                    sm.Aadhar_Number AS AadharNo,
-                    sm.PEN AS PEN,
-                    sm.QR_code AS QRCode,
-                    sm.IsPhysicallyChallenged AS PhysicallyChallenged,
-                    sm.IsSports AS Sports,
-                    sm.IsAided AS Aided,
-                    sm.IsNCC AS NCC,
-                    sm.IsNSS AS NSS,
-                    sm.IsScout AS Scout,
-                    sm.File_Name AS FileName,
-                    sm.isActive AS IsActive,
-                    sm.Institute_id AS InstituteID,
-                    sm.Institute_house_id AS InstituteHouseID,
-                    sm.StudentType_id AS StudentType,
-                    sm.AcademicYearCode AS AcademicYearCode,
+            SELECT
+                -- Student Master Columns
+                sm.student_id AS StudentID,
+                sm.First_Name AS FirstName,
+                sm.Middle_Name AS MiddleName,
+                sm.Last_Name AS LastName,
+                sm.gender_id AS Gender,
+                -- Use the class and section from tblStudentStandards (ts) instead of tbl_StudentMaster
+                ts.ClassID,
+                ts.SectionID,
+                sm.Admission_Number AS AdmissionNo,
+                sm.Roll_Number AS RollNumber,
+                sm.Date_of_Joining AS DateOfJoining,
+                sm.Nationality_id AS Nationality,
+                sm.Religion_id AS Religion,
+                sm.Date_of_Birth AS DateOfBirth,
+                sm.Mother_Tongue_id AS MotherTongue,
+                sm.Caste_id AS Caste,
+                sm.Blood_Group_id AS BloodGroup,
+                sm.Aadhar_Number AS AadharNo,
+                sm.PEN AS PEN,
+                sm.QR_code AS QRCode,
+                sm.IsPhysicallyChallenged AS PhysicallyChallenged,
+                sm.IsSports AS Sports,
+                sm.IsAided AS Aided,
+                sm.IsNCC AS NCC,
+                sm.IsNSS AS NSS,
+                sm.IsScout AS Scout,
+                sm.File_Name AS FileName,
+                sm.isActive AS IsActive,
+                sm.Institute_id AS InstituteID,
+                sm.Institute_house_id AS InstituteHouseID,
+                sm.StudentType_id AS StudentType,
+                -- Use AcademicYearCode from tblStudentStandards (ts)
+                ts.AcademicYearCode,
     
-                    -- Student Other Info
-                    soi.Student_Other_Info_id AS StudentOtherInfoID,
-                    soi.email_id AS EmailID,
-                    soi.Hall_Ticket_Number AS HallTicketNumber,
-                    soi.Identification_Mark_1 AS IdentificationMark1,
-                    soi.Identification_Mark_2 AS IdentificationMark2,
-                    soi.Admission_Date AS AdmissionDate,
-                    soi.Register_Date AS RegisterDate,
-                    soi.Register_Number AS RegisterNumber,
-                    soi.samagra_ID AS SamagraID,
-                    soi.Place_of_Birth AS PlaceOfBirth,
-                    soi.comments AS Comments,
-                    soi.language_known AS LanguageKnown,
-                    soi.Mobile_Number AS MobileNumber,
+                -- Student Other Info
+                soi.Student_Other_Info_id AS StudentOtherInfoID,
+                soi.email_id AS EmailID,
+                soi.Hall_Ticket_Number AS HallTicketNumber,
+                soi.Identification_Mark_1 AS IdentificationMark1,
+                soi.Identification_Mark_2 AS IdentificationMark2,
+                soi.Admission_Date AS AdmissionDate,
+                soi.Register_Date AS RegisterDate,
+                soi.Register_Number AS RegisterNumber,
+                soi.samagra_ID AS SamagraID,
+                soi.Place_of_Birth AS PlaceOfBirth,
+                soi.comments AS Comments,
+                soi.language_known AS LanguageKnown,
+                soi.Mobile_Number AS MobileNumber,
     
-                    -- Father Info (Parent_Type_id = 1)
-                    spi_f.First_Name AS FatherFirstName,
-                    spi_f.Middle_Name AS FatherMiddleName,
-                    spi_f.Last_Name AS FatherLastName,
-                    spi_f.Mobile_Number AS FatherMobileNumber,
-                    spi_f.Bank_Account_no AS FatherBankAccountNo,
-                    spi_f.Bank_IFSC_Code AS FatherBankIFSCCode,
-                    spi_f.Family_Ration_Card_Type AS FatherRationCardType,
-                    spi_f.Family_Ration_Card_no AS FatherRationCardNo,
-                    spi_f.Date_of_Birth AS FatherDateOfBirth,
-                    spi_f.Aadhar_no AS FatherAadharNo,
-                    spi_f.PAN_card_no AS FatherPANCardNo,
-                    spi_f.Residential_Address AS FatherResidentialAddress,
-                    spi_f.Designation AS FatherDesignation,
-                    spi_f.Name_of_the_Employer AS FatherEmployerName,
-                    spi_f.Office_no AS FatherOfficeNo,
-                    spi_f.Email_id AS FatherEmailID,
-                    spi_f.Annual_Income AS FatherAnnualIncome,
-                    spi_f.Occupation AS FatherOccupation,
+                -- Father Info (Parent_Type_id = 1)
+                spi_f.First_Name AS FatherFirstName,
+                spi_f.Middle_Name AS FatherMiddleName,
+                spi_f.Last_Name AS FatherLastName,
+                spi_f.Mobile_Number AS FatherMobileNumber,
+                spi_f.Bank_Account_no AS FatherBankAccountNo,
+                spi_f.Bank_IFSC_Code AS FatherBankIFSCCode,
+                spi_f.Family_Ration_Card_Type AS FatherRationCardType,
+                spi_f.Family_Ration_Card_no AS FatherRationCardNo,
+                spi_f.Date_of_Birth AS FatherDateOfBirth,
+                spi_f.Aadhar_no AS FatherAadharNo,
+                spi_f.PAN_card_no AS FatherPANCardNo,
+                spi_f.Residential_Address AS FatherResidentialAddress,
+                spi_f.Designation AS FatherDesignation,
+                spi_f.Name_of_the_Employer AS FatherEmployerName,
+                spi_f.Office_no AS FatherOfficeNo,
+                spi_f.Email_id AS FatherEmailID,
+                spi_f.Annual_Income AS FatherAnnualIncome,
+                spi_f.Occupation AS FatherOccupation,
     
-                    -- Additional columns from other joins as needed...
+                -- Additional columns from other joins as needed...
     
-                    -- Sibling Info (example)
-                    ss.Student_Siblings_id AS StudentSiblingsID,
-                    ss.Student_id AS SiblingStudentID,
-                    ss.Name AS SiblingName,
-                    ss.Last_Name AS SiblingLastName,
-                    ss.Admission_Number AS SiblingAdmissionNo,
-                    ss.Date_of_Birth AS SiblingDateOfBirth,
-                    ss.Institute_Name AS SiblingInstituteName,
-                    ss.Aadhar_no AS SiblingAadharNo,
-                    ss.Class AS SiblingClass,
-                    ss.section AS SiblingSection,
-                    ss.Middle_Name AS SiblingMiddleName
-                FROM tbl_StudentMaster sm
-                LEFT JOIN tbl_StudentOtherInfo soi ON sm.student_id = soi.student_id
-                LEFT JOIN tbl_StudentParentsInfo spi_f ON sm.student_id = spi_f.Student_id AND spi_f.Parent_Type_id = 1
-                LEFT JOIN tbl_StudentParentsInfo spi_m ON sm.student_id = spi_m.Student_id AND spi_m.Parent_Type_id = 2
-                LEFT JOIN tbl_StudentParentsInfo spi_g ON sm.student_id = spi_g.Student_id AND spi_g.Parent_Type_id = 3
-                LEFT JOIN tbl_StudentSiblings ss ON sm.student_id = ss.Student_id
-                LEFT JOIN tbl_StudentDocuments sd ON sm.student_id = sd.Student_id
-                LEFT JOIN tbl_StudentPreviousSchool sps ON sm.student_id = sps.student_id
-                LEFT JOIN tbl_StudentParentsOfficeInfo spoi ON sm.student_id = spoi.Student_id
-                LEFT JOIN tbl_StudentHealthInfo sh ON sm.student_id = sh.Student_id
-                {whereClause}";
+                -- Sibling Info (example)
+                ss.Student_Siblings_id AS StudentSiblingsID,
+                ss.Student_id AS SiblingStudentID,
+                ss.Name AS SiblingName,
+                ss.Last_Name AS SiblingLastName,
+                ss.Admission_Number AS SiblingAdmissionNo,
+                ss.Date_of_Birth AS SiblingDateOfBirth,
+                ss.Institute_Name AS SiblingInstituteName,
+                ss.Aadhar_no AS SiblingAadharNo,
+                ss.Class AS SiblingClass,
+                ss.section AS SiblingSection,
+                ss.Middle_Name AS SiblingMiddleName
+            FROM tblStudentStandards ts
+            INNER JOIN tbl_StudentMaster sm ON ts.StudentID = sm.student_id
+            LEFT JOIN tbl_StudentOtherInfo soi ON sm.student_id = soi.student_id
+            LEFT JOIN tbl_StudentParentsInfo spi_f ON sm.student_id = spi_f.Student_id AND spi_f.Parent_Type_id = 1
+            LEFT JOIN tbl_StudentParentsInfo spi_m ON sm.student_id = spi_m.Student_id AND spi_m.Parent_Type_id = 2
+            LEFT JOIN tbl_StudentParentsInfo spi_g ON sm.student_id = spi_g.Student_id AND spi_g.Parent_Type_id = 3
+            LEFT JOIN tbl_StudentSiblings ss ON sm.student_id = ss.Student_id
+            LEFT JOIN tbl_StudentDocuments sd ON sm.student_id = sd.Student_id
+            LEFT JOIN tbl_StudentPreviousSchool sps ON sm.student_id = sps.student_id
+            LEFT JOIN tbl_StudentParentsOfficeInfo spoi ON sm.student_id = spoi.Student_id
+            LEFT JOIN tbl_StudentHealthInfo sh ON sm.student_id = sh.Student_id
+            {whereClause}";
 
                 // 6. Build the outer query that uses the dynamic column list.
                 string sql = $@"
-                SELECT {columnList}
-                FROM (
-                    {innerQuery}
-                ) AS db";
+            SELECT {columnList}
+            FROM (
+                {innerQuery}
+            ) AS db";
 
                 // 7. Prepare parameters for the query.
                 var parameters = new DynamicParameters();
@@ -814,8 +818,10 @@ namespace StudentManagement_API.Repository.Implementations
                 parameters.Add("@AcademicYearCode", request.AcademicYearCode);
                 parameters.Add("@ClassID", request.ClassID);
                 parameters.Add("@SectionID", request.SectionID);
-                parameters.Add("@StudentTypeID", request.StudentTypeID);
-                parameters.Add("@Search", request.Search);
+                if (!string.IsNullOrWhiteSpace(request.Search))
+                {
+                    parameters.Add("@Search", request.Search);
+                }
 
                 // 8. Execute the query and return the result.
                 var result = await _dbConnection.QueryAsync<GetStudentInformationResponse>(sql, parameters);
@@ -838,7 +844,196 @@ namespace StudentManagement_API.Repository.Implementations
                 );
             }
         }
-         
+
+
+        //public async Task<ServiceResponse<IEnumerable<GetStudentInformationResponse>>> GetStudentInformation(GetStudentInformationRequest request)
+        //{
+        //    try
+        //    {
+        //        // 1. Count total records matching the filter criteria
+        //        string countSql = @"
+        //        SELECT COUNT(*) 
+        //        FROM tbl_StudentMaster 
+        //        WHERE Institute_id = @InstituteID 
+        //          AND AcademicYearCode = @AcademicYearCode 
+        //          AND class_id = @ClassID 
+        //          AND section_id = @SectionID 
+        //          AND StudentType_id = @StudentTypeID";
+
+        //        int totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql, new
+        //        {
+        //            request.InstituteID,
+        //            request.AcademicYearCode,
+        //            request.ClassID,
+        //            request.SectionID,
+        //            request.StudentTypeID
+        //        });
+
+        //        // 2. Build the dynamic column list from tblStudentColumnSetting.
+        //        string columnListSql = @"
+        //        SELECT STRING_AGG(SCS.DatabaseFieldName, ', ')
+        //        FROM tblStudentColumnSetting SCS
+        //        INNER JOIN tblStudentSettingMapping SSM 
+        //            ON SCS.StudentColumnID = SSM.StudentColumnID 
+        //            AND SSM.InstituteID = @InstituteID
+        //        WHERE SCS.IsActive = 1";
+        //        string columnList = await _dbConnection.ExecuteScalarAsync<string>(columnListSql, new { request.InstituteID });
+
+        //        // 3. Build the dynamic WHERE clause starting with the required filters.
+        //        string whereClause = @"
+        //        WHERE sm.Institute_id = @InstituteID
+        //          AND sm.AcademicYearCode = @AcademicYearCode
+        //          AND sm.class_id = @ClassID
+        //          AND sm.section_id = @SectionID
+        //          AND sm.StudentType_id = @StudentTypeID";
+
+        //        // 4. Add the search condition if the Search parameter is provided.
+        //        if (!string.IsNullOrWhiteSpace(request.Search))
+        //        {
+        //            whereClause += @"
+        //        AND (
+        //            (sm.First_Name + ' ' + sm.Middle_Name + ' ' + sm.Last_Name) LIKE '%' + @Search + '%' OR 
+        //            sm.Admission_Number LIKE '%' + @Search + '%' OR 
+        //            sm.Roll_Number LIKE '%' + @Search + '%' OR 
+        //            spi_f.Mobile_Number LIKE '%' + @Search + '%'
+        //        )";
+        //        }
+
+        //        // 5. Build the inner query ensuring every column in the dynamic list is present.
+        //        string innerQuery = $@"
+        //        SELECT
+        //            -- Student Master
+        //            sm.student_id AS StudentID,
+        //            sm.First_Name AS FirstName,
+        //            sm.Middle_Name AS MiddleName,
+        //            sm.Last_Name AS LastName,
+        //            sm.gender_id AS Gender,
+        //            sm.class_id AS Class,
+        //            sm.section_id AS Section,
+        //            sm.Admission_Number AS AdmissionNo,
+        //            sm.Roll_Number AS RollNumber,
+        //            sm.Date_of_Joining AS DateOfJoining,
+        //            sm.Nationality_id AS Nationality,
+        //            sm.Religion_id AS Religion,
+        //            sm.Date_of_Birth AS DateOfBirth,
+        //            sm.Mother_Tongue_id AS MotherTongue,
+        //            sm.Caste_id AS Caste,
+        //            sm.Blood_Group_id AS BloodGroup,
+        //            sm.Aadhar_Number AS AadharNo,
+        //            sm.PEN AS PEN,
+        //            sm.QR_code AS QRCode,
+        //            sm.IsPhysicallyChallenged AS PhysicallyChallenged,
+        //            sm.IsSports AS Sports,
+        //            sm.IsAided AS Aided,
+        //            sm.IsNCC AS NCC,
+        //            sm.IsNSS AS NSS,
+        //            sm.IsScout AS Scout,
+        //            sm.File_Name AS FileName,
+        //            sm.isActive AS IsActive,
+        //            sm.Institute_id AS InstituteID,
+        //            sm.Institute_house_id AS InstituteHouseID,
+        //            sm.StudentType_id AS StudentType,
+        //            sm.AcademicYearCode AS AcademicYearCode,
+
+        //            -- Student Other Info
+        //            soi.Student_Other_Info_id AS StudentOtherInfoID,
+        //            soi.email_id AS EmailID,
+        //            soi.Hall_Ticket_Number AS HallTicketNumber,
+        //            soi.Identification_Mark_1 AS IdentificationMark1,
+        //            soi.Identification_Mark_2 AS IdentificationMark2,
+        //            soi.Admission_Date AS AdmissionDate,
+        //            soi.Register_Date AS RegisterDate,
+        //            soi.Register_Number AS RegisterNumber,
+        //            soi.samagra_ID AS SamagraID,
+        //            soi.Place_of_Birth AS PlaceOfBirth,
+        //            soi.comments AS Comments,
+        //            soi.language_known AS LanguageKnown,
+        //            soi.Mobile_Number AS MobileNumber,
+
+        //            -- Father Info (Parent_Type_id = 1)
+        //            spi_f.First_Name AS FatherFirstName,
+        //            spi_f.Middle_Name AS FatherMiddleName,
+        //            spi_f.Last_Name AS FatherLastName,
+        //            spi_f.Mobile_Number AS FatherMobileNumber,
+        //            spi_f.Bank_Account_no AS FatherBankAccountNo,
+        //            spi_f.Bank_IFSC_Code AS FatherBankIFSCCode,
+        //            spi_f.Family_Ration_Card_Type AS FatherRationCardType,
+        //            spi_f.Family_Ration_Card_no AS FatherRationCardNo,
+        //            spi_f.Date_of_Birth AS FatherDateOfBirth,
+        //            spi_f.Aadhar_no AS FatherAadharNo,
+        //            spi_f.PAN_card_no AS FatherPANCardNo,
+        //            spi_f.Residential_Address AS FatherResidentialAddress,
+        //            spi_f.Designation AS FatherDesignation,
+        //            spi_f.Name_of_the_Employer AS FatherEmployerName,
+        //            spi_f.Office_no AS FatherOfficeNo,
+        //            spi_f.Email_id AS FatherEmailID,
+        //            spi_f.Annual_Income AS FatherAnnualIncome,
+        //            spi_f.Occupation AS FatherOccupation,
+
+        //            -- Additional columns from other joins as needed...
+
+        //            -- Sibling Info (example)
+        //            ss.Student_Siblings_id AS StudentSiblingsID,
+        //            ss.Student_id AS SiblingStudentID,
+        //            ss.Name AS SiblingName,
+        //            ss.Last_Name AS SiblingLastName,
+        //            ss.Admission_Number AS SiblingAdmissionNo,
+        //            ss.Date_of_Birth AS SiblingDateOfBirth,
+        //            ss.Institute_Name AS SiblingInstituteName,
+        //            ss.Aadhar_no AS SiblingAadharNo,
+        //            ss.Class AS SiblingClass,
+        //            ss.section AS SiblingSection,
+        //            ss.Middle_Name AS SiblingMiddleName
+        //        FROM tbl_StudentMaster sm
+        //        LEFT JOIN tbl_StudentOtherInfo soi ON sm.student_id = soi.student_id
+        //        LEFT JOIN tbl_StudentParentsInfo spi_f ON sm.student_id = spi_f.Student_id AND spi_f.Parent_Type_id = 1
+        //        LEFT JOIN tbl_StudentParentsInfo spi_m ON sm.student_id = spi_m.Student_id AND spi_m.Parent_Type_id = 2
+        //        LEFT JOIN tbl_StudentParentsInfo spi_g ON sm.student_id = spi_g.Student_id AND spi_g.Parent_Type_id = 3
+        //        LEFT JOIN tbl_StudentSiblings ss ON sm.student_id = ss.Student_id
+        //        LEFT JOIN tbl_StudentDocuments sd ON sm.student_id = sd.Student_id
+        //        LEFT JOIN tbl_StudentPreviousSchool sps ON sm.student_id = sps.student_id
+        //        LEFT JOIN tbl_StudentParentsOfficeInfo spoi ON sm.student_id = spoi.Student_id
+        //        LEFT JOIN tbl_StudentHealthInfo sh ON sm.student_id = sh.Student_id
+        //        {whereClause}";
+
+        //        // 6. Build the outer query that uses the dynamic column list.
+        //        string sql = $@"
+        //        SELECT {columnList}
+        //        FROM (
+        //            {innerQuery}
+        //        ) AS db";
+
+        //        // 7. Prepare parameters for the query.
+        //        var parameters = new DynamicParameters();
+        //        parameters.Add("@InstituteID", request.InstituteID);
+        //        parameters.Add("@AcademicYearCode", request.AcademicYearCode);
+        //        parameters.Add("@ClassID", request.ClassID);
+        //        parameters.Add("@SectionID", request.SectionID);
+        //        parameters.Add("@StudentTypeID", request.StudentTypeID);
+        //        parameters.Add("@Search", request.Search);
+
+        //        // 8. Execute the query and return the result.
+        //        var result = await _dbConnection.QueryAsync<GetStudentInformationResponse>(sql, parameters);
+
+        //        return new ServiceResponse<IEnumerable<GetStudentInformationResponse>>(
+        //            true,
+        //            "Student Information Retrieved Successfully",
+        //            result,
+        //            200,
+        //            totalCount
+        //        );
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return new ServiceResponse<IEnumerable<GetStudentInformationResponse>>(
+        //            false,
+        //            ex.Message,
+        //            null,
+        //            500
+        //        );
+        //    }
+        //}
+
         public async Task<ServiceResponse<string>> SetStudentStatusActivity(SetStudentStatusActivityRequest request)
         {
             try
@@ -1451,155 +1646,159 @@ namespace StudentManagement_API.Repository.Implementations
         }
 
 
-
-        
-        //public async Task<List<GetStudentInformationResponse>> GetStudentInformationExport( GetStudentInformationExportRequest request)
-        public async Task<List<GetStudentInformationResponse>> GetStudentInformationExport(int instituteID, string AcademicYearCode, string IPAddress, int UserID, GetStudentInformationExportRequest request)
+        public async Task<List<GetStudentInformationResponse>> GetStudentInformationExport(
+    int instituteID,
+    string AcademicYearCode,
+    string IPAddress,
+    int UserID,
+    GetStudentInformationExportRequest request)
         {
-            // Build the dynamic WHERE clause
+            // Build the dynamic WHERE clause using tblStudentStandards (ts) for AcademicYearCode, ClassID, and SectionID
             string whereClause = @"
-                WHERE sm.Institute_id = @InstituteID
-                  AND sm.AcademicYearCode = @AcademicYearCode
-                  AND sm.class_id = @ClassID
-                  AND sm.section_id = @SectionID
-                  AND sm.StudentType_id = @StudentTypeID";
+        WHERE ts.InstituteID = @InstituteID
+          AND ts.AcademicYearCode = @AcademicYearCode
+          AND ts.ClassID = @ClassID
+          AND ts.SectionID = @SectionID
+          AND sm.StudentType_id = @StudentTypeID";
 
             if (!string.IsNullOrWhiteSpace(request.Search))
             {
                 whereClause += @"
-                  AND (
-                      (sm.First_Name + ' ' + sm.Middle_Name + ' ' + sm.Last_Name) LIKE '%' + @Search + '%' OR 
-                      sm.Admission_Number LIKE '%' + @Search + '%' OR 
-                      sm.Roll_Number LIKE '%' + @Search + '%' OR 
-                      spi_f.Mobile_Number LIKE '%' + @Search + '%'
-                  )";
+          AND (
+              (sm.First_Name + ' ' + sm.Middle_Name + ' ' + sm.Last_Name) LIKE '%' + @Search + '%' OR 
+              sm.Admission_Number LIKE '%' + @Search + '%' OR 
+              sm.Roll_Number LIKE '%' + @Search + '%' OR 
+              soi.Mobile_Number LIKE '%' + @Search + '%'
+          )";
             }
 
-            // Get the dynamic column list
+            // Get the dynamic column list from the settings table
             string columnListSql = @"
-                SELECT STRING_AGG(SCS.DatabaseFieldName, ', ')
-                FROM tblStudentColumnSetting SCS
-                INNER JOIN tblStudentSettingMapping SSM 
-                    ON SCS.StudentColumnID = SSM.StudentColumnID 
-                    AND SSM.InstituteID = @InstituteID
-                WHERE SCS.IsActive = 1";
-            string columnList = await _dbConnection.ExecuteScalarAsync<string>(columnListSql, new { request.InstituteID });
+        SELECT STRING_AGG(SCS.DatabaseFieldName, ', ')
+        FROM tblStudentColumnSetting SCS
+        INNER JOIN tblStudentSettingMapping SSM 
+            ON SCS.StudentColumnID = SSM.StudentColumnID 
+            AND SSM.InstituteID = @InstituteID
+        WHERE SCS.IsActive = 1";
+            string columnList = await _dbConnection.ExecuteScalarAsync<string>(columnListSql, new { InstituteID = instituteID });
 
-            // Build the inner query (include required joins and select columns)
+            // Build the inner query joining tblStudentStandards with tbl_StudentMaster and related tables.
+            // We use the standards table columns for Class, Section and AcademicYearCode.
             string innerQuery = $@"
-                SELECT
-                    -- Student Master
-                    sm.student_id AS StudentID,
-                    sm.First_Name AS FirstName,
-                    sm.Middle_Name AS MiddleName,
-                    sm.Last_Name AS LastName,
-                    sm.gender_id AS Gender,
-                    sm.class_id AS Class,
-                    sm.section_id AS Section,
-                    sm.Admission_Number AS AdmissionNo,
-                    sm.Roll_Number AS RollNumber,
-                    sm.Date_of_Joining AS DateOfJoining,
-                    sm.Nationality_id AS Nationality,
-                    sm.Religion_id AS Religion,
-                    sm.Date_of_Birth AS DateOfBirth,
-                    sm.Mother_Tongue_id AS MotherTongue,
-                    sm.Caste_id AS Caste,
-                    sm.Blood_Group_id AS BloodGroup,
-                    sm.Aadhar_Number AS AadharNo,
-                    sm.PEN AS PEN,
-                    sm.QR_code AS QRCode,
-                    sm.IsPhysicallyChallenged AS PhysicallyChallenged,
-                    sm.IsSports AS Sports,
-                    sm.IsAided AS Aided,
-                    sm.IsNCC AS NCC,
-                    sm.IsNSS AS NSS,
-                    sm.IsScout AS Scout,
-                    sm.File_Name AS FileName,
-                    sm.isActive AS IsActive,
-                    sm.Institute_id AS InstituteID,
-                    sm.Institute_house_id AS InstituteHouseID,
-                    sm.StudentType_id AS StudentType,
-                    sm.AcademicYearCode AS AcademicYearCode,
-    
-                    -- Student Other Info
-                    soi.Student_Other_Info_id AS StudentOtherInfoID,
-                    soi.email_id AS EmailID,
-                    soi.Hall_Ticket_Number AS HallTicketNumber,
-                    soi.Identification_Mark_1 AS IdentificationMark1,
-                    soi.Identification_Mark_2 AS IdentificationMark2,
-                    soi.Admission_Date AS AdmissionDate,
-                    soi.Register_Date AS RegisterDate,
-                    soi.Register_Number AS RegisterNumber,
-                    soi.samagra_ID AS SamagraID,
-                    soi.Place_of_Birth AS PlaceOfBirth,
-                    soi.comments AS Comments,
-                    soi.language_known AS LanguageKnown,
-                    soi.Mobile_Number AS MobileNumber,
-    
-                    -- Father Info (Parent_Type_id = 1)
-                    spi_f.First_Name AS FatherFirstName,
-                    spi_f.Middle_Name AS FatherMiddleName,
-                    spi_f.Last_Name AS FatherLastName,
-                    spi_f.Mobile_Number AS FatherMobileNumber,
-                    spi_f.Bank_Account_no AS FatherBankAccountNo,
-                    spi_f.Bank_IFSC_Code AS FatherBankIFSCCode,
-                    spi_f.Family_Ration_Card_Type AS FatherRationCardType,
-                    spi_f.Family_Ration_Card_no AS FatherRationCardNo,
-                    spi_f.Date_of_Birth AS FatherDateOfBirth,
-                    spi_f.Aadhar_no AS FatherAadharNo,
-                    spi_f.PAN_card_no AS FatherPANCardNo,
-                    spi_f.Residential_Address AS FatherResidentialAddress,
-                    spi_f.Designation AS FatherDesignation,
-                    spi_f.Name_of_the_Employer AS FatherEmployerName,
-                    spi_f.Office_no AS FatherOfficeNo,
-                    spi_f.Email_id AS FatherEmailID,
-                    spi_f.Annual_Income AS FatherAnnualIncome,
-                    spi_f.Occupation AS FatherOccupation,
-    
-                    -- Additional columns from other joins as needed...
-    
-                    -- Sibling Info (example)
-                    ss.Student_Siblings_id AS StudentSiblingsID,
-                    ss.Student_id AS SiblingStudentID,
-                    ss.Name AS SiblingName,
-                    ss.Last_Name AS SiblingLastName,
-                    ss.Admission_Number AS SiblingAdmissionNo,
-                    ss.Date_of_Birth AS SiblingDateOfBirth,
-                    ss.Institute_Name AS SiblingInstituteName,
-                    ss.Aadhar_no AS SiblingAadharNo,
-                    ss.Class AS SiblingClass,
-                    ss.section AS SiblingSection,
-                    ss.Middle_Name AS SiblingMiddleName
-                FROM tbl_StudentMaster sm
-                LEFT JOIN tbl_StudentOtherInfo soi ON sm.student_id = soi.student_id
-                LEFT JOIN tbl_StudentParentsInfo spi_f ON sm.student_id = spi_f.Student_id AND spi_f.Parent_Type_id = 1
-                LEFT JOIN tbl_StudentParentsInfo spi_m ON sm.student_id = spi_m.Student_id AND spi_m.Parent_Type_id = 2
-                LEFT JOIN tbl_StudentParentsInfo spi_g ON sm.student_id = spi_g.Student_id AND spi_g.Parent_Type_id = 3
-                LEFT JOIN tbl_StudentSiblings ss ON sm.student_id = ss.Student_id
-                LEFT JOIN tbl_StudentDocuments sd ON sm.student_id = sd.Student_id
-                LEFT JOIN tbl_StudentPreviousSchool sps ON sm.student_id = sps.student_id
-                LEFT JOIN tbl_StudentParentsOfficeInfo spoi ON sm.student_id = spoi.Student_id
-                LEFT JOIN tbl_StudentHealthInfo sh ON sm.student_id = sh.Student_id
-                {whereClause}";
+        SELECT
+            -- Student Master Columns
+            sm.student_id AS StudentID,
+            sm.First_Name AS FirstName,
+            sm.Middle_Name AS MiddleName,
+            sm.Last_Name AS LastName,
+            sm.gender_id AS Gender,
+            -- Use Class and Section from tblStudentStandards (ts) instead of sm
+            ts.ClassID,
+            ts.SectionID,
+            sm.Admission_Number AS AdmissionNo,
+            sm.Roll_Number AS RollNumber,
+            sm.Date_of_Joining AS DateOfJoining,
+            sm.Nationality_id AS Nationality,
+            sm.Religion_id AS Religion,
+            sm.Date_of_Birth AS DateOfBirth,
+            sm.Mother_Tongue_id AS MotherTongue,
+            sm.Caste_id AS Caste,
+            sm.Blood_Group_id AS BloodGroup,
+            sm.Aadhar_Number AS AadharNo,
+            sm.PEN AS PEN,
+            sm.QR_code AS QRCode,
+            sm.IsPhysicallyChallenged AS PhysicallyChallenged,
+            sm.IsSports AS Sports,
+            sm.IsAided AS Aided,
+            sm.IsNCC AS NCC,
+            sm.IsNSS AS NSS,
+            sm.IsScout AS Scout,
+            sm.File_Name AS FileName,
+            sm.isActive AS IsActive,
+            sm.Institute_id AS InstituteID,
+            sm.Institute_house_id AS InstituteHouseID,
+            sm.StudentType_id AS StudentType,
+            -- Use AcademicYearCode from tblStudentStandards (ts)
+            ts.AcademicYearCode,
 
-            // Build the final query using the dynamic column list
+            -- Student Other Info
+            soi.Student_Other_Info_id AS StudentOtherInfoID,
+            soi.email_id AS EmailID,
+            soi.Hall_Ticket_Number AS HallTicketNumber,
+            soi.Identification_Mark_1 AS IdentificationMark1,
+            soi.Identification_Mark_2 AS IdentificationMark2,
+            soi.Admission_Date AS AdmissionDate,
+            soi.Register_Date AS RegisterDate,
+            soi.Register_Number AS RegisterNumber,
+            soi.samagra_ID AS SamagraID,
+            soi.Place_of_Birth AS PlaceOfBirth,
+            soi.comments AS Comments,
+            soi.language_known AS LanguageKnown,
+            soi.Mobile_Number AS MobileNumber,
+
+            -- Father Info (Parent_Type_id = 1)
+            spi_f.First_Name AS FatherFirstName,
+            spi_f.Middle_Name AS FatherMiddleName,
+            spi_f.Last_Name AS FatherLastName,
+            spi_f.Mobile_Number AS FatherMobileNumber,
+            spi_f.Bank_Account_no AS FatherBankAccountNo,
+            spi_f.Bank_IFSC_Code AS FatherBankIFSCCode,
+            spi_f.Family_Ration_Card_Type AS FatherRationCardType,
+            spi_f.Family_Ration_Card_no AS FatherRationCardNo,
+            spi_f.Date_of_Birth AS FatherDateOfBirth,
+            spi_f.Aadhar_no AS FatherAadharNo,
+            spi_f.PAN_card_no AS FatherPANCardNo,
+            spi_f.Residential_Address AS FatherResidentialAddress,
+            spi_f.Designation AS FatherDesignation,
+            spi_f.Name_of_the_Employer AS FatherEmployerName,
+            spi_f.Office_no AS FatherOfficeNo,
+            spi_f.Email_id AS FatherEmailID,
+            spi_f.Annual_Income AS FatherAnnualIncome,
+            spi_f.Occupation AS FatherOccupation,
+
+            -- Additional columns from other joins as needed...
+
+            -- Sibling Info (example)
+            ss.Student_Siblings_id AS StudentSiblingsID,
+            ss.Student_id AS SiblingStudentID,
+            ss.Name AS SiblingName,
+            ss.Last_Name AS SiblingLastName,
+            ss.Admission_Number AS SiblingAdmissionNo,
+            ss.Date_of_Birth AS SiblingDateOfBirth,
+            ss.Institute_Name AS SiblingInstituteName,
+            ss.Aadhar_no AS SiblingAadharNo,
+            ss.Class AS SiblingClass,
+            ss.section AS SiblingSection,
+            ss.Middle_Name AS SiblingMiddleName
+        FROM tblStudentStandards ts
+        INNER JOIN tbl_StudentMaster sm ON ts.StudentID = sm.student_id
+        LEFT JOIN tbl_StudentOtherInfo soi ON sm.student_id = soi.student_id
+        LEFT JOIN tbl_StudentParentsInfo spi_f ON sm.student_id = spi_f.Student_id AND spi_f.Parent_Type_id = 1
+        LEFT JOIN tbl_StudentParentsInfo spi_m ON sm.student_id = spi_m.Student_id AND spi_m.Parent_Type_id = 2
+        LEFT JOIN tbl_StudentParentsInfo spi_g ON sm.student_id = spi_g.Student_id AND spi_g.Parent_Type_id = 3
+        LEFT JOIN tbl_StudentSiblings ss ON sm.student_id = ss.Student_id
+        LEFT JOIN tbl_StudentDocuments sd ON sm.student_id = sd.Student_id
+        LEFT JOIN tbl_StudentPreviousSchool sps ON sm.student_id = sps.student_id
+        LEFT JOIN tbl_StudentParentsOfficeInfo spoi ON sm.student_id = spoi.Student_id
+        LEFT JOIN tbl_StudentHealthInfo sh ON sm.student_id = sh.Student_id
+        {whereClause}";
+
+            // Build the final query using the dynamic column list.
             string sql = $@"
-                SELECT {columnList}
-                FROM (
-                    {innerQuery}
-                ) AS db";
+        SELECT {columnList}
+        FROM (
+            {innerQuery}
+        ) AS db";
 
             var parameters = new DynamicParameters();
-            parameters.Add("@InstituteID", request.InstituteID);
-            parameters.Add("@AcademicYearCode", request.AcademicYearCode);
+            parameters.Add("@InstituteID", instituteID);
+            parameters.Add("@AcademicYearCode", AcademicYearCode);
             parameters.Add("@ClassID", request.ClassID);
             parameters.Add("@SectionID", request.SectionID);
             parameters.Add("@StudentTypeID", request.StudentTypeID);
             parameters.Add("@Search", request.Search);
 
             var result = await _dbConnection.QueryAsync<GetStudentInformationResponse>(sql, parameters);
-           
-
 
             var historyResponse = await InsertStudentDataHistory(
                 instituteID,
@@ -1607,19 +1806,185 @@ namespace StudentManagement_API.Repository.Implementations
                 AcademicYearCode,
                 IPAddress,
                 UserID,
-                2   
+                2
             );
 
             if (!historyResponse.Success)
             {
                 // Handle history insert error: log the error.
-                // Replace with your logging mechanism (e.g., _logger.LogError).
                 Console.WriteLine($"Error inserting student data history: {historyResponse.Message}");
-
             }
 
             return result.AsList();
         }
+
+
+        // public async Task<List<GetStudentInformationResponse>> GetStudentInformationExport(int instituteID, string AcademicYearCode, string IPAddress, int UserID, GetStudentInformationExportRequest request)
+        //{
+        //    // Build the dynamic WHERE clause
+        //    string whereClause = @"
+        //        WHERE sm.Institute_id = @InstituteID
+        //          AND sm.AcademicYearCode = @AcademicYearCode
+        //          AND sm.class_id = @ClassID
+        //          AND sm.section_id = @SectionID
+        //          AND sm.StudentType_id = @StudentTypeID";
+
+        //    if (!string.IsNullOrWhiteSpace(request.Search))
+        //    {
+        //        whereClause += @"
+        //          AND (
+        //              (sm.First_Name + ' ' + sm.Middle_Name + ' ' + sm.Last_Name) LIKE '%' + @Search + '%' OR 
+        //              sm.Admission_Number LIKE '%' + @Search + '%' OR 
+        //              sm.Roll_Number LIKE '%' + @Search + '%' OR 
+        //              spi_f.Mobile_Number LIKE '%' + @Search + '%'
+        //          )";
+        //    }
+
+        //    // Get the dynamic column list
+        //    string columnListSql = @"
+        //        SELECT STRING_AGG(SCS.DatabaseFieldName, ', ')
+        //        FROM tblStudentColumnSetting SCS
+        //        INNER JOIN tblStudentSettingMapping SSM 
+        //            ON SCS.StudentColumnID = SSM.StudentColumnID 
+        //            AND SSM.InstituteID = @InstituteID
+        //        WHERE SCS.IsActive = 1";
+        //    string columnList = await _dbConnection.ExecuteScalarAsync<string>(columnListSql, new { request.InstituteID });
+
+        //    // Build the inner query (include required joins and select columns)
+        //    string innerQuery = $@"
+        //        SELECT
+        //            -- Student Master
+        //            sm.student_id AS StudentID,
+        //            sm.First_Name AS FirstName,
+        //            sm.Middle_Name AS MiddleName,
+        //            sm.Last_Name AS LastName,
+        //            sm.gender_id AS Gender,
+        //            sm.class_id AS Class,
+        //            sm.section_id AS Section,
+        //            sm.Admission_Number AS AdmissionNo,
+        //            sm.Roll_Number AS RollNumber,
+        //            sm.Date_of_Joining AS DateOfJoining,
+        //            sm.Nationality_id AS Nationality,
+        //            sm.Religion_id AS Religion,
+        //            sm.Date_of_Birth AS DateOfBirth,
+        //            sm.Mother_Tongue_id AS MotherTongue,
+        //            sm.Caste_id AS Caste,
+        //            sm.Blood_Group_id AS BloodGroup,
+        //            sm.Aadhar_Number AS AadharNo,
+        //            sm.PEN AS PEN,
+        //            sm.QR_code AS QRCode,
+        //            sm.IsPhysicallyChallenged AS PhysicallyChallenged,
+        //            sm.IsSports AS Sports,
+        //            sm.IsAided AS Aided,
+        //            sm.IsNCC AS NCC,
+        //            sm.IsNSS AS NSS,
+        //            sm.IsScout AS Scout,
+        //            sm.File_Name AS FileName,
+        //            sm.isActive AS IsActive,
+        //            sm.Institute_id AS InstituteID,
+        //            sm.Institute_house_id AS InstituteHouseID,
+        //            sm.StudentType_id AS StudentType,
+        //            sm.AcademicYearCode AS AcademicYearCode,
+
+        //            -- Student Other Info
+        //            soi.Student_Other_Info_id AS StudentOtherInfoID,
+        //            soi.email_id AS EmailID,
+        //            soi.Hall_Ticket_Number AS HallTicketNumber,
+        //            soi.Identification_Mark_1 AS IdentificationMark1,
+        //            soi.Identification_Mark_2 AS IdentificationMark2,
+        //            soi.Admission_Date AS AdmissionDate,
+        //            soi.Register_Date AS RegisterDate,
+        //            soi.Register_Number AS RegisterNumber,
+        //            soi.samagra_ID AS SamagraID,
+        //            soi.Place_of_Birth AS PlaceOfBirth,
+        //            soi.comments AS Comments,
+        //            soi.language_known AS LanguageKnown,
+        //            soi.Mobile_Number AS MobileNumber,
+
+        //            -- Father Info (Parent_Type_id = 1)
+        //            spi_f.First_Name AS FatherFirstName,
+        //            spi_f.Middle_Name AS FatherMiddleName,
+        //            spi_f.Last_Name AS FatherLastName,
+        //            spi_f.Mobile_Number AS FatherMobileNumber,
+        //            spi_f.Bank_Account_no AS FatherBankAccountNo,
+        //            spi_f.Bank_IFSC_Code AS FatherBankIFSCCode,
+        //            spi_f.Family_Ration_Card_Type AS FatherRationCardType,
+        //            spi_f.Family_Ration_Card_no AS FatherRationCardNo,
+        //            spi_f.Date_of_Birth AS FatherDateOfBirth,
+        //            spi_f.Aadhar_no AS FatherAadharNo,
+        //            spi_f.PAN_card_no AS FatherPANCardNo,
+        //            spi_f.Residential_Address AS FatherResidentialAddress,
+        //            spi_f.Designation AS FatherDesignation,
+        //            spi_f.Name_of_the_Employer AS FatherEmployerName,
+        //            spi_f.Office_no AS FatherOfficeNo,
+        //            spi_f.Email_id AS FatherEmailID,
+        //            spi_f.Annual_Income AS FatherAnnualIncome,
+        //            spi_f.Occupation AS FatherOccupation,
+
+        //            -- Additional columns from other joins as needed...
+
+        //            -- Sibling Info (example)
+        //            ss.Student_Siblings_id AS StudentSiblingsID,
+        //            ss.Student_id AS SiblingStudentID,
+        //            ss.Name AS SiblingName,
+        //            ss.Last_Name AS SiblingLastName,
+        //            ss.Admission_Number AS SiblingAdmissionNo,
+        //            ss.Date_of_Birth AS SiblingDateOfBirth,
+        //            ss.Institute_Name AS SiblingInstituteName,
+        //            ss.Aadhar_no AS SiblingAadharNo,
+        //            ss.Class AS SiblingClass,
+        //            ss.section AS SiblingSection,
+        //            ss.Middle_Name AS SiblingMiddleName
+        //        FROM tbl_StudentMaster sm
+        //        LEFT JOIN tbl_StudentOtherInfo soi ON sm.student_id = soi.student_id
+        //        LEFT JOIN tbl_StudentParentsInfo spi_f ON sm.student_id = spi_f.Student_id AND spi_f.Parent_Type_id = 1
+        //        LEFT JOIN tbl_StudentParentsInfo spi_m ON sm.student_id = spi_m.Student_id AND spi_m.Parent_Type_id = 2
+        //        LEFT JOIN tbl_StudentParentsInfo spi_g ON sm.student_id = spi_g.Student_id AND spi_g.Parent_Type_id = 3
+        //        LEFT JOIN tbl_StudentSiblings ss ON sm.student_id = ss.Student_id
+        //        LEFT JOIN tbl_StudentDocuments sd ON sm.student_id = sd.Student_id
+        //        LEFT JOIN tbl_StudentPreviousSchool sps ON sm.student_id = sps.student_id
+        //        LEFT JOIN tbl_StudentParentsOfficeInfo spoi ON sm.student_id = spoi.Student_id
+        //        LEFT JOIN tbl_StudentHealthInfo sh ON sm.student_id = sh.Student_id
+        //        {whereClause}";
+
+        //    // Build the final query using the dynamic column list
+        //    string sql = $@"
+        //        SELECT {columnList}
+        //        FROM (
+        //            {innerQuery}
+        //        ) AS db";
+
+        //    var parameters = new DynamicParameters();
+        //    parameters.Add("@InstituteID", request.InstituteID);
+        //    parameters.Add("@AcademicYearCode", request.AcademicYearCode);
+        //    parameters.Add("@ClassID", request.ClassID);
+        //    parameters.Add("@SectionID", request.SectionID);
+        //    parameters.Add("@StudentTypeID", request.StudentTypeID);
+        //    parameters.Add("@Search", request.Search);
+
+        //    var result = await _dbConnection.QueryAsync<GetStudentInformationResponse>(sql, parameters);
+
+
+
+        //    var historyResponse = await InsertStudentDataHistory(
+        //        instituteID,
+        //        result.Count(),
+        //        AcademicYearCode,
+        //        IPAddress,
+        //        UserID,
+        //        2   
+        //    );
+
+        //    if (!historyResponse.Success)
+        //    {
+        //        // Handle history insert error: log the error.
+        //        // Replace with your logging mechanism (e.g., _logger.LogError).
+        //        Console.WriteLine($"Error inserting student data history: {historyResponse.Message}");
+
+        //    }
+
+        //    return result.AsList();
+        //}
 
 
         public async Task<IEnumerable<GetStudentImportHistoryResponse>> GetStudentImportHistoryAsync(GetStudentImportHistoryRequest request)
