@@ -98,6 +98,7 @@ namespace FeesManagement_API.Repository.Implementations
                 scheme.FromDateFormatted = scheme.FromDate.ToString("dd-MM-yyyy");
                 scheme.ToDateFormatted = scheme.ToDate.ToString("dd-MM-yyyy");
                 scheme.DateRange = $"{scheme.FromDateFormatted} to {scheme.ToDateFormatted}";
+                scheme.Preview = scheme.Prefix + scheme.StartingNumber.ToString() + scheme.Suffix; 
             }
 
             return numberSchemes;

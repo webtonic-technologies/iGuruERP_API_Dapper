@@ -12,4 +12,6 @@
     public string FeeHead { get; set; }
     public string FeeType { get; set; }
     public decimal FeeAmount { get; set; }
+    public int FeeGroupID { get; set; }        // New property for FeeGroupID
+    public int FeeTenurityID { get; set; }       // New property for FeeTenurityID
 }

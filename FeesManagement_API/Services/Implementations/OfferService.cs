@@ -55,5 +55,7 @@ namespace FeesManagement_API.Services.Implementations
         {
             return await _offerRepository.GetOfferStudentTypes();
         }
+
+        
     }
 }

@@ -51,16 +51,16 @@ namespace FeesManagement_API.Controllers
         //    return BadRequest(response);
         //}
 
-        //[HttpGet("GetOfferById/{offerID}")]
-        //public async Task<IActionResult> GetOfferById(int offerID)
-        //{
-        //    var response = await _offerService.GetOfferById(offerID);
-        //    if (response.Success)
-        //    {
-        //        return Ok(response);
-        //    }
-        //    return NotFound(response);
-        //}
+        [HttpPost("GetOfferByID/{OfferID}")]
+        public async Task<IActionResult> GetOfferByID(int OfferID)
+        {
+            var response = await _offerService.GetOfferById(OfferID);
+            if (response.Success)
+            {
+                return Ok(response);
+            }
+            return NotFound(response);
+        }
 
         [HttpPut("DeleteOffer/{offerID}")]
         public async Task<IActionResult> DeleteOffer(int offerID)
@@ -84,6 +84,6 @@ namespace FeesManagement_API.Controllers
                 message = "Student types retrieved successfully",
                 data = result
             });
-        }
+        } 
     }
 }

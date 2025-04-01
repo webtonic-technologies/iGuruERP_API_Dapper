@@ -414,16 +414,81 @@ namespace Configuration.Repository.Implementations
             return new ServiceResponse<IEnumerable<OfferResponse>>(true, "Offers retrieved successfully", offerLookup.Values, 200, totalCount);
         }
 
-
-
         public async Task<OfferResponse> GetOfferById(int offerID)
         {
-            var query = @"SELECT OfferID, OfferName, AcademicYear, OpeningDate, ClosingDate, isAmount, isPercentage, Amount, IsActive 
-                          FROM tblOffer 
-                          WHERE OfferID = @OfferID";
+            var query = @"
+                SELECT 
+                    o.OfferID, 
+                    o.OfferName, 
+                    o.AcademicYear,
+                    CONVERT(VARCHAR, o.OpeningDate, 105) AS OpeningDateFormatted,
+                    CONVERT(VARCHAR, o.ClosingDate, 105) AS ClosingDateFormatted,
+                    o.OpeningDate,
+                    o.ClosingDate,
+                    o.isAmount, 
+                    o.isPercentage, 
+                    o.Amount, 
+                    o.IsActive,
+                    fh.FeeHeadID,
+                    fh.FeeHead,
+                    cr.FeeTenurityID,
+                    cr.STMTenurityID,
+                    cr.FeeCollectionID,
+                    CASE 
+                        WHEN cr.FeeTenurityID = 1 THEN 'Single'
+                        WHEN cr.FeeTenurityID = 2 THEN tt.TermName
+                        WHEN cr.FeeTenurityID = 3 THEN (
+                            SELECT STRING_AGG(tm.Month, ', ') 
+                            FROM tblTenurityMonthly tm 
+                            WHERE tm.FeeCollectionID = cr.FeeCollectionID
+                        )
+                        ELSE ''
+                    END AS FeeTenure,
+                    c.class_name AS ClassName,
+                    s.section_name AS SectionName
+                FROM tblOffer o
+                LEFT JOIN tblOfferFeeHeadMapping fhMap ON o.OfferID = fhMap.OfferID
+                LEFT JOIN tblFeeHead fh ON fhMap.FeeHeadID = fh.FeeHeadID
+                LEFT JOIN tblOfferFeeTenureMapping cr ON o.OfferID = cr.OfferID
+                LEFT JOIN tblTenurityTerm tt ON cr.FeeCollectionID = tt.FeeCollectionID AND cr.FeeTenurityID = 2
+                LEFT JOIN tblOfferClassSectionMapping cs ON o.OfferID = cs.OfferID
+                LEFT JOIN tbl_Class c ON cs.ClassID = c.class_id
+                LEFT JOIN tbl_Section s ON cs.SectionID = s.section_id
+                WHERE o.OfferID = @OfferID";
 
-            return await _connection.QueryFirstOrDefaultAsync<OfferResponse>(query, new { OfferID = offerID });
+            var offerLookup = new Dictionary<int, OfferResponse>();
+
+            var result = await _connection.QueryAsync<OfferResponse, FeeHeadFeeTenureResponse, DTOs.Responses.ClassSectionResponse, OfferResponse>(
+                query,
+                (offer, feeHeadTenure, classSection) =>
+                {
+                    if (!offerLookup.TryGetValue(offer.OfferID, out var existingOffer))
+                    {
+                        existingOffer = offer;
+                        existingOffer.FeeHeadFeeTenures = new List<FeeHeadFeeTenureResponse>();
+                        existingOffer.ClassSections = new List<DTOs.Responses.ClassSectionResponse>();
+                        offerLookup.Add(offer.OfferID, existingOffer);
+                    }
+                    if (feeHeadTenure != null && feeHeadTenure.FeeHeadID != 0 &&
+                        !existingOffer.FeeHeadFeeTenures.Any(ft => ft.FeeHeadID == feeHeadTenure.FeeHeadID))
+                    {
+                        existingOffer.FeeHeadFeeTenures.Add(feeHeadTenure);
+                    }
+                    if (classSection != null &&
+                        !string.IsNullOrEmpty(classSection.ClassName) &&
+                        !existingOffer.ClassSections.Any(cs => cs.ClassName == classSection.ClassName && cs.SectionName == classSection.SectionName))
+                    {
+                        existingOffer.ClassSections.Add(classSection);
+                    }
+                    return existingOffer;
+                },
+                new { OfferID = offerID },
+                splitOn: "FeeHeadID, ClassName"
+            );
+
+            return offerLookup.Values.FirstOrDefault();
         }
+
 
         public async Task<int> DeleteOffer(int offerID)
         {
@@ -444,5 +509,8 @@ namespace Configuration.Repository.Implementations
             var query = "SELECT StudentTypeID, StudentType FROM tblOfferStudentype";
             return await _connection.QueryAsync<OfferStudentTypeResponse>(query);
         }
+
+
+
     }
 }

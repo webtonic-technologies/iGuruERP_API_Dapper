@@ -16,5 +16,7 @@
         public string Padding { get; set; }
         public int InstituteID { get; set; }
         public bool IsActive { get; set; }  // Assuming this is part of the response
+        public string Preview { get; set; } // Preview parameter = Prefix + StartingNumber + Suffix
+
     }
 }
