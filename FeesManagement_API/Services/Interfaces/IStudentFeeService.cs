@@ -10,7 +10,8 @@ namespace FeesManagement_API.Services.Interfaces
         ServiceResponse<List<StudentFeeResponse>> GetStudentFees(StudentFeeRequest request);
         ServiceResponse<DiscountStudentFeesResponse> DiscountStudentFees(DiscountStudentFeesRequest request);
         ServiceResponse<List<GetFeesChangeLogsResponse>> GetFeesChangeLogs(GetFeesChangeLogsRequest request);
-        Task<ServiceResponse<List<StudentFeeResponse>>> GetStudentFeesExport(GetStudentFeesExportRequest request);
+        Task<byte[]> GetStudentFeesExportAsync(GetStudentFeesExportRequest request);
+        Task<byte[]> GetFeesChangeLogsExportAsync(GetFeesChangeLogsExportRequest request);
 
     }
 }
