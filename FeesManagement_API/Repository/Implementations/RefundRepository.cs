@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using FeesManagement_API.DTOs.Requests;
 using FeesManagement_API.DTOs.Responses;
+using FeesManagement_API.DTOs.ServiceResponse; 
 using FeesManagement_API.Repository.Interfaces;
 using System.Collections.Generic;
 using System.Data;
@@ -19,43 +20,22 @@ namespace FeesManagement_API.Repository.Implementations
 
         public string AddRefund(AddRefundRequest request)
         {
-            int refundID;
-
             // Convert dates from string to DateTime
             DateTime refundDate = DateTime.ParseExact(request.RefundDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
 
-            // SQL query to add or update the refund
+            // SQL query to insert a new refund
             var query = @"
-    DECLARE @NewRefundID INT;
-
-    IF EXISTS (SELECT 1 FROM tblRefund WHERE RefundID = @RefundID)
-    BEGIN
-        UPDATE tblRefund 
-        SET AcademiceYearCode = @AcademiceYearCode, ClassID = @ClassID, SectionID = @SectionID,
-            StudentStatus = @StudentStatus, StudentID = @StudentID, RefundAmount = @RefundAmount,
-            RefundDate = @RefundDate, PaymentModeID = @PaymentModeID, Remarks = @Remarks,
-            InstituteID = @InstituteID, EmployeeID = @EmployeeID, IsActive = @IsActive
-        WHERE RefundID = @RefundID;
-
-        SET @NewRefundID = @RefundID;
-    END
-    ELSE
-    BEGIN
         INSERT INTO tblRefund (AcademiceYearCode, ClassID, SectionID, StudentStatus, StudentID, 
             RefundAmount, RefundDate, PaymentModeID, Remarks, InstituteID, EmployeeID, IsActive)
         VALUES (@AcademiceYearCode, @ClassID, @SectionID, @StudentStatus, @StudentID, 
             @RefundAmount, @RefundDate, @PaymentModeID, @Remarks, @InstituteID, @EmployeeID, @IsActive);
         
-        SET @NewRefundID = SCOPE_IDENTITY();
-    END;
+        SELECT SCOPE_IDENTITY();
+    ";
 
-    SELECT @NewRefundID;
-";
-
-            // Execute the query and get the RefundID
-            refundID = _connection.ExecuteScalar<int>(query, new
+            // Execute the query and get the generated RefundID
+            int refundID = _connection.ExecuteScalar<int>(query, new
             {
-                request.RefundID,
                 request.AcademiceYearCode,
                 request.ClassID,
                 request.SectionID,
@@ -70,13 +50,14 @@ namespace FeesManagement_API.Repository.Implementations
                 request.IsActive
             });
 
-            // Process RefundTransfer
-            if (request.PaymentModeID == 2 && request.RefundTransfer != null)
+            // Process RefundTransfer if PaymentModeID is 1
+            if (request.PaymentModeID == 1 && request.RefundTransfer != null)
             {
                 DateTime transactionDate = DateTime.ParseExact(request.RefundTransfer.TransactionDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
                 var refundTransferQuery = @"
-        INSERT INTO tblRefundTransfer (RefundID, BankName, AccountNo, IFSCCode, TransactionDate)
-        VALUES (@RefundID, @BankName, @AccountNo, @IFSCCode, @TransactionDate);";
+            INSERT INTO tblRefundTransfer (RefundID, BankName, AccountNo, IFSCCode, TransactionDate)
+            VALUES (@RefundID, @BankName, @AccountNo, @IFSCCode, @TransactionDate);
+        ";
 
                 _connection.Execute(refundTransferQuery, new
                 {
@@ -88,13 +69,14 @@ namespace FeesManagement_API.Repository.Implementations
                 });
             }
 
-            // Process RefundCheque
-            if (request.PaymentModeID == 3 && request.RefundCheque != null)
+            // Process RefundCheque if PaymentModeID is 2
+            if (request.PaymentModeID == 2 && request.RefundCheque != null)
             {
                 DateTime issueDate = DateTime.ParseExact(request.RefundCheque.IssueDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
                 var refundChequeQuery = @"
-        INSERT INTO tblRefundCheque (RefundID, ChequeNo, BankName, AccountNo, IFSCCode, IssueDate)
-        VALUES (@RefundID, @ChequeNo, @BankName, @AccountNo, @IFSCCode, @IssueDate);";
+            INSERT INTO tblRefundCheque (RefundID, ChequeNo, BankName, AccountNo, IFSCCode, IssueDate)
+            VALUES (@RefundID, @ChequeNo, @BankName, @AccountNo, @IFSCCode, @IssueDate);
+        ";
 
                 _connection.Execute(refundChequeQuery, new
                 {
@@ -107,13 +89,14 @@ namespace FeesManagement_API.Repository.Implementations
                 });
             }
 
-            // Process RefundCard
-            if (request.PaymentModeID == 4 && request.RefundCard != null)
+            // Process RefundCard if PaymentModeID is 3
+            if (request.PaymentModeID == 3 && request.RefundCard != null)
             {
                 DateTime cardIssueDate = DateTime.ParseExact(request.RefundCard.IssueDate, "dd-MM-yyyy", CultureInfo.InvariantCulture);
                 var refundCardQuery = @"
-        INSERT INTO tblRefundCard (RefundID, TransactionID, IssueDate)
-        VALUES (@RefundID, @TransactionID, @IssueDate);";
+                INSERT INTO tblRefundCard (RefundID, TransactionID, IssueDate)
+                VALUES (@RefundID, @TransactionID, @IssueDate);
+        ";
 
                 _connection.Execute(refundCardQuery, new
                 {
@@ -123,131 +106,48 @@ namespace FeesManagement_API.Repository.Implementations
                 });
             }
 
+            // Process Student Wallet if PaymentModeID is 4
+            if (request.PaymentModeID == 4 && request.RefundWallet != null)
+            {
+                var refundWalletQuery = @"
+                INSERT INTO tblRefundWallet (RefundID, WalletBalance)
+                VALUES (@RefundID, @WalletBalance);
+        ";
+
+                _connection.Execute(refundWalletQuery, new
+                {
+                    RefundID = refundID,
+                    WalletBalance = request.RefundWallet.WalletBalance
+                });
+            }
+
             return "Success";
         }
 
 
-
-        //    public string AddRefund(AddRefundRequest request)
-        //    {
-        //        int refundID;
-
-        //        // SQL query to add or update the refund
-        //        var query = @"
-        //    DECLARE @NewRefundID INT; -- Declare the variable
-
-        //    IF EXISTS (SELECT 1 FROM tblRefund WHERE RefundID = @RefundID)
-        //    BEGIN
-        //        UPDATE tblRefund 
-        //        SET AcademiceYearCode = @AcademiceYearCode, ClassID = @ClassID, SectionID = @SectionID,
-        //            StudentStatus = @StudentStatus, StudentID = @StudentID, RefundAmount = @RefundAmount,
-        //            RefundDate = @RefundDate, PaymentModeID = @PaymentModeID, Remarks = @Remarks,
-        //            InstituteID = @InstituteID, EmployeeID = @EmployeeID, IsActive = @IsActive
-        //        WHERE RefundID = @RefundID;
-
-        //        SET @NewRefundID = @RefundID; -- Keep the same RefundID after update
-        //    END
-        //    ELSE
-        //    BEGIN
-        //        INSERT INTO tblRefund (AcademiceYearCode, ClassID, SectionID, StudentStatus, StudentID, 
-        //            RefundAmount, RefundDate, PaymentModeID, Remarks, InstituteID, EmployeeID, IsActive)
-        //        VALUES (@AcademiceYearCode, @ClassID, @SectionID, @StudentStatus, @StudentID, 
-        //            @RefundAmount, @RefundDate, @PaymentModeID, @Remarks, @InstituteID, @EmployeeID, @IsActive);
-
-        //        -- Get the last inserted RefundID
-        //        SET @NewRefundID = SCOPE_IDENTITY();
-        //    END;
-
-        //    SELECT @NewRefundID; -- Return the RefundID at the end
-        //";
-
-        //        // Execute the query and get the RefundID
-        //        refundID = _connection.ExecuteScalar<int>(query, new
-        //        {
-        //            request.RefundID,
-        //            request.AcademiceYearCode,
-        //            request.ClassID,
-        //            request.SectionID,
-        //            request.StudentStatus,
-        //            request.StudentID,
-        //            request.RefundAmount,
-        //            request.RefundDate,
-        //            request.PaymentModeID,
-        //            request.Remarks,
-        //            request.InstituteID,
-        //            request.EmployeeID,
-        //            request.IsActive
-        //        });
-
-        //        // Handle refund transfer
-        //        if (request.PaymentModeID == 2 && request.RefundTransfer != null)
-        //        {
-        //            var refundTransferQuery = @"
-        //        INSERT INTO tblRefundTransfer (RefundID, BankName, AccountNo, IFSCCode, TransactionDate)
-        //        VALUES (@RefundID, @BankName, @AccountNo, @IFSCCode, @TransactionDate);";
-
-        //            _connection.Execute(refundTransferQuery, new
-        //            {
-        //                RefundID = refundID,
-        //                BankName = request.RefundTransfer.BankName,
-        //                AccountNo = request.RefundTransfer.AccountNo,
-        //                IFSCCode = request.RefundTransfer.IFSCCode,
-        //                TransactionDate = request.RefundTransfer.TransactionDate
-        //            });
-        //        }
-
-        //        // Handle refund cheque
-        //        if (request.PaymentModeID == 3 && request.RefundCheque != null)
-        //        {
-        //            var refundChequeQuery = @"
-        //        INSERT INTO tblRefundCheque (RefundID, ChequeNo, BankName, AccountNo, IFSCCode, IssueDate)
-        //        VALUES (@RefundID, @ChequeNo, @BankName, @AccountNo, @IFSCCode, @IssueDate);";
-
-        //            _connection.Execute(refundChequeQuery, new
-        //            {
-        //                RefundID = refundID,
-        //                ChequeNo = request.RefundCheque.ChequeNo,
-        //                BankName = request.RefundCheque.BankName,
-        //                AccountNo = request.RefundCheque.AccountNo,
-        //                IFSCCode = request.RefundCheque.IFSCCode,
-        //                IssueDate = request.RefundCheque.IssueDate
-        //            });
-        //        }
-
-        //        // Handle refund card
-        //        if (request.PaymentModeID == 4 && request.RefundCard != null)
-        //        {
-        //            var refundCardQuery = @"
-        //        INSERT INTO tblRefundCard (RefundID, TransactionID, IssueDate)
-        //        VALUES (@RefundID, @TransactionID, @IssueDate);";
-
-        //            _connection.Execute(refundCardQuery, new
-        //            {
-        //                RefundID = refundID,
-        //                TransactionID = request.RefundCard.TransactionID,
-        //                IssueDate = request.RefundCard.IssueDate
-        //            });
-        //        }
-
-        //        // Handle refund wallet
-        //        if (request.PaymentModeID == 5 && request.RefundWallet != null)
-        //        {
-        //            var refundWalletQuery = @"
-        //        INSERT INTO tblRefundWallet (RefundID, WalletBalance)
-        //        VALUES (@RefundID, @WalletBalance);";
-
-        //            _connection.Execute(refundWalletQuery, new
-        //            {
-        //                RefundID = refundID,
-        //                WalletBalance = request.RefundWallet.WalletBalance
-        //            });
-        //        }
-
-        //        return "Success";
-        //    }
-
-        public List<GetRefundResponse> GetRefund(GetRefundRequest request)
+        public async Task<ServiceResponse<IEnumerable<GetRefundResponse>>> GetRefund(GetRefundRequest request)
         {
+            // Count query to get the total number of matching refunds
+            var countQuery = @"
+        SELECT COUNT(*)
+        FROM tblRefund r
+        LEFT JOIN tbl_StudentMaster sm ON r.StudentID = sm.student_id
+        WHERE 
+            r.InstituteID = @InstituteID 
+            AND r.ClassID = @ClassID 
+            AND r.SectionID = @SectionID 
+            AND (sm.First_Name + ' ' + sm.Last_Name LIKE '%' + @Search + '%' OR 
+                 sm.Admission_Number LIKE '%' + @Search + '%')";
+
+            var totalCount = await _connection.ExecuteScalarAsync<int>(countQuery, new
+            {
+                request.InstituteID,
+                request.ClassID,
+                request.SectionID,
+                Search = request.Search
+            });
+
+            // Main query with paging using OFFSET and FETCH NEXT
             var query = @"
         SELECT 
             r.RefundID,
@@ -257,50 +157,247 @@ namespace FeesManagement_API.Repository.Implementations
             r.StudentStatus,
             r.StudentID,
             CONCAT(sm.First_Name, ' ', sm.Last_Name) AS StudentName,
+            sm.Admission_Number AS AdmissionNumber,
             r.RefundAmount,
             FORMAT(r.RefundDate, 'dd-MM-yyyy') AS RefundDate,
             r.PaymentModeID,
-            m.PaymentMode,
+            m.PaymentModeType AS PaymentMode, 
             r.Remarks,
             r.InstituteID,
             r.EmployeeID,
             CONCAT(emp.First_Name, ' ', emp.Last_Name) AS EmployeeName,
             c.class_name AS ClassName,
             s.section_name AS SectionName,
+            r.StudentStatus AS Status,  -- Additional alias for Status
+            (
+                SELECT CONCAT(sp.First_Name, ' ', sp.Middle_Name, ' ', sp.Last_Name)
+                FROM tbl_StudentParentsInfo sp 
+                WHERE sp.Student_id = sm.student_id AND sp.Parent_Type_id = 1
+            ) AS FatherName,
+            (
+                SELECT sp.Mobile_Number
+                FROM tbl_StudentParentsInfo sp 
+                WHERE sp.Student_id = sm.student_id AND sp.Parent_Type_id = 1
+            ) AS MobileNumber,
             r.IsActive
         FROM 
             tblRefund r
-        LEFT JOIN 
-            tbl_Class c ON r.ClassID = c.class_id
-        LEFT JOIN 
-            tbl_Section s ON r.SectionID = s.section_id
-        LEFT JOIN 
-            tblPaymentMode m ON r.PaymentModeID = m.PaymentModeID
-        LEFT JOIN 
-            tbl_StudentMaster sm ON r.StudentID = sm.student_id
-        LEFT JOIN 
-            tbl_EmployeeProfileMaster emp ON r.EmployeeID = emp.Employee_id
+        LEFT JOIN tbl_Class c ON r.ClassID = c.class_id
+        LEFT JOIN tbl_Section s ON r.SectionID = s.section_id
+        LEFT JOIN tblFeesRefundPaymentMode m ON r.PaymentModeID = m.PaymentModeID
+        LEFT JOIN tbl_StudentMaster sm ON r.StudentID = sm.student_id
+        LEFT JOIN tbl_EmployeeProfileMaster emp ON r.EmployeeID = emp.Employee_id
         WHERE 
             r.InstituteID = @InstituteID 
             AND r.ClassID = @ClassID 
             AND r.SectionID = @SectionID 
             AND (sm.First_Name + ' ' + sm.Last_Name LIKE '%' + @Search + '%' OR 
-                 sm.Admission_Number LIKE '%' + @Search + '%')";
+                 sm.Admission_Number LIKE '%' + @Search + '%')
+        ORDER BY r.RefundID
+        OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
-            return _connection.Query<GetRefundResponse>(query, new
+            var parameters = new
             {
+                Offset = (request.PageNumber - 1) * request.PageSize,
+                request.PageSize,
                 request.InstituteID,
                 request.ClassID,
                 request.SectionID,
-                Search = request.Search // Assuming Search is a property in GetRefundRequest
-            }).ToList();
+                Search = request.Search
+            };
+
+            var refundList = await _connection.QueryAsync<GetRefundResponse>(query, parameters);
+
+            return new ServiceResponse<IEnumerable<GetRefundResponse>>(
+                success: true,
+                message: "Refunds retrieved successfully",
+                data: refundList,
+                statusCode: 200,
+                totalCount: totalCount
+            );
         }
+
+
+        //public async Task<ServiceResponse<IEnumerable<GetRefundResponse>>> GetRefund(GetRefundRequest request)
+        //{
+        //    // Count query to get the total number of matching refunds
+        //    var countQuery = @"
+        //SELECT COUNT(*)
+        //FROM tblRefund r
+        //LEFT JOIN tbl_StudentMaster sm ON r.StudentID = sm.student_id
+        //WHERE 
+        //    r.InstituteID = @InstituteID 
+        //    AND r.ClassID = @ClassID 
+        //    AND r.SectionID = @SectionID 
+        //    AND (sm.First_Name + ' ' + sm.Last_Name LIKE '%' + @Search + '%' OR 
+        //         sm.Admission_Number LIKE '%' + @Search + '%')";
+
+        //    var totalCount = await _connection.ExecuteScalarAsync<int>(countQuery, new
+        //    {
+        //        request.InstituteID,
+        //        request.ClassID,
+        //        request.SectionID,
+        //        Search = request.Search
+        //    });
+
+        //    // Main query with paging using OFFSET and FETCH NEXT
+        //    var query = @"
+        //SELECT 
+        //    r.RefundID,
+        //    r.AcademiceYearCode,
+        //    r.ClassID,
+        //    r.SectionID,
+        //    r.StudentStatus,
+        //    r.StudentID,
+        //    CONCAT(sm.First_Name, ' ', sm.Last_Name) AS StudentName,
+        //    r.RefundAmount,
+        //    FORMAT(r.RefundDate, 'dd-MM-yyyy') AS RefundDate,
+        //    r.PaymentModeID,
+        //    m.PaymentMode,
+        //    r.Remarks,
+        //    r.InstituteID,
+        //    r.EmployeeID,
+        //    CONCAT(emp.First_Name, ' ', emp.Last_Name) AS EmployeeName,
+        //    c.class_name AS ClassName,
+        //    s.section_name AS SectionName,
+        //    r.IsActive
+        //FROM 
+        //    tblRefund r
+        //LEFT JOIN 
+        //    tbl_Class c ON r.ClassID = c.class_id
+        //LEFT JOIN 
+        //    tbl_Section s ON r.SectionID = s.section_id
+        //LEFT JOIN 
+        //    tblPaymentMode m ON r.PaymentModeID = m.PaymentModeID
+        //LEFT JOIN 
+        //    tbl_StudentMaster sm ON r.StudentID = sm.student_id
+        //LEFT JOIN 
+        //    tbl_EmployeeProfileMaster emp ON r.EmployeeID = emp.Employee_id
+        //WHERE 
+        //    r.InstituteID = @InstituteID 
+        //    AND r.ClassID = @ClassID 
+        //    AND r.SectionID = @SectionID 
+        //    AND (sm.First_Name + ' ' + sm.Last_Name LIKE '%' + @Search + '%' OR 
+        //         sm.Admission_Number LIKE '%' + @Search + '%')
+        //ORDER BY r.RefundID
+        //OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+
+        //    var parameters = new
+        //    {
+        //        Offset = (request.PageNumber - 1) * request.PageSize,
+        //        request.PageSize,
+        //        request.InstituteID,
+        //        request.ClassID,
+        //        request.SectionID,
+        //        Search = request.Search
+        //    };
+
+        //    var refundList = await _connection.QueryAsync<GetRefundResponse>(query, parameters);
+
+        //    return new ServiceResponse<IEnumerable<GetRefundResponse>>(
+        //        success: true,
+        //        message: "Refunds retrieved successfully",
+        //        data: refundList,
+        //        statusCode: 200,
+        //        totalCount: totalCount
+        //    );
+        //}
 
         public string DeleteRefund(int refundID)
         {
             var query = @"UPDATE tblRefund SET IsActive = 0 WHERE RefundID = @RefundID";
             _connection.Execute(query, new { RefundID = refundID });
             return "Success";
+        }
+
+        public DataTable GetRefundExportData(GetRefundExportRequest request)
+        {
+            var query = @"
+        SELECT 
+            r.AcademiceYearCode,
+            c.class_name AS ClassName,
+            s.section_name AS SectionName,
+            r.StudentStatus,
+            CONCAT(sm.First_Name, ' ', sm.Last_Name) AS StudentName,
+            sm.Admission_Number AS AdmissionNumber,
+            r.RefundAmount,
+            FORMAT(r.RefundDate, 'dd-MM-yyyy') AS RefundDate,
+            m.PaymentModeType AS PaymentMode, 
+            r.Remarks,
+            CONCAT(emp.First_Name, ' ', emp.Last_Name) AS EmployeeName,
+            (
+                SELECT CONCAT(sp.First_Name, ' ', sp.Middle_Name, ' ', sp.Last_Name)
+                FROM tbl_StudentParentsInfo sp 
+                WHERE sp.Student_id = sm.student_id AND sp.Parent_Type_id = 1
+            ) AS FatherName,
+            (
+                SELECT sp.Mobile_Number
+                FROM tbl_StudentParentsInfo sp 
+                WHERE sp.Student_id = sm.student_id AND sp.Parent_Type_id = 1
+            ) AS MobileNumber
+        FROM 
+            tblRefund r
+        LEFT JOIN tbl_Class c ON r.ClassID = c.class_id
+        LEFT JOIN tbl_Section s ON r.SectionID = s.section_id
+        LEFT JOIN tblFeesRefundPaymentMode m ON r.PaymentModeID = m.PaymentModeID
+        LEFT JOIN tbl_StudentMaster sm ON r.StudentID = sm.student_id
+        LEFT JOIN tbl_EmployeeProfileMaster emp ON r.EmployeeID = emp.Employee_id
+        WHERE 
+            r.InstituteID = @InstituteID 
+            AND r.ClassID = @ClassID 
+            AND r.SectionID = @SectionID 
+            AND (sm.First_Name + ' ' + sm.Last_Name LIKE '%' + @Search + '%' OR 
+                 sm.Admission_Number LIKE '%' + @Search + '%')
+        ORDER BY r.RefundID";
+
+            var parameters = new
+            {
+                request.InstituteID,
+                request.ClassID,
+                request.SectionID,
+                Search = request.Search
+            };
+
+            var dataTable = new DataTable();
+            using (var reader = _connection.ExecuteReader(query, parameters))
+            {
+                dataTable.Load(reader);
+            }
+            return dataTable;
+        }
+
+
+        public IEnumerable<GetStudentListResponse> GetStudentList(GetStudentListRequest request)
+        {
+            var query = @"
+                SELECT 
+                    sm.student_id AS StudentID,
+                    CONCAT(sm.First_Name, ' ', sm.Last_Name) AS StudentName,
+                    sm.Admission_Number AS AdmissionNumber,
+                    sm.Roll_Number AS RollNumber,
+                    c.class_name AS Class,
+                    s.section_name AS Section
+                FROM tbl_StudentMaster sm
+                LEFT JOIN tbl_Class c ON sm.class_id = c.class_id
+                LEFT JOIN tbl_Section s ON sm.section_id = s.section_id
+                WHERE 
+                    sm.Institute_id = @InstituteID 
+                    AND sm.class_id = @ClassID 
+                    AND sm.section_id = @SectionID
+                    AND sm.isActive = 1";
+
+            return _connection.Query<GetStudentListResponse>(query, new
+            {
+                request.InstituteID,
+                request.ClassID,
+                request.SectionID
+            });
+        }
+
+        public IEnumerable<GetRefundPaymentModeResponse> GetRefundPaymentMode()
+        {
+            var query = "SELECT PaymentModeID, PaymentModeType FROM tblFeesRefundPaymentMode ORDER BY PaymentModeID";
+            return _connection.Query<GetRefundPaymentModeResponse>(query);
         }
     }
 }
