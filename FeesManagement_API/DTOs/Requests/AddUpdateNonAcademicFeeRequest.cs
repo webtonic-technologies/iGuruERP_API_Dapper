@@ -2,7 +2,7 @@
 {
     public class AddUpdateNonAcademicFeeRequest
     {
-        public int NonAcademicFeesID { get; set; }
+        //public int NonAcademicFeesID { get; set; }
         public int InstituteID { get; set; }
         public int PayeeTypeID { get; set; }
         public int ClassID { get; set; }
