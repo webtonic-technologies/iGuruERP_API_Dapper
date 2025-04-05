@@ -10,11 +10,9 @@ namespace FeesManagement_API.Services.Interfaces
     {
         Task<ServiceResponse<int>> AddUpdateFeeHead(AddUpdateFeeHeadRequest request);
         Task<ServiceResponse<IEnumerable<FeeHeadResponse>>> GetAllFeeHead(GetAllFeeHeadRequest request);
-        Task<ServiceResponse<IEnumerable<FeeHeadResponse>>> GetAllFeeHeadDDL(GetAllFeeHeadDDLRequest request);
-
+        Task<ServiceResponse<IEnumerable<FeeHeadResponse>>> GetAllFeeHeadDDL(GetAllFeeHeadDDLRequest request); 
         Task<ServiceResponse<FeeHeadResponse>> GetFeeHeadById(int feeHeadId);
-        Task<ServiceResponse<int>> DeleteFeeHead(int feeHeadId);
-
+        Task<ServiceResponse<int>> DeleteFeeHead(int feeHeadId); 
         Task<ServiceResponse<IEnumerable<GetFeeHeadsDDLResponse>>> GetFeeHeadsDDL(GetFeeHeadsDDLRequest request);
 
     }
