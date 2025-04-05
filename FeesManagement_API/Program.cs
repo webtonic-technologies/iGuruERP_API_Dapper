@@ -75,13 +75,7 @@ builder.Services.AddScoped<IFeeWaiverRepository, FeeWaiverRepository>();
 
 builder.Services.AddScoped<IFeeDiscountRepository, FeeDiscountRepository>();
 builder.Services.AddScoped<IFeeDiscountService, FeeDiscountService>();
-
-builder.Services.AddScoped<IChequeClearanceRepository, ChequeClearanceRepository>();
-builder.Services.AddScoped<IChequeClearanceService, ChequeClearanceService>();
-
-builder.Services.AddScoped<IChequeBounceRepository, ChequeBounceRepository>();
-builder.Services.AddScoped<IChequeBounceService, ChequeBounceService>();
-
+ 
 builder.Services.AddScoped<IChequeTrackingRepository, ChequeTrackingRepository>();
 builder.Services.AddScoped<IChequeTrackingService, ChequeTrackingService>();
 
