@@ -8,5 +8,8 @@
         public string Class { get; set; }
         public string Section { get; set; }
         public string DateOfGeneration { get; set; } // Format: DD-MM-YYYY
+        public bool IsDelivered { get; set; }
+        public string Preview { get; set; }
+
     }
 }

@@ -309,5 +309,31 @@ namespace StudentManagement_API.Services.Implementations
                 return new ServiceResponse<int>(false, ex.Message, 0, 500);
             }
         }
+
+        public async Task<ServiceResponse<int>> SendCertificateAsync(SendCertificateRequest request)
+        {
+            try
+            {
+                return await _certificatesRepository.SendCertificateAsync(request);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(false, ex.Message, 0, 500);
+            }
+        }
+
+        public async Task<ServiceResponse<int>> CertificateDeliveredAsync(CertificateDeliveredRequest request)
+        {
+            try
+            {
+                return await _certificatesRepository.CertificateDeliveredAsync(request);
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResponse<int>(false, ex.Message, 0, 500);
+            }
+        }
+
+
     }
 }

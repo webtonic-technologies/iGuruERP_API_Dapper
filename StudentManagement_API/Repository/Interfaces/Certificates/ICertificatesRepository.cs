@@ -31,6 +31,8 @@ namespace StudentManagement_API.Repository.Interfaces
         Task<ServiceResponse<List<GetCertificateTemplatesListResponse>>> GetCertificateTemplatesList(GetCertificateTemplatesListRequest request);
         Task<ServiceResponse<int>> UpdateCertificateTemplate(UpdateCertificateTemplateRequest request);
         Task<ServiceResponse<int>> DeleteCertificateTemplate(DeleteCertificateTemplateRequest request);
+        Task<ServiceResponse<int>> SendCertificateAsync(SendCertificateRequest request);
+        Task<ServiceResponse<int>> CertificateDeliveredAsync(CertificateDeliveredRequest request);
 
     }
 }

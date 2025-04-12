@@ -726,48 +726,6 @@ namespace StudentManagement_API.Repository.Implementations
         //    return results;
         //}
 
-        //public async Task<IEnumerable<GetCertificateReportResponse>> GetCertificateReportAsync(GetCertificateReportRequest request)
-        //{
-        //    using var connection = new SqlConnection(_connectionString);
-        //    string sql = @"
-        //        SELECT 
-        //            s.student_id AS StudentID,
-        //            CONCAT(s.First_Name, ' ', ISNULL(s.Middle_Name, ''), ' ', s.Last_Name) AS StudentName,
-        //            s.Admission_Number AS AdmissionNumber,
-        //            c.class_name AS Class,
-        //            sec.section_name AS Section,
-        //            FORMAT(sc.CertificateDate, 'dd-MM-yyyy') AS DateOfGeneration
-        //        FROM tblStudentCertificate sc
-        //        INNER JOIN tbl_StudentMaster s ON sc.StudentID = s.student_id
-        //        INNER JOIN tbl_Class c ON s.class_id = c.class_id
-        //        INNER JOIN tbl_Section sec ON s.section_id = sec.section_id
-        //        WHERE sc.InstituteID = @InstituteID
-        //          AND s.AcademicYearCode = @AcademicYearCode
-        //          AND s.class_id = @ClassID
-        //          AND s.section_id = @SectionID
-        //          AND sc.TemplateID = @TemplateID
-        //          AND (
-        //                @Search IS NULL OR @Search = '' OR 
-        //                CONCAT(s.First_Name, ' ', ISNULL(s.Middle_Name, ''), ' ', s.Last_Name) LIKE '%' + @Search + '%'
-        //                OR s.Admission_Number LIKE '%' + @Search + '%'
-        //          )";
-
-        //    connection.Open();
-        //    var results = await connection.QueryAsync<GetCertificateReportResponse>(
-        //        sql,
-        //        new
-        //        {
-        //            InstituteID = request.InstituteID,
-        //            AcademicYearCode = request.AcademicYearCode,
-        //            ClassID = request.ClassID,
-        //            SectionID = request.SectionID,
-        //            TemplateID = request.TemplateID,
-        //            Search = request.Search
-        //        }
-        //    );
-        //    return results;
-        //}
-
 
         public async Task<ServiceResponse<IEnumerable<GetCertificateReportResponse>>> GetCertificateReportAsync(GetCertificateReportRequest request)
         {
@@ -778,7 +736,7 @@ namespace StudentManagement_API.Repository.Implementations
             var pageSize = request.PageSize < 1 ? 10 : request.PageSize;
             var offset = (pageNumber - 1) * pageSize;
 
-            // Count query to get the total number of records matching the filters (ignoring paging)
+            // Count query remains the same if you don't need the extra fields for count.
             string countSql = @"
         SELECT COUNT(*)
         FROM tblStudentCertificate sc
@@ -796,7 +754,7 @@ namespace StudentManagement_API.Repository.Implementations
                 OR s.Admission_Number LIKE '%' + @Search + '%'
           )";
 
-            // Main query with paging (an ORDER BY is required for OFFSET FETCH)
+            // Main query with LEFT JOIN to fetch delivery status and certificate preview.
             string sql = @"
         SELECT 
             s.student_id AS StudentID,
@@ -804,11 +762,17 @@ namespace StudentManagement_API.Repository.Implementations
             s.Admission_Number AS AdmissionNumber,
             c.class_name AS Class,
             sec.section_name AS Section,
-            FORMAT(sc.CertificateDate, 'dd-MM-yyyy') AS DateOfGeneration
+            FORMAT(sc.CertificateDate, 'dd-MM-yyyy') AS DateOfGeneration,
+            ISNULL(d.IsDelivered, 0) AS IsDelivered,
+            sc.CertificateFile AS Preview
         FROM tblStudentCertificate sc
         INNER JOIN tbl_StudentMaster s ON sc.StudentID = s.student_id
         INNER JOIN tbl_Class c ON s.class_id = c.class_id
         INNER JOIN tbl_Section sec ON s.section_id = sec.section_id
+        LEFT JOIN tblStudentCertificateDelivery d 
+            ON s.student_id = d.StudentID 
+            AND sc.CertificateID = d.CertificateID 
+            AND sc.InstituteID = d.InstituteID
         WHERE sc.InstituteID = @InstituteID
           AND s.AcademicYearCode = @AcademicYearCode
           AND s.class_id = @ClassID
@@ -819,8 +783,8 @@ namespace StudentManagement_API.Repository.Implementations
                 CONCAT(s.First_Name, ' ', ISNULL(s.Middle_Name, ''), ' ', s.Last_Name) LIKE '%' + @Search + '%'
                 OR s.Admission_Number LIKE '%' + @Search + '%'
           )
-          ORDER BY s.student_id
-          OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+        ORDER BY s.student_id
+        OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
 
             var parameters = new
             {
@@ -842,7 +806,7 @@ namespace StudentManagement_API.Repository.Implementations
             // Get the paged results
             var results = await connection.QueryAsync<GetCertificateReportResponse>(sql, parameters);
 
-            // Return a ServiceResponse that contains the data and the total record count
+            // Return the service response with the data and total count.
             return new ServiceResponse<IEnumerable<GetCertificateReportResponse>>(
                 success: true,
                 message: "Certificate report retrieved successfully.",
@@ -1376,5 +1340,110 @@ namespace StudentManagement_API.Repository.Implementations
                 return new ServiceResponse<int>(false, "Certificate template not found or delete failed", 0, 404);
             }
         }
+
+
+
+        public async Task<ServiceResponse<int>> SendCertificateAsync(SendCertificateRequest request)
+        {
+            int totalRowsAffected = 0;
+
+            using var connection = new SqlConnection(_connectionString);
+            connection.Open();
+            using var transaction = connection.BeginTransaction();
+
+            // Insert into tblStudentCertificateDelivery using the provided InstituteID and each student's data.
+            string sql = @"
+                INSERT INTO tblStudentCertificateDelivery (StudentID, CertificateID, InstituteID)
+                VALUES (@StudentID, @CertificateID, @InstituteID);
+            ";
+
+            foreach (var student in request.Students)
+            {
+                int rowsAffected = await connection.ExecuteAsync(
+                    sql,
+                    new
+                    {
+                        StudentID = student.StudentID,
+                        CertificateID = student.CertificateID,
+                        InstituteID = request.InstituteID
+                    },
+                    transaction
+                );
+
+                totalRowsAffected += rowsAffected;
+            }
+
+            transaction.Commit();
+
+            return new ServiceResponse<int>(
+                success: true,
+                message: "Certificates ready for sending recorded successfully.",
+                data: totalRowsAffected,
+                statusCode: 200
+            );
+        }
+        //    public async Task<ServiceResponse<int>> SendCertificateAsync(SendCertificateRequest request)
+        //    {
+        //        int totalRowsAffected = 0;
+
+        //        using var connection = new SqlConnection(_connectionString);
+        //        connection.Open();
+        //        using var transaction = connection.BeginTransaction();
+
+        //        // Insert only StudentID, CertificateID, and InstituteID.
+        //        // Delivery status (IsDelivered) is defaulted to 0 and DeliveryDate remains null.
+        //        string sql = @"
+        //    INSERT INTO tblStudentCertificateDelivery (StudentID, CertificateID, InstituteID)
+        //    VALUES (@StudentID, @CertificateID, @InstituteID);
+        //";
+
+        //        foreach (var studentId in request.StudentIDs)
+        //        {
+        //            int rowsAffected = await connection.ExecuteAsync(
+        //                sql,
+        //                new { StudentID = studentId, CertificateID = request.CertificateID, InstituteID = request.InstituteID },
+        //                transaction
+        //            );
+
+        //            totalRowsAffected += rowsAffected;
+        //        }
+
+        //        transaction.Commit();
+
+        //        return new ServiceResponse<int>(true, "Certificates ready for sending recorded successfully.", totalRowsAffected, 200);
+        //    }
+
+        public async Task<ServiceResponse<int>> CertificateDeliveredAsync(CertificateDeliveredRequest request)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            connection.Open();
+
+            string sql = @"
+            UPDATE tblStudentCertificateDelivery
+            SET IsDelivered = 1,
+                DeliveryDate = GETDATE()
+            WHERE StudentID = @StudentID 
+              AND CertificateID = @CertificateID 
+              AND InstituteID = @InstituteID;
+            SELECT @@ROWCOUNT;";
+
+            int rowsAffected = await connection.ExecuteScalarAsync<int>(
+                sql,
+                new
+                {
+                    StudentID = request.StudentID,
+                    CertificateID = request.CertificateID,
+                    InstituteID = request.InstituteID
+                }
+            );
+
+            return new ServiceResponse<int>(
+                true,
+                "Certificate delivery updated successfully.",
+                rowsAffected,
+                200
+            );
+        }
+
     }
 }
