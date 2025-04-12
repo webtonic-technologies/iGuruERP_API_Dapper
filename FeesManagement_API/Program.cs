@@ -69,13 +69,7 @@ builder.Services.AddScoped<IFeeCollectionRepository, FeeCollectionRepository>();
 
 builder.Services.AddScoped<IStudentInformationService, StudentInformationService>();
 builder.Services.AddScoped<IStudentInformationRepository, StudentInformationRepository>();
-
-builder.Services.AddScoped<IFeeWaiverService, FeeWaiverService>();
-builder.Services.AddScoped<IFeeWaiverRepository, FeeWaiverRepository>();
-
-builder.Services.AddScoped<IFeeDiscountRepository, FeeDiscountRepository>();
-builder.Services.AddScoped<IFeeDiscountService, FeeDiscountService>();
- 
+   
 builder.Services.AddScoped<IChequeTrackingRepository, ChequeTrackingRepository>();
 builder.Services.AddScoped<IChequeTrackingService, ChequeTrackingService>();
 
@@ -88,6 +82,8 @@ builder.Services.AddScoped<IFeesDashboardService, FeesDashboardService>();
 builder.Services.AddScoped<IFeeReceiptRepository, FeeReceiptRepository>(); 
 builder.Services.AddScoped<IFeeReceiptService, FeeReceiptService>();
 
+builder.Services.AddScoped<IPaymentChecklistRepository, PaymentChecklistRepository>();
+builder.Services.AddScoped<IPaymentChecklistService, PaymentChecklistService>();
 
 
 var app = builder.Build();

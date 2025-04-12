@@ -7,7 +7,6 @@
 
     public class FeeDiscount
     {
-        public int FeesDiscountID { get; set; } // This is required for updates
         public int StudentID { get; set; }
         public int ClassID { get; set; }
         public int SectionID { get; set; }
@@ -18,5 +17,8 @@
         public int TenuritySTMID { get; set; }
         public int FeeCollectionSTMID { get; set; }
         public decimal Amount { get; set; }
+        public int DiscountGivenBy { get; set; }
+        public string Reason { get; set; }
+
     }
 }

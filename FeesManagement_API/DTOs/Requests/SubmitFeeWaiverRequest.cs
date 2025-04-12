@@ -6,8 +6,7 @@
     }
 
     public class FeeWaiver
-    {
-        public int FeesWaiverID { get; set; }
+    { 
         public int StudentID { get; set; }
         public int ClassID { get; set; }
         public int SectionID { get; set; }
@@ -17,6 +16,9 @@
         public int FeeTenurityID { get; set; }
         public int TenuritySTMID { get; set; }
         public int FeeCollectionSTMID { get; set; }
-        public decimal Amount { get; set; }
+        public decimal Amount { get; set; } 
+        public int WaiverGivenBy { get; set; }
+        public string Reason { get; set; }
+
     }
 }
