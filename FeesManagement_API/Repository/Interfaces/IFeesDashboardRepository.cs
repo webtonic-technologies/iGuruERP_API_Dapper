@@ -1,15 +1,18 @@
-﻿using FeesManagement_API.DTOs.Requests;
-using FeesManagement_API.DTOs.Responses;
+﻿using FeesManagement_API.DTOs.Responses;
+using System.Threading.Tasks;
 
 namespace FeesManagement_API.Repository.Interfaces
 {
     public interface IFeesDashboardRepository
-    {
-        Task<decimal> GetTotalAmountCollectedAsync(int instituteId);
-        Task<decimal> GetTotalPendingAmountAsync(int instituteId);
-        Task<List<HeadWiseCollectedAmountResponse>> GetHeadWiseCollectedAmountAsync(HeadWiseCollectedAmountRequest request);
-        Task<List<DayWiseResponse>> GetDayWiseCollectedAmountAsync(DayWiseRequest request);
-        Task<List<FeeCollectionAnalysisResponse>> GetFeeCollectionAnalysisAsync(FeeCollectionAnalysisRequest request);
+    { 
+        Task<(decimal totalAmountCollected, decimal totalPendingAmount, decimal totalFineCollected)> GetFeeStatisticsAsync(int instituteId);
+        Task<GetHeadWiseCollectedAmountResponse> GetHeadWiseCollectedAmountAsync(int instituteId);
+        Task<GetDayWiseFeesResponse> GetDayWiseFeesAsync(int instituteId);
+        Task<GetClassSectionWiseResponse> GetClassSectionWiseAsync(int instituteId);
+        Task<GetTypeWiseCollectionResponse> GetTypeWiseCollectionAsync(int instituteId);
+        Task<GetModeWiseCollectionResponse> GetModeWiseCollectionAsync(int instituteId, int month, int year);
+        Task<GetCollectionAnalysisResponse> GetCollectionAnalysisAsync(int instituteId);
+
 
     }
-}
+} 

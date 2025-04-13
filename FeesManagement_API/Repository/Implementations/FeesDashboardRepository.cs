@@ -1,207 +1,493 @@
-﻿using Dapper;
-using FeesManagement_API.DTOs.Requests;
+﻿using System;
+using System.Data.SqlClient;
+using System.Threading.Tasks;
 using FeesManagement_API.DTOs.Responses;
 using FeesManagement_API.Repository.Interfaces;
-using System.Data;
+using Microsoft.Extensions.Configuration;
 
 namespace FeesManagement_API.Repository.Implementations
 {
     public class FeesDashboardRepository : IFeesDashboardRepository
     {
-        private readonly IDbConnection _dbConnection;
+        private readonly string _connectionString;
 
-        public FeesDashboardRepository(IDbConnection dbConnection)
+        public FeesDashboardRepository(IConfiguration configuration)
         {
-            _dbConnection = dbConnection;
+            _connectionString = configuration.GetConnectionString("DefaultConnection");
         }
 
-        public async Task<decimal> GetTotalAmountCollectedAsync(int instituteId)
+        public async Task<(decimal totalAmountCollected, decimal totalPendingAmount, decimal totalFineCollected)> GetFeeStatisticsAsync(int instituteId)
         {
-            string sql = @"
-            SELECT 
-                SUM(PaymentAmount) AS Total_Amount_Collected
-            FROM 
-                tblStudentFeePaymentTransaction 
-            WHERE 
-                InstituteID = @InstituteID";
-
-            var parameters = new { InstituteID = instituteId };
-            var result = await _dbConnection.ExecuteScalarAsync<decimal?>(sql, parameters);
-            return result ?? 0; // Return 0 if null
-        }
-
-        public async Task<decimal> GetTotalPendingAmountAsync(int instituteId)
-        {
+            // The SQL query uses a parameter for InstituteID.
             var query = @"
-            WITH StudentFees AS (
+            DECLARE @InstituteID INT = @InstituteIDParam;
+
+            WITH StudentFeeCTE AS
+            (
                 SELECT 
-                    fg.Fee AS Total_Fee, 
-                    COALESCE(sp_total.Paid, 0) AS Total_Paid, 
-                    COALESCE(d.Total_Discount, 0) AS Total_Discount,  
-                    COALESCE(w.Total_Waiver, 0) AS Total_Waiver
-                FROM 
-                    tbl_Class c
-                LEFT JOIN 
-                    tbl_Section s ON c.class_id = s.class_id
-                LEFT JOIN 
-                    tbl_StudentMaster sm ON sm.class_id = c.class_id AND sm.section_id = s.section_id
-                LEFT JOIN 
-                    tblFeeGroupClassSection fgcs ON sm.class_id = fgcs.ClassID AND sm.section_id = fgcs.SectionID
-                LEFT JOIN 
-                    tblFeeGroup fg ON fgcs.FeeGroupID = fg.FeeGroupID
-                LEFT JOIN 
-                    (SELECT StudentID, SUM(Amount) AS Paid FROM tblStudentFeePayment GROUP BY StudentID) sp_total ON sp_total.StudentID = sm.student_id
-                LEFT JOIN 
-                    (SELECT StudentID, SUM(Amount) AS Total_Discount FROM tblStudentDiscount GROUP BY StudentID) d ON d.StudentID = sm.student_id 
-                LEFT JOIN 
-                    (SELECT StudentID, SUM(Amount) AS Total_Waiver FROM tblStudentFeeWaiver GROUP BY StudentID) w ON w.StudentID = sm.student_id 
-                WHERE 
-                    c.institute_id = @InstituteID
+                    s.student_id,
+                    ISNULL(SUM(fg.Fee), 0) AS TotalFee,
+                    (
+                        SELECT ISNULL(SUM(sd.Amount), 0)
+                        FROM tblStudentDiscount sd
+                        WHERE sd.StudentID = s.student_id
+                            AND sd.InstituteID = @InstituteID
+                    ) AS TotalDiscount,
+                    (
+                        SELECT ISNULL(SUM(sw.Amount), 0)
+                        FROM tblStudentFeeWaiver sw
+                        WHERE sw.StudentID = s.student_id
+                            AND sw.InstituteID = @InstituteID
+                    ) AS TotalWaiver,
+                    (
+                        SELECT ISNULL(SUM(sp.Amount), 0)
+                        FROM tblStudentFeePayment sp
+                        WHERE sp.StudentID = s.student_id
+                            AND sp.InstituteID = @InstituteID
+                    ) AS TotalPaid
+                FROM tbl_StudentMaster s
+                INNER JOIN tblFeeGroupClassSection fgcs 
+                    ON fgcs.ClassID = s.class_id 
+                        AND fgcs.SectionID = s.section_id
+                INNER JOIN tblFeeGroup fg
+                    ON fg.FeeGroupID = fgcs.FeeGroupID
+                WHERE s.Institute_id = @InstituteID
+                    AND fg.InstituteID = @InstituteID
+                GROUP BY s.student_id
             )
+            SELECT
+                (SELECT ISNULL(SUM(t.TotalAmount), 0)
+                    FROM tblStudentFeePaymentTransaction t
+                    WHERE t.InstituteID = @InstituteID) AS TotalAmountCollected,
+                (SELECT ISNULL(SUM(t.LateFeesAmount), 0)
+                    FROM tblStudentFeePaymentTransaction t
+                    WHERE t.InstituteID = @InstituteID) AS TotalFineCollected,
+                SUM((A.TotalFee - A.TotalDiscount - A.TotalWaiver) - A.TotalPaid) AS TotalPendingAmount
+            FROM StudentFeeCTE A;
+            ";
 
-            SELECT 
-                SUM(Total_Fee - Total_Paid - Total_Discount - Total_Waiver) AS Total_Pending_Amount
-            FROM 
-                StudentFees;";
-
-            return await _dbConnection.QuerySingleOrDefaultAsync<decimal>(query, new { InstituteID = instituteId });
-        }
-
-        public async Task<List<HeadWiseCollectedAmountResponse>> GetHeadWiseCollectedAmountAsync(HeadWiseCollectedAmountRequest request)
-        {
-            var query = @"
-            WITH FeeCollection AS (
-                SELECT 
-                    fh.FeeHead,
-                    SUM(COALESCE(ts.Amount, tt.Amount, tm.Amount)) AS TotalFeeAmount
-                FROM 
-                    tbl_StudentMaster sm
-                INNER JOIN 
-                    tbl_Class c ON sm.class_id = c.class_id
-                INNER JOIN 
-                    tbl_Section s ON sm.section_id = s.section_id
-                INNER JOIN 
-                    tblFeeGroupClassSection fgcs ON sm.class_id = fgcs.ClassID AND sm.section_id = fgcs.SectionID
-                INNER JOIN 
-                    tblFeeGroup fg ON fgcs.FeeGroupID = fg.FeeGroupID
-                INNER JOIN 
-                    tblFeeHead fh ON fg.FeeHeadID = fh.FeeHeadID
-                LEFT JOIN 
-                    tblTenuritySingle ts ON fg.FeeTenurityID = 1 AND ts.FeeCollectionID = fgcs.FeeGroupID
-                LEFT JOIN 
-                    tblTenurityTerm tt ON fg.FeeTenurityID = 2 AND tt.FeeCollectionID = fgcs.FeeGroupID
-                LEFT JOIN 
-                    tblTenurityMonthly tm ON fg.FeeTenurityID = 3 AND tm.FeeCollectionID = fgcs.FeeGroupID
-                WHERE 
-                    sm.class_id = @ClassID 
-                    AND sm.section_id = @SectionID
-                    AND c.institute_id = @InstituteID
-                GROUP BY 
-                    fh.FeeHead
-            ),
-            PaidFees AS (
-                SELECT 
-                    fh.FeeHead,
-                    SUM(spt.PaymentAmount) AS TotalPaid
-                FROM 
-                    tblFeeHead fh
-                LEFT JOIN 
-                    tblStudentFeePayment sp ON fh.FeeHeadID = sp.FeeHeadID
-                LEFT JOIN 
-                    tblStudentFeePaymentTransaction spt ON sp.FeesPaymentID = spt.PaymentIDs
-                WHERE 
-                    sp.InstituteID = @InstituteID
-                GROUP BY 
-                    fh.FeeHead
-            ),
-            TotalSummary AS (
-                SELECT 
-                    SUM(COALESCE(fc.TotalFeeAmount, 0)) AS GrandTotalFeeAmount,
-                    SUM(COALESCE(pf.TotalPaid, 0)) AS GrandTotalPaid
-                FROM 
-                    FeeCollection fc
-                LEFT JOIN 
-                    PaidFees pf ON fc.FeeHead = pf.FeeHead
-            )
-
-            SELECT 
-                fc.FeeHead,
-                COALESCE(fc.TotalFeeAmount, 0) AS TotalFeeAmount,
-                COALESCE(pf.TotalPaid, 0) AS TotalPaid,
-                (COALESCE(fc.TotalFeeAmount, 0) - COALESCE(pf.TotalPaid, 0)) AS Balance,
-                CASE 
-                    WHEN ts.GrandTotalFeeAmount > 0 THEN 
-                        (COALESCE(pf.TotalPaid, 0) * 100.0 / ts.GrandTotalFeeAmount)
-                    ELSE 0
-                END AS PercentageCollected
-            FROM 
-                FeeCollection fc
-            LEFT JOIN 
-                PaidFees pf ON fc.FeeHead = pf.FeeHead
-            CROSS JOIN 
-                TotalSummary ts  
-            ORDER BY 
-                fc.FeeHead;";
-
-            return (await _dbConnection.QueryAsync<HeadWiseCollectedAmountResponse>(query, request)).AsList();
-        }
-
-        public async Task<List<DayWiseResponse>> GetDayWiseCollectedAmountAsync(DayWiseRequest request)
-        {
-            var query = @"
-                WITH Last7Days AS (
-                    SELECT CAST(GETDATE() - n AS DATE) AS Transaction_Date
-                    FROM (VALUES (0), (1), (2), (3), (4), (5), (6)) AS Numbers(n)
-                )
-
-                SELECT 
-                    l.Transaction_Date,
-                    COALESCE(SUM(spt.PaymentAmount), 0) AS TotalCollectedAmount
-                FROM 
-                    Last7Days l
-                LEFT JOIN 
-                    tblStudentFeePaymentTransaction spt ON CAST(spt.CashTransactionDate AS DATE) = l.Transaction_Date
-                    AND spt.InstituteID = @InstituteID
-                GROUP BY 
-                    l.Transaction_Date
-                ORDER BY 
-                    l.Transaction_Date;";
-
-            var parameters = new { InstituteID = request.InstituteID };
-            var result = await _dbConnection.QueryAsync(query, parameters);
-
-            return result.Select(r => new DayWiseResponse
+            using (var connection = new SqlConnection(_connectionString))
             {
-                TransactionDate = ((DateTime)r.Transaction_Date).ToString("MMM dd"), // Format the date here
-                TotalCollectedAmount = r.TotalCollectedAmount
-            }).ToList();
+                await connection.OpenAsync();
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@InstituteIDParam", instituteId);
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            decimal totalAmountCollected = reader["TotalAmountCollected"] != DBNull.Value ? Convert.ToDecimal(reader["TotalAmountCollected"]) : 0;
+                            decimal totalFineCollected = reader["TotalFineCollected"] != DBNull.Value ? Convert.ToDecimal(reader["TotalFineCollected"]) : 0;
+                            decimal totalPendingAmount = reader["TotalPendingAmount"] != DBNull.Value ? Convert.ToDecimal(reader["TotalPendingAmount"]) : 0;
+                            return (totalAmountCollected, totalPendingAmount, totalFineCollected);
+                        }
+                    }
+                }
+            }
+            return (0, 0, 0);
         }
 
-        public async Task<List<FeeCollectionAnalysisResponse>> GetFeeCollectionAnalysisAsync(FeeCollectionAnalysisRequest request)
+
+        public async Task<GetHeadWiseCollectedAmountResponse> GetHeadWiseCollectedAmountAsync(int instituteId)
+        {
+            // This query uses a CTE to compute per-head collection 
+            // and then computes total amount and head-wise percentages.
+            var query = @"
+        DECLARE @InstituteID INT = @InstituteIDParam;
+
+        WITH FeeHeadData AS
+        (
+            SELECT 
+               fh.FeeHead,
+               SUM(sfp.Amount) AS CollectedAmount
+            FROM tblStudentFeePayment AS sfp
+            INNER JOIN tblFeeHead AS fh 
+                ON sfp.FeeHeadID = fh.FeeHeadID
+            INNER JOIN tblStudentFeePaymentTransaction AS txn
+                ON sfp.TransactionCode = txn.TransactionCode
+            WHERE 
+               sfp.InstituteID = @InstituteID
+               AND fh.InstituteID = @InstituteID
+               AND txn.InstituteID = @InstituteID
+            GROUP BY fh.FeeHead
+        )
+        SELECT 
+           (SELECT SUM(CollectedAmount) FROM FeeHeadData) AS TotalAmount,
+           FeeHead,
+           (CollectedAmount * 100.0) / (SELECT SUM(CollectedAmount) FROM FeeHeadData) AS Percentage
+        FROM FeeHeadData
+        ORDER BY CollectedAmount DESC;
+        ";
+
+            var response = new GetHeadWiseCollectedAmountResponse();
+            var headWiseList = new List<HeadWiseCollected>();
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@InstituteIDParam", instituteId);
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        decimal totalAmount = 0;
+                        while (await reader.ReadAsync())
+                        {
+                            // Read the total amount from the first row (it is the same for every row).
+                            if (totalAmount == 0)
+                            {
+                                totalAmount = reader["TotalAmount"] != DBNull.Value ? Convert.ToDecimal(reader["TotalAmount"]) : 0;
+                            }
+                            headWiseList.Add(new HeadWiseCollected
+                            {
+                                FeeHead = reader["FeeHead"].ToString(),
+                                Percentage = reader["Percentage"] != DBNull.Value ? Convert.ToDecimal(reader["Percentage"]) : 0
+                            });
+                        }
+                        response.TotalAmount = totalAmount;
+                        response.HeadWise = headWiseList;
+                    }
+                }
+            }
+            return response;
+        }
+
+        public async Task<GetDayWiseFeesResponse> GetDayWiseFeesAsync(int instituteId)
         {
             var query = @"
-            WITH Last12Months AS (
-                SELECT DATEADD(MONTH, -n, EOMONTH(GETDATE())) AS Month_Start
-                FROM (VALUES (0), (1), (2), (3), (4), (5), (6), (7), (8), (9), (10), (11)) AS Numbers(n)
+            DECLARE @InstituteID INT = @InstituteIDParam;
+
+            ;WITH Last7Days AS
+            (
+                SELECT CONVERT(DATE, DATEADD(DAY, i, CAST(GETDATE() AS DATE))) AS [Day]
+                FROM 
+                (
+                    SELECT 0 AS i 
+                    UNION ALL SELECT -1 
+                    UNION ALL SELECT -2 
+                    UNION ALL SELECT -3 
+                    UNION ALL SELECT -4 
+                    UNION ALL SELECT -5 
+                    UNION ALL SELECT -6
+                ) AS OffsetValues
             )
             SELECT 
-                FORMAT(l.Month_Start, 'MMMM yyyy') AS Month,  -- Format the month for better readability
-                COALESCE(SUM(spt.PaymentAmount), 0) AS TotalCollectedAmount  -- Ensure to show 0 if no payments
-            FROM 
-                Last12Months l
-            LEFT JOIN 
-                tblStudentFeePaymentTransaction spt ON 
-                    MONTH(spt.CashTransactionDate) = MONTH(l.Month_Start) AND 
-                    YEAR(spt.CashTransactionDate) = YEAR(l.Month_Start) AND 
-                    spt.InstituteID = @InstituteID
-            GROUP BY 
-                l.Month_Start
-            ORDER BY 
-                l.Month_Start DESC;";  // Order by month, newest first
+                L.[Day] AS TransactionDate,
+                ISNULL(SUM(txn.TotalAmount), 0) AS CollectedAmount
+            FROM Last7Days AS L
+            LEFT JOIN tblStudentFeePaymentTransaction txn
+                ON CAST(txn.TransactionDate AS DATE) = L.[Day]
+                AND txn.InstituteID = @InstituteID
+            GROUP BY L.[Day]
+            ORDER BY L.[Day];
+            ";
 
-            var parameters = new { InstituteID = request.InstituteID };
-            return (await _dbConnection.QueryAsync<FeeCollectionAnalysisResponse>(query, parameters)).ToList();
+            var dayWiseList = new List<DayWiseFee>();
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@InstituteIDParam", instituteId);
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            // Get the date from the reader and format it as "MMM dd"
+                            DateTime transactionDate = reader["TransactionDate"] != DBNull.Value
+                                ? Convert.ToDateTime(reader["TransactionDate"])
+                                : DateTime.MinValue;
+                            string formattedDay = transactionDate.ToString("MMM dd");
+
+                            decimal amountCollected = reader["CollectedAmount"] != DBNull.Value
+                                ? Convert.ToDecimal(reader["CollectedAmount"])
+                                : 0;
+
+                            dayWiseList.Add(new DayWiseFee
+                            {
+                                Day = formattedDay,
+                                Amount = amountCollected
+                            });
+                        }
+                    }
+                }
+            }
+
+            var response = new GetDayWiseFeesResponse
+            {
+                DayWiseFees = dayWiseList
+            };
+
+            return response;
+        }
+         
+        public async Task<GetClassSectionWiseResponse> GetClassSectionWiseAsync(int instituteId)
+        {
+            var query = @"
+            DECLARE @InstituteID INT = @InstituteIDParam;
+
+            SELECT 
+                c.class_id,
+                c.class_name,
+                s.section_id,
+                s.section_name,
+                ISNULL(SUM(CASE WHEN txn.TransactionCode IS NOT NULL 
+                                THEN sfp.Amount 
+                                ELSE 0 
+                           END), 0) AS TotalCollected
+            FROM tbl_Class c
+            INNER JOIN tbl_Section s
+                ON c.class_id = s.class_id
+            LEFT JOIN tbl_StudentMaster sm
+                ON sm.class_id = c.class_id 
+                AND sm.section_id = s.section_id
+                AND sm.Institute_id = @InstituteID
+            LEFT JOIN tblStudentFeePayment sfp
+                ON sfp.StudentID = sm.student_id
+                AND sfp.InstituteID = @InstituteID
+            LEFT JOIN tblStudentFeePaymentTransaction txn
+                ON txn.TransactionCode = sfp.TransactionCode
+                AND txn.InstituteID = @InstituteID
+            WHERE 
+                c.Institute_id = @InstituteID
+            GROUP BY 
+                c.class_id,
+                c.class_name,
+                s.section_id,
+                s.section_name
+            ORDER BY 
+                c.class_id,
+                s.section_id;
+            ";
+
+            var rows = new List<(int ClassId, string ClassName, int SectionId, string SectionName, decimal TotalCollected)>();
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@InstituteIDParam", instituteId);
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            int classId = reader["class_id"] != DBNull.Value ? Convert.ToInt32(reader["class_id"]) : 0;
+                            string className = reader["class_name"].ToString();
+                            int sectionId = reader["section_id"] != DBNull.Value ? Convert.ToInt32(reader["section_id"]) : 0;
+                            string sectionName = reader["section_name"].ToString();
+                            decimal totalCollected = reader["TotalCollected"] != DBNull.Value ? Convert.ToDecimal(reader["TotalCollected"]) : 0;
+
+                            rows.Add((classId, className, sectionId, sectionName, totalCollected));
+                        }
+                    }
+                }
+            }
+
+            // Group the results by class.
+            var classGroups = rows.GroupBy(r => new { r.ClassId, r.ClassName })
+                                  .Select(g => new ClassWiseFee
+                                  {
+                                      ClassName = g.Key.ClassName,
+                                      Amount = g.Sum(x => x.TotalCollected),
+                                      Section = g.Select(x => new SectionWiseFee
+                                      {
+                                          SectionName = x.SectionName,
+                                          Amount = x.TotalCollected
+                                      }).ToList()
+                                  }).ToList();
+
+            return new GetClassSectionWiseResponse
+            {
+                CollectedAmount = classGroups
+            };
         }
 
+        public async Task<GetTypeWiseCollectionResponse> GetTypeWiseCollectionAsync(int instituteId)
+        {
+            var query = @"
+            DECLARE @InstituteID INT = @InstituteIDParam;
+
+            WITH FeeTypePayments AS (
+                SELECT 
+                    fh.RegTypeID,
+                    SUM(sfp.Amount) AS CollectedAmount
+                FROM tblStudentFeePayment AS sfp
+                INNER JOIN tblStudentFeePaymentTransaction AS txn 
+                    ON sfp.TransactionCode = txn.TransactionCode
+                INNER JOIN tblFeeHead AS fh
+                    ON sfp.FeeHeadID = fh.FeeHeadID
+                WHERE 
+                    sfp.InstituteID = @InstituteID
+                    AND txn.InstituteID = @InstituteID
+                    AND fh.InstituteID = @InstituteID
+                GROUP BY fh.RegTypeID
+            )
+            SELECT 
+                r.RegTypeID,
+                r.RegType AS FeeType,
+                ISNULL(fp.CollectedAmount, 0) AS CollectedAmount
+            FROM tblFeeHeadingRegType AS r
+            LEFT JOIN FeeTypePayments fp
+                ON r.RegTypeID = fp.RegTypeID
+            ORDER BY r.RegTypeID;
+            ";
+            var collections = new List<TypeWiseCollection>();
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@InstituteIDParam", instituteId);
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            var feeType = reader["FeeType"].ToString();
+                            var collectedAmount = reader["CollectedAmount"] != DBNull.Value
+                                                    ? Convert.ToDecimal(reader["CollectedAmount"])
+                                                    : 0;
+                            collections.Add(new TypeWiseCollection
+                            {
+                                Type = feeType,
+                                Amount = collectedAmount
+                            });
+                        }
+                    }
+                }
+            }
+
+            return new GetTypeWiseCollectionResponse { Collections = collections };
+        }
+
+        public async Task<GetModeWiseCollectionResponse> GetModeWiseCollectionAsync(int instituteId, int month, int year)
+        {
+            var query = @"
+DECLARE @InstituteID INT = @InstituteIDParam;
+DECLARE @FilterMonth INT = @FilterMonthParam;
+DECLARE @FilterYear INT = @FilterYearParam;
+
+WITH TransactionAggregates AS
+(
+    SELECT 
+        PaymentModeID,
+        SUM(TotalAmount) AS CollectedAmount
+    FROM tblStudentFeePaymentTransaction
+    WHERE 
+        InstituteID = @InstituteID
+        AND MONTH(TransactionDate) = @FilterMonth
+        AND YEAR(TransactionDate) = @FilterYear
+    GROUP BY PaymentModeID
+)
+SELECT 
+    pm.PaymentModeID,
+    pm.PaymentMode,
+    ISNULL(txnAgg.CollectedAmount, 0) AS CollectedAmount
+FROM tblPaymentMode pm
+LEFT JOIN TransactionAggregates txnAgg
+    ON pm.PaymentModeID = txnAgg.PaymentModeID
+ORDER BY pm.PaymentModeID;
+";
+            var collections = new List<ModeWiseCollection>();
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@InstituteIDParam", instituteId);
+                    command.Parameters.AddWithValue("@FilterMonthParam", month);
+                    command.Parameters.AddWithValue("@FilterYearParam", year);
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            string type = reader["PaymentMode"] != DBNull.Value ? reader["PaymentMode"].ToString() : string.Empty;
+                            decimal amount = reader["CollectedAmount"] != DBNull.Value ? Convert.ToDecimal(reader["CollectedAmount"]) : 0;
+
+                            collections.Add(new ModeWiseCollection { Type = type, Amount = amount });
+                        }
+                    }
+                }
+            }
+
+            return new GetModeWiseCollectionResponse { Collections = collections };
+        }
+
+        public async Task<GetCollectionAnalysisResponse> GetCollectionAnalysisAsync(int instituteId)
+        {
+            var query = @"
+DECLARE @InstituteID INT = @InstituteIDParam;
+
+;WITH Last10Days AS
+(
+    -- Generate a list of 10 dates (today and the previous 9 days)
+    SELECT CONVERT(DATE, DATEADD(DAY, -v.n, GETDATE())) AS [Day]
+    FROM (VALUES (0),(1),(2),(3),(4),(5),(6),(7),(8),(9)) AS v(n)
+),
+DailyCollections AS
+(
+    -- Aggregate the total fee collection per day from fee payment transactions
+    SELECT 
+         CONVERT(DATE, txn.TransactionDate) AS TransDate,
+         SUM(txn.TotalAmount) AS AmountCollected
+    FROM tblStudentFeePaymentTransaction txn
+    WHERE txn.InstituteID = @InstituteID
+    GROUP BY CONVERT(DATE, txn.TransactionDate)
+)
+SELECT
+    L.[Day] AS CollectionDate,
+    ISNULL(DC.AmountCollected, 0) AS AmountCollected
+FROM Last10Days L
+LEFT JOIN DailyCollections DC
+    ON L.[Day] = DC.TransDate
+ORDER BY L.[Day];
+";
+            var dayCollections = new List<DayWiseCollection>();
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                using (var command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@InstituteIDParam", instituteId);
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            // Read the date and format it as "MMM dd" (e.g., "Apr 13")
+                            DateTime collectionDate = reader["CollectionDate"] != DBNull.Value
+                                ? Convert.ToDateTime(reader["CollectionDate"])
+                                : DateTime.MinValue;
+                            string formattedDate = collectionDate.ToString("MMM dd");
+
+                            decimal amountCollected = reader["AmountCollected"] != DBNull.Value
+                                ? Convert.ToDecimal(reader["AmountCollected"])
+                                : 0;
+
+                            dayCollections.Add(new DayWiseCollection
+                            {
+                                Date = formattedDate,
+                                Amount = amountCollected
+                            });
+                        }
+                    }
+                }
+            }
+
+            return new GetCollectionAnalysisResponse
+            {
+                AmountCollected = dayCollections
+            };
+        }
     }
-}
+} 

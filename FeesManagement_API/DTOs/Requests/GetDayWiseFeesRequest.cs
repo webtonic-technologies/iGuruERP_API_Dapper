@@ -1,6 +1,6 @@
 ﻿namespace FeesManagement_API.DTOs.Requests
 {
-    public class FeeCollectionAnalysisRequest
+    public class GetDayWiseFeesRequest
     {
         public int InstituteID { get; set; }
     }

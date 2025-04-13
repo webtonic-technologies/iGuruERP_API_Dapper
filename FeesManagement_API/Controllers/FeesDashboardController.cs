@@ -1,13 +1,13 @@
-﻿using FeesManagement_API.DTOs.Requests;
+﻿using System.Threading.Tasks;
+using FeesManagement_API.DTOs.Requests;
 using FeesManagement_API.DTOs.Responses;
+using FeesManagement_API.DTOs.ServiceResponse;
 using FeesManagement_API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using FeesManagement_API.DTOs.ServiceResponse;
-
 
 namespace FeesManagement_API.Controllers
 {
-    [Route("iGuru/Dashboard/FeesDashboard/[controller]")]
+    [Route("iGuru/Dashboard/FeesDashboard")]
     [ApiController]
     public class FeesDashboardController : ControllerBase
     {
@@ -18,46 +18,53 @@ namespace FeesManagement_API.Controllers
             _feesDashboardService = feesDashboardService;
         }
 
-        [HttpPost("TotalAmountCollected")]
-        public async Task<IActionResult> GetTotalAmountCollected([FromBody] TotalAmountCollectedRequest request)
+        [HttpPost("GetFeeStatistics")]
+        public async Task<IActionResult> GetFeeStatistics([FromBody] GetFeeStatisticsRequest request)
         {
-            try
-            {
-                var response = await _feesDashboardService.GetTotalAmountCollectedAsync(request);
-                return Ok(response);
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
+            var result = await _feesDashboardService.GetFeeStatisticsAsync(request.InstituteID);
+            return StatusCode(result.StatusCode, result);
         }
 
-        [HttpPost("TotalPendingAmount")]
-        public async Task<ActionResult<ServiceResponse<TotalPendingAmountResponse>>> GetTotalPendingAmount([FromBody] TotalPendingAmountRequest request)
+        [HttpPost("GetHeadWiseCollectedAmount")]
+        public async Task<IActionResult> GetHeadWiseCollectedAmount([FromBody] GetHeadWiseCollectedAmountRequest request)
         {
-            var response = await _feesDashboardService.GetTotalPendingAmountAsync(request);
-            return Ok(response);
+            var result = await _feesDashboardService.GetHeadWiseCollectedAmountAsync(request.InstituteID);
+            return StatusCode(result.StatusCode, result);
         }
 
-        [HttpPost("HeadWiseCollectedAmount")]
-        public async Task<ActionResult<ServiceResponse<List<HeadWiseCollectedAmountResponse>>>> GetHeadWiseCollectedAmount([FromBody] HeadWiseCollectedAmountRequest request)
+        [HttpPost("GetDayWiseFees")]
+        public async Task<IActionResult> GetDayWiseFees([FromBody] GetDayWiseFeesRequest request)
         {
-            var response = await _feesDashboardService.GetHeadWiseCollectedAmountAsync(request);
-            return Ok(response);
+            var result = await _feesDashboardService.GetDayWiseFeesAsync(request.InstituteID);
+            return StatusCode(result.StatusCode, result);
         }
 
-        [HttpPost("DayWise")]
-        public async Task<ActionResult<ServiceResponse<List<DayWiseResponse>>>> GetDayWiseCollectedAmount([FromBody] DayWiseRequest request)
+        [HttpPost("GetClassSectionWise")]
+        public async Task<IActionResult> GetClassSectionWise([FromBody] GetClassSectionWiseRequest request)
         {
-            var response = await _feesDashboardService.GetDayWiseCollectedAmountAsync(request);
-            return Ok(response);
+            var result = await _feesDashboardService.GetClassSectionWiseAsync(request.InstituteID);
+            return StatusCode(result.StatusCode, result);
         }
 
-        [HttpPost("FeeCollectionAnalysis")]
-        public async Task<ActionResult<ServiceResponse<List<FeeCollectionAnalysisResponse>>>> FeeCollectionAnalysis([FromBody] FeeCollectionAnalysisRequest request)
+        [HttpPost("GetTypeWiseCollection")]
+        public async Task<IActionResult> GetTypeWiseCollection([FromBody] GetTypeWiseCollectionRequest request)
         {
-            var result = await _feesDashboardService.GetFeeCollectionAnalysisAsync(request);
-            return Ok(new ServiceResponse<List<FeeCollectionAnalysisResponse>>(true, "Data retrieved successfully", result, 200));
+            var result = await _feesDashboardService.GetTypeWiseCollectionAsync(request.InstituteID);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpPost("GetModeWiseCollection")]
+        public async Task<IActionResult> GetModeWiseCollection([FromBody] GetModeWiseCollectionRequest request)
+        {
+            var result = await _feesDashboardService.GetModeWiseCollectionAsync(request.InstituteID, request.Month, request.Year);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpPost("GetCollectionAnalysis")]
+        public async Task<IActionResult> GetCollectionAnalysis([FromBody] GetCollectionAnalysisRequest request)
+        {
+            var result = await _feesDashboardService.GetCollectionAnalysisAsync(request.InstituteID);
+            return StatusCode(result.StatusCode, result);
         }
     }
-}
+} 

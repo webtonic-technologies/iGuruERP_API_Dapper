@@ -1,8 +1,8 @@
-﻿using FeesManagement_API.DTOs.Requests;
+﻿using System.Threading.Tasks;
 using FeesManagement_API.DTOs.Responses;
+using FeesManagement_API.DTOs.ServiceResponse;
 using FeesManagement_API.Repository.Interfaces;
 using FeesManagement_API.Services.Interfaces;
-using FeesManagement_API.DTOs.ServiceResponse;
 
 namespace FeesManagement_API.Services.Implementations
 {
@@ -15,36 +15,72 @@ namespace FeesManagement_API.Services.Implementations
             _feesDashboardRepository = feesDashboardRepository;
         }
 
-        public async Task<TotalAmountCollectedResponse> GetTotalAmountCollectedAsync(TotalAmountCollectedRequest request)
+        public async Task<ServiceResponse<GetFeeStatisticsResponse>> GetFeeStatisticsAsync(int instituteId)
         {
-            var totalAmount = await _feesDashboardRepository.GetTotalAmountCollectedAsync(request.InstituteID);
-            return new TotalAmountCollectedResponse
+            var (totalAmountCollected, totalPendingAmount, totalFineCollected) = await _feesDashboardRepository.GetFeeStatisticsAsync(instituteId);
+
+            var response = new GetFeeStatisticsResponse
             {
-                TotalAmountCollected = totalAmount
+                TotalAmountCollected = totalAmountCollected,
+                TotalPendingAmount = totalPendingAmount,
+                TotalFineCollected = totalFineCollected
             };
+
+            return new ServiceResponse<GetFeeStatisticsResponse>(true, "Fee statistics retrieved successfully", response, 200);
         }
 
-        public async Task<ServiceResponse<TotalPendingAmountResponse>> GetTotalPendingAmountAsync(TotalPendingAmountRequest request)
+        public async Task<ServiceResponse<GetHeadWiseCollectedAmountResponse>> GetHeadWiseCollectedAmountAsync(int instituteId)
         {
-            var totalPendingAmount = await _feesDashboardRepository.GetTotalPendingAmountAsync(request.InstituteID);
-            return new ServiceResponse<TotalPendingAmountResponse>(true, "Data retrieved successfully.", new TotalPendingAmountResponse
-            {
-                TotalPendingAmount = totalPendingAmount
-            }, 200);
+            var result = await _feesDashboardRepository.GetHeadWiseCollectedAmountAsync(instituteId);
+            return new ServiceResponse<GetHeadWiseCollectedAmountResponse>(true, "Head-wise collected amounts retrieved successfully", result, 200);
         }
-        public async Task<ServiceResponse<List<HeadWiseCollectedAmountResponse>>> GetHeadWiseCollectedAmountAsync(HeadWiseCollectedAmountRequest request)
+
+        public async Task<ServiceResponse<GetDayWiseFeesResponse>> GetDayWiseFeesAsync(int instituteId)
         {
-            var amounts = await _feesDashboardRepository.GetHeadWiseCollectedAmountAsync(request);
-            return new ServiceResponse<List<HeadWiseCollectedAmountResponse>>(true, "Data retrieved successfully.", amounts, 200);
+            var responseData = await _feesDashboardRepository.GetDayWiseFeesAsync(instituteId);
+            return new ServiceResponse<GetDayWiseFeesResponse>(true, "Day-wise fee collection retrieved successfully", responseData, 200);
         }
-        public async Task<ServiceResponse<List<DayWiseResponse>>> GetDayWiseCollectedAmountAsync(DayWiseRequest request)
+
+        public async Task<ServiceResponse<GetClassSectionWiseResponse>> GetClassSectionWiseAsync(int instituteId)
         {
-            var collectedAmounts = await _feesDashboardRepository.GetDayWiseCollectedAmountAsync(request);
-            return new ServiceResponse<List<DayWiseResponse>>(true, "Data retrieved successfully.", collectedAmounts, 200);
+            var result = await _feesDashboardRepository.GetClassSectionWiseAsync(instituteId);
+            return new ServiceResponse<GetClassSectionWiseResponse>(
+                true,
+                "Class-section wise fee collection retrieved successfully",
+                result,
+                200);
         }
-        public async Task<List<FeeCollectionAnalysisResponse>> GetFeeCollectionAnalysisAsync(FeeCollectionAnalysisRequest request)
+
+        public async Task<ServiceResponse<GetTypeWiseCollectionResponse>> GetTypeWiseCollectionAsync(int instituteId)
         {
-            return await _feesDashboardRepository.GetFeeCollectionAnalysisAsync(request);
+            var result = await _feesDashboardRepository.GetTypeWiseCollectionAsync(instituteId);
+            return new ServiceResponse<GetTypeWiseCollectionResponse>(
+                true,
+                "Type-wise collection retrieved successfully",
+                result,
+                200);
+        }
+
+        public async Task<ServiceResponse<GetModeWiseCollectionResponse>> GetModeWiseCollectionAsync(int instituteId, int month, int year)
+        {
+            var result = await _feesDashboardRepository.GetModeWiseCollectionAsync(instituteId, month, year);
+            return new ServiceResponse<GetModeWiseCollectionResponse>(
+                true,
+                "Mode-wise collection retrieved successfully",
+                result,
+                200);
+        }
+
+        public async Task<ServiceResponse<GetCollectionAnalysisResponse>> GetCollectionAnalysisAsync(int instituteId)
+        {
+            var result = await _feesDashboardRepository.GetCollectionAnalysisAsync(instituteId);
+            return new ServiceResponse<GetCollectionAnalysisResponse>(
+                true,
+                "Collection analysis retrieved successfully",
+                result,
+                200);
         }
     }
 }
+
+ 
