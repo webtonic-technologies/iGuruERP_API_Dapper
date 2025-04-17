@@ -2,6 +2,7 @@
 {
     public class GetCertificateReportResponse
     {
+        public int CertificateID { get; set; }
         public int StudentID { get; set; }
         public string StudentName { get; set; }
         public string AdmissionNumber { get; set; }

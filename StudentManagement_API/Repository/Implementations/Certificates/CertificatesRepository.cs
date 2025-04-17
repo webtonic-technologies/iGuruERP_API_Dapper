@@ -757,6 +757,7 @@ namespace StudentManagement_API.Repository.Implementations
             // Main query with LEFT JOIN to fetch delivery status and certificate preview.
             string sql = @"
         SELECT 
+            sc.CertificateID AS CertificateID,
             s.student_id AS StudentID,
             CONCAT(s.First_Name, ' ', ISNULL(s.Middle_Name, ''), ' ', s.Last_Name) AS StudentName,
             s.Admission_Number AS AdmissionNumber,
