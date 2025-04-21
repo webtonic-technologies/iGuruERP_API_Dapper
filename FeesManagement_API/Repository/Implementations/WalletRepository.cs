@@ -196,9 +196,7 @@ namespace FeesManagement_API.Repository.Implementations
             string historyQuery = @"
                 SELECT
                     -- Example of how to convert a DateTime to a string (if you have a CreatedOn column):
-                    --CONVERT(VARCHAR(20), sw.CreatedOn, 120) AS PaymentDate, 
-                    '' AS PaymentDate, 
-
+                    FORMAT(sw.PaymentDate, 'dd-MM-yyyy') + ' at ' + FORMAT(sw.PaymentDate, 'hh:mmtt') AS PaymentDate,  
                     CASE 
                         WHEN sw.PaymentModeID = 1 THEN 'Cash'
                         WHEN sw.PaymentModeID = 2 THEN 'Online'
@@ -221,6 +219,15 @@ namespace FeesManagement_API.Repository.Implementations
             };
 
             var walletHistoryItems = _connection.Query<GetWalletHistoryItem>(historyQuery, historyParams).ToList();
+
+            // compute running balance
+            decimal runningBalance = 0m;
+            foreach (var item in walletHistoryItems)
+            {
+                runningBalance += item.Credit - item.Debit;
+                item.Balance = runningBalance;
+            }
+
 
             // 2) Query for total debits, credits, and available balance
             string totalQuery = @"
@@ -265,21 +272,21 @@ namespace FeesManagement_API.Repository.Implementations
         {
             // Query to get wallet history items
             string historyQuery = @"
-        SELECT 
-            --CONVERT(VARCHAR(20), sw.CreatedOn, 120) AS PaymentDate, 
-            '' AS PaymentDate, 
-            CASE 
-                WHEN sw.PaymentModeID = 1 THEN 'Cash'
-                WHEN sw.PaymentModeID = 2 THEN 'Online'
-                ELSE 'Other'
-            END AS PaymentMode,
-            CASE WHEN sw.JournalEntriesTypeID = 1 THEN sw.Amount ELSE 0 END AS Debit,
-            CASE WHEN sw.JournalEntriesTypeID = 2 THEN sw.Amount ELSE 0 END AS Credit,
-            sw.Comment
-        FROM tblStudentWallet sw
-        WHERE sw.StudentID = @StudentID AND sw.InstituteID = @InstituteID
-        ORDER BY sw.WalletID;
-    ";
+            SELECT 
+                --CONVERT(VARCHAR(20), sw.CreatedOn, 120) AS PaymentDate, 
+                FORMAT(sw.PaymentDate, 'dd-MM-yyyy') + ' at ' + FORMAT(sw.PaymentDate, 'hh:mmtt') AS PaymentDate, 
+                CASE 
+                    WHEN sw.PaymentModeID = 1 THEN 'Cash'
+                    WHEN sw.PaymentModeID = 2 THEN 'Online'
+                    ELSE 'Other'
+                END AS PaymentMode,
+                CASE WHEN sw.JournalEntriesTypeID = 1 THEN sw.Amount ELSE 0 END AS Debit,
+                CASE WHEN sw.JournalEntriesTypeID = 2 THEN sw.Amount ELSE 0 END AS Credit,
+                sw.Comment
+            FROM tblStudentWallet sw
+            WHERE sw.StudentID = @StudentID AND sw.InstituteID = @InstituteID
+            ORDER BY sw.WalletID;
+            ";
 
             var parameters = new { request.StudentID, request.InstituteID };
 
@@ -298,22 +305,29 @@ namespace FeesManagement_API.Repository.Implementations
 
             var totals = _connection.QuerySingleOrDefault(totalQuery, parameters);
 
+
             // Create a DataTable for export with the desired columns.
             DataTable dt = new DataTable();
             dt.Columns.Add("PaymentDate", typeof(string));
             dt.Columns.Add("PaymentMode", typeof(string));
             dt.Columns.Add("Debit", typeof(decimal));
-            dt.Columns.Add("Credit", typeof(decimal));
+            dt.Columns.Add("Credit", typeof(decimal)); 
+            dt.Columns.Add("Balance", typeof(decimal));    // <-- new 
             dt.Columns.Add("Comment", typeof(string));
+
+            decimal runningBalance = 0m;
 
             // Fill DataTable with wallet history rows
             foreach (var row in historyData)
             {
+                runningBalance += (row.Credit - row.Debit);
+
                 DataRow dr = dt.NewRow();
                 dr["PaymentDate"] = row.PaymentDate;
                 dr["PaymentMode"] = row.PaymentMode;
                 dr["Debit"] = row.Debit;
                 dr["Credit"] = row.Credit;
+                dr["Balance"] = runningBalance;              // <-- set it here
                 dr["Comment"] = row.Comment;
                 dt.Rows.Add(dr);
             }
@@ -324,6 +338,7 @@ namespace FeesManagement_API.Repository.Implementations
             totalRow["PaymentMode"] = "";
             totalRow["Debit"] = totals?.TotalDebits ?? 0;
             totalRow["Credit"] = totals?.TotalCredits ?? 0;
+            totalRow["Balance"] = totals?.TotalAvailableBalance ?? runningBalance;
             totalRow["Comment"] = "Available Balance: " + (totals?.TotalAvailableBalance ?? 0);
             dt.Rows.Add(totalRow);
 

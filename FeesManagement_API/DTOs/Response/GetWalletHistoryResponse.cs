@@ -12,6 +12,7 @@
         public string PaymentMode { get; set; }
         public decimal Debit { get; set; }
         public decimal Credit { get; set; }
+        public decimal Balance { get; set; } 
         public string Comment { get; set; }
     }
      
