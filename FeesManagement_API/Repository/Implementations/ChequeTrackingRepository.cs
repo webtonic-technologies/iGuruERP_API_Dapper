@@ -45,24 +45,30 @@ namespace FeesManagement_API.Repository.Implementations
 
             // Get total count of matching records (before paging)
             string countQuery = @"
-    SELECT COUNT(*) FROM (
-        SELECT DISTINCT
-            s.student_id, t.ChequeNo
-        FROM 
-            tblStudentFeePaymentTransaction t
-        INNER JOIN tblStudentFeePayment sp ON sp.FeesPaymentID IN (SELECT value FROM STRING_SPLIT(t.PaymentIDs, ','))
-        INNER JOIN tbl_StudentMaster s ON s.student_id = sp.StudentID
-        INNER JOIN tbl_Class c ON c.class_id = sp.ClassID
-        INNER JOIN tbl_Section sec ON sec.section_id = sp.SectionID
-        WHERE 
-            t.ChequeStatusID = 1 AND 
-            t.ChequeDate BETWEEN @StartDate AND @EndDate
-            AND (@Search IS NULL OR 
-                 s.Admission_Number LIKE '%' + @Search + '%' OR 
-                 t.ChequeNo LIKE '%' + @Search + '%' OR 
-                 CONCAT(s.First_Name, ' ', s.Last_Name) LIKE '%' + @Search + '%')
-    ) AS CountTable;
-    ";
+                SELECT COUNT(*) 
+            FROM (
+                SELECT DISTINCT
+                    s.student_id,
+                    t.ChequeNo
+                FROM tblStudentFeePaymentTransaction AS t
+                INNER JOIN tblStudentFeePayment        AS sp
+                    ON sp.TransactionCode = t.TransactionCode
+                INNER JOIN tbl_StudentMaster           AS s
+                    ON s.student_id = sp.StudentID
+                INNER JOIN tbl_Class                   AS c
+                    ON c.class_id   = sp.ClassID
+                INNER JOIN tbl_Section                 AS sec
+                    ON sec.section_id = sp.SectionID
+                WHERE
+                    t.ChequeStatusID = 1
+                    AND t.ChequeDate BETWEEN @StartDate AND @EndDate
+                    AND (
+                        @Search IS NULL
+                        OR s.Admission_Number LIKE '%' + @Search + '%'
+                        OR t.ChequeNo         LIKE '%' + @Search + '%'
+                        OR CONCAT(s.First_Name, ' ', s.Last_Name) LIKE '%' + @Search + '%'
+                    )
+            ) AS CountTable;";
 
             var totalCount = _connection.ExecuteScalar<int>(countQuery, new
             {
@@ -77,33 +83,36 @@ namespace FeesManagement_API.Repository.Implementations
 
             // Main query with paging using OFFSET and FETCH NEXT
             string query = @"
-    SELECT DISTINCT
-        s.student_id AS StudentID,
-        CONCAT(s.First_Name, ' ', s.Last_Name) AS StudentName,
-        s.Admission_Number AS AdmissionNo,
-        c.Class_Name AS ClassName,
-        sec.Section_Name AS SectionName,
-        s.Roll_Number AS RollNo,
-        t.ChequeNo,
-        t.PaymentAmount AS Amount,
-        t.ChequeBankName as BankName,
-        t.ChequeDate
-    FROM 
-        tblStudentFeePaymentTransaction t
-    INNER JOIN tblStudentFeePayment sp ON sp.FeesPaymentID IN (SELECT value FROM STRING_SPLIT(t.PaymentIDs, ','))
-    INNER JOIN tbl_StudentMaster s ON s.student_id = sp.StudentID
-    INNER JOIN tbl_Class c ON c.class_id = sp.ClassID
-    INNER JOIN tbl_Section sec ON sec.section_id = sp.SectionID
-    WHERE 
-        t.ChequeStatusID = 1 AND 
-        t.ChequeDate BETWEEN @StartDate AND @EndDate
-        AND (@Search IS NULL OR 
-             s.Admission_Number LIKE '%' + @Search + '%' OR 
-             t.ChequeNo LIKE '%' + @Search + '%' OR 
-             CONCAT(s.First_Name, ' ', s.Last_Name) LIKE '%' + @Search + '%')
-    ORDER BY t.ChequeDate
-    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;
-    ";
+            SELECT DISTINCT
+                s.student_id     AS StudentID,
+                CONCAT(s.First_Name, ' ', s.Last_Name) AS StudentName,
+                s.Admission_Number                     AS AdmissionNo,
+                c.Class_Name                           AS ClassName,
+                sec.Section_Name                       AS SectionName,
+                s.Roll_Number                          AS RollNo,
+                t.ChequeNo,
+                t.PayableAmount        AS Amount,
+                t.ChequeBankName       AS BankName,
+                t.ChequeDate
+            FROM tblStudentFeePaymentTransaction AS t
+            INNER JOIN tblStudentFeePayment        AS sp
+                ON sp.TransactionCode = t.TransactionCode
+            INNER JOIN tbl_StudentMaster           AS s
+                ON s.student_id     = sp.StudentID
+            INNER JOIN tbl_Class                   AS c
+                ON c.class_id       = sp.ClassID
+            INNER JOIN tbl_Section                 AS sec
+                ON sec.section_id   = sp.SectionID
+            WHERE 
+                t.ChequeStatusID = 1 AND
+                    t.ChequeDate BETWEEN @StartDate AND @EndDate
+                    AND (@Search IS NULL OR 
+                         s.Admission_Number LIKE '%' + @Search + '%' OR 
+                         t.ChequeNo LIKE '%' + @Search + '%' OR 
+                         CONCAT(s.First_Name, ' ', s.Last_Name) LIKE '%' + @Search + '%')
+                ORDER BY t.ChequeDate
+                OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;
+                ";
 
             var chequeTrackings = _connection.Query<ChequeTrackingResponse>(query, new
             {
@@ -259,7 +268,7 @@ namespace FeesManagement_API.Repository.Implementations
                         s.student_id, t.ChequeNo
                     FROM 
                         tblStudentFeePaymentTransaction t
-                    INNER JOIN tblStudentFeePayment sp ON sp.FeesPaymentID IN (SELECT value FROM STRING_SPLIT(t.PaymentIDs, ','))
+                    INNER JOIN tblStudentFeePayment AS sp ON sp.TransactionCode = t.TransactionCode
                     INNER JOIN tbl_StudentMaster s ON s.student_id = sp.StudentID
                     INNER JOIN tbl_Class c ON c.class_id = sp.ClassID
                     INNER JOIN tbl_Section sec ON sec.section_id = sp.SectionID
@@ -299,7 +308,7 @@ namespace FeesManagement_API.Repository.Implementations
                     cbd.Reason
                 FROM 
                     tblStudentFeePaymentTransaction t
-                INNER JOIN tblStudentFeePayment sp ON sp.FeesPaymentID IN (SELECT value FROM STRING_SPLIT(t.PaymentIDs, ','))
+                INNER JOIN tblStudentFeePayment AS sp ON sp.TransactionCode = t.TransactionCode
                 INNER JOIN tbl_StudentMaster s ON s.student_id = sp.StudentID
                 INNER JOIN tbl_Class c ON c.class_id = sp.ClassID
                 INNER JOIN tbl_Section sec ON sec.section_id = sp.SectionID
@@ -384,7 +393,7 @@ namespace FeesManagement_API.Repository.Implementations
                  s.student_id, t.ChequeNo
              FROM 
                  tblStudentFeePaymentTransaction t
-             INNER JOIN tblStudentFeePayment sp ON sp.FeesPaymentID IN (SELECT value FROM STRING_SPLIT(t.PaymentIDs, ','))
+             INNER JOIN tblStudentFeePayment AS sp ON sp.TransactionCode = t.TransactionCode
              INNER JOIN tbl_StudentMaster s ON s.student_id = sp.StudentID
              INNER JOIN tbl_Class c ON c.class_id = sp.ClassID
              INNER JOIN tbl_Section sec ON sec.section_id = sp.SectionID
@@ -421,12 +430,12 @@ namespace FeesManagement_API.Repository.Implementations
              t.ChequeNo,
              CONVERT(varchar(10), t.ChequeDate, 105) AS ChequeDate,
              CONVERT(varchar(10), ccd.ChequeClearanceDate, 105) AS ChequeClearanceDate,
-             t.PaymentAmount AS Amount,
+             t.PayableAmount AS Amount,
              t.ChequeBankName AS BankName,
              t.ChequeDate AS ChequeDateOrder  -- Extra column for ordering
          FROM 
              tblStudentFeePaymentTransaction t
-         INNER JOIN tblStudentFeePayment sp ON sp.FeesPaymentID IN (SELECT value FROM STRING_SPLIT(t.PaymentIDs, ','))
+         INNER JOIN tblStudentFeePayment AS sp ON sp.TransactionCode = t.TransactionCode
          INNER JOIN tbl_StudentMaster s ON s.student_id = sp.StudentID
          INNER JOIN tbl_Class c ON c.class_id = sp.ClassID
          INNER JOIN tbl_Section sec ON sec.section_id = sp.SectionID
@@ -511,14 +520,14 @@ namespace FeesManagement_API.Repository.Implementations
                 sec.Section_Name AS SectionName,
                 s.Roll_Number AS RollNo,
                 t.ChequeNo,
-                t.PaymentAmount AS Amount,
+                t.PayableAmount AS Amount,
                 t.ChequeBankName as BankName,
                 --t.ChequeDate
                 CONVERT(varchar(10), t.ChequeDate, 105) AS ChequeDate
 
             FROM 
                 tblStudentFeePaymentTransaction t
-            INNER JOIN tblStudentFeePayment sp ON sp.FeesPaymentID IN (SELECT value FROM STRING_SPLIT(t.PaymentIDs, ','))  
+            INNER JOIN tblStudentFeePayment AS sp ON sp.TransactionCode = t.TransactionCode
             INNER JOIN tbl_StudentMaster s ON s.student_id = sp.StudentID  
             INNER JOIN tbl_Class c ON c.class_id = sp.ClassID  
             INNER JOIN tbl_Section sec ON sec.section_id = sp.SectionID  
@@ -572,7 +581,7 @@ namespace FeesManagement_API.Repository.Implementations
                     cbd.Reason
                 FROM 
                     tblStudentFeePaymentTransaction t
-                INNER JOIN tblStudentFeePayment sp ON sp.FeesPaymentID IN (SELECT value FROM STRING_SPLIT(t.PaymentIDs, ','))
+                INNER JOIN tblStudentFeePayment AS sp ON sp.TransactionCode = t.TransactionCode
                 INNER JOIN tbl_StudentMaster s ON s.student_id = sp.StudentID
                 INNER JOIN tbl_Class c ON c.class_id = sp.ClassID
                 INNER JOIN tbl_Section sec ON sec.section_id = sp.SectionID
@@ -624,12 +633,12 @@ namespace FeesManagement_API.Repository.Implementations
                      t.ChequeNo,
                      CONVERT(varchar(10), t.ChequeDate, 105) AS ChequeDate,
                      CONVERT(varchar(10), ccd.ChequeClearanceDate, 105) AS ChequeClearanceDate,
-                     t.PaymentAmount AS Amount,
+                     t.PayableAmount AS Amount,
                      t.ChequeBankName AS BankName,
                      t.ChequeDate AS ChequeDateOrder  -- Extra column for ordering
                  FROM 
                      tblStudentFeePaymentTransaction t
-                 INNER JOIN tblStudentFeePayment sp ON sp.FeesPaymentID IN (SELECT value FROM STRING_SPLIT(t.PaymentIDs, ','))
+                 INNER JOIN tblStudentFeePayment AS sp ON sp.TransactionCode = t.TransactionCode
                  INNER JOIN tbl_StudentMaster s ON s.student_id = sp.StudentID
                  INNER JOIN tbl_Class c ON c.class_id = sp.ClassID
                  INNER JOIN tbl_Section sec ON sec.section_id = sp.SectionID
