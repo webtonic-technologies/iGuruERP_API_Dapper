@@ -592,135 +592,313 @@ namespace FeesManagement_API.Repository.Implementations
             }
         }
 
-         
+
+        //public ServiceResponse<bool> SubmitFeeWaiver(SubmitFeeWaiverRequest request)
+        //{
+        //    if (_connection.State != ConnectionState.Open)
+        //    {
+        //        _connection.Open();
+        //    }
+
+        //    using (var transaction = _connection.BeginTransaction())
+        //    {
+        //        try
+        //        {
+        //            foreach (var waiver in request.FeeWaivers)
+        //            {
+        //                // Delete any existing record with matching key parameters.
+        //                string deleteQuery = @"
+        //                    DELETE FROM tblStudentFeeWaiver
+        //                    WHERE StudentID = @StudentID
+        //                      AND ClassID = @ClassID
+        //                      AND SectionID = @SectionID
+        //                      AND InstituteID = @InstituteID
+        //                      AND FeeGroupID = @FeeGroupID
+        //                      AND FeeHeadID = @FeeHeadID
+        //                      AND FeeTenurityID = @FeeTenurityID
+        //                      AND TenuritySTMID = @TenuritySTMID
+        //                      AND FeeCollectionSTMID = @FeeCollectionSTMID;
+        //                ";
+        //                _connection.Execute(deleteQuery, waiver, transaction);
+
+        //                // Insert a new fee waiver record using the system current date for FeeWaiverDate.
+        //                string insertQuery = @"
+        //                    INSERT INTO tblStudentFeeWaiver 
+        //                    (
+        //                        StudentID, ClassID, SectionID, InstituteID, 
+        //                        FeeGroupID, FeeHeadID, FeeTenurityID, TenuritySTMID, FeeCollectionSTMID, 
+        //                        Amount, FeeWaiverDate, WaiverGivenBy, Reason
+        //                    )
+        //                    VALUES 
+        //                    (
+        //                        @StudentID, @ClassID, @SectionID, @InstituteID, 
+        //                        @FeeGroupID, @FeeHeadID, @FeeTenurityID, @TenuritySTMID, @FeeCollectionSTMID, 
+        //                        @Amount, GETDATE(), @WaiverGivenBy, @Reason
+        //                    );
+        //                ";
+        //                        _connection.Execute(insertQuery, waiver, transaction);
+        //                    }
+
+        //            transaction.Commit();
+        //            return new ServiceResponse<bool>(true, "Fee waivers submitted successfully", true, 200);
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            transaction.Rollback();
+        //            return new ServiceResponse<bool>(false, $"Error: {ex.Message}", false, 500);
+        //        }
+        //        finally
+        //        {
+        //            if (_connection.State == ConnectionState.Open)
+        //            {
+        //                _connection.Close();
+        //            }
+        //        }
+        //    }
+        //}
+
         public ServiceResponse<bool> SubmitFeeWaiver(SubmitFeeWaiverRequest request)
         {
             if (_connection.State != ConnectionState.Open)
-            {
                 _connection.Open();
-            }
 
-            using (var transaction = _connection.BeginTransaction())
+            using var transaction = _connection.BeginTransaction();
+            try
             {
-                try
-                {
-                    foreach (var waiver in request.FeeWaivers)
-                    {
-                        // Delete any existing record with matching key parameters.
-                        string deleteQuery = @"
-                            DELETE FROM tblStudentFeeWaiver
-                            WHERE StudentID = @StudentID
-                              AND ClassID = @ClassID
-                              AND SectionID = @SectionID
-                              AND InstituteID = @InstituteID
-                              AND FeeGroupID = @FeeGroupID
-                              AND FeeHeadID = @FeeHeadID
-                              AND FeeTenurityID = @FeeTenurityID
-                              AND TenuritySTMID = @TenuritySTMID
-                              AND FeeCollectionSTMID = @FeeCollectionSTMID;
-                        ";
-                        _connection.Execute(deleteQuery, waiver, transaction);
+                const string existsSql = @"
+SELECT 1 FROM tblStudentFeeWaiver
+WHERE StudentID = @StudentID
+  AND ClassID = @ClassID
+  AND SectionID = @SectionID
+  AND InstituteID = @InstituteID
+  AND FeeGroupID = @FeeGroupID
+  AND FeeHeadID = @FeeHeadID
+  AND FeeTenurityID = @FeeTenurityID
+  AND TenuritySTMID = @TenuritySTMID
+  AND FeeCollectionSTMID = @FeeCollectionSTMID;
+";
 
-                        // Insert a new fee waiver record using the system current date for FeeWaiverDate.
-                        string insertQuery = @"
-                            INSERT INTO tblStudentFeeWaiver 
-                            (
-                                StudentID, ClassID, SectionID, InstituteID, 
-                                FeeGroupID, FeeHeadID, FeeTenurityID, TenuritySTMID, FeeCollectionSTMID, 
-                                Amount, FeeWaiverDate, WaiverGivenBy, Reason
-                            )
-                            VALUES 
-                            (
-                                @StudentID, @ClassID, @SectionID, @InstituteID, 
-                                @FeeGroupID, @FeeHeadID, @FeeTenurityID, @TenuritySTMID, @FeeCollectionSTMID, 
-                                @Amount, GETDATE(), @WaiverGivenBy, @Reason
-                            );
-                        ";
-                                _connection.Execute(insertQuery, waiver, transaction);
-                            }
+                const string updateSql = @"
+UPDATE tblStudentFeeWaiver
+SET 
+    Amount         = @Amount,
+    FeeWaiverDate  = GETDATE(),
+    WaiverGivenBy  = @WaiverGivenBy,
+    Reason         = @Reason
+WHERE StudentID          = @StudentID
+  AND ClassID            = @ClassID
+  AND SectionID          = @SectionID
+  AND InstituteID        = @InstituteID
+  AND FeeGroupID         = @FeeGroupID
+  AND FeeHeadID          = @FeeHeadID
+  AND FeeTenurityID      = @FeeTenurityID
+  AND TenuritySTMID      = @TenuritySTMID
+  AND FeeCollectionSTMID = @FeeCollectionSTMID;
+";
 
-                    transaction.Commit();
-                    return new ServiceResponse<bool>(true, "Fee waivers submitted successfully", true, 200);
-                }
-                catch (Exception ex)
+                const string insertSql = @"
+INSERT INTO tblStudentFeeWaiver
+(
+    StudentID, ClassID, SectionID, InstituteID,
+    FeeGroupID, FeeHeadID, FeeTenurityID, TenuritySTMID, FeeCollectionSTMID,
+    Amount, FeeWaiverDate, WaiverGivenBy, Reason
+)
+VALUES
+(
+    @StudentID, @ClassID, @SectionID, @InstituteID,
+    @FeeGroupID, @FeeHeadID, @FeeTenurityID, @TenuritySTMID, @FeeCollectionSTMID,
+    @Amount, GETDATE(), @WaiverGivenBy, @Reason
+);
+";
+
+                foreach (var waiver in request.FeeWaivers)
                 {
-                    transaction.Rollback();
-                    return new ServiceResponse<bool>(false, $"Error: {ex.Message}", false, 500);
+                    var exists = _connection.QueryFirstOrDefault<int?>(
+                        existsSql, waiver, transaction) == 1;
+
+                    if (exists)
+                        _connection.Execute(updateSql, waiver, transaction);
+                    else
+                        _connection.Execute(insertSql, waiver, transaction);
                 }
-                finally
-                {
-                    if (_connection.State == ConnectionState.Open)
-                    {
-                        _connection.Close();
-                    }
-                }
+
+                transaction.Commit();
+                return new ServiceResponse<bool>(true, "Fee waivers submitted successfully", true, 200);
+            }
+            catch (Exception ex)
+            {
+                transaction.Rollback();
+                return new ServiceResponse<bool>(false, $"Error: {ex.Message}", false, 500);
+            }
+            finally
+            {
+                if (_connection.State == ConnectionState.Open)
+                    _connection.Close();
             }
         }
 
         public ServiceResponse<bool> ApplyDiscount(SubmitFeeDiscountRequest request)
         {
+            // Ensure connection is open
             if (_connection.State != ConnectionState.Open)
-            {
                 _connection.Open();
-            }
 
             using (var transaction = _connection.BeginTransaction())
             {
                 try
                 {
-                    foreach (var discount in request.FeeDiscounts)
-                    {
-                        // Delete any previous record that matches the key parameters.
-                        string deleteQuery = @"
-                    DELETE FROM tblStudentDiscount
-                    WHERE StudentID = @StudentID
-                      AND ClassID = @ClassID
-                      AND SectionID = @SectionID
-                      AND InstituteID = @InstituteID
-                      AND FeeGroupID = @FeeGroupID
-                      AND FeeHeadID = @FeeHeadID
-                      AND FeeTenurityID = @FeeTenurityID
-                      AND TenuritySTMID = @TenuritySTMID
-                      AND FeeCollectionSTMID = @FeeCollectionSTMID;
-                ";
-                        _connection.Execute(deleteQuery, discount, transaction);
+                    const string existsSql = @"
+SELECT 1 
+FROM tblStudentDiscount
+WHERE StudentID          = @StudentID
+  AND ClassID            = @ClassID
+  AND SectionID          = @SectionID
+  AND InstituteID        = @InstituteID
+  AND FeeGroupID         = @FeeGroupID
+  AND FeeHeadID          = @FeeHeadID
+  AND FeeTenurityID      = @FeeTenurityID
+  AND TenuritySTMID      = @TenuritySTMID
+  AND FeeCollectionSTMID = @FeeCollectionSTMID;
+";
 
-                        // Insert new discount record.
-                        // FeeDiscountDate is set using GETDATE() to capture the system current date.
-                        string insertQuery = @"
-                    INSERT INTO tblStudentDiscount
-                    (
-                        StudentID, ClassID, SectionID, InstituteID, 
-                        FeeGroupID, FeeHeadID, FeeTenurityID, TenuritySTMID, FeeCollectionSTMID, 
-                        Amount, FeeDiscountDate, DiscountGivenBy, Reason
-                    )
-                    VALUES
-                    (
-                        @StudentID, @ClassID, @SectionID, @InstituteID, 
-                        @FeeGroupID, @FeeHeadID, @FeeTenurityID, @TenuritySTMID, @FeeCollectionSTMID, 
-                        @Amount, GETDATE(), @DiscountGivenBy, @Reason
-                    );
-                ";
-                        _connection.Execute(insertQuery, discount, transaction);
+                    const string updateSql = @"
+UPDATE tblStudentDiscount
+SET
+    Amount           = @Amount,
+    FeeDiscountDate  = GETDATE(),
+    DiscountGivenBy  = @DiscountGivenBy,
+    Reason           = @Reason
+WHERE StudentID          = @StudentID
+  AND ClassID            = @ClassID
+  AND SectionID          = @SectionID
+  AND InstituteID        = @InstituteID
+  AND FeeGroupID         = @FeeGroupID
+  AND FeeHeadID          = @FeeHeadID
+  AND FeeTenurityID      = @FeeTenurityID
+  AND TenuritySTMID      = @TenuritySTMID
+  AND FeeCollectionSTMID = @FeeCollectionSTMID;
+";
+
+                    const string insertSql = @"
+INSERT INTO tblStudentDiscount
+(
+    StudentID, ClassID, SectionID, InstituteID,
+    FeeGroupID, FeeHeadID, FeeTenurityID, TenuritySTMID, FeeCollectionSTMID,
+    Amount, FeeDiscountDate, DiscountGivenBy, Reason
+)
+VALUES
+(
+    @StudentID, @ClassID, @SectionID, @InstituteID,
+    @FeeGroupID, @FeeHeadID, @FeeTenurityID, @TenuritySTMID, @FeeCollectionSTMID,
+    @Amount, GETDATE(), @DiscountGivenBy, @Reason
+);
+";
+
+                    foreach (var disc in request.FeeDiscounts)
+                    {
+                        // Check if a matching discount already exists
+                        bool exists = _connection
+                            .QueryFirstOrDefault<int?>(existsSql, disc, transaction) == 1;
+
+                        if (exists)
+                        {
+                            // Update existing record
+                            _connection.Execute(updateSql, disc, transaction);
+                        }
+                        else
+                        {
+                            // Insert new record
+                            _connection.Execute(insertSql, disc, transaction);
+                        }
                     }
 
                     transaction.Commit();
-                    return new ServiceResponse<bool>(true, "Fee discounts applied/updated successfully", true, 200);
+                    return new ServiceResponse<bool>(true,
+                        "Fee discounts applied/updated successfully",
+                        true,
+                        200);
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return new ServiceResponse<bool>(false, $"Error: {ex.Message}", false, 500);
+                    return new ServiceResponse<bool>(false,
+                        $"Error applying discounts: {ex.Message}",
+                        false,
+                        500);
                 }
                 finally
                 {
                     if (_connection.State == ConnectionState.Open)
-                    {
                         _connection.Close();
-                    }
                 }
             }
         }
+
+
+        //public ServiceResponse<bool> ApplyDiscount(SubmitFeeDiscountRequest request)
+        //{
+        //    if (_connection.State != ConnectionState.Open)
+        //    {
+        //        _connection.Open();
+        //    }
+
+        //    using (var transaction = _connection.BeginTransaction())
+        //    {
+        //        try
+        //        {
+        //            foreach (var discount in request.FeeDiscounts)
+        //            {
+        //                // Delete any previous record that matches the key parameters.
+        //                string deleteQuery = @"
+        //            DELETE FROM tblStudentDiscount
+        //            WHERE StudentID = @StudentID
+        //              AND ClassID = @ClassID
+        //              AND SectionID = @SectionID
+        //              AND InstituteID = @InstituteID
+        //              AND FeeGroupID = @FeeGroupID
+        //              AND FeeHeadID = @FeeHeadID
+        //              AND FeeTenurityID = @FeeTenurityID
+        //              AND TenuritySTMID = @TenuritySTMID
+        //              AND FeeCollectionSTMID = @FeeCollectionSTMID;
+        //        ";
+        //                _connection.Execute(deleteQuery, discount, transaction);
+
+        //                // Insert new discount record.
+        //                // FeeDiscountDate is set using GETDATE() to capture the system current date.
+        //                string insertQuery = @"
+        //            INSERT INTO tblStudentDiscount
+        //            (
+        //                StudentID, ClassID, SectionID, InstituteID, 
+        //                FeeGroupID, FeeHeadID, FeeTenurityID, TenuritySTMID, FeeCollectionSTMID, 
+        //                Amount, FeeDiscountDate, DiscountGivenBy, Reason
+        //            )
+        //            VALUES
+        //            (
+        //                @StudentID, @ClassID, @SectionID, @InstituteID, 
+        //                @FeeGroupID, @FeeHeadID, @FeeTenurityID, @TenuritySTMID, @FeeCollectionSTMID, 
+        //                @Amount, GETDATE(), @DiscountGivenBy, @Reason
+        //            );
+        //        ";
+        //                _connection.Execute(insertQuery, discount, transaction);
+        //            }
+
+        //            transaction.Commit();
+        //            return new ServiceResponse<bool>(true, "Fee discounts applied/updated successfully", true, 200);
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            transaction.Rollback();
+        //            return new ServiceResponse<bool>(false, $"Error: {ex.Message}", false, 500);
+        //        }
+        //        finally
+        //        {
+        //            if (_connection.State == ConnectionState.Open)
+        //            {
+        //                _connection.Close();
+        //            }
+        //        }
+        //    }
+        //}
 
 
         public ServiceResponse<GetWaiverSummaryResponse> GetWaiverSummary(GetWaiverSummaryRequest request)

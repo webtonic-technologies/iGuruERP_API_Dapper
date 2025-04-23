@@ -24,12 +24,23 @@ namespace FeesManagement_API.Controllers
             return Ok(response);
         }
 
+        //[HttpPost("DiscountStudentFees")]
+        //public IActionResult DiscountStudentFees([FromBody] DiscountStudentFeesRequest request)
+        //{
+        //    var response = _studentFeeService.DiscountStudentFees(request);
+        //    return Ok(response);
+        //}
+
         [HttpPost("DiscountStudentFees")]
-        public IActionResult DiscountStudentFees([FromBody] DiscountStudentFeesRequest request)
+        public IActionResult DiscountStudentFees([FromBody] List<DiscountStudentFeesRequest> requests)
         {
-            var response = _studentFeeService.DiscountStudentFees(request);
-            return Ok(response);
+            if (requests == null || requests.Count == 0)
+                return BadRequest("No discount records provided.");
+
+            var serviceResponse = _studentFeeService.DiscountStudentFees(requests);
+            return StatusCode(serviceResponse.StatusCode, serviceResponse);
         }
+
 
         [HttpPost("GetFeesChangeLogs")]
         public IActionResult GetFeesChangeLogs([FromBody] GetFeesChangeLogsRequest request)

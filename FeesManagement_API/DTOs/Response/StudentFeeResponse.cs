@@ -8,7 +8,9 @@ namespace FeesManagement_API.DTOs.Responses
         public string AdmissionNo { get; set; }
         public string StudentName { get; set; }
         public string RollNo { get; set; }
+        public int ClassID { get; set; } 
         public string ClassName { get; set; }
+        public int SectionID { get; set; }
         public string SectionName { get; set; }
         public string ConcessionGroup { get; set; }
         public int FeeGroupID { get; set; }        // New property for FeeGroupID
@@ -25,6 +27,7 @@ namespace FeesManagement_API.DTOs.Responses
         public string TenureType { get; set; }
         public decimal Amount { get; set; }
         public decimal LateFee { get; set; } // Add this property
-
+        public int TenuritySTMID { get; set; }
+        public int FeeCollectionSTMID { get; set; }
     }
 }

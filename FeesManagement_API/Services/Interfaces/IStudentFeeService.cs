@@ -8,7 +8,9 @@ namespace FeesManagement_API.Services.Interfaces
     public interface IStudentFeeService
     {
         ServiceResponse<List<StudentFeeResponse>> GetStudentFees(StudentFeeRequest request);
-        ServiceResponse<DiscountStudentFeesResponse> DiscountStudentFees(DiscountStudentFeesRequest request);
+        //ServiceResponse<DiscountStudentFeesResponse> DiscountStudentFees(DiscountStudentFeesRequest request);
+        ServiceResponse<IList<DiscountStudentFeesResponse>> DiscountStudentFees(IEnumerable<DiscountStudentFeesRequest> requests);
+
         ServiceResponse<List<GetFeesChangeLogsResponse>> GetFeesChangeLogs(GetFeesChangeLogsRequest request);
         Task<byte[]> GetStudentFeesExportAsync(GetStudentFeesExportRequest request);
         Task<byte[]> GetFeesChangeLogsExportAsync(GetFeesChangeLogsExportRequest request);

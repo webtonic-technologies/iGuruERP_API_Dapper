@@ -25,139 +25,186 @@ namespace FeesManagement_API.Repository.Implementations
         {
             using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
+
                 var query = @"
-         WITH UniqueLFRS AS (
-             SELECT DISTINCT 
-                    LateFeeRuleID, 
-                    FeeHeadID, 
-                    FeeTenurityID, 
-                    DueDate, 
-                    InstituteID, 
-                    IsActive
-             FROM tblLateFeeRuleSetup
-         ),
-         PaymentFromPayment AS (
-             SELECT 
-                StudentID, 
-                ClassID, 
-                SectionID, 
-                InstituteID, 
-                FeeGroupID, 
-                FeeHeadID, 
-                FeeTenurityID, 
-                Amount AS AmountPaid,
-                NULL AS PaymentDate
-             FROM tblStudentFeePayment
-         ),
-         PaymentFromTransaction AS (
-             SELECT 
-                p.StudentID, 
-                p.ClassID, 
-                p.SectionID, 
-                p.InstituteID, 
-                p.FeeGroupID, 
-                p.FeeHeadID, 
-                p.FeeTenurityID, 
-                t.PaymentAmount AS AmountPaid,
-                t.CashTransactionDate AS PaymentDate
-             FROM tblStudentFeePaymentTransaction t
-             INNER JOIN tblStudentFeePayment p
-                  ON t.PaymentIDs = p.FeesPaymentID
-         ),
-         AggregatedPayments AS (
-             SELECT
-               StudentID, ClassID, SectionID, InstituteID, FeeGroupID, FeeHeadID, FeeTenurityID,
-               SUM(AmountPaid) AS TotalPaid,
-               MIN(PaymentDate) AS PaymentDate
-             FROM (
-               SELECT * FROM PaymentFromPayment
-               UNION ALL
-               SELECT * FROM PaymentFromTransaction
-             ) AS X
-             GROUP BY StudentID, ClassID, SectionID, InstituteID, FeeGroupID, FeeHeadID, FeeTenurityID
-         )
-         SELECT  
-             sm.student_id AS StudentID,
-             sm.Admission_Number AS AdmissionNo,
-             CONCAT(sm.First_Name, ' ', sm.Middle_Name, ' ', sm.Last_Name) AS StudentName,
-             sm.Roll_Number AS RollNo,
-             c.class_name AS ClassName,
-             s.section_name AS SectionName,
-             CAST(fh.FeeHeadID AS int) AS FeeHeadID,
-             fh.FeeHead,
-             fg.FeeGroupID AS FeeGroupID,
-             fg.FeeTenurityID AS FeeTenurityID,
-             CASE 
-                 WHEN fg.FeeTenurityID = 1 THEN 'Single'
-                 WHEN fg.FeeTenurityID = 2 THEN tt.TermName
-                 WHEN fg.FeeTenurityID = 3 THEN tm.Month
-                 ELSE 'N/A'
-             END AS FeeType,
-             COALESCE(ts.Amount, tt.Amount, tm.Amount) AS FeeAmount,
-             cg.ConcessionGroupType AS ConcessionGroup,
-             CASE 
-                  WHEN COALESCE(ap.PaymentDate, GETDATE()) <= lfrs.DueDate THEN 0
-                  WHEN COALESCE(ap.TotalPaid, 0) >= COALESCE(ts.Amount, tt.Amount, tm.Amount) THEN 0
-                  WHEN DATEDIFF(DAY, lfrs.DueDate, COALESCE(ap.PaymentDate, GETDATE()))
-                       BETWEEN fr.MinDays AND fr.MaxDays THEN fr.LateFee
-                  ELSE 0
-             END AS LateFee
-         FROM tbl_StudentMaster sm
-         INNER JOIN tbl_Class c 
-             ON sm.class_id = c.class_id
-         INNER JOIN tbl_Section s 
-             ON sm.section_id = s.section_id
-         INNER JOIN tblFeeGroupClassSection fgcs 
-             ON sm.class_id = fgcs.ClassID 
-                AND sm.section_id = fgcs.SectionID
-         INNER JOIN tblFeeGroup fg 
-             ON fgcs.FeeGroupID = fg.FeeGroupID
-         INNER JOIN tblFeeHead fh 
-             ON fg.FeeHeadID = fh.FeeHeadID
-         LEFT JOIN tblTenuritySingle ts 
-             ON fg.FeeTenurityID = 1 
-                AND ts.FeeCollectionID = fgcs.FeeGroupID
-         LEFT JOIN tblTenurityTerm tt 
-             ON fg.FeeTenurityID = 2 
-                AND tt.FeeCollectionID = fgcs.FeeGroupID
-         LEFT JOIN tblTenurityMonthly tm 
-             ON fg.FeeTenurityID = 3 
-                AND tm.FeeCollectionID = fgcs.FeeGroupID
-         LEFT JOIN tblStudentConcession sc 
-             ON sm.student_id = sc.StudentID 
-                AND sm.Institute_id = sc.InstituteID 
-                AND sc.IsActive = 1
-         LEFT JOIN tblConcessionGroup cg 
-             ON sc.ConcessionGroupID = cg.ConcessionGroupID 
-                AND cg.IsActive = 1
-         LEFT JOIN tblLateFeeClassSectionMapping lfm 
-             ON sm.class_id = lfm.ClassID 
-                AND sm.section_id = lfm.SectionID
-         LEFT JOIN UniqueLFRS lfrs 
-             ON lfm.LateFeeRuleID = lfrs.LateFeeRuleID 
-                AND lfrs.FeeHeadID = fh.FeeHeadID 
-                AND lfrs.InstituteID = sm.Institute_id 
-                AND lfrs.IsActive = 1
-         LEFT JOIN AggregatedPayments ap 
-             ON ap.StudentID = sm.student_id 
-                AND ap.ClassID = sm.class_id 
-                AND ap.SectionID = sm.section_id 
-                AND ap.InstituteID = sm.Institute_id 
-                AND ap.FeeGroupID = fg.FeeGroupID 
-                AND ap.FeeHeadID = fh.FeeHeadID 
-                AND ap.FeeTenurityID = fg.FeeTenurityID
-         LEFT JOIN tblFeesRules fr 
-             ON fr.LateFeeRuleID = lfrs.LateFeeRuleID 
-                AND DATEDIFF(DAY, lfrs.DueDate, COALESCE(ap.PaymentDate, GETDATE()))
-                    BETWEEN fr.MinDays AND fr.MaxDays
-         WHERE sm.class_id = @ClassID 
-           AND sm.section_id = @SectionID
-           AND sm.Institute_id = @InstituteID
-           AND (@Search IS NULL OR 
-                sm.Admission_Number LIKE '%' + @Search + '%' OR
-                CONCAT(sm.First_Name, ' ', sm.Middle_Name, ' ', sm.Last_Name) LIKE '%' + @Search + '%')
-         ORDER BY sm.Admission_Number;
-         ";
+                         WITH UniqueLFRS AS (
+    SELECT DISTINCT 
+           LateFeeRuleID, FeeHeadID, FeeTenurityID, DueDate, InstituteID, IsActive
+    FROM tblLateFeeRuleSetup
+),
+PaymentFromPayment AS (
+    SELECT 
+       StudentID, ClassID, SectionID, InstituteID, FeeGroupID, FeeHeadID, FeeTenurityID,
+       Amount       AS AmountPaid,
+       NULL         AS PaymentDate
+    FROM tblStudentFeePayment
+),
+PaymentFromTransaction AS (
+    SELECT 
+       p.StudentID, p.ClassID, p.SectionID, p.InstituteID,
+       p.FeeGroupID, p.FeeHeadID, p.FeeTenurityID,
+       t.PayableAmount AS AmountPaid,
+       t.TransactionDate AS PaymentDate
+    FROM tblStudentFeePaymentTransaction t
+    INNER JOIN tblStudentFeePayment p
+        ON t.TransactionCode = p.TransactionCode
+),
+AggregatedPayments AS (
+    SELECT
+      StudentID, ClassID, SectionID, InstituteID, FeeGroupID, FeeHeadID, FeeTenurityID,
+      SUM(AmountPaid) AS TotalPaid,
+      MIN(PaymentDate) AS PaymentDate
+    FROM (
+      SELECT * FROM PaymentFromPayment
+      UNION ALL
+      SELECT * FROM PaymentFromTransaction
+    ) AS X
+    GROUP BY StudentID, ClassID, SectionID, InstituteID, FeeGroupID, FeeHeadID, FeeTenurityID
+)
+SELECT  
+    sm.student_id        AS StudentID,
+    sm.class_id          AS ClassID,
+    sm.section_id        AS SectionID,
+    sm.Admission_Number  AS AdmissionNo,
+    CONCAT(sm.First_Name,' ',sm.Middle_Name,' ',sm.Last_Name) AS StudentName,
+    sm.Roll_Number       AS RollNo,
+    c.class_name         AS ClassName,
+    s.section_name       AS SectionName,
+
+    fh.FeeHeadID         AS FeeHeadID,
+    fh.FeeHead,
+    fg.FeeGroupID        AS FeeGroupID,
+    fg.FeeTenurityID     AS FeeTenurityID,
+
+    CASE 
+      WHEN fg.FeeTenurityID = 1 THEN 'Single'
+      WHEN fg.FeeTenurityID = 2 THEN tt.TermName
+      WHEN fg.FeeTenurityID = 3 THEN tm.Month
+      ELSE 'N/A'
+    END                   AS FeeType,
+
+    -- override base fee by any student‐specific discount record
+    COALESCE(
+        sd.Amount,                            -- tblStudentDiscount.Amount
+        COALESCE(ts.Amount, tt.Amount, tm.Amount)
+    )                     AS FeeAmount,
+
+    cg.ConcessionGroupType AS ConcessionGroup,
+
+    CASE 
+      WHEN COALESCE(ap.PaymentDate,GETDATE()) <= lfrs.DueDate THEN 0
+      WHEN COALESCE(ap.TotalPaid,0) >= COALESCE(ts.Amount, tt.Amount, tm.Amount) THEN 0
+      WHEN DATEDIFF(
+            DAY,
+            lfrs.DueDate,
+            COALESCE(ap.PaymentDate,GETDATE())
+           ) BETWEEN fr.MinDays AND fr.MaxDays 
+        THEN fr.LateFee
+      ELSE 0
+    END                  AS LateFee,
+
+    CASE 
+      WHEN fg.FeeTenurityID = 1 THEN ts.TenuritySingleID
+      WHEN fg.FeeTenurityID = 2 THEN tt.TenurityTermID
+      WHEN fg.FeeTenurityID = 3 THEN tm.TenurityMonthID
+      ELSE NULL
+    END                  AS TenuritySTMID,
+
+    CASE 
+      WHEN fg.FeeTenurityID = 1 THEN ts.FeeCollectionID
+      WHEN fg.FeeTenurityID = 2 THEN tt.FeeCollectionID
+      WHEN fg.FeeTenurityID = 3 THEN tm.FeeCollectionID
+      ELSE NULL
+    END                  AS FeeCollectionSTMID
+
+FROM tbl_StudentMaster sm
+INNER JOIN tbl_Class c 
+    ON sm.class_id   = c.class_id
+INNER JOIN tbl_Section s 
+    ON sm.section_id = s.section_id
+INNER JOIN tblFeeGroupClassSection fgcs 
+    ON sm.class_id   = fgcs.ClassID
+   AND sm.section_id = fgcs.SectionID
+INNER JOIN tblFeeGroup fg 
+    ON fgcs.FeeGroupID = fg.FeeGroupID
+INNER JOIN tblFeeHead fh 
+    ON fg.FeeHeadID    = fh.FeeHeadID
+
+LEFT JOIN tblTenuritySingle ts 
+    ON fg.FeeTenurityID   = 1 
+   AND ts.FeeCollectionID = fgcs.FeeGroupID
+LEFT JOIN tblTenurityTerm tt 
+    ON fg.FeeTenurityID   = 2 
+   AND tt.FeeCollectionID = fgcs.FeeGroupID
+LEFT JOIN tblTenurityMonthly tm 
+    ON fg.FeeTenurityID   = 3 
+   AND tm.FeeCollectionID = fgcs.FeeGroupID
+
+-- bring in any student‐specific discount
+LEFT JOIN tblStudentDiscount sd
+    ON sd.StudentID          = sm.student_id
+   AND sd.ClassID            = sm.class_id
+   AND sd.SectionID          = sm.section_id
+   AND sd.InstituteID        = sm.Institute_id
+   AND sd.FeeGroupID         = fg.FeeGroupID
+   AND sd.FeeHeadID          = fh.FeeHeadID
+   AND sd.FeeTenurityID      = fg.FeeTenurityID
+   -- match the same TenuritySTMID / FeeCollectionSTMID
+   AND sd.TenuritySTMID      = CASE 
+                                 WHEN fg.FeeTenurityID = 1 THEN ts.TenuritySingleID
+                                 WHEN fg.FeeTenurityID = 2 THEN tt.TenurityTermID
+                                 WHEN fg.FeeTenurityID = 3 THEN tm.TenurityMonthID
+                               END
+   AND sd.FeeCollectionSTMID = CASE 
+                                 WHEN fg.FeeTenurityID = 1 THEN ts.FeeCollectionID
+                                 WHEN fg.FeeTenurityID = 2 THEN tt.FeeCollectionID
+                                 WHEN fg.FeeTenurityID = 3 THEN tm.FeeCollectionID
+                               END
+
+LEFT JOIN tblStudentConcession sc 
+    ON sm.student_id  = sc.StudentID
+   AND sm.Institute_id = sc.InstituteID
+   AND sc.IsActive    = 1
+LEFT JOIN tblConcessionGroup cg 
+    ON sc.ConcessionGroupID = cg.ConcessionGroupID
+   AND cg.IsActive         = 1
+LEFT JOIN tblLateFeeClassSectionMapping lfm 
+    ON sm.class_id   = lfm.ClassID
+   AND sm.section_id = lfm.SectionID
+LEFT JOIN UniqueLFRS lfrs 
+    ON lfm.LateFeeRuleID = lfrs.LateFeeRuleID
+   AND lfrs.FeeHeadID    = fh.FeeHeadID
+   AND lfrs.InstituteID  = sm.Institute_id
+   AND lfrs.IsActive     = 1
+LEFT JOIN AggregatedPayments ap 
+    ON ap.StudentID     = sm.student_id
+   AND ap.ClassID       = sm.class_id
+   AND ap.SectionID     = sm.section_id
+   AND ap.InstituteID   = sm.Institute_id
+   AND ap.FeeGroupID    = fg.FeeGroupID
+   AND ap.FeeHeadID     = fh.FeeHeadID
+   AND ap.FeeTenurityID = fg.FeeTenurityID
+LEFT JOIN tblFeesRules fr 
+    ON fr.LateFeeRuleID = lfrs.LateFeeRuleID
+   AND DATEDIFF(
+         DAY,
+         lfrs.DueDate,
+         COALESCE(ap.PaymentDate,GETDATE())
+       ) BETWEEN fr.MinDays AND fr.MaxDays
+
+WHERE sm.class_id    = @ClassID 
+  AND sm.section_id  = @SectionID
+  AND sm.Institute_id = @InstituteID
+  AND (
+       @Search IS NULL
+    OR sm.Admission_Number LIKE '%' + @Search + '%'
+    OR CONCAT(sm.First_Name,' ',sm.Middle_Name,' ',sm.Last_Name)
+          LIKE '%' + @Search + '%'
+  )
+ORDER BY sm.Admission_Number;
+";
+
+                 
 
                 var result = connection.Query<StudentFeeData>(query, new
                 {
@@ -175,6 +222,8 @@ namespace FeesManagement_API.Repository.Implementations
                     x.AdmissionNo,
                     x.StudentName,
                     x.RollNo,
+                    x.ClassID,
+                    x.SectionID,
                     x.ClassName,
                     x.SectionName,
                     x.ConcessionGroup,
@@ -186,6 +235,8 @@ namespace FeesManagement_API.Repository.Implementations
                     AdmissionNo = group.Key.AdmissionNo,
                     StudentName = group.Key.StudentName,
                     RollNo = group.Key.RollNo,
+                    ClassID = group.Key.ClassID,
+                    SectionID = group.Key.SectionID,
                     ClassName = group.Key.ClassName,
                     SectionName = group.Key.SectionName,
                     ConcessionGroup = group.Key.ConcessionGroup,
@@ -199,7 +250,9 @@ namespace FeesManagement_API.Repository.Implementations
                         FeeHead = x.FeeHead,
                         TenureType = x.FeeType,
                         Amount = x.FeeAmount,
-                        LateFee = x.LateFee
+                        LateFee = x.LateFee,
+                        TenuritySTMID = x.TenuritySTMID,
+                        FeeCollectionSTMID = x.FeeCollectionSTMID
                     }).ToList()
                 }).ToList();
 
@@ -389,22 +442,118 @@ namespace FeesManagement_API.Repository.Implementations
         //}
 
 
-        public int DiscountStudentFees(DiscountStudentFeesRequest request)
+        public IEnumerable<int> DiscountStudentFees(IEnumerable<DiscountStudentFeesRequest> requests)
         {
-            using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            using var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+            connection.Open();
+            using var tx = connection.BeginTransaction();
+
+            var ids = new List<int>();
+
+            foreach (var req in requests)
             {
-                var query = @"
-                INSERT INTO tblFeesDiscount 
-                    (StudentID, FeeHeadID, FeeGroupID, FeeTenurityID, DiscountedAmount, InstituteID, AcademicYearCode, DateTime, UserID)
+                // 1) Look for an existing discount
+                const string findSql = @"
+            SELECT FeesDiscountID
+            FROM tblStudentDiscount
+            WHERE StudentID        = @StudentID
+              AND ClassID          = @ClassID
+              AND SectionID        = @SectionID
+              AND InstituteID      = @InstituteID
+              AND FeeGroupID       = @FeeGroupID
+              AND FeeHeadID        = @FeeHeadID
+              AND FeeTenurityID    = @FeeTenurityID
+              AND TenuritySTMID    = @TenuritySTMID
+              AND FeeCollectionSTMID = @FeeCollectionSTMID;
+        ";
+                var existingId = connection
+                    .QuerySingleOrDefault<int?>(findSql, req, tx);
+
+                if (existingId.HasValue)
+                {
+                    // 2a) Update the one existing row
+                    const string updSql = @"
+                UPDATE tblStudentDiscount
+                SET Amount          = @DiscountedAmount,
+                    FeeDiscountDate = GETDATE(),
+                    DiscountGivenBy = @DiscountGivenBy
+                WHERE FeesDiscountID = @FeesDiscountID;
+            ";
+                    connection.Execute(updSql, new
+                    {
+                        req.DiscountGivenBy,
+                        req.DiscountedAmount,
+                        FeesDiscountID = existingId.Value
+                    }, tx);
+
+                    ids.Add(existingId.Value);
+                }
+                else
+                {
+                    // 2b) Insert & get new ID
+                    const string insSql = @"
+                INSERT INTO tblStudentDiscount
+                (
+                    StudentID, ClassID, SectionID, InstituteID,
+                    FeeGroupID, FeeHeadID, FeeTenurityID, TenuritySTMID, FeeCollectionSTMID,
+                    Amount, FeeDiscountDate, DiscountGivenBy
+                )
                 VALUES
-                    (@StudentID, @FeeHeadID, @FeeGroupID, @FeeTenurityID, @DiscountedAmount, @InstituteID, @AcademicYearCode, GETDATE(), @UserID);
+                (
+                    @StudentID, @ClassID, @SectionID, @InstituteID,
+                    @FeeGroupID, @FeeHeadID, @FeeTenurityID, @TenuritySTMID, @FeeCollectionSTMID,
+                    @DiscountedAmount, GETDATE(), @DiscountGivenBy
+                );
                 SELECT CAST(SCOPE_IDENTITY() AS INT);
-                ";
-                // Execute the query and return the generated DiscountID
-                var discountID = connection.QuerySingle<int>(query, request);
-                return discountID;
+            ";
+                    var newId = connection.QuerySingle<int>(insSql, req, tx);
+                    ids.Add(newId);
+                }
             }
+
+            tx.Commit();
+            return ids;
         }
+
+
+        //public IEnumerable<int> DiscountStudentFees(IEnumerable<DiscountStudentFeesRequest> requests)
+        //{
+        //    using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+        //    {
+        //        connection.Open();
+        //        using (var tx = connection.BeginTransaction())
+        //        {  
+        //            string sql = @"
+        //            INSERT INTO tblStudentDiscount
+        //            (
+        //                StudentID, ClassID, SectionID, InstituteID, 
+        //                FeeGroupID, FeeHeadID, FeeTenurityID, TenuritySTMID, FeeCollectionSTMID, 
+        //                Amount, FeeDiscountDate, DiscountGivenBy
+        //            )
+        //            VALUES
+        //            (
+        //                @StudentID, @ClassID, @SectionID, @InstituteID, 
+        //                @FeeGroupID, @FeeHeadID, @FeeTenurityID, @TenuritySTMID, @FeeCollectionSTMID, 
+        //                @DiscountedAmount, GETDATE(), @DiscountGivenBy
+        //            );
+        //            SELECT CAST(SCOPE_IDENTITY() AS INT);
+        //            ";
+
+        //            var ids = new List<int>();
+        //            foreach (var req in requests)
+        //            {
+        //                var id = connection.QuerySingle<int>(sql, req, transaction: tx);
+        //                ids.Add(id);
+        //            }
+
+        //            tx.Commit();
+        //            return ids;
+        //        }
+        //    }
+        //}
+
+
+
 
         public List<GetFeesChangeLogsResponse> GetFeesChangeLogs(GetFeesChangeLogsRequest request)
         {

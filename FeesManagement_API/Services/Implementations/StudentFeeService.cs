@@ -36,24 +36,48 @@ namespace FeesManagement_API.Services.Implementations
             return response;
         }
 
-        public ServiceResponse<DiscountStudentFeesResponse> DiscountStudentFees(DiscountStudentFeesRequest request)
+        public ServiceResponse<IList<DiscountStudentFeesResponse>> DiscountStudentFees(
+    IEnumerable<DiscountStudentFeesRequest> requests)
         {
-            // Insert discount record and get the DiscountID
-            var discountID = _studentFeeRepository.DiscountStudentFees(request);
+            // call repository bulk‐insert and get back one ID per request
+            var ids = _studentFeeRepository.DiscountStudentFees(requests);
 
-            var responseDto = new DiscountStudentFeesResponse
-            {
-                DiscountID = discountID,
-                Message = "Discount applied successfully."
-            };
+            // build a response list
+            var responses = requests
+                .Zip(ids, (req, id) => new DiscountStudentFeesResponse
+                {
+                    DiscountID = id,
+                    Message = $"Discount for Student {req.StudentID} applied."
+                })
+                .ToList();
 
-            return new ServiceResponse<DiscountStudentFeesResponse>(
+            return new ServiceResponse<IList<DiscountStudentFeesResponse>>(
                 success: true,
-                message: "Discount applied successfully",
-                data: responseDto,
+                message: "All discounts applied successfully",
+                data: responses,
                 statusCode: 200
             );
         }
+
+
+        //public ServiceResponse<DiscountStudentFeesResponse> DiscountStudentFees(DiscountStudentFeesRequest request)
+        //{
+        //    // Insert discount record and get the DiscountID
+        //    var discountID = _studentFeeRepository.DiscountStudentFees(request);
+
+        //    var responseDto = new DiscountStudentFeesResponse
+        //    {
+        //        DiscountID = discountID,
+        //        Message = "Discount applied successfully."
+        //    };
+
+        //    return new ServiceResponse<DiscountStudentFeesResponse>(
+        //        success: true,
+        //        message: "Discount applied successfully",
+        //        data: responseDto,
+        //        statusCode: 200
+        //    );
+        //}
 
         public ServiceResponse<List<GetFeesChangeLogsResponse>> GetFeesChangeLogs(GetFeesChangeLogsRequest request)
         {
