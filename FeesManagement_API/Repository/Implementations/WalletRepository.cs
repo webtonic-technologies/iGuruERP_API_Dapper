@@ -19,8 +19,8 @@ namespace FeesManagement_API.Repository.Implementations
         public async Task<int> AddWalletAmount(AddWalletAmountRequest request)
         {
             var query = @"
-            INSERT INTO tblStudentWallet (StudentID, Amount, PaymentModeID, Comment, InstituteID, JournalEntriesTypeID)
-            VALUES (@StudentID, @Amount, @PaymentModeID, @Comment, @InstituteID, 2)";
+            INSERT INTO tblStudentWallet (StudentID, Amount, PaymentModeID, Comment, InstituteID, JournalEntriesTypeID,TransactionID)
+            VALUES (@StudentID, @Amount, @PaymentModeID, @Comment, @InstituteID, 2, @TransactionID)";
             // ExecuteAsync returns the number of rows affected.
             var rowsAffected = await _connection.ExecuteAsync(query, request);
             return rowsAffected;
@@ -195,21 +195,28 @@ namespace FeesManagement_API.Repository.Implementations
             //    Similarly, we map PaymentModeID to a text value (Cash, Online, etc.).
             string historyQuery = @"
                 SELECT
-                    -- Example of how to convert a DateTime to a string (if you have a CreatedOn column):
-                    FORMAT(sw.PaymentDate, 'dd-MM-yyyy') + ' at ' + FORMAT(sw.PaymentDate, 'hh:mmtt') AS PaymentDate,  
-                    CASE 
-                        WHEN sw.PaymentModeID = 1 THEN 'Cash'
-                        WHEN sw.PaymentModeID = 2 THEN 'Online'
-                        ELSE 'Other'
-                    END AS PaymentMode,
+                    -- format the date/time:
+                    FORMAT(sw.PaymentDate, 'dd-MM-yyyy') 
+                      + ' at ' 
+                      + FORMAT(sw.PaymentDate, 'hh:mmtt')      AS PaymentDate,
 
-                    CASE WHEN sw.JournalEntriesTypeID = 1 THEN sw.Amount ELSE 0 END AS Debit,
-                    CASE WHEN sw.JournalEntriesTypeID = 2 THEN sw.Amount ELSE 0 END AS Credit,
-                    sw.Comment
+                    -- pull the human‐readable mode from tblPaymentMode:
+                    pm.PaymentMode                            AS PaymentMode,
+
+                    -- split debit vs credit:
+                    CASE WHEN sw.JournalEntriesTypeID = 1 
+                         THEN sw.Amount ELSE 0 END            AS Debit,
+                    CASE WHEN sw.JournalEntriesTypeID = 2 
+                         THEN sw.Amount ELSE 0 END            AS Credit,
+
+                    sw.Comment,
+                    sw.TransactionID
                 FROM tblStudentWallet sw
-                WHERE sw.StudentID = @StudentID
-                  AND sw.InstituteID = @InstituteID
-                ORDER BY sw.WalletID;  -- or by CreatedOn DESC/ASC
+                LEFT JOIN tblPaymentMode pm
+                  ON sw.PaymentModeID = pm.PaymentModeID
+                WHERE sw.StudentID    = @StudentID
+                  AND sw.InstituteID  = @InstituteID
+                ORDER BY sw.WalletID;
             ";
 
             var historyParams = new
@@ -272,20 +279,29 @@ namespace FeesManagement_API.Repository.Implementations
         {
             // Query to get wallet history items
             string historyQuery = @"
-            SELECT 
-                --CONVERT(VARCHAR(20), sw.CreatedOn, 120) AS PaymentDate, 
-                FORMAT(sw.PaymentDate, 'dd-MM-yyyy') + ' at ' + FORMAT(sw.PaymentDate, 'hh:mmtt') AS PaymentDate, 
-                CASE 
-                    WHEN sw.PaymentModeID = 1 THEN 'Cash'
-                    WHEN sw.PaymentModeID = 2 THEN 'Online'
-                    ELSE 'Other'
-                END AS PaymentMode,
-                CASE WHEN sw.JournalEntriesTypeID = 1 THEN sw.Amount ELSE 0 END AS Debit,
-                CASE WHEN sw.JournalEntriesTypeID = 2 THEN sw.Amount ELSE 0 END AS Credit,
-                sw.Comment
-            FROM tblStudentWallet sw
-            WHERE sw.StudentID = @StudentID AND sw.InstituteID = @InstituteID
-            ORDER BY sw.WalletID;
+                SELECT
+                    -- format the date/time:
+                    FORMAT(sw.PaymentDate, 'dd-MM-yyyy') 
+                      + ' at ' 
+                      + FORMAT(sw.PaymentDate, 'hh:mmtt')      AS PaymentDate,
+
+                    -- pull the human‐readable mode from tblPaymentMode:
+                    pm.PaymentMode                            AS PaymentMode,
+
+                    -- split debit vs credit:
+                    CASE WHEN sw.JournalEntriesTypeID = 1 
+                         THEN sw.Amount ELSE 0 END            AS Debit,
+                    CASE WHEN sw.JournalEntriesTypeID = 2 
+                         THEN sw.Amount ELSE 0 END            AS Credit,
+
+                    sw.Comment,
+                    sw.TransactionID
+                FROM tblStudentWallet sw
+                LEFT JOIN tblPaymentMode pm
+                  ON sw.PaymentModeID = pm.PaymentModeID
+                WHERE sw.StudentID    = @StudentID
+                  AND sw.InstituteID  = @InstituteID
+                ORDER BY sw.WalletID;
             ";
 
             var parameters = new { request.StudentID, request.InstituteID };
@@ -309,7 +325,8 @@ namespace FeesManagement_API.Repository.Implementations
             // Create a DataTable for export with the desired columns.
             DataTable dt = new DataTable();
             dt.Columns.Add("PaymentDate", typeof(string));
-            dt.Columns.Add("PaymentMode", typeof(string));
+            dt.Columns.Add("PaymentMode", typeof(string)); 
+            dt.Columns.Add("TransactionID", typeof(string));
             dt.Columns.Add("Debit", typeof(decimal));
             dt.Columns.Add("Credit", typeof(decimal)); 
             dt.Columns.Add("Balance", typeof(decimal));    // <-- new 
@@ -325,6 +342,7 @@ namespace FeesManagement_API.Repository.Implementations
                 DataRow dr = dt.NewRow();
                 dr["PaymentDate"] = row.PaymentDate;
                 dr["PaymentMode"] = row.PaymentMode;
+                dr["TransactionID"] = row.TransactionID;
                 dr["Debit"] = row.Debit;
                 dr["Credit"] = row.Credit;
                 dr["Balance"] = runningBalance;              // <-- set it here

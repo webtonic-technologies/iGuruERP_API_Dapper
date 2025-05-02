@@ -1,6 +1,6 @@
-﻿namespace FeesManagement_API.Repository.Implementations
+﻿namespace FeesManagement_API.DTOs.Response
 {
-    public class StudentFeeRawData
+    public class StudentPreviousFeeRawData
     {
         public int StudentID { get; set; }
         public string AdmissionNo { get; set; }
@@ -13,7 +13,6 @@
         public string FeeHead { get; set; }
         public int FeeGroupID { get; set; }
         public int FeeTenurityID { get; set; }
-        // This field determines the fee type (for example, "Tuition Fee (Single)", "Tuition Fee (M Term 1)", etc.)
         public string FeeType { get; set; }
         public decimal FeeAmount { get; set; }
         public decimal LateFee { get; set; }

@@ -52,6 +52,9 @@ builder.Services.AddScoped<IFeeStructureRepository, FeeStructureRepository>();
 builder.Services.AddScoped<IStudentFeeService, StudentFeeService>();
 builder.Services.AddScoped<IStudentFeeRepository, StudentFeeRepository>();
 
+builder.Services.AddScoped<IStudentPreviousFeeService, StudentPreviousFeeService>();
+builder.Services.AddScoped<IStudentPreviousFeeRepository, StudentPreviousFeeRepository>();
+
 builder.Services.AddScoped<IConcessionMappingService, ConcessionMappingService>();
 builder.Services.AddScoped<IConcessionMappingRepository, ConcessionMappingRepository>();
 

@@ -10,6 +10,7 @@
     {
         public string PaymentDate { get; set; }
         public string PaymentMode { get; set; }
+        public string TransactionID { get; set; }
         public decimal Debit { get; set; }
         public decimal Credit { get; set; }
         public decimal Balance { get; set; } 

@@ -4,6 +4,7 @@ using System.Data.SqlClient;
 using System.Linq;
 using Dapper;
 using FeesManagement_API.DTOs.Requests;
+using FeesManagement_API.DTOs.Response;
 using FeesManagement_API.DTOs.Responses;
 using FeesManagement_API.Repository.Interfaces;
 using Microsoft.Extensions.Configuration;

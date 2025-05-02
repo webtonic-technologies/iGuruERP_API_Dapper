@@ -1,6 +1,6 @@
 ﻿using FeesManagement_API.DTOs.Requests;
+using FeesManagement_API.DTOs.Response;
 using FeesManagement_API.DTOs.Responses;
-using FeesManagement_API.Repository.Implementations;
 using System.Collections.Generic;
 
 namespace FeesManagement_API.Repository.Interfaces
